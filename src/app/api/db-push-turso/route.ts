@@ -297,6 +297,7 @@ CREATE TABLE "CategoriaProductoTerminado" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "nombre" TEXT NOT NULL,
     "descripcion" TEXT,
+    "imagen" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME
 );
@@ -305,9 +306,11 @@ CREATE TABLE "CategoriaProductoTerminado" (
 CREATE TABLE "ProductoTerminado" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
     "codigo" TEXT,
+    "codigo_barras" TEXT,
     "nombre" TEXT NOT NULL,
     "descripcion" TEXT,
     "id_categoria" INTEGER NOT NULL,
+    "tipo_harina" TEXT,
     "peso_unitario_aprox" REAL NOT NULL DEFAULT 0,
     "precio_venta" REAL NOT NULL DEFAULT 0,
     "stock_actual" REAL NOT NULL DEFAULT 0,
@@ -932,6 +935,9 @@ CREATE UNIQUE INDEX "CategoriaProductoTerminado_nombre_key" ON "CategoriaProduct
 CREATE UNIQUE INDEX "ProductoTerminado_codigo_key" ON "ProductoTerminado"("codigo");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "ProductoTerminado_codigo_barras_key" ON "ProductoTerminado"("codigo_barras");
+
+-- CreateIndex
 CREATE INDEX "ProductoTerminado_codigo_idx" ON "ProductoTerminado"("codigo");
 
 -- CreateIndex
@@ -1197,6 +1203,7 @@ export async function POST(request: NextRequest) {
       { sql: 'ALTER TABLE "ProductoTerminado" ADD COLUMN "codigo_barras" TEXT', description: 'Add codigo_barras column to ProductoTerminado' },
       { sql: 'ALTER TABLE "ProductoTerminado" ADD COLUMN "tipo_harina" TEXT', description: 'Add tipo_harina column to ProductoTerminado (con_gluten, integral, sin_gluten)' },
       { sql: 'CREATE UNIQUE INDEX IF NOT EXISTS "ProductoTerminado_codigo_barras_key" ON "ProductoTerminado"("codigo_barras")', description: 'Add unique index on codigo_barras' },
+      { sql: 'ALTER TABLE "CategoriaProductoTerminado" ADD COLUMN "imagen" TEXT', description: 'Add imagen column to CategoriaProductoTerminado' },
       // UPDATE tipo_harina for existing products based on name patterns
       { sql: `UPDATE "ProductoTerminado" SET tipo_harina = 'con_gluten' WHERE tipo_harina IS NULL AND nombre NOT LIKE '%integral%' AND nombre NOT LIKE '%sin gluten%'`, description: 'Set tipo_harina=con_gluten for regular products' },
       { sql: `UPDATE "ProductoTerminado" SET tipo_harina = 'integral' WHERE nombre LIKE '%integral%'`, description: 'Set tipo_harina=integral for integral products' },

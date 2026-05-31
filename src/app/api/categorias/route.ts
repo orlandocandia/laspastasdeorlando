@@ -104,31 +104,36 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const updateData: { nombre?: string; descripcion?: string | null; imagen?: string | null } = {}
-    if (nombre !== undefined) updateData.nombre = nombre
-    if (descripcion !== undefined) updateData.descripcion = descripcion || null
-    if (body.imagen !== undefined) updateData.imagen = body.imagen || null
-
     if (tipo === 'materias-primas') {
+      const updateDataMP: { nombre?: string; descripcion?: string | null } = {}
+      if (nombre !== undefined) updateDataMP.nombre = nombre
+      if (descripcion !== undefined) updateDataMP.descripcion = descripcion || null
       const categoria = await db.categoriaMateriaPrima.update({
         where: { id: parseInt(id) },
-        data: updateData,
+        data: updateDataMP,
       })
       return NextResponse.json(categoria)
     }
 
     if (tipo === 'productos-terminados') {
+      const updateDataPT: { nombre?: string; descripcion?: string | null; imagen?: string | null } = {}
+      if (nombre !== undefined) updateDataPT.nombre = nombre
+      if (descripcion !== undefined) updateDataPT.descripcion = descripcion || null
+      if (body.imagen !== undefined) updateDataPT.imagen = body.imagen || null
       const categoria = await db.categoriaProductoTerminado.update({
         where: { id: parseInt(id) },
-        data: updateData,
+        data: updateDataPT,
       })
       return NextResponse.json(categoria)
     }
 
     if (tipo === 'tipos-insumo') {
+      const updateDataTI: { nombre?: string; descripcion?: string | null } = {}
+      if (nombre !== undefined) updateDataTI.nombre = nombre
+      if (descripcion !== undefined) updateDataTI.descripcion = descripcion || null
       const tipoInsumo = await db.tipoInsumo.update({
         where: { id: parseInt(id) },
-        data: updateData,
+        data: updateDataTI,
       })
       return NextResponse.json(tipoInsumo)
     }
