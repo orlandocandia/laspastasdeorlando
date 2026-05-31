@@ -12,6 +12,7 @@ const ENTITY_SUBDIRS: Record<string, string> = {
   'persona': 'personas',
   'usuario': 'usuarios',
   'producto': 'productos',
+  'categoria': 'categorias',
 }
 
 export interface UploadResult {

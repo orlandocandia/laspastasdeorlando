@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
     if (tipo === 'productos-terminados') {
       const productosTerminados = await db.categoriaProductoTerminado.findMany({
         orderBy: { nombre: 'asc' },
+        include: { _count: { select: { productosTerminados: true } } },
       })
       return NextResponse.json(productosTerminados)
     }
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     if (tipo === 'productos-terminados') {
       const categoria = await db.categoriaProductoTerminado.create({
-        data: { nombre, descripcion: descripcion || null },
+        data: { nombre, descripcion: descripcion || null, imagen: body.imagen || null },
       })
       return NextResponse.json(categoria, { status: 201 })
     }
@@ -103,9 +104,10 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const updateData: { nombre?: string; descripcion?: string | null } = {}
+    const updateData: { nombre?: string; descripcion?: string | null; imagen?: string | null } = {}
     if (nombre !== undefined) updateData.nombre = nombre
     if (descripcion !== undefined) updateData.descripcion = descripcion || null
+    if (body.imagen !== undefined) updateData.imagen = body.imagen || null
 
     if (tipo === 'materias-primas') {
       const categoria = await db.categoriaMateriaPrima.update({

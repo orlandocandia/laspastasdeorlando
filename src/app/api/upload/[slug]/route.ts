@@ -8,6 +8,7 @@ const ENTIDADES_PERMITIDAS = [
   'persona',
   'usuario',
   'producto',
+  'categoria',
   'general',
 ]
 

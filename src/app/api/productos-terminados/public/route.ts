@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             nombre: true,
+            imagen: true,
           },
         },
       },

@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import Image from 'next/image'
 import { toast } from 'sonner'
-import { Pencil, Trash2, Plus, Loader2 } from 'lucide-react'
+import { Pencil, Trash2, Plus, Loader2, Upload, X, ImagePlus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -37,6 +38,8 @@ interface CategoriaItem {
   id: number
   nombre: string
   descripcion?: string | null
+  imagen?: string | null
+  _count?: { productosTerminados?: number }
 }
 
 type TipoCategoria = 'materias-primas' | 'productos-terminados' | 'tipos-insumo'
@@ -53,17 +56,27 @@ export default function CategoriasManager() {
   const [loading, setLoading] = useState(true)
   const [nuevoNombre, setNuevoNombre] = useState('')
   const [nuevaDescripcion, setNuevaDescripcion] = useState('')
+  const [nuevaImagen, setNuevaImagen] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
 
   // Edit dialog
   const [editItem, setEditItem] = useState<CategoriaItem | null>(null)
   const [editNombre, setEditNombre] = useState('')
   const [editDescripcion, setEditDescripcion] = useState('')
+  const [editImagen, setEditImagen] = useState<string | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
   // Delete
   const [deleteItem, setDeleteItem] = useState<CategoriaItem | null>(null)
+
+  // Upload states
+  const [uploadingNew, setUploadingNew] = useState(false)
+  const [uploadingEdit, setUploadingEdit] = useState(false)
+  const newInputRef = useRef<HTMLInputElement>(null)
+  const editInputRef = useRef<HTMLInputElement>(null)
+
+  const isProductosTab = activeTab === 'productos-terminados'
 
   const fetchCategorias = useCallback(async () => {
     setLoading(true)
@@ -83,6 +96,68 @@ export default function CategoriasManager() {
     fetchCategorias()
   }, [fetchCategorias])
 
+  const uploadImage = async (file: File): Promise<string | null> => {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const res = await fetch('/api/upload/categoria', {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!res.ok) throw new Error('Error al subir imagen')
+    const data = await res.json()
+    return data.url
+  }
+
+  const handleNewImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Solo se permiten imágenes')
+      return
+    }
+
+    setUploadingNew(true)
+    try {
+      const url = await uploadImage(file)
+      if (url) {
+        setNuevaImagen(url)
+        toast.success('Imagen subida')
+      }
+    } catch {
+      toast.error('Error al subir la imagen')
+    } finally {
+      setUploadingNew(false)
+      if (newInputRef.current) newInputRef.current.value = ''
+    }
+  }
+
+  const handleEditImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Solo se permiten imágenes')
+      return
+    }
+
+    setUploadingEdit(true)
+    try {
+      const url = await uploadImage(file)
+      if (url) {
+        setEditImagen(url)
+        toast.success('Imagen subida')
+      }
+    } catch {
+      toast.error('Error al subir la imagen')
+    } finally {
+      setUploadingEdit(false)
+      if (editInputRef.current) editInputRef.current.value = ''
+    }
+  }
+
   const handleCreate = async () => {
     if (!nuevoNombre.trim()) {
       toast.error('El nombre es requerido')
@@ -90,14 +165,18 @@ export default function CategoriasManager() {
     }
     setCreating(true)
     try {
+      const body: Record<string, unknown> = {
+        tipo: activeTab,
+        nombre: nuevoNombre.trim(),
+        descripcion: nuevaDescripcion.trim() || null,
+      }
+      if (isProductosTab) {
+        body.imagen = nuevaImagen || null
+      }
       const res = await fetch('/api/categorias', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tipo: activeTab,
-          nombre: nuevoNombre.trim(),
-          descripcion: nuevaDescripcion.trim() || null,
-        }),
+        body: JSON.stringify(body),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
@@ -106,6 +185,7 @@ export default function CategoriasManager() {
       toast.success('Categoría creada')
       setNuevoNombre('')
       setNuevaDescripcion('')
+      setNuevaImagen(null)
       fetchCategorias()
     } catch (error: any) {
       toast.error(error.message || 'Error al crear categoría')
@@ -118,6 +198,7 @@ export default function CategoriasManager() {
     setEditItem(item)
     setEditNombre(item.nombre)
     setEditDescripcion(item.descripcion || '')
+    setEditImagen(item.imagen || null)
     setEditOpen(true)
   }
 
@@ -125,15 +206,19 @@ export default function CategoriasManager() {
     if (!editItem || !editNombre.trim()) return
     setSaving(true)
     try {
+      const body: Record<string, unknown> = {
+        id: editItem.id,
+        tipo: activeTab,
+        nombre: editNombre.trim(),
+        descripcion: editDescripcion.trim() || null,
+      }
+      if (isProductosTab) {
+        body.imagen = editImagen || null
+      }
       const res = await fetch('/api/categorias', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: editItem.id,
-          tipo: activeTab,
-          nombre: editNombre.trim(),
-          descripcion: editDescripcion.trim() || null,
-        }),
+        body: JSON.stringify(body),
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
@@ -183,41 +268,90 @@ export default function CategoriasManager() {
         {TABS.map((tab) => (
           <TabsContent key={tab.value} value={tab.value} className="space-y-4">
             {/* Inline create form */}
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end p-4 rounded-lg border border-marron/10 bg-muted/30">
-              <div className="flex-1 w-full">
-                <label className="text-sm font-medium text-marron mb-1 block">Nombre *</label>
-                <Input
-                  placeholder="Nombre de la categoría..."
-                  value={tab.value === activeTab ? nuevoNombre : ''}
-                  onChange={(e) => setNuevoNombre(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCreate()
-                  }}
-                />
+            <div className="flex flex-col gap-3 p-4 rounded-lg border border-marron/10 bg-muted/30">
+              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+                <div className="flex-1 w-full">
+                  <label className="text-sm font-medium text-marron mb-1 block">Nombre *</label>
+                  <Input
+                    placeholder="Nombre de la categoría..."
+                    value={tab.value === activeTab ? nuevoNombre : ''}
+                    onChange={(e) => setNuevoNombre(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCreate()
+                    }}
+                  />
+                </div>
+                <div className="flex-1 w-full">
+                  <label className="text-sm font-medium text-marron mb-1 block">Descripción</label>
+                  <Input
+                    placeholder="Descripción (opcional)..."
+                    value={tab.value === activeTab ? nuevaDescripcion : ''}
+                    onChange={(e) => setNuevaDescripcion(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCreate()
+                    }}
+                  />
+                </div>
+                <Button
+                  onClick={handleCreate}
+                  disabled={creating || !nuevoNombre.trim()}
+                  className="bg-mostaza hover:bg-mostaza/90 text-marron font-semibold shrink-0"
+                >
+                  {creating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="mr-2 h-4 w-4" />
+                  )}
+                  Agregar
+                </Button>
               </div>
-              <div className="flex-1 w-full">
-                <label className="text-sm font-medium text-marron mb-1 block">Descripción</label>
-                <Input
-                  placeholder="Descripción (opcional)..."
-                  value={tab.value === activeTab ? nuevaDescripcion : ''}
-                  onChange={(e) => setNuevaDescripcion(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleCreate()
-                  }}
-                />
-              </div>
-              <Button
-                onClick={handleCreate}
-                disabled={creating || !nuevoNombre.trim()}
-                className="bg-mostaza hover:bg-mostaza/90 text-marron font-semibold"
-              >
-                {creating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="mr-2 h-4 w-4" />
-                )}
-                Agregar
-              </Button>
+
+              {/* Image upload for productos-terminados */}
+              {tab.value === 'productos-terminados' && (
+                <div className="flex items-center gap-3">
+                  <input
+                    ref={newInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleNewImageUpload}
+                    className="hidden"
+                  />
+                  {nuevaImagen ? (
+                    <div className="relative group w-16 h-16 rounded-lg overflow-hidden border border-marron/10">
+                      <Image
+                        src={nuevaImagen}
+                        alt="Imagen de categoría"
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 text-white hover:bg-white/20"
+                          onClick={() => setNuevaImagen(null)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => newInputRef.current?.click()}
+                      disabled={uploadingNew}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-dashed border-marron/20 hover:border-mostaza/50 hover:bg-mostaza/5 transition-colors text-sm text-muted-foreground"
+                    >
+                      {uploadingNew ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ImagePlus className="h-4 w-4" />
+                      )}
+                      Subir imagen
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Table */}
@@ -234,20 +368,52 @@ export default function CategoriasManager() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
+                      {tab.value === 'productos-terminados' && (
+                        <TableHead className="w-16">Imagen</TableHead>
+                      )}
                       <TableHead>Nombre</TableHead>
                       <TableHead className="hidden sm:table-cell">Descripción</TableHead>
+                      {tab.value === 'productos-terminados' && (
+                        <TableHead className="text-center hidden sm:table-cell">Productos</TableHead>
+                      )}
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {categorias.map((cat) => (
                       <TableRow key={cat.id} className="hover:bg-mostaza/5">
+                        {tab.value === 'productos-terminados' && (
+                          <TableCell>
+                            {cat.imagen ? (
+                              <div className="w-10 h-10 rounded-full overflow-hidden border border-mostaza/20 bg-crema">
+                                <Image
+                                  src={cat.imagen}
+                                  alt={cat.nombre}
+                                  width={40}
+                                  height={40}
+                                  className="object-cover w-full h-full"
+                                />
+                              </div>
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-muted border border-marron/10 flex items-center justify-center">
+                                <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
+                          </TableCell>
+                        )}
                         <TableCell className="font-medium text-marron">
                           {cat.nombre}
                         </TableCell>
                         <TableCell className="hidden sm:table-cell text-muted-foreground">
                           {cat.descripcion || '-'}
                         </TableCell>
+                        {tab.value === 'productos-terminados' && (
+                          <TableCell className="text-center hidden sm:table-cell">
+                            <span className="bg-mostaza/15 text-marron text-xs rounded-full px-2 py-0.5 font-semibold">
+                              {cat._count?.productosTerminados ?? 0}
+                            </span>
+                          </TableCell>
+                        )}
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             <Button
@@ -306,6 +472,69 @@ export default function CategoriasManager() {
                 rows={3}
               />
             </div>
+
+            {/* Image upload for productos-terminados */}
+            {isProductosTab && (
+              <div>
+                <label className="text-sm font-medium text-marron mb-1 block">Imagen</label>
+                <input
+                  ref={editInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleEditImageUpload}
+                  className="hidden"
+                />
+                {editImagen ? (
+                  <div className="relative group w-full h-32 rounded-lg overflow-hidden border border-marron/10">
+                    <Image
+                      src={editImagen}
+                      alt="Imagen de categoría"
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => editInputRef.current?.click()}
+                      >
+                        <Upload className="h-4 w-4 mr-1" />
+                        Cambiar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setEditImagen(null)}
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Eliminar
+                      </Button>
+                    </div>
+                    {uploadingEdit && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-white" />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => editInputRef.current?.click()}
+                    disabled={uploadingEdit}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-marron/20 hover:border-mostaza/50 hover:bg-mostaza/5 transition-colors text-sm text-muted-foreground"
+                  >
+                    {uploadingEdit ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <ImagePlus className="h-5 w-5" />
+                    )}
+                    Subir imagen de categoría
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"

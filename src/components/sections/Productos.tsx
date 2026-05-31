@@ -20,6 +20,7 @@ interface ProductoPublico {
   categoria: {
     id: number
     nombre: string
+    imagen: string | null
   }
 }
 
@@ -27,62 +28,44 @@ export type FiltroHarina = 'todos' | 'con_gluten' | 'integral' | 'sin_gluten'
 
 interface Familia {
   nombre: string
-  imagen: string
+  imagen: string | null
   descripcion: string
-  categoriaFiltro: string
+  categoriaId: number
 }
 
-const FAMILIAS: Familia[] = [
-  {
-    nombre: 'Sorrentinos',
-    imagen: '/images/familias/sorrentinos.png',
-    descripcion: 'Rellenos de jamón, queso, pollo y más',
-    categoriaFiltro: 'Sorrentinos',
-  },
-  {
-    nombre: 'Ñoquis',
-    imagen: '/images/familias/noquis.png',
-    descripcion: 'De papa, calabaza, espinaca y más',
-    categoriaFiltro: 'Ñoquis',
-  },
-  {
-    nombre: 'Tallarines',
-    imagen: '/images/familias/tallarines.png',
-    descripcion: 'Al huevo, al morrón, a la espinaca y más',
-    categoriaFiltro: 'Tallarines',
-  },
-  {
-    nombre: 'Ravioles',
-    imagen: '/images/familias/ravioles.png',
-    descripcion: 'De ricotta, carne, jamón y más',
-    categoriaFiltro: 'Ravioles',
-  },
-  {
-    nombre: 'Tapas',
-    imagen: '/images/familias/tapas.png',
-    descripcion: 'Para empanadas, pascualinas y pastelitos',
-    categoriaFiltro: 'Tapas',
-  },
-  {
-    nombre: 'Empanadas',
-    imagen: '/images/familias/empanadas.png',
-    descripcion: 'Crudas y al horno, variedad de rellenos',
-    categoriaFiltro: 'Empanadas',
-  },
-  {
-    nombre: 'Tartas',
-    imagen: '/images/familias/tartas.png',
-    descripcion: 'De verduras, jamón, pollo y choclo',
-    categoriaFiltro: 'Tartas',
-  },
-]
+// Descripciones por defecto para categorías conocidas
+const DESCRIPCIONES_DEFAULT: Record<string, string> = {
+  'Sorrentinos': 'Rellenos de jamón, queso, pollo y más',
+  'Ñoquis': 'De papa, calabaza, espinaca y más',
+  'Tallarines': 'Al huevo, al morrón, a la espinaca y más',
+  'Ravioles': 'De ricotta, carne, jamón y más',
+  'Tapas': 'Para empanadas, pascualinas y pastelitos',
+  'Empanadas': 'Crudas y al horno, variedad de rellenos',
+  'Tartas': 'De verduras, jamón, pollo y choclo',
+}
+
+// Imagen por defecto para categorías sin imagen propia
+const IMAGENES_DEFAULT: Record<string, string> = {
+  'Sorrentinos': '/images/familias/sorrentinos.png',
+  'Ñoquis': '/images/familias/noquis.png',
+  'Tallarines': '/images/familias/tallarines.png',
+  'Ravioles': '/images/familias/ravioles.png',
+  'Tapas': '/images/familias/tapas.png',
+  'Empanadas': '/images/familias/empanadas.png',
+  'Tartas': '/images/familias/tartas.png',
+}
 
 // Imagen dinámica según filtro para familias con variante integral
 function getFamiliaImagen(familia: Familia, filtro: FiltroHarina): string {
   if (familia.nombre === 'Tallarines' && filtro === 'integral') {
     return '/images/familias/tallarinesintegrales.png'
   }
-  return familia.imagen
+  // Si la categoría tiene imagen propia (subida desde el dashboard), usarla
+  if (familia.imagen) {
+    return familia.imagen
+  }
+  // Si no, usar la imagen por defecto hardcodeada
+  return IMAGENES_DEFAULT[familia.nombre] || '/images/placeholder-producto.jpg'
 }
 
 const FILTROS: { key: FiltroHarina; label: string; icon: React.ReactNode }[] = [
@@ -174,12 +157,38 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
     onFiltroChange?.(nuevoFiltro)
   }
 
+  // Build families dynamically from product categories
+  const familias: Familia[] = useMemo(() => {
+    const seen = new Map<string, Familia>()
+    for (const p of productos) {
+      const catNombre = p.categoria.nombre
+      if (!seen.has(catNombre)) {
+        seen.set(catNombre, {
+          nombre: catNombre,
+          imagen: p.categoria.imagen || null,
+          descripcion: DESCRIPCIONES_DEFAULT[catNombre] || `Productos de ${catNombre.toLowerCase()}`,
+          categoriaId: p.categoria.id,
+        })
+      }
+    }
+    // Sort by known order, then alphabetically
+    const knownOrder = ['Sorrentinos', 'Ñoquis', 'Tallarines', 'Ravioles', 'Tapas', 'Empanadas', 'Tartas']
+    return Array.from(seen.values()).sort((a, b) => {
+      const ia = knownOrder.indexOf(a.nombre)
+      const ib = knownOrder.indexOf(b.nombre)
+      if (ia !== -1 && ib !== -1) return ia - ib
+      if (ia !== -1) return -1
+      if (ib !== -1) return 1
+      return a.nombre.localeCompare(b.nombre)
+    })
+  }, [productos])
+
   // Compute product counts per family (considering the current filter)
   const familiaData = useMemo(() => {
     const data: Record<string, { count: number; hasProducts: boolean }> = {}
-    for (const familia of FAMILIAS) {
+    for (const familia of familias) {
       const prods = productos.filter(
-        (p) => p.categoria.nombre === familia.categoriaFiltro
+        (p) => p.categoria.nombre === familia.nombre
       )
       data[familia.nombre] = {
         count: prods.length,
@@ -187,14 +196,12 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
       }
     }
     return data
-  }, [productos])
+  }, [productos, familias])
 
   // Products for the active family
   const productosFamilia = useMemo(() => {
     if (!familiaActiva) return []
-    const familia = FAMILIAS.find((f) => f.nombre === familiaActiva)
-    if (!familia) return []
-    return productos.filter((p) => p.categoria.nombre === familia.categoriaFiltro)
+    return productos.filter((p) => p.categoria.nombre === familiaActiva)
   }, [productos, familiaActiva])
 
   const handleFamiliaClick = (nombre: string) => {
@@ -202,7 +209,7 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
   }
 
   // Filter out families with no products for current filter
-  const familiasVisibles = FAMILIAS.filter(
+  const familiasVisibles = familias.filter(
     (f) => familiaData[f.nombre]?.hasProducts
   )
 
@@ -361,7 +368,7 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
             {/* Expanded Family Products */}
             <AnimatePresence mode="wait">
               {familiaActiva && (() => {
-                const familiaHeader = FAMILIAS.find((f) => f.nombre === familiaActiva)
+                const familiaHeader = familias.find((f) => f.nombre === familiaActiva)
                 const imagenHeader = familiaHeader ? getFamiliaImagen(familiaHeader, filtro) : '/images/placeholder-producto.jpg'
                 return (
                 <motion.div
