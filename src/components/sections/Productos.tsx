@@ -77,6 +77,14 @@ const FAMILIAS: Familia[] = [
   },
 ]
 
+// Imagen dinámica según filtro para familias con variante integral
+function getFamiliaImagen(familia: Familia, filtro: FiltroHarina): string {
+  if (familia.nombre === 'Tallarines' && filtro === 'integral') {
+    return '/images/familias/tallarinesintegrales.png'
+  }
+  return familia.imagen
+}
+
 const FILTROS: { key: FiltroHarina; label: string; icon: React.ReactNode }[] = [
   { key: 'todos', label: 'TODOS', icon: null },
   { key: 'con_gluten', label: 'CON GLUTEN', icon: <Wheat className="h-3.5 w-3.5" /> },
@@ -313,7 +321,7 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
                       {/* Imagen representativa */}
                       <div className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-full overflow-hidden bg-crema border-2 border-mostaza/20 transition-transform duration-300 group-hover:scale-110">
                         <Image
-                          src={familia.imagen}
+                          src={getFamiliaImagen(familia, filtro)}
                           alt={familia.nombre}
                           width={112}
                           height={112}
@@ -352,7 +360,10 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
 
             {/* Expanded Family Products */}
             <AnimatePresence mode="wait">
-              {familiaActiva && (
+              {familiaActiva && (() => {
+                const familiaHeader = FAMILIAS.find((f) => f.nombre === familiaActiva)
+                const imagenHeader = familiaHeader ? getFamiliaImagen(familiaHeader, filtro) : '/images/placeholder-producto.jpg'
+                return (
                 <motion.div
                   key={familiaActiva}
                   variants={expandedVariants}
@@ -377,7 +388,7 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
                       <h3 className="text-xl font-bold text-marron flex items-center gap-2">
                         <span className="w-7 h-7 rounded-full overflow-hidden inline-block bg-crema border border-mostaza/20 flex-shrink-0">
                           <Image
-                            src={FAMILIAS.find((f) => f.nombre === familiaActiva)?.imagen || '/images/placeholder-producto.jpg'}
+                            src={imagenHeader}
                             alt={familiaActiva}
                             width={28}
                             height={28}
@@ -415,7 +426,7 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
                     )}
                   </div>
                 </motion.div>
-              )}
+              )})()}
             </AnimatePresence>
           </>
         )}
