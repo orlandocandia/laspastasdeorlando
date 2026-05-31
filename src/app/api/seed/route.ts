@@ -215,8 +215,8 @@ async function seedTurso(client: Client): Promise<string[]> {
   ]) {
     await exec('INSERT OR IGNORE INTO CategoriaProductoTerminado (nombre,descripcion) VALUES (?,?)', [c.n, c.d])
   }
-  // Migración: renombrar "Cinta Ancha" → "Cintas Anchas" si existe
-  await exec("UPDATE CategoriaProductoTerminado SET nombre = 'Cintas Anchas' WHERE nombre = 'Cinta Ancha'")
+  // Migración: renombrar "Cinta Ancha" / "Cinta ancha" → "Cintas Anchas" si existe
+  await exec("UPDATE CategoriaProductoTerminado SET nombre = 'Cintas Anchas' WHERE nombre IN ('Cinta Ancha', 'Cinta ancha', 'cinta ancha', 'Cintas Anchas')")
   results.push('13 categorías de productos terminados (+ migración Cintas Anchas)')
 
   // 16. MARCAS
