@@ -311,12 +311,12 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
                       `}
                     >
                       {/* Imagen representativa */}
-                      <div className="w-20 h-20 mx-auto rounded-full overflow-hidden bg-crema border-2 border-mostaza/20 transition-transform duration-300 group-hover:scale-110">
+                      <div className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-full overflow-hidden bg-crema border-2 border-mostaza/20 transition-transform duration-300 group-hover:scale-110">
                         <Image
                           src={familia.imagen}
                           alt={familia.nombre}
-                          width={80}
-                          height={80}
+                          width={112}
+                          height={112}
                           className="object-cover w-full h-full"
                         />
                       </div>
