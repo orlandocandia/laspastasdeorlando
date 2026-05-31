@@ -197,7 +197,11 @@ async function seedTurso(client: Client): Promise<string[]> {
   }
   results.push('6 tipos de insumos')
 
-  // 15. CATEGORÍAS DE PRODUCTOS TERMINADOS
+  // Migración: renombrar "Cinta Ancha" / "Cinta ancha" → "Cintas Anchas" ANTES de insertar
+  // Primero eliminar el duplicado "Cintas Anchas" si ya fue creado por un seed previo
+  // y migrar los productos de la categoría vieja a la existente
+  await exec("DELETE FROM CategoriaProductoTerminado WHERE nombre = 'Cintas Anchas' AND id NOT IN (SELECT MIN(id) FROM CategoriaProductoTerminado WHERE nombre IN ('Cinta Ancha', 'Cinta ancha', 'cinta ancha', 'Cintas Anchas'))")
+  await exec("UPDATE CategoriaProductoTerminado SET nombre = 'Cintas Anchas' WHERE nombre IN ('Cinta Ancha', 'Cinta ancha', 'cinta ancha')")
   for (const c of [
     { n: 'Sorrentinos', d: 'Sorrentinos rellenos artesanales' },
     { n: 'Ñoquis', d: 'Ñoquis de papa, mandioca, calabaza y más' },
@@ -215,8 +219,6 @@ async function seedTurso(client: Client): Promise<string[]> {
   ]) {
     await exec('INSERT OR IGNORE INTO CategoriaProductoTerminado (nombre,descripcion) VALUES (?,?)', [c.n, c.d])
   }
-  // Migración: renombrar "Cinta Ancha" / "Cinta ancha" → "Cintas Anchas" si existe
-  await exec("UPDATE CategoriaProductoTerminado SET nombre = 'Cintas Anchas' WHERE nombre IN ('Cinta Ancha', 'Cinta ancha', 'cinta ancha', 'Cintas Anchas')")
   results.push('13 categorías de productos terminados (+ migración Cintas Anchas)')
 
   // 16. MARCAS
