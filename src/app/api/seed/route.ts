@@ -202,6 +202,7 @@ async function seedTurso(client: Client): Promise<string[]> {
     { n: 'Sorrentinos', d: 'Sorrentinos rellenos artesanales' },
     { n: 'Ñoquis', d: 'Ñoquis de papa, mandioca, calabaza y más' },
     { n: 'Tallarines', d: 'Tallarines al huevo, al morrón, espinaca y más' },
+    { n: 'Cintas Anchas', d: 'Cintas anchas al huevo y más' },
     { n: 'Ravioles', d: 'Ravioles rellenos de ricota, carne, jamón y más' },
     { n: 'Tapas', d: 'Tapas para empanadas, pascualinas, pastelitos y copetín' },
     { n: 'Empanadas', d: 'Empanadas crudas y al horno' },
@@ -214,7 +215,9 @@ async function seedTurso(client: Client): Promise<string[]> {
   ]) {
     await exec('INSERT OR IGNORE INTO CategoriaProductoTerminado (nombre,descripcion) VALUES (?,?)', [c.n, c.d])
   }
-  results.push('12 categorías de productos terminados')
+  // Migración: renombrar "Cinta Ancha" → "Cintas Anchas" si existe
+  await exec("UPDATE CategoriaProductoTerminado SET nombre = 'Cintas Anchas' WHERE nombre = 'Cinta Ancha'")
+  results.push('13 categorías de productos terminados (+ migración Cintas Anchas)')
 
   // 16. MARCAS
   for (const m of [

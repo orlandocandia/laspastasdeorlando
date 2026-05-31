@@ -40,6 +40,7 @@ const DESCRIPCIONES_DEFAULT: Record<string, string> = {
   'Sorrentinos': 'Rellenos de jamón, queso, pollo y más',
   'Ñoquis': 'De papa, calabaza, espinaca y más',
   'Tallarines': 'Al huevo, al morrón, a la espinaca y más',
+  'Cintas Anchas': 'Cintas anchas al huevo y más',
   'Ravioles': 'De ricotta, carne, jamón y más',
   'Tapas': 'Para empanadas, pascualinas y pastelitos',
   'Empanadas': 'Crudas y al horno, variedad de rellenos',
@@ -56,6 +57,7 @@ const IMAGENES_DEFAULT: Record<string, string> = {
   'Sorrentinos': '/images/familias/sorrentinos.png',
   'Ñoquis': '/images/familias/noquis.png',
   'Tallarines': '/images/familias/tallarines.png',
+  'Cintas Anchas': '/images/familias/cintasanchas.png',
   'Ravioles': '/images/familias/ravioles.png',
   'Tapas': '/images/familias/tapas.png',
   'Empanadas': '/images/familias/empanadas.png',
@@ -180,7 +182,7 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
       }
     }
     // Sort by known order, then alphabetically
-    const knownOrder = ['Sorrentinos', 'Ñoquis', 'Tallarines', 'Ravioles', 'Tapas', 'Empanadas', 'Tartas', 'Pastas frescas', 'Pastas secas', 'Salsas', 'Lasagnas y canelones', 'Postres']
+    const knownOrder = ['Sorrentinos', 'Ñoquis', 'Tallarines', 'Cintas Anchas', 'Ravioles', 'Tapas', 'Empanadas', 'Tartas', 'Pastas frescas', 'Pastas secas', 'Salsas', 'Lasagnas y canelones', 'Postres']
     return Array.from(seen.values()).sort((a, b) => {
       const ia = knownOrder.indexOf(a.nombre)
       const ib = knownOrder.indexOf(b.nombre)
@@ -326,36 +328,36 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
                     <button
                       onClick={() => handleFamiliaClick(familia.nombre)}
                       className={`
-                        w-full group relative rounded-2xl border bg-white p-8
-                        flex flex-col items-center gap-3 text-center
+                        w-full group relative rounded-2xl border bg-white p-6 sm:p-8
+                        flex flex-col items-center justify-between text-center min-h-[240px]
                         transition-all duration-300
                         border-marron/10 hover:scale-[1.03] hover:shadow-lg cursor-pointer
                         ${isActive ? 'ring-2 ring-mostaza shadow-lg scale-[1.03]' : ''}
                       `}
                     >
                       {/* Imagen representativa */}
-                      <div className="w-24 h-24 sm:w-28 sm:h-28 mx-auto rounded-full overflow-hidden bg-crema border-2 border-mostaza/20 transition-transform duration-300 group-hover:scale-110">
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-crema border-2 border-mostaza/20 transition-transform duration-300 group-hover:scale-110 flex-shrink-0">
                         <Image
                           src={getFamiliaImagen(familia, filtro)}
                           alt={familia.nombre}
-                          width={112}
-                          height={112}
+                          width={96}
+                          height={96}
                           className="object-cover w-full h-full"
                         />
                       </div>
 
                       {/* Name */}
-                      <h3 className="text-xl font-bold text-marron">
+                      <h3 className="text-lg sm:text-xl font-bold text-marron line-clamp-1">
                         {familia.nombre}
                       </h3>
 
                       {/* Description */}
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
                         {familia.descripcion}
                       </p>
 
                       {/* Badge */}
-                      <span className="bg-mostaza/20 text-marron text-xs rounded-full px-2 py-0.5 font-semibold">
+                      <span className="bg-mostaza/20 text-marron text-xs rounded-full px-2 py-0.5 font-semibold flex-shrink-0">
                         {count} {count === 1 ? 'variedad' : 'variedades'}
                       </span>
 
