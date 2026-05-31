@@ -198,9 +198,16 @@ async function seedTurso(client: Client): Promise<string[]> {
   results.push('6 tipos de insumos')
 
   // Migración: renombrar "Cinta Ancha" / "Cinta ancha" → "Cintas Anchas" ANTES de insertar
-  // Primero eliminar el duplicado "Cintas Anchas" si ya fue creado por un seed previo
-  // y migrar los productos de la categoría vieja a la existente
-  await exec("DELETE FROM CategoriaProductoTerminado WHERE nombre = 'Cintas Anchas' AND id NOT IN (SELECT MIN(id) FROM CategoriaProductoTerminado WHERE nombre IN ('Cinta Ancha', 'Cinta ancha', 'cinta ancha', 'Cintas Anchas'))")
+  // Paso 1: Mover productos del duplicado "Cintas Anchas" a la categoría original
+  const cintaAnchaOld = await exec("SELECT id FROM CategoriaProductoTerminado WHERE nombre IN ('Cinta Ancha', 'Cinta ancha', 'cinta ancha') LIMIT 1")
+  const cintaAnchaNew = await exec("SELECT id FROM CategoriaProductoTerminado WHERE nombre = 'Cintas Anchas' LIMIT 1")
+  const oldId = cintaAnchaOld.rows[0]?.id
+  const newId = cintaAnchaNew.rows[0]?.id
+  if (newId && oldId && Number(newId) !== Number(oldId)) {
+    await exec('UPDATE ProductoTerminado SET id_categoria = ? WHERE id_categoria = ?', [Number(oldId), Number(newId)])
+    await exec('DELETE FROM CategoriaProductoTerminado WHERE id = ?', [Number(newId)])
+  }
+  // Paso 2: Renombrar la categoría original
   await exec("UPDATE CategoriaProductoTerminado SET nombre = 'Cintas Anchas' WHERE nombre IN ('Cinta Ancha', 'Cinta ancha', 'cinta ancha')")
   for (const c of [
     { n: 'Sorrentinos', d: 'Sorrentinos rellenos artesanales' },

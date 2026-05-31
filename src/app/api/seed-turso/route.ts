@@ -73,8 +73,19 @@ export async function POST(request: NextRequest) {
     for (const c of [{n:'Harinas',d:'Harinas de trigo, sémola'},{n:'Huevos y derivados',d:'Huevos frescos y derivados'},{n:'Lácteos',d:'Quesos, cremas, manteca'},{n:'Aceites y grasas',d:'Aceites y grasas'},{n:'Condimentos y especias',d:'Especias, sal, pimienta'},{n:'Carnes',d:'Carnes para rellenos'},{n:'Verduras',d:'Verduras frescas'},{n:'Salsas y conservas',d:'Tomates, salsas, conservas'},{n:'Aditivos y suplementos',d:'Colorantes, conservantes'}]) await client.execute({sql:'INSERT OR IGNORE INTO CategoriaMateriaPrima (nombre,descripcion) VALUES (?,?)',args:[c.n,c.d]})
     for (const t of [{n:'Envases primarios',d:'Bolsas, bandejas, film'},{n:'Envases secundarios',d:'Cajas, cartones, etiquetas'},{n:'Materiales de limpieza',d:'Limpieza y sanitización'},{n:'Combustibles',d:'Gas, leña, energía'},{n:'Utensilios descartables',d:'Guantes, cofias, delantales'},{n:'Insumos de oficina',d:'Papel, cartuchos, útiles'}]) await client.execute({sql:'INSERT OR IGNORE INTO TipoInsumo (nombre,descripcion) VALUES (?,?)',args:[t.n,t.d]})
     // Migración: renombrar "Cinta Ancha" / "Cinta ancha" → "Cintas Anchas" ANTES de insertar
-    // Primero eliminar duplicado si fue creado por seed previo, luego renombrar
-    await client.execute("DELETE FROM CategoriaProductoTerminado WHERE nombre = 'Cintas Anchas' AND id NOT IN (SELECT MIN(id) FROM CategoriaProductoTerminado WHERE nombre IN ('Cinta Ancha', 'Cinta ancha', 'cinta ancha', 'Cintas Anchas'))")
+    // Paso 1: Mover productos del duplicado "Cintas Anchas" a la categoría original "Cinta ancha"
+    const cintaAnchaOld = await client.execute("SELECT id FROM CategoriaProductoTerminado WHERE nombre IN ('Cinta Ancha', 'Cinta ancha', 'cinta ancha') LIMIT 1")
+    const cintaAnchaNew = await client.execute("SELECT id FROM CategoriaProductoTerminado WHERE nombre = 'Cintas Anchas' LIMIT 1")
+    const oldId = cintaAnchaOld.rows[0]?.id
+    const newId = cintaAnchaNew.rows[0]?.id
+    if (newId && oldId && Number(newId) !== Number(oldId)) {
+      // Mover productos del duplicado al original, luego eliminar duplicado
+      await client.execute({ sql: 'UPDATE ProductoTerminado SET id_categoria = ? WHERE id_categoria = ?', args: [Number(oldId), Number(newId)] })
+      await client.execute({ sql: 'DELETE FROM CategoriaProductoTerminado WHERE id = ?', args: [Number(newId)] })
+    } else if (newId && !oldId) {
+      // Solo existe "Cintas Anchas", ya está bien
+    }
+    // Paso 2: Renombrar la categoría original
     await client.execute("UPDATE CategoriaProductoTerminado SET nombre = 'Cintas Anchas' WHERE nombre IN ('Cinta Ancha', 'Cinta ancha', 'cinta ancha')")
     for (const c of [{n:'Pastas frescas',d:'Pastas frescas rellenas y al huevo'},{n:'Pastas secas',d:'Pastas secas tipo fideos'},{n:'Salsas',d:'Salsas para acompañar pastas'},{n:'Ñoquis',d:'Ñoquis de papa, espinaca'},{n:'Lasagnas y canelones',d:'Platos armados para hornear'},{n:'Postres',d:'Postres a base de pasta'},{n:'Sorrentinos',d:'Sorrentinos rellenos artesanales'},{n:'Tallarines',d:'Tallarines al huevo y más'},{n:'Cintas Anchas',d:'Cintas anchas al huevo y más'},{n:'Ravioles',d:'Ravioles rellenos'},{n:'Tapas',d:'Tapas para empanadas y más'},{n:'Empanadas',d:'Empanadas crudas y al horno'},{n:'Tartas',d:'Tartas saladas'}]) await client.execute({sql:'INSERT OR IGNORE INTO CategoriaProductoTerminado (nombre,descripcion) VALUES (?,?)',args:[c.n,c.d]})
     results.push('Categorías PT (+ migración Cintas Anchas)')
