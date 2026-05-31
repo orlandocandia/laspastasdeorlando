@@ -22,9 +22,12 @@ export async function GET(request: NextRequest) {
       if (fecha_hasta) (where.fecha_venta as Record<string, unknown>).lte = new Date(fecha_hasta)
     }
 
-    if (id_cliente) where.id_cliente = parseInt(id_cliente)
-    if (id_estado) where.id_estado = parseInt(id_estado)
-    if (id_forma_pago) where.id_forma_pago = parseInt(id_forma_pago)
+    const parsedCliente = parseInt(id_cliente)
+    if (id_cliente && !isNaN(parsedCliente)) where.id_cliente = parsedCliente
+    const parsedEstadoVenta = parseInt(id_estado)
+    if (id_estado && !isNaN(parsedEstadoVenta)) where.id_estado = parsedEstadoVenta
+    const parsedFormaPago = parseInt(id_forma_pago)
+    if (id_forma_pago && !isNaN(parsedFormaPago)) where.id_forma_pago = parsedFormaPago
 
     if (buscar) {
       where.OR = [

@@ -16,10 +16,13 @@ export async function GET(request: NextRequest) {
 
     const where: Record<string, unknown> = {}
 
-    if (tipo_movimiento) where.tipo_movimiento = tipo_movimiento
-    if (id_materia_prima) where.id_materia_prima = parseInt(id_materia_prima)
-    if (id_insumo) where.id_insumo = parseInt(id_insumo)
-    if (id_producto_terminado) where.id_producto_terminado = parseInt(id_producto_terminado)
+    if (tipo_movimiento && tipo_movimiento !== 'all') where.tipo_movimiento = tipo_movimiento
+    const parsedMP = parseInt(id_materia_prima)
+    if (id_materia_prima && !isNaN(parsedMP)) where.id_materia_prima = parsedMP
+    const parsedIns = parseInt(id_insumo)
+    if (id_insumo && !isNaN(parsedIns)) where.id_insumo = parsedIns
+    const parsedPT = parseInt(id_producto_terminado)
+    if (id_producto_terminado && !isNaN(parsedPT)) where.id_producto_terminado = parsedPT
 
     if (fecha_desde || fecha_hasta) {
       where.fecha_movimiento = {}

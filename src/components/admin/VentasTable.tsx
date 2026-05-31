@@ -125,9 +125,9 @@ export default function VentasTable() {
       params.set('pagina', pagina.toString())
       params.set('limite', '10')
       if (search) params.set('buscar', search)
-      if (filtroEstado) params.set('id_estado', filtroEstado)
-      if (filtroCliente) params.set('id_cliente', filtroCliente)
-      if (filtroFormaPago) params.set('id_forma_pago', filtroFormaPago)
+      if (filtroEstado && filtroEstado !== 'all') params.set('id_estado', filtroEstado)
+      if (filtroCliente && filtroCliente !== 'all') params.set('id_cliente', filtroCliente)
+      if (filtroFormaPago && filtroFormaPago !== 'all') params.set('id_forma_pago', filtroFormaPago)
 
       const res = await fetch(`/api/ventas?${params.toString()}`)
       if (!res.ok) throw new Error('Error al cargar ventas')

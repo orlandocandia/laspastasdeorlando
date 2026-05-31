@@ -91,8 +91,8 @@ export default function RecetasTable() {
       params.set('pagina', pagina.toString())
       params.set('limite', '20')
       if (search) params.set('buscar', search)
-      if (filtroProducto) params.set('id_producto_terminado', filtroProducto)
-      if (filtroActivo) params.set('activo', filtroActivo)
+      if (filtroProducto && filtroProducto !== 'all') params.set('id_producto_terminado', filtroProducto)
+      if (filtroActivo && filtroActivo !== 'all') params.set('activo', filtroActivo)
 
       const res = await fetch(`/api/recetas?${params.toString()}`)
       if (!res.ok) throw new Error('Error al cargar recetas')

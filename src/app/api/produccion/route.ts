@@ -20,8 +20,10 @@ export async function GET(request: NextRequest) {
       if (fecha_hasta) (where.fecha_produccion as Record<string, unknown>).lte = new Date(fecha_hasta)
     }
 
-    if (id_estado) where.id_estado = parseInt(id_estado)
-    if (id_receta) where.id_receta = parseInt(id_receta)
+    const parsedEstadoProd = parseInt(id_estado)
+    if (id_estado && !isNaN(parsedEstadoProd)) where.id_estado = parsedEstadoProd
+    const parsedReceta = parseInt(id_receta)
+    if (id_receta && !isNaN(parsedReceta)) where.id_receta = parsedReceta
 
     const [data, total] = await Promise.all([
       db.produccion.findMany({

@@ -78,8 +78,9 @@ export async function GET(request: NextRequest) {
     const limite = parseInt(searchParams.get('limite') || '10')
 
     const where: Record<string, unknown> = {}
-    if (id_categoria) where.id_categoria = parseInt(id_categoria)
-    if (estado !== null && estado !== '') where.estado = estado === 'true'
+    const parsedCategoria = parseInt(id_categoria)
+    if (id_categoria && !isNaN(parsedCategoria)) where.id_categoria = parsedCategoria
+    if (estado !== null && estado !== '' && estado !== 'all') where.estado = estado === 'true'
     if (tipo_harina && ['con_gluten', 'integral', 'sin_gluten'].includes(tipo_harina)) {
       where.tipo_harina = tipo_harina
     }

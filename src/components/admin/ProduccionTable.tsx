@@ -137,8 +137,8 @@ export default function ProduccionTable() {
       const params = new URLSearchParams()
       params.set('pagina', pagina.toString())
       params.set('limite', '10')
-      if (filtroEstado) params.set('id_estado', filtroEstado)
-      if (filtroReceta) params.set('id_receta', filtroReceta)
+      if (filtroEstado && filtroEstado !== 'all') params.set('id_estado', filtroEstado)
+      if (filtroReceta && filtroReceta !== 'all') params.set('id_receta', filtroReceta)
 
       const res = await fetch(`/api/produccion?${params.toString()}`)
       if (!res.ok) throw new Error('Error al cargar producciones')

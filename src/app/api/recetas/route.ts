@@ -56,11 +56,12 @@ export async function GET(request: NextRequest) {
       where.nombre_receta = { contains: buscar }
     }
 
-    if (id_producto_terminado) {
-      where.id_producto_terminado = parseInt(id_producto_terminado)
+    const parsedProductoTerminado = parseInt(id_producto_terminado)
+    if (id_producto_terminado && !isNaN(parsedProductoTerminado)) {
+      where.id_producto_terminado = parsedProductoTerminado
     }
 
-    if (activo !== null && activo !== undefined && activo !== '') {
+    if (activo !== null && activo !== undefined && activo !== '' && activo !== 'all') {
       where.activo = activo === 'true'
     }
 

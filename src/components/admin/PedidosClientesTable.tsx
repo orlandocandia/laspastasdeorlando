@@ -117,8 +117,8 @@ export default function PedidosClientesTable() {
       params.set('pagina', pagina.toString())
       params.set('limite', '10')
       if (search) params.set('buscar', search)
-      if (filtroEstado) params.set('id_estado', filtroEstado)
-      if (filtroCliente) params.set('id_cliente', filtroCliente)
+      if (filtroEstado && filtroEstado !== 'all') params.set('id_estado', filtroEstado)
+      if (filtroCliente && filtroCliente !== 'all') params.set('id_cliente', filtroCliente)
 
       const res = await fetch(`/api/pedidos-clientes?${params.toString()}`)
       if (!res.ok) throw new Error('Error al cargar pedidos')

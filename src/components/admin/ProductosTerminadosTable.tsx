@@ -93,8 +93,8 @@ export default function ProductosTerminadosTable() {
       params.set('pagina', pagina.toString())
       params.set('limite', '10')
       if (search) params.set('buscar', search)
-      if (filtroCategoria) params.set('id_categoria', filtroCategoria)
-      if (filtroEstado) params.set('estado', filtroEstado)
+      if (filtroCategoria && filtroCategoria !== 'all') params.set('id_categoria', filtroCategoria)
+      if (filtroEstado && filtroEstado !== 'all') params.set('estado', filtroEstado)
 
       const res = await fetch(`/api/productos-terminados?${params.toString()}`)
       if (!res.ok) throw new Error('Error al cargar productos terminados')

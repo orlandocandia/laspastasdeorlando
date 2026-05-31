@@ -21,8 +21,10 @@ export async function GET(request: NextRequest) {
       if (fecha_hasta) (where.fecha_pedido as Record<string, unknown>).lte = new Date(fecha_hasta)
     }
 
-    if (id_cliente) where.id_cliente = parseInt(id_cliente)
-    if (id_estado) where.id_estado = parseInt(id_estado)
+    const parsedClientePC = parseInt(id_cliente)
+    if (id_cliente && !isNaN(parsedClientePC)) where.id_cliente = parsedClientePC
+    const parsedEstadoPC = parseInt(id_estado)
+    if (id_estado && !isNaN(parsedEstadoPC)) where.id_estado = parsedEstadoPC
 
     if (buscar) {
       where.OR = [

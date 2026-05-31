@@ -20,8 +20,10 @@ export async function GET(request: NextRequest) {
       if (fecha_hasta) (where.fecha_reserva as Record<string, unknown>).lte = new Date(fecha_hasta)
     }
 
-    if (id_cliente) where.id_cliente = parseInt(id_cliente)
-    if (id_estado) where.id_estado = parseInt(id_estado)
+    const parsedClienteRC = parseInt(id_cliente)
+    if (id_cliente && !isNaN(parsedClienteRC)) where.id_cliente = parsedClienteRC
+    const parsedEstadoRC = parseInt(id_estado)
+    if (id_estado && !isNaN(parsedEstadoRC)) where.id_estado = parsedEstadoRC
 
     const [data, total] = await Promise.all([
       db.reservaCliente.findMany({

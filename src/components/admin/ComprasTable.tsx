@@ -121,8 +121,8 @@ export default function ComprasTable() {
       params.set('pagina', pagina.toString())
       params.set('limite', '10')
       if (search) params.set('buscar', search)
-      if (filtroEstado) params.set('id_estado', filtroEstado)
-      if (filtroProveedor) params.set('id_proveedor', filtroProveedor)
+      if (filtroEstado && filtroEstado !== 'all') params.set('id_estado', filtroEstado)
+      if (filtroProveedor && filtroProveedor !== 'all') params.set('id_proveedor', filtroProveedor)
 
       const res = await fetch(`/api/compras?${params.toString()}`)
       if (!res.ok) throw new Error('Error al cargar compras')

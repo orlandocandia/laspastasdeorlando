@@ -92,7 +92,7 @@ export default function StockMovementsTable() {
       params.set('pagina', pagina.toString())
       params.set('limite', '20')
       if (search) params.set('buscar', search)
-      if (filtroTipo) params.set('tipo_movimiento', filtroTipo)
+      if (filtroTipo && filtroTipo !== 'all') params.set('tipo_movimiento', filtroTipo)
       if (fechaDesde) params.set('fecha_desde', fechaDesde)
       if (fechaHasta) params.set('fecha_hasta', fechaHasta)
 
