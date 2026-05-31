@@ -20,6 +20,7 @@ interface ProductoPublico {
   categoria: {
     id: number
     nombre: string
+    descripcion: string | null
     imagen: string | null
   }
 }
@@ -31,6 +32,7 @@ interface Familia {
   imagen: string | null
   descripcion: string
   categoriaId: number
+  descripcionDB: string | null
 }
 
 // Descripciones por defecto para categorías conocidas
@@ -42,6 +44,11 @@ const DESCRIPCIONES_DEFAULT: Record<string, string> = {
   'Tapas': 'Para empanadas, pascualinas y pastelitos',
   'Empanadas': 'Crudas y al horno, variedad de rellenos',
   'Tartas': 'De verduras, jamón, pollo y choclo',
+  'Pastas frescas': 'Pastas frescas rellenas y al huevo',
+  'Pastas secas': 'Pastas secas tipo fideos',
+  'Salsas': 'Salsas para acompañar pastas',
+  'Lasagnas y canelones': 'Platos armados listos para hornear',
+  'Postres': 'Postres a base de pasta',
 }
 
 // Imagen por defecto para categorías sin imagen propia
@@ -166,13 +173,14 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
         seen.set(catNombre, {
           nombre: catNombre,
           imagen: p.categoria.imagen || null,
-          descripcion: DESCRIPCIONES_DEFAULT[catNombre] || `Productos de ${catNombre.toLowerCase()}`,
+          descripcion: p.categoria.descripcion || DESCRIPCIONES_DEFAULT[catNombre] || `Productos de ${catNombre.toLowerCase()}`,
+          descripcionDB: p.categoria.descripcion,
           categoriaId: p.categoria.id,
         })
       }
     }
     // Sort by known order, then alphabetically
-    const knownOrder = ['Sorrentinos', 'Ñoquis', 'Tallarines', 'Ravioles', 'Tapas', 'Empanadas', 'Tartas']
+    const knownOrder = ['Sorrentinos', 'Ñoquis', 'Tallarines', 'Ravioles', 'Tapas', 'Empanadas', 'Tartas', 'Pastas frescas', 'Pastas secas', 'Salsas', 'Lasagnas y canelones', 'Postres']
     return Array.from(seen.values()).sort((a, b) => {
       const ia = knownOrder.indexOf(a.nombre)
       const ib = knownOrder.indexOf(b.nombre)
