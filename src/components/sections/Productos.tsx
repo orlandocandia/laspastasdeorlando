@@ -69,6 +69,9 @@ function getFamiliaImagen(familia: Familia, filtro: FiltroHarina): string {
   if (familia.nombre === 'Tallarines' && filtro === 'integral') {
     return '/images/familias/tallarinesintegrales.png'
   }
+  if (familia.nombre === 'Cintas Anchas' && filtro === 'integral') {
+    return '/images/familias/cintasanchasintegrales.png'
+  }
   // Si la categoría tiene imagen propia (subida desde el dashboard), usarla
   if (familia.imagen) {
     return familia.imagen
