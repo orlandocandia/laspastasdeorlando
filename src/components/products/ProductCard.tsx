@@ -71,7 +71,7 @@ export default function ProductCard({ producto }: ProductCardProps) {
             </Badge>
             {producto.unidades && producto.unidades > 0 && (
               <Badge className="bg-crema text-marron text-xs hover:bg-crema/80 border border-mostaza/20">
-                Contiene: {producto.unidades} u.
+                Contiene: {producto.unidades} unidades
               </Badge>
             )}
           </div>
