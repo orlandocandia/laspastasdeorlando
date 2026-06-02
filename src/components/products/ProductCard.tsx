@@ -12,6 +12,7 @@ interface ProductCardProps {
     descripcion: string | null
     precio_venta: number
     peso_unitario_aprox: number
+    unidades?: number | null
     imagen: string | null
     stock_actual: number
     destacado: boolean
@@ -64,9 +65,16 @@ export default function ProductCard({ producto }: ProductCardProps) {
       {/* Content */}
       <div className="p-4">
         <div className="flex items-center justify-between mb-2">
-          <Badge className="bg-mostaza/20 text-marron text-xs hover:bg-mostaza/30 border-0">
-            {formatPeso(producto.peso_unitario_aprox)}
-          </Badge>
+          <div className="flex items-center gap-1.5">
+            <Badge className="bg-mostaza/20 text-marron text-xs hover:bg-mostaza/30 border-0">
+              {formatPeso(producto.peso_unitario_aprox)}
+            </Badge>
+            {producto.unidades && producto.unidades > 0 && (
+              <Badge className="bg-crema text-marron text-xs hover:bg-crema/80 border border-mostaza/20">
+                Contiene: {producto.unidades} u.
+              </Badge>
+            )}
+          </div>
           {producto.tipo_harina && (
             <Badge
               className={`

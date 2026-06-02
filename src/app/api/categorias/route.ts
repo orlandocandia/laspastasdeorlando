@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAuth } from '@/lib/auth-helpers'
 
 // GET /api/categorias - Listar categorías con filtro por tipo
 export async function GET(request: NextRequest) {
@@ -49,6 +50,9 @@ export async function GET(request: NextRequest) {
 
 // POST /api/categorias - Crear categoría
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (!auth.authorized) return auth.response!
+
   try {
     const body = await request.json()
     const { tipo, nombre, descripcion } = body
@@ -93,6 +97,9 @@ export async function POST(request: NextRequest) {
 
 // PUT /api/categorias - Actualizar categoría
 export async function PUT(request: NextRequest) {
+  const auth = await requireAuth()
+  if (!auth.authorized) return auth.response!
+
   try {
     const body = await request.json()
     const { id, tipo, nombre, descripcion } = body
@@ -150,6 +157,9 @@ export async function PUT(request: NextRequest) {
 
 // DELETE /api/categorias - Eliminar categoría
 export async function DELETE(request: NextRequest) {
+  const auth = await requireAuth()
+  if (!auth.authorized) return auth.response!
+
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')

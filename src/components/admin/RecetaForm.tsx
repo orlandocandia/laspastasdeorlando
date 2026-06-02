@@ -80,8 +80,18 @@ export default function RecetaForm({ receta, onSuccess, onCancel }: RecetaFormPr
   const [rendimientoUnidades, setRendimientoUnidades] = useState('1')
   const [activo, setActivo] = useState(true)
 
-  // Detail rows
-  const [detalles, setDetalles] = useState<DetalleRow[]>([])
+  // Detail rows — initialize with one empty row to avoid React Strict Mode double-add
+  const [detalles, setDetalles] = useState<DetalleRow[]>([
+    {
+      key: `row-init`,
+      tipo: 'mp',
+      idItem: '',
+      cantidadNecesaria: '',
+      idUnidad: '',
+      nombreUnidad: '',
+      costoEstimado: '',
+    },
+  ])
 
   // Data
   const [productosTerminados, setProductosTerminados] = useState<ProductoTerminado[]>([])
@@ -148,7 +158,18 @@ export default function RecetaForm({ receta, onSuccess, onCancel }: RecetaFormPr
         )
       }
     } else {
-      addDetailRow()
+      // Only add initial row if detalles is empty (avoid Strict Mode double-add)
+      setDetalles([
+        {
+          key: `row-init`,
+          tipo: 'mp',
+          idItem: '',
+          cantidadNecesaria: '',
+          idUnidad: '',
+          nombreUnidad: '',
+          costoEstimado: '',
+        },
+      ])
     }
   }, [receta])
 

@@ -312,6 +312,7 @@ CREATE TABLE "ProductoTerminado" (
     "id_categoria" INTEGER NOT NULL,
     "tipo_harina" TEXT,
     "peso_unitario_aprox" REAL NOT NULL DEFAULT 0,
+    "unidades" INTEGER,
     "precio_venta" REAL NOT NULL DEFAULT 0,
     "stock_actual" REAL NOT NULL DEFAULT 0,
     "stock_minimo" REAL NOT NULL DEFAULT 0,
@@ -1208,6 +1209,7 @@ export async function POST(request: NextRequest) {
       { sql: 'ALTER TABLE "DetalleVenta" ADD COLUMN "codigo_barras_escaner" TEXT', description: 'Add codigo_barras_escaner column to DetalleVenta' },
       { sql: 'ALTER TABLE "DetalleCompra" ADD COLUMN "codigo_barras_escaner" TEXT', description: 'Add codigo_barras_escaner column to DetalleCompra' },
       { sql: 'ALTER TABLE "DetallePresupuesto" ADD COLUMN "observaciones" TEXT', description: 'Add observaciones column to DetallePresupuesto' },
+      { sql: 'ALTER TABLE "ProductoTerminado" ADD COLUMN "unidades" INTEGER', description: 'Add unidades column to ProductoTerminado (cantidad por paquete)' },
       // UPDATE tipo_harina for existing products based on name patterns
       { sql: `UPDATE "ProductoTerminado" SET tipo_harina = 'con_gluten' WHERE tipo_harina IS NULL AND nombre NOT LIKE '%integral%' AND nombre NOT LIKE '%sin gluten%'`, description: 'Set tipo_harina=con_gluten for regular products' },
       { sql: `UPDATE "ProductoTerminado" SET tipo_harina = 'integral' WHERE nombre LIKE '%integral%'`, description: 'Set tipo_harina=integral for integral products' },

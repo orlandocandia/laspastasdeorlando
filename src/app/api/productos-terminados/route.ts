@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAuth } from '@/lib/auth-helpers'
 
 /**
  * Calcula el dígito verificador de un código EAN-13
@@ -119,6 +120,9 @@ export async function GET(request: NextRequest) {
 
 // POST /api/productos-terminados - Crear producto terminado
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (!auth.authorized) return auth.response!
+
   try {
     const body = await request.json()
     const {
@@ -129,6 +133,7 @@ export async function POST(request: NextRequest) {
       id_categoria,
       tipo_harina,
       peso_unitario_aprox,
+      unidades,
       precio_venta,
       stock_minimo,
       destacado,
@@ -137,6 +142,14 @@ export async function POST(request: NextRequest) {
       imagen,
       estado,
     } = body
+
+    // REGLA PERMANENTE: No se permite crear productos sin imagen válida
+    if (!imagen || imagen.trim() === '' || imagen.toUpperCase() === 'N/A') {
+      return NextResponse.json(
+        { error: 'REGLA DE NEGOCIO: Todo producto terminado debe tener una imagen/foto válida. No se permiten productos sin imagen.' },
+        { status: 400 }
+      )
+    }
 
     // Verificar código único si se proporciona
     if (codigo) {
@@ -173,6 +186,7 @@ export async function POST(request: NextRequest) {
         id_categoria: parseInt(id_categoria),
         tipo_harina: tipo_harina || null,
         peso_unitario_aprox: parseFloat(peso_unitario_aprox) || 0,
+        unidades: unidades ? parseInt(unidades) : null,
         precio_venta: parseFloat(precio_venta) || 0,
         stock_minimo: parseFloat(stock_minimo) || 0,
         destacado: destacado === true,

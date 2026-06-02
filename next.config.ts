@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
     DATABASE_URL_FILE: 'file:./dev.db',
   },
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',

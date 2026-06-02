@@ -134,24 +134,59 @@ export async function POST(request: NextRequest) {
 
     // 24. PRODUCTOS TERMINADOS
     const catId = async (table:string,nombre:string) => Number((await client.execute({sql:`SELECT id FROM ${table} WHERE nombre=?`,args:[nombre]})).rows[0]?.id) || 0
-    const productos = [
-      {c:'PF-001',n:'Sorrentinos de Jamón y Queso',cat:'Pastas frescas',p:0.5,pr:4500,sm:10,de:1,o:1},
-      {c:'PF-002',n:'Ravioles de Ricota y Espinaca',cat:'Pastas frescas',p:0.5,pr:4000,sm:10,de:1,o:2},
-      {c:'PF-003',n:'Ravioles de Carne',cat:'Pastas frescas',p:0.5,pr:4200,sm:10,de:1,o:3},
-      {c:'PF-007',n:'Fettuccine al Huevo',cat:'Pastas frescas',p:0.4,pr:3200,sm:15,de:1,o:7},
-      {c:'PS-001',n:'Fideos Spaghetti',cat:'Pastas secas',p:0.5,pr:2500,sm:20,de:1,o:1},
-      {c:'SA-001',n:'Salsa Filetto',cat:'Salsas',p:0.5,pr:3000,sm:10,de:1,o:1},
-      {c:'SA-002',n:'Salsa Bolognesa',cat:'Salsas',p:0.5,pr:3500,sm:10,de:1,o:2},
-      {c:'NQ-001',n:'Ñoquis de Papa',cat:'Ñoquis',p:0.5,pr:3500,sm:15,de:1,o:1},
-      {c:'LC-001',n:'Lasagna de Carne',cat:'Lasagnas y canelones',p:1.0,pr:8000,sm:5,de:1,o:1},
-      {c:'LC-003',n:'Canelones de Jamón y Queso',cat:'Lasagnas y canelones',p:0.8,pr:6500,sm:5,de:1,o:3},
-    ]
-    for (const pt of productos) {
-      const idCat = await catId('CategoriaProductoTerminado', pt.cat)
-      if (!idCat) continue
-      await client.execute({sql:'INSERT OR IGNORE INTO ProductoTerminado (codigo,nombre,id_categoria,peso_unitario_aprox,precio_venta,stock_minimo,destacado,orden,visible_en_landing,estado,stock_actual) VALUES (?,?,?,?,?,?,?,?,1,1,0)',args:[pt.c,pt.n,idCat,pt.p,pt.pr,pt.sm,pt.de,pt.o]})
+
+    // 23.5 FIX: Corregir productos integrales Tallarines y limpiar fantasmas
+    const tallarinesCatId = await catId('CategoriaProductoTerminado', 'Tallarines')
+    if (tallarinesCatId) {
+      // 1. Eliminar producto fantasma "Tallarines solo" o similar
+      const phantomProducts = await client.execute("SELECT id, nombre FROM ProductoTerminado WHERE nombre IN ('Tallarines solo', 'Tallarines Solo', 'tallarines solo')")
+      for (const row of phantomProducts.rows) {
+        await client.execute({ sql: 'DELETE FROM ProductoTerminado WHERE id = ?', args: [Number(row.id)] })
+        results.push(`Producto fantasma eliminado: "${row.nombre}" (id=${row.id})`)
+      }
+      // 2. Renombrar "Tallarines Integrales" → "Tallarines integrales al huevo"
+      const renameResult = await client.execute("UPDATE ProductoTerminado SET nombre = 'Tallarines integrales al huevo', descripcion = 'Tallarines elaborados con harina integral al huevo' WHERE nombre = 'Tallarines Integrales' AND tipo_harina = 'integral'")
+      if (renameResult.rowsAffected > 0) {
+        results.push(`Producto renombrado: "Tallarines Integrales" → "Tallarines integrales al huevo" (${renameResult.rowsAffected} filas)`)
+      }
+      // 3. Asegurar que "Tallarines integrales al huevo" tenga id_categoria correcto
+      const fixCat = await client.execute({ sql: "UPDATE ProductoTerminado SET id_categoria = ? WHERE nombre LIKE '%Tallarines%integral%' AND tipo_harina = 'integral' AND id_categoria != ?", args: [tallarinesCatId, tallarinesCatId] })
+      if (fixCat.rowsAffected > 0) {
+        results.push(`Corregida categoría de productos Tallarines integrales (${fixCat.rowsAffected} filas)`)
+      }
+      // 4. Asegurar que productos integrales de Tallarines sean visibles en landing
+      const fixVis = await client.execute({ sql: "UPDATE ProductoTerminado SET visible_en_landing = 1, estado = 1 WHERE nombre LIKE '%Tallarines%integral%' AND tipo_harina = 'integral' AND (visible_en_landing = 0 OR estado = 0)", args: [] })
+      if (fixVis.rowsAffected > 0) {
+        results.push(`Corregida visibilidad de Tallarines integrales (${fixVis.rowsAffected} filas)`)
+      }
     }
-    results.push(`${productos.length} productos terminados`)
+    // 23.7 LIMPIEZA PERMANENTE: ELIMINAR productos SIN imagen (hard delete)
+    // REGLA DE NEGOCIO: Solo deben existir productos con foto cargada manualmente.
+    // Esta regla es PERMANENTE y no se puede revertir.
+    try {
+      // Paso 1: Contar productos sin imagen válida
+      const countSinImagen = await client.execute(
+        "SELECT COUNT(*) as total FROM ProductoTerminado WHERE imagen IS NULL OR imagen = '' OR LOWER(imagen) = 'n/a'"
+      )
+      const totalSinImagen = Number(countSinImagen.rows[0]?.total || 0)
+
+      // Paso 2: ELIMINAR PERMANENTEMENTE todos los productos sin imagen
+      const hardDeleteResult = await client.execute(
+        "DELETE FROM ProductoTerminado WHERE imagen IS NULL OR imagen = '' OR LOWER(imagen) = 'n/a'"
+      )
+      if (hardDeleteResult.rowsAffected > 0) {
+        results.push(`🧹 LIMPIEZA PERMANENTE: ${hardDeleteResult.rowsAffected} productos eliminados definitivamente (sin imagen válida)`)
+      } else if (totalSinImagen === 0) {
+        results.push('Limpieza: no hay productos sin imagen — base de datos limpia ✓')
+      }
+    } catch (e: any) {
+      results.push(`Limpieza: error al eliminar productos sin imagen (${e.message})`)
+    }
+
+    // REGLA PERMANENTE: No se insertan productos de prueba por seed.
+    // Solo el usuario debe crear productos manualmente desde el admin con su respectiva foto.
+    // La API de creación RECHAZA productos sin imagen.
+    results.push('🔒 REGLA PERMANENTE: No se permiten productos sin imagen válida')
 
     // 25. MATERIAS PRIMAS
     const umId = async (codigo:string) => Number((await client.execute({sql:'SELECT id FROM UnidadMedida WHERE codigo=?',args:[codigo]})).rows[0]?.id) || 0

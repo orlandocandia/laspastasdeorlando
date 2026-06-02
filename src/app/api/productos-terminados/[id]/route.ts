@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAuth } from '@/lib/auth-helpers'
 
 // GET /api/productos-terminados/[id] - Obtener producto terminado por ID
 export async function GET(
@@ -31,6 +32,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAuth()
+  if (!auth.authorized) return auth.response!
+
   try {
     const { id } = await params
     const body = await request.json()
@@ -42,6 +46,7 @@ export async function PUT(
       id_categoria,
       tipo_harina,
       peso_unitario_aprox,
+      unidades,
       precio_venta,
       stock_minimo,
       destacado,
@@ -50,6 +55,16 @@ export async function PUT(
       imagen,
       estado,
     } = body
+
+    // REGLA PERMANENTE: No se permite actualizar un producto quitándole la imagen
+    if (imagen !== undefined) {
+      if (!imagen || imagen.trim() === '' || imagen.toUpperCase() === 'N/A') {
+        return NextResponse.json(
+          { error: 'REGLA DE NEGOCIO: No se puede quitar la imagen de un producto. Todo producto debe tener una foto válida.' },
+          { status: 400 }
+        )
+      }
+    }
 
     // Verificar código único (excluyendo el registro actual)
     if (codigo) {
@@ -93,6 +108,7 @@ export async function PUT(
         id_categoria: id_categoria ? parseInt(id_categoria) : undefined,
         tipo_harina: tipo_harina !== undefined ? tipo_harina || null : undefined,
         peso_unitario_aprox: peso_unitario_aprox !== undefined ? parseFloat(peso_unitario_aprox) : undefined,
+        unidades: unidades !== undefined ? (unidades ? parseInt(unidades) : null) : undefined,
         precio_venta: precio_venta !== undefined ? parseFloat(precio_venta) : undefined,
         stock_minimo: stock_minimo !== undefined ? parseFloat(stock_minimo) : undefined,
         destacado: destacado !== undefined ? destacado : undefined,
@@ -113,11 +129,14 @@ export async function PUT(
   }
 }
 
-// DELETE /api/productos-terminados/[id] - Eliminar producto terminado
+// DELETE /api/productos-terminados/[id] - Desactivar producto terminado (borrado lógico)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAuth()
+  if (!auth.authorized) return auth.response!
+
   try {
     const { id } = await params
 
@@ -129,11 +148,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'Producto terminado no encontrado' }, { status: 404 })
     }
 
-    await db.productoTerminado.delete({ where: { id: parseInt(id) } })
+    // Soft delete: marcar como inactivo en vez de eliminar
+    await db.productoTerminado.update({
+      where: { id: parseInt(id) },
+      data: { estado: false },
+    })
 
-    return NextResponse.json({ message: 'Producto terminado eliminado' })
+    return NextResponse.json({ message: 'Producto terminado desactivado' })
   } catch (error) {
-    console.error('Error al eliminar producto terminado:', error)
-    return NextResponse.json({ error: 'Error al eliminar producto terminado' }, { status: 500 })
+    console.error('Error al desactivar producto terminado:', error)
+    return NextResponse.json({ error: 'Error al desactivar producto terminado' }, { status: 500 })
   }
 }

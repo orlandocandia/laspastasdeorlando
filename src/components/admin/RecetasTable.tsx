@@ -84,11 +84,11 @@ export default function RecetasTable() {
   const [formOpen, setFormOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
 
-  const fetchRecetas = useCallback(async () => {
+  const fetchRecetas = useCallback(async (paginaOverride?: number) => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-      params.set('pagina', pagina.toString())
+      params.set('pagina', (paginaOverride ?? pagina).toString())
       params.set('limite', '20')
       if (search) params.set('buscar', search)
       if (filtroProducto && filtroProducto !== 'all') params.set('id_producto_terminado', filtroProducto)
@@ -131,8 +131,13 @@ export default function RecetasTable() {
     fetchRecetas()
   }, [fetchRecetas])
 
+  // When filters change, reset to page 1 and fetch
   useEffect(() => {
-    setPagina(1)
+    if (pagina !== 1) {
+      setPagina(1)
+    } else {
+      fetchRecetas(1)
+    }
   }, [search, filtroProducto, filtroActivo])
 
   const handleDelete = async () => {

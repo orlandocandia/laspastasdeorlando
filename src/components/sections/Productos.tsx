@@ -13,6 +13,7 @@ interface ProductoPublico {
   descripcion: string | null
   precio_venta: number
   peso_unitario_aprox: number
+  unidades?: number | null
   imagen: string | null
   stock_actual: number
   destacado: boolean
@@ -25,7 +26,7 @@ interface ProductoPublico {
   }
 }
 
-export type FiltroHarina = 'todos' | 'con_gluten' | 'integral' | 'sin_gluten'
+export type FiltroHarina = 'con_gluten' | 'integral' | 'sin_gluten'
 
 interface Familia {
   nombre: string
@@ -81,7 +82,6 @@ function getFamiliaImagen(familia: Familia, filtro: FiltroHarina): string {
 }
 
 const FILTROS: { key: FiltroHarina; label: string; icon: React.ReactNode }[] = [
-  { key: 'todos', label: 'TODOS', icon: null },
   { key: 'con_gluten', label: 'CON GLUTEN', icon: <Wheat className="h-3.5 w-3.5" /> },
   { key: 'integral', label: 'INTEGRALES', icon: <Leaf className="h-3.5 w-3.5" /> },
   { key: 'sin_gluten', label: 'SIN GLUTEN', icon: <Sparkles className="h-3.5 w-3.5" /> },
@@ -125,7 +125,7 @@ interface ProductosProps {
   onFiltroChange?: (filtro: FiltroHarina) => void
 }
 
-export default function Productos({ filtroActivo = 'todos', onFiltroChange }: ProductosProps) {
+export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange }: ProductosProps) {
   const [productos, setProductos] = useState<ProductoPublico[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -137,7 +137,7 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
       try {
         setError('')
         const params = new URLSearchParams()
-        if (filtro !== 'todos') params.set('tipo', filtro)
+        if (filtro) params.set('tipo', filtro)
         const res = await fetch(`/api/productos-terminados/public?${params.toString()}`)
         if (res.ok) {
           const data = await res.json()
@@ -157,7 +157,7 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
   // Sync with parent filtro state
   useEffect(() => {
     if (filtroActivo !== filtro) {
-      setFiltro(filtroActivo)
+      setFiltro(filtroActivo ?? 'con_gluten')
       setFamiliaActiva(null)
     }
   }, [filtroActivo])
@@ -259,6 +259,7 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
               {f.label}
             </button>
           ))}
+
         </div>
 
         {/* Loading */}
@@ -283,7 +284,7 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
                 setLoading(true)
                 setError('')
                 const params = new URLSearchParams()
-                if (filtro !== 'todos') params.set('tipo', filtro)
+                if (filtro) params.set('tipo', filtro)
                 fetch(`/api/productos-terminados/public?${params.toString()}`)
                   .then((res) => res.json())
                   .then((data) => {
@@ -303,13 +304,6 @@ export default function Productos({ filtroActivo = 'todos', onFiltroChange }: Pr
             <p className="text-muted-foreground text-lg">
               No hay productos disponibles para este filtro.
             </p>
-            <Button
-              variant="outline"
-              onClick={() => handleFiltroChange('todos')}
-              className="mt-4 border-mostaza text-marron hover:bg-mostaza hover:text-marron"
-            >
-              Ver todos los productos
-            </Button>
           </div>
         ) : (
           <>

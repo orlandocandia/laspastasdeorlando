@@ -12,16 +12,16 @@ import Opiniones from '@/components/sections/Opiniones'
 import FAQ from '@/components/sections/FAQ'
 import Contacto from '@/components/sections/Contacto'
 
-export type FiltroHarina = 'todos' | 'con_gluten' | 'integral' | 'sin_gluten'
+export type FiltroHarina = 'con_gluten' | 'integral' | 'sin_gluten'
 
 export default function HomeContent() {
-  const [filtroActivo, setFiltroActivo] = useState<FiltroHarina>('todos')
+  const [filtroActivo, setFiltroActivo] = useState<FiltroHarina>('con_gluten')
 
   return (
     <div className="min-h-screen flex flex-col overflow-x-hidden">
       <Navbar />
       <main className="flex-1">
-        <Hero filtroActivo={filtroActivo} />
+        <Hero />
         <Productos filtroActivo={filtroActivo} onFiltroChange={setFiltroActivo} />
         <ComoPedir />
         <Nosotros />

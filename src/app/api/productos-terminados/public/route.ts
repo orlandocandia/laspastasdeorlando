@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
         descripcion: true,
         precio_venta: true,
         peso_unitario_aprox: true,
+        unidades: true,
         imagen: true,
         stock_actual: true,
         destacado: true,

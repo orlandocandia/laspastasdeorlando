@@ -445,6 +445,7 @@ model ProductoTerminado {
   id_categoria        Int
   tipo_harina         String?   // "con_gluten", "integral", "sin_gluten"
   peso_unitario_aprox Float     @default(0)
+  unidades            Int?      // Cantidad de unidades por paquete (ej: 12 empanadas, 24 pastelitos)
   precio_venta        Float     @default(0)
   stock_actual        Float     @default(0)
   stock_minimo        Float     @default(0)

@@ -1,44 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-
-const recetaIncludes = {
-  productoTerminado: {
-    select: {
-      id: true,
-      codigo: true,
-      nombre: true,
-      precio_venta: true,
-    },
-  },
-  detalleRecetas: {
-    include: {
-      materiaPrima: {
-        select: {
-          id: true,
-          codigo: true,
-          nombre: true,
-          precio_compra_referencia: true,
-        },
-      },
-      insumo: {
-        select: {
-          id: true,
-          codigo: true,
-          nombre: true,
-          precio_compra_referencia: true,
-        },
-      },
-      unidad: {
-        select: {
-          id: true,
-          codigo: true,
-          nombre: true,
-        },
-      },
-    },
-    orderBy: { id: 'asc' as const },
-  },
-}
+import { requireAuth } from '@/lib/auth-helpers'
+import { recetaIncludes } from '@/lib/prisma-utils'
 
 // GET /api/recetas - Listar recetas con paginación y filtros
 export async function GET(request: NextRequest) {
@@ -56,7 +19,7 @@ export async function GET(request: NextRequest) {
       where.nombre_receta = { contains: buscar }
     }
 
-    const parsedProductoTerminado = parseInt(id_producto_terminado)
+    const parsedProductoTerminado = parseInt(id_producto_terminado || '')
     if (id_producto_terminado && !isNaN(parsedProductoTerminado)) {
       where.id_producto_terminado = parsedProductoTerminado
     }
@@ -90,6 +53,9 @@ export async function GET(request: NextRequest) {
 
 // POST /api/recetas - Crear receta con detalles
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (!auth.authorized) return auth.response!
+
   try {
     const body = await request.json()
     const {

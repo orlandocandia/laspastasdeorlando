@@ -1,44 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-
-const recetaIncludes = {
-  productoTerminado: {
-    select: {
-      id: true,
-      codigo: true,
-      nombre: true,
-      precio_venta: true,
-    },
-  },
-  detalleRecetas: {
-    include: {
-      materiaPrima: {
-        select: {
-          id: true,
-          codigo: true,
-          nombre: true,
-          precio_compra_referencia: true,
-        },
-      },
-      insumo: {
-        select: {
-          id: true,
-          codigo: true,
-          nombre: true,
-          precio_compra_referencia: true,
-        },
-      },
-      unidad: {
-        select: {
-          id: true,
-          codigo: true,
-          nombre: true,
-        },
-      },
-    },
-    orderBy: { id: 'asc' as const },
-  },
-}
+import { requireAuth } from '@/lib/auth-helpers'
+import { recetaIncludes } from '@/lib/prisma-utils'
 
 // GET /api/recetas/[id] - Obtener una receta por ID
 export async function GET(
@@ -68,6 +31,9 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireAuth()
+  if (!auth.authorized) return auth.response!
+
   try {
     const { id } = await params
     const body = await request.json()
@@ -200,5 +166,41 @@ export async function PUT(
   } catch (error) {
     console.error('Error al actualizar receta:', error)
     return NextResponse.json({ error: 'Error al actualizar receta' }, { status: 500 })
+  }
+}
+
+// DELETE /api/recetas/[id] - Eliminar receta y sus detalles
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireAuth()
+  if (!auth.authorized) return auth.response!
+
+  try {
+    const { id } = await params
+    const recetaId = parseInt(id)
+
+    const receta = await db.receta.findUnique({
+      where: { id: recetaId },
+    })
+    if (!receta) {
+      return NextResponse.json({ error: 'Receta no encontrada' }, { status: 404 })
+    }
+
+    // Delete in transaction: first detalles, then receta
+    await db.$transaction(async (tx) => {
+      await tx.detalleReceta.deleteMany({
+        where: { id_receta: recetaId },
+      })
+      await tx.receta.delete({
+        where: { id: recetaId },
+      })
+    })
+
+    return NextResponse.json({ message: 'Receta eliminada correctamente' })
+  } catch (error) {
+    console.error('Error al eliminar receta:', error)
+    return NextResponse.json({ error: 'Error al eliminar receta' }, { status: 500 })
   }
 }

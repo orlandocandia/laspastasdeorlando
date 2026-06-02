@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { requireAuth } from '@/lib/auth-helpers'
 
 // Force dynamic rendering for Vercel serverless
 export const dynamic = 'force-dynamic'
@@ -97,6 +98,9 @@ export async function GET() {
  *   errores - Lista de errores (si los hay)
  */
 export async function POST(request: NextRequest) {
+  const auth = await requireAuth()
+  if (!auth.authorized) return auth.response!
+
   try {
     const { searchParams } = new URL(request.url)
     const secret = searchParams.get('secret')

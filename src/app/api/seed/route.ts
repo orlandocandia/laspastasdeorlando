@@ -359,103 +359,33 @@ async function seedTurso(client: Client): Promise<string[]> {
   const tiId = async (nombre: string) =>
     Number((await exec('SELECT id FROM TipoInsumo WHERE nombre=?', [nombre])).rows[0]?.id) || 0
 
-  // 24. PRODUCTOS TERMINADOS (con tipo_harina: con_gluten, integral, sin_gluten)
-  const productos = [
-    // === SORRENTINOS ===
-    { c: 'SOR-001', n: 'Sorrentinos de Jamón y Queso', cat: 'Sorrentinos', th: 'con_gluten', p: 0.5, pr: 4500, sm: 10, de: 1, o: 1 },
-    { c: 'SOR-002', n: 'Sorrentinos de Cuatro Quesos', cat: 'Sorrentinos', th: 'con_gluten', p: 0.5, pr: 4800, sm: 10, de: 0, o: 2 },
-    { c: 'SOR-003', n: 'Sorrentinos de Pollo y Roquefort', cat: 'Sorrentinos', th: 'con_gluten', p: 0.5, pr: 5000, sm: 8, de: 1, o: 3 },
-    { c: 'SOR-004', n: 'Sorrentinos de Espinaca y Queso', cat: 'Sorrentinos', th: 'con_gluten', p: 0.5, pr: 4200, sm: 8, de: 0, o: 4 },
-    { c: 'SOR-005', n: 'Sorrentinos de Carne', cat: 'Sorrentinos', th: 'con_gluten', p: 0.5, pr: 4500, sm: 8, de: 0, o: 5 },
-    { c: 'SOR-006', n: 'Sorrentinos de Caprese', cat: 'Sorrentinos', th: 'con_gluten', p: 0.5, pr: 4600, sm: 8, de: 0, o: 6 },
-    { c: 'SOR-007', n: 'Sorrentinos sin Gluten de Jamón y Queso', cat: 'Sorrentinos', th: 'sin_gluten', p: 0.5, pr: 5500, sm: 5, de: 1, o: 7 },
-    { c: 'SOR-008', n: 'Sorrentinos sin Gluten de Espinaca y Queso', cat: 'Sorrentinos', th: 'sin_gluten', p: 0.5, pr: 5500, sm: 5, de: 0, o: 8 },
-    // === ÑOQUIS ===
-    { c: 'NQ-001', n: 'Ñoquis de Papa', cat: 'Ñoquis', th: 'con_gluten', p: 0.5, pr: 3500, sm: 15, de: 1, o: 1 },
-    { c: 'NQ-002', n: 'Ñoquis de Espinaca', cat: 'Ñoquis', th: 'con_gluten', p: 0.5, pr: 3700, sm: 10, de: 0, o: 2 },
-    { c: 'NQ-003', n: 'Ñoquis de Calabaza', cat: 'Ñoquis', th: 'con_gluten', p: 0.5, pr: 3700, sm: 10, de: 0, o: 3 },
-    { c: 'NQ-004', n: 'Ñoquis de Ricota', cat: 'Ñoquis', th: 'con_gluten', p: 0.5, pr: 3800, sm: 8, de: 0, o: 4 },
-    { c: 'NQ-005', n: 'Ñoquis de Mandioca', cat: 'Ñoquis', th: 'con_gluten', p: 0.5, pr: 3600, sm: 8, de: 0, o: 5 },
-    { c: 'NQ-006', n: 'Ñoquis de Batata', cat: 'Ñoquis', th: 'con_gluten', p: 0.5, pr: 3600, sm: 8, de: 0, o: 6 },
-    { c: 'NQ-007', n: 'Ñoquis de Harina Integral', cat: 'Ñoquis', th: 'integral', p: 0.5, pr: 4200, sm: 6, de: 0, o: 7 },
-    { c: 'NQ-008', n: 'Ñoquis sin Gluten de Papa', cat: 'Ñoquis', th: 'sin_gluten', p: 0.5, pr: 5000, sm: 5, de: 1, o: 8 },
-    // === TALLARINES ===
-    { c: 'TAL-001', n: 'Tallarines al Huevo', cat: 'Tallarines', th: 'con_gluten', p: 0.4, pr: 3200, sm: 15, de: 1, o: 1 },
-    { c: 'TAL-002', n: 'Tallarines al Morrón', cat: 'Tallarines', th: 'con_gluten', p: 0.4, pr: 3300, sm: 15, de: 0, o: 2 },
-    { c: 'TAL-003', n: 'Tallarines a la Espinaca', cat: 'Tallarines', th: 'con_gluten', p: 0.4, pr: 3400, sm: 12, de: 0, o: 3 },
-    { c: 'TAL-004', n: 'Tallarines al Zapallo', cat: 'Tallarines', th: 'con_gluten', p: 0.4, pr: 3400, sm: 10, de: 0, o: 4 },
-    { c: 'TAL-005', n: 'Tallarines a la Remolacha', cat: 'Tallarines', th: 'con_gluten', p: 0.4, pr: 3400, sm: 10, de: 0, o: 5 },
-    { c: 'TAL-006', n: 'Tallarines Negros (Tinta de Calamar)', cat: 'Tallarines', th: 'con_gluten', p: 0.4, pr: 4500, sm: 8, de: 0, o: 6 },
-    { c: 'TAL-007', n: 'Tallarines Mixtos (Morrón y Espinaca)', cat: 'Tallarines', th: 'con_gluten', p: 0.4, pr: 3500, sm: 10, de: 0, o: 7 },
-    { c: 'TAL-008', n: 'Tallarines Integrales al Huevo', cat: 'Tallarines', th: 'integral', p: 0.4, pr: 4000, sm: 10, de: 1, o: 8 },
-    { c: 'TAL-009', n: 'Tallarines Integrales al Morrón', cat: 'Tallarines', th: 'integral', p: 0.4, pr: 4100, sm: 8, de: 0, o: 9 },
-    { c: 'TAL-010', n: 'Tallarines Integrales a la Espinaca', cat: 'Tallarines', th: 'integral', p: 0.4, pr: 4100, sm: 8, de: 0, o: 10 },
-    { c: 'TAL-011', n: 'Tallarines Integrales al Zapallo', cat: 'Tallarines', th: 'integral', p: 0.4, pr: 4100, sm: 6, de: 0, o: 11 },
-    { c: 'TAL-012', n: 'Tallarines Integrales a la Remolacha', cat: 'Tallarines', th: 'integral', p: 0.4, pr: 4100, sm: 6, de: 0, o: 12 },
-    { c: 'TAL-013', n: 'Tallarines Integrales Mixtos', cat: 'Tallarines', th: 'integral', p: 0.4, pr: 4200, sm: 6, de: 0, o: 13 },
-    { c: 'TAL-014', n: 'Tallarines sin Gluten de Arroz', cat: 'Tallarines', th: 'sin_gluten', p: 0.4, pr: 5200, sm: 5, de: 1, o: 14 },
-    // === RAVIOLES ===
-    { c: 'RAV-001', n: 'Ravioles de Ricota y Espinaca', cat: 'Ravioles', th: 'con_gluten', p: 0.5, pr: 4000, sm: 10, de: 1, o: 1 },
-    { c: 'RAV-002', n: 'Ravioles de Carne', cat: 'Ravioles', th: 'con_gluten', p: 0.5, pr: 4200, sm: 10, de: 1, o: 2 },
-    { c: 'RAV-003', n: 'Ravioles de Jamón y Queso', cat: 'Ravioles', th: 'con_gluten', p: 0.5, pr: 4300, sm: 8, de: 0, o: 3 },
-    { c: 'RAV-004', n: 'Ravioles de Pollo', cat: 'Ravioles', th: 'con_gluten', p: 0.5, pr: 4500, sm: 8, de: 0, o: 4 },
-    { c: 'RAV-005', n: 'Ravioles de Verdura', cat: 'Ravioles', th: 'con_gluten', p: 0.5, pr: 3900, sm: 8, de: 0, o: 5 },
-    { c: 'RAV-006', n: 'Ravioles de Capresse', cat: 'Ravioles', th: 'con_gluten', p: 0.5, pr: 4400, sm: 6, de: 0, o: 6 },
-    { c: 'RAV-007', n: 'Ravioles sin Gluten de Ricota', cat: 'Ravioles', th: 'sin_gluten', p: 0.5, pr: 5500, sm: 5, de: 1, o: 7 },
-    { c: 'RAV-008', n: 'Ravioles sin Gluten de Carne', cat: 'Ravioles', th: 'sin_gluten', p: 0.5, pr: 5500, sm: 5, de: 0, o: 8 },
-    // === TAPAS ===
-    { c: 'TAP-001', n: 'Tapas para Empanadas', cat: 'Tapas', th: 'con_gluten', p: 0.5, pr: 2800, sm: 20, de: 1, o: 1 },
-    { c: 'TAP-002', n: 'Tapas para Pascualinas', cat: 'Tapas', th: 'con_gluten', p: 0.5, pr: 2800, sm: 15, de: 0, o: 2 },
-    { c: 'TAP-003', n: 'Tapas para Pastelitos', cat: 'Tapas', th: 'con_gluten', p: 0.5, pr: 3000, sm: 10, de: 0, o: 3 },
-    { c: 'TAP-004', n: 'Tapas para Copetín', cat: 'Tapas', th: 'con_gluten', p: 0.3, pr: 2200, sm: 15, de: 0, o: 4 },
-    { c: 'TAP-005', n: 'Tapas Integrales para Empanadas', cat: 'Tapas', th: 'integral', p: 0.5, pr: 3500, sm: 8, de: 1, o: 5 },
-    { c: 'TAP-006', n: 'Tapas Integrales para Pascualinas', cat: 'Tapas', th: 'integral', p: 0.5, pr: 3500, sm: 8, de: 0, o: 6 },
-    { c: 'TAP-007', n: 'Tapas Integrales para Copetín', cat: 'Tapas', th: 'integral', p: 0.3, pr: 2800, sm: 6, de: 0, o: 7 },
-    { c: 'TAP-008', n: 'Tapas sin Gluten para Empanadas', cat: 'Tapas', th: 'sin_gluten', p: 0.5, pr: 4500, sm: 5, de: 1, o: 8 },
-    // === EMPANADAS ===
-    { c: 'EMP-001', n: 'Empanadas de Carne', cat: 'Empanadas', th: 'con_gluten', p: 0.12, pr: 800, sm: 30, de: 1, o: 1 },
-    { c: 'EMP-002', n: 'Empanadas de Pollo', cat: 'Empanadas', th: 'con_gluten', p: 0.12, pr: 800, sm: 25, de: 0, o: 2 },
-    { c: 'EMP-003', n: 'Empanadas de Jamón y Queso', cat: 'Empanadas', th: 'con_gluten', p: 0.12, pr: 800, sm: 25, de: 0, o: 3 },
-    { c: 'EMP-004', n: 'Empanadas de Caprese', cat: 'Empanadas', th: 'con_gluten', p: 0.12, pr: 850, sm: 20, de: 0, o: 4 },
-    { c: 'EMP-005', n: 'Empanadas de Verdura', cat: 'Empanadas', th: 'con_gluten', p: 0.12, pr: 750, sm: 20, de: 0, o: 5 },
-    { c: 'EMP-006', n: 'Empanadas de Atún', cat: 'Empanadas', th: 'con_gluten', p: 0.12, pr: 800, sm: 15, de: 0, o: 6 },
-    // === TARTAS ===
-    { c: 'TRT-001', n: 'Tarta de Verdura', cat: 'Tartas', th: 'con_gluten', p: 0.8, pr: 6000, sm: 5, de: 1, o: 1 },
-    { c: 'TRT-002', n: 'Tarta de Jamón y Queso', cat: 'Tartas', th: 'con_gluten', p: 0.8, pr: 6500, sm: 5, de: 0, o: 2 },
-    { c: 'TRT-003', n: 'Tarta de Pollo', cat: 'Tartas', th: 'con_gluten', p: 0.8, pr: 6500, sm: 5, de: 0, o: 3 },
-    { c: 'TRT-004', n: 'Tarta de Choclo', cat: 'Tartas', th: 'con_gluten', p: 0.8, pr: 6000, sm: 5, de: 0, o: 4 },
-    { c: 'TRT-005', n: 'Tarta de Espinaca y Queso', cat: 'Tartas', th: 'con_gluten', p: 0.8, pr: 6200, sm: 5, de: 0, o: 5 },
-    // === PRODUCTOS LEGACY ===
-    { c: 'PF-001', n: 'Sorrentinos de Jamón y Queso', cat: 'Pastas frescas', th: 'con_gluten', p: 0.5, pr: 4500, sm: 10, de: 1, o: 1 },
-    { c: 'PF-002', n: 'Ravioles de Ricota y Espinaca', cat: 'Pastas frescas', th: 'con_gluten', p: 0.5, pr: 4000, sm: 10, de: 1, o: 2 },
-    { c: 'PF-003', n: 'Ravioles de Carne', cat: 'Pastas frescas', th: 'con_gluten', p: 0.5, pr: 4200, sm: 10, de: 1, o: 3 },
-    { c: 'PF-004', n: 'Cappelletti de Pollo', cat: 'Pastas frescas', th: 'con_gluten', p: 0.5, pr: 4600, sm: 10, de: 0, o: 4 },
-    { c: 'PF-005', n: 'Tortellini de Queso', cat: 'Pastas frescas', th: 'con_gluten', p: 0.4, pr: 4300, sm: 8, de: 0, o: 5 },
-    { c: 'PF-006', n: 'Agnolottis de Verdura', cat: 'Pastas frescas', th: 'con_gluten', p: 0.5, pr: 3900, sm: 8, de: 0, o: 6 },
-    { c: 'PF-007', n: 'Fettuccine al Huevo', cat: 'Pastas frescas', th: 'con_gluten', p: 0.4, pr: 3200, sm: 15, de: 1, o: 7 },
-    { c: 'PF-008', n: 'Tagliatelle al Huevo', cat: 'Pastas frescas', th: 'con_gluten', p: 0.4, pr: 3200, sm: 15, de: 0, o: 8 },
-    { c: 'PF-009', n: 'Pappardelle', cat: 'Pastas frescas', th: 'con_gluten', p: 0.4, pr: 3300, sm: 10, de: 0, o: 9 },
-    { c: 'PF-010', n: 'Masa para Empanadas', cat: 'Pastas frescas', th: 'con_gluten', p: 0.5, pr: 2800, sm: 20, de: 0, o: 10 },
-    { c: 'PS-001', n: 'Fideos Spaghetti', cat: 'Pastas secas', th: 'con_gluten', p: 0.5, pr: 2500, sm: 20, de: 1, o: 1 },
-    { c: 'PS-002', n: 'Fideos Penne Rigate', cat: 'Pastas secas', th: 'con_gluten', p: 0.5, pr: 2500, sm: 20, de: 0, o: 2 },
-    { c: 'PS-003', n: 'Fideos Tirabuzón', cat: 'Pastas secas', th: 'con_gluten', p: 0.5, pr: 2500, sm: 15, de: 0, o: 3 },
-    { c: 'PS-004', n: 'Mostacholes', cat: 'Pastas secas', th: 'con_gluten', p: 0.5, pr: 2500, sm: 15, de: 0, o: 4 },
-    { c: 'PS-005', n: 'Cintas', cat: 'Pastas secas', th: 'con_gluten', p: 0.5, pr: 2600, sm: 10, de: 0, o: 5 },
-    { c: 'SA-001', n: 'Salsa Filetto', cat: 'Salsas', th: 'con_gluten', p: 0.5, pr: 3000, sm: 10, de: 1, o: 1 },
-    { c: 'SA-002', n: 'Salsa Bolognesa', cat: 'Salsas', th: 'con_gluten', p: 0.5, pr: 3500, sm: 10, de: 1, o: 2 },
-    { c: 'SA-003', n: 'Salsa Crema', cat: 'Salsas', th: 'con_gluten', p: 0.5, pr: 3200, sm: 8, de: 0, o: 3 },
-    { c: 'SA-004', n: 'Salsa Pesto', cat: 'Salsas', th: 'con_gluten', p: 0.3, pr: 3800, sm: 8, de: 0, o: 4 },
-    { c: 'LC-001', n: 'Lasagna de Carne', cat: 'Lasagnas y canelones', th: 'con_gluten', p: 1.0, pr: 8000, sm: 5, de: 1, o: 1 },
-    { c: 'LC-002', n: 'Lasagna de Verdura', cat: 'Lasagnas y canelones', th: 'con_gluten', p: 1.0, pr: 7500, sm: 5, de: 0, o: 2 },
-    { c: 'LC-003', n: 'Canelones de Jamón y Queso', cat: 'Lasagnas y canelones', th: 'con_gluten', p: 0.8, pr: 6500, sm: 5, de: 1, o: 3 },
-    { c: 'LC-004', n: 'Canelones de Ricota', cat: 'Lasagnas y canelones', th: 'con_gluten', p: 0.8, pr: 6000, sm: 5, de: 0, o: 4 },
-  ]
-  for (const pt of productos) {
-    const idCat = await catId('CategoriaProductoTerminado', pt.cat)
-    if (!idCat) continue
-    await exec('INSERT OR IGNORE INTO ProductoTerminado (codigo,nombre,id_categoria,tipo_harina,peso_unitario_aprox,precio_venta,stock_minimo,destacado,orden,visible_en_landing,estado,stock_actual) VALUES (?,?,?,?,?,?,?,?,1,1,0)', [pt.c, pt.n, idCat, pt.th, pt.p, pt.pr, pt.sm, pt.de, pt.o])
+  // 23.7 LIMPIEZA PERMANENTE: ELIMINAR productos SIN imagen (hard delete)
+  // REGLA DE NEGOCIO: Solo deben existir productos con foto cargada manualmente.
+  // Esta regla es PERMANENTE y no se puede revertir.
+  try {
+    // Paso 1: Contar productos sin imagen válida
+    const countSinImagen = await exec(
+      "SELECT COUNT(*) as total FROM ProductoTerminado WHERE imagen IS NULL OR imagen = '' OR LOWER(imagen) = 'n/a'"
+    )
+    const totalSinImagen = Number(countSinImagen.rows[0]?.total || 0)
+
+    // Paso 2: ELIMINAR PERMANENTEMENTE todos los productos sin imagen
+    const hardDeleteResult = await exec(
+      "DELETE FROM ProductoTerminado WHERE imagen IS NULL OR imagen = '' OR LOWER(imagen) = 'n/a'"
+    )
+    if (hardDeleteResult.rowsAffected > 0) {
+      results.push(`🧹 LIMPIEZA PERMANENTE: ${hardDeleteResult.rowsAffected} productos eliminados definitivamente (sin imagen válida)`)
+    } else if (totalSinImagen === 0) {
+      results.push('Limpieza: no hay productos sin imagen — base de datos limpia ✓')
+    }
+  } catch (e: any) {
+    results.push(`Limpieza: error al eliminar productos sin imagen (${e.message})`)
   }
-  results.push(`${productos.length} productos terminados`)
+
+  // REGLA PERMANENTE: No se insertan productos de prueba por seed.
+  // Solo el usuario debe crear productos manualmente desde el admin con su respectiva foto.
+  // La API de creación RECHAZA productos sin imagen.
+  results.push('🔒 REGLA PERMANENTE: No se permiten productos sin imagen válida')
 
   // 25. MATERIAS PRIMAS
   const mps = [

@@ -38,6 +38,7 @@ const productoTerminadoSchema = z.object({
   id_categoria: z.string().min(1, 'Seleccioná una categoría'),
   tipo_harina: z.string().optional(),
   peso_unitario_aprox: z.coerce.number().min(0, 'El peso no puede ser negativo').default(0),
+  unidades: z.coerce.number().min(1, 'Debe tener al menos 1 unidad').optional().nullable(),
   precio_venta: z.coerce.number().min(0, 'El precio no puede ser negativo').default(0),
   stock_minimo: z.coerce.number().min(0, 'El stock mínimo no puede ser negativo').default(0),
   destacado: z.boolean().default(false),
@@ -81,6 +82,7 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
       id_categoria: productoTerminado?.id_categoria?.toString() || '',
       tipo_harina: productoTerminado?.tipo_harina || '',
       peso_unitario_aprox: productoTerminado?.peso_unitario_aprox ?? 0,
+      unidades: productoTerminado?.unidades ?? undefined,
       precio_venta: productoTerminado?.precio_venta ?? 0,
       stock_minimo: productoTerminado?.stock_minimo ?? 0,
       destacado: productoTerminado?.destacado ?? false,
@@ -90,6 +92,29 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
       estado: productoTerminado?.estado ?? true,
     },
   })
+
+  // Reset form and imageUrl when switching products
+  useEffect(() => {
+    const defaults = {
+      codigo: productoTerminado?.codigo || '',
+      codigo_barras: productoTerminado?.codigo_barras || '',
+      nombre: productoTerminado?.nombre || '',
+      descripcion: productoTerminado?.descripcion || '',
+      id_categoria: productoTerminado?.id_categoria?.toString() || '',
+      tipo_harina: productoTerminado?.tipo_harina || '',
+      peso_unitario_aprox: productoTerminado?.peso_unitario_aprox ?? 0,
+      unidades: productoTerminado?.unidades ?? undefined,
+      precio_venta: productoTerminado?.precio_venta ?? 0,
+      stock_minimo: productoTerminado?.stock_minimo ?? 0,
+      destacado: productoTerminado?.destacado ?? false,
+      orden: productoTerminado?.orden ?? 0,
+      visible_en_landing: productoTerminado?.visible_en_landing ?? true,
+      imagen: productoTerminado?.imagen || '',
+      estado: productoTerminado?.estado ?? true,
+    }
+    form.reset(defaults)
+    setImageUrl(productoTerminado?.imagen || '')
+  }, [productoTerminado, form])
 
   useEffect(() => {
     async function fetchCategorias() {
@@ -137,6 +162,7 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
         codigo_barras: data.codigo_barras || null,
         id_categoria: parseInt(data.id_categoria),
         tipo_harina: data.tipo_harina || null,
+        unidades: data.unidades || null,
       }
 
       let url = '/api/productos-terminados'
@@ -263,7 +289,7 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Categoría *</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={loadingCategorias ? 'Cargando...' : 'Seleccionar...'} />
@@ -288,7 +314,7 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo de Harina</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select onValueChange={field.onChange} value={field.value || undefined}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Sin especificar" />
@@ -314,6 +340,33 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
                 <FormControl>
                   <Input type="number" step="0.01" min="0" placeholder="0.5" {...field} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="unidades"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Unidades por paquete</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    step="1"
+                    min="1"
+                    placeholder="Ej: 12, 24"
+                    value={field.value ?? ''}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      field.onChange(val === '' ? null : parseInt(val))
+                    }}
+                  />
+                </FormControl>
+                <p className="text-xs text-muted-foreground">
+                  Cantidad de unidades (ej: 12 empanadas). Dejá vacío si no aplica.
+                </p>
                 <FormMessage />
               </FormItem>
             )}

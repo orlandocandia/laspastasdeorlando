@@ -54,6 +54,7 @@ interface ProductoTerminado {
   id_categoria: number
   tipo_harina?: string | null
   peso_unitario_aprox: number
+  unidades?: number | null
   precio_venta: number
   stock_actual: number
   stock_minimo: number
@@ -136,11 +137,11 @@ export default function ProductosTerminadosTable() {
     if (!deleteId) return
     try {
       const res = await fetch(`/api/productos-terminados/${deleteId}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Error al eliminar')
-      toast.success('Producto terminado eliminado')
+      if (!res.ok) throw new Error('Error al desactivar')
+      toast.success('Producto terminado desactivado')
       fetchProductos()
     } catch {
-      toast.error('Error al eliminar producto terminado')
+      toast.error('Error al desactivar producto terminado')
     } finally {
       setDeleteId(null)
     }
@@ -441,9 +442,9 @@ export default function ProductosTerminadosTable() {
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Eliminar producto terminado?</AlertDialogTitle>
+            <AlertDialogTitle>¿Desactivar producto terminado?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción no se puede deshacer. El producto terminado será eliminado permanentemente del catálogo.
+              El producto será marcado como inactivo. Podrás reactivarlo desde el filtro de estado.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -452,7 +453,7 @@ export default function ProductosTerminadosTable() {
               onClick={handleDelete}
               className="bg-rojo hover:bg-rojo/90 text-white"
             >
-              Eliminar
+              Desactivar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

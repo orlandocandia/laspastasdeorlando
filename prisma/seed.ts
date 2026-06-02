@@ -264,104 +264,37 @@ async function main() {
     { nombre: 'Tapas', descripcion: 'Tapas para empanadas, pascualinas y pastelitos' },
     { nombre: 'Empanadas', descripcion: 'Empanadas crudas y al horno, variedad de rellenos' },
     { nombre: 'Tartas', descripcion: 'Tartas de verduras, jamón, pollo y choclo' },
+    { nombre: 'Cintas Anchas', descripcion: 'Cintas anchas al huevo y más' },
   ]
 
-  // Eliminar productos existentes y categorías viejas
-  await prisma.productoTerminado.deleteMany({})
-  await prisma.categoriaProductoTerminado.deleteMany({})
-  console.log('🗑️ Productos y categorías anteriores eliminados')
+  // Eliminar productos existentes sin imagen (productos de seed anteriores)
+  const deletedProducts = await prisma.productoTerminado.deleteMany({
+    where: {
+      OR: [
+        { imagen: null },
+        { imagen: '' }
+      ]
+    }
+  })
+  console.log(`🗑️ ${deletedProducts.count} productos sin imagen eliminados`)
+  // NO eliminar categorías — pueden tener productos del usuario con imagen
 
   const catMap: Record<string, number> = {}
   for (const cat of categoriasPT) {
-    const created = await prisma.categoriaProductoTerminado.create({ data: cat })
+    const created = await prisma.categoriaProductoTerminado.upsert({
+      where: { nombre: cat.nombre },
+      update: { descripcion: cat.descripcion },
+      create: cat,
+    })
     catMap[cat.nombre] = created.id
   }
-  console.log(`✅ ${categoriasPT.length} categorías de productos terminados creadas`)
+  console.log(`✅ ${categoriasPT.length} categorías de productos terminados aseguradas`)
 
   // ============================================
-  // 11. PRODUCTOS TERMINADOS (catálogo real)
+  // 11. PRODUCTOS TERMINADOS — Ya NO se insertan productos de prueba
+  // Solo el usuario debe crear productos manualmente con su foto desde el admin.
   // ============================================
-  const productosData = [
-    // SORRENTINOS
-    { codigo: 'SOR-001', nombre: 'Sorrentinos de Jamón y Queso', descripcion: 'Rellenos de jamón cocido y queso muzzarella', id_categoria: catMap['Sorrentinos'], tipo_harina: 'con_gluten', precio_venta: 4800, stock_actual: 28, destacado: true, orden: 1 },
-    { codigo: 'SOR-002', nombre: 'Sorrentinos de Pollo y Roquefort', descripcion: 'Rellenos de pollo desmenuzado y queso roquefort', id_categoria: catMap['Sorrentinos'], tipo_harina: 'con_gluten', precio_venta: 5000, stock_actual: 20, destacado: false, orden: 2 },
-    { codigo: 'SOR-003', nombre: 'Sorrentinos de Calabaza y Queso', descripcion: 'Rellenos de calabaza asada y queso crema', id_categoria: catMap['Sorrentinos'], tipo_harina: 'con_gluten', precio_venta: 4600, stock_actual: 22, destacado: false, orden: 3 },
-    { codigo: 'SOR-004', nombre: 'Sorrentinos de Caprese', descripcion: 'Rellenos de tomate, mozzarella y albahaca', id_categoria: catMap['Sorrentinos'], tipo_harina: 'con_gluten', precio_venta: 4700, stock_actual: 15, destacado: false, orden: 4 },
-    { codigo: 'SOR-005', nombre: 'Sorrentinos de Ricotta y Nueces', descripcion: 'Rellenos de ricotta fresca con nueces', id_categoria: catMap['Sorrentinos'], tipo_harina: 'con_gluten', precio_venta: 4500, stock_actual: 18, destacado: false, orden: 5 },
-    { codigo: 'SOR-006', nombre: 'Sorrentinos sin Gluten', descripcion: 'Sorrentinos de jamón y queso con masa sin gluten', id_categoria: catMap['Sorrentinos'], tipo_harina: 'sin_gluten', precio_venta: 5500, stock_actual: 10, destacado: true, orden: 6 },
-
-    // ÑOQUIS
-    { codigo: 'NQ-001', nombre: 'Ñoquis de Papa', descripcion: 'Ñoquis de papa clásicos, suaves y esponjosos', id_categoria: catMap['Ñoquis'], tipo_harina: 'con_gluten', precio_venta: 3800, stock_actual: 40, destacado: true, orden: 10 },
-    { codigo: 'NQ-002', nombre: 'Ñoquis de Calabaza', descripcion: 'Ñoquis de calabaza con un toque de nuez moscada', id_categoria: catMap['Ñoquis'], tipo_harina: 'con_gluten', precio_venta: 4000, stock_actual: 25, destacado: false, orden: 11 },
-    { codigo: 'NQ-003', nombre: 'Ñoquis de Espinaca', descripcion: 'Ñoquis verdes de espinaca fresca, livianos y nutritivos', id_categoria: catMap['Ñoquis'], tipo_harina: 'con_gluten', precio_venta: 4000, stock_actual: 20, destacado: false, orden: 12 },
-    { codigo: 'NQ-004', nombre: 'Ñoquis de Ricotta', descripcion: 'Ñoquis de ricotta suaves y cremosos', id_categoria: catMap['Ñoquis'], tipo_harina: 'con_gluten', precio_venta: 4200, stock_actual: 18, destacado: false, orden: 13 },
-    { codigo: 'NQ-005', nombre: 'Ñoquis de Remolacha', descripcion: 'Ñoquis coloridos de remolacha con sabor suave', id_categoria: catMap['Ñoquis'], tipo_harina: 'con_gluten', precio_venta: 4100, stock_actual: 12, destacado: false, orden: 14 },
-    { codigo: 'NQ-006', nombre: 'Ñoquis Integrales', descripcion: 'Ñoquis elaborados con harina integral', id_categoria: catMap['Ñoquis'], tipo_harina: 'integral', precio_venta: 4300, stock_actual: 15, destacado: false, orden: 15 },
-    { codigo: 'NQ-007', nombre: 'Ñoquis sin Gluten', descripcion: 'Ñoquis de papa sin gluten', id_categoria: catMap['Ñoquis'], tipo_harina: 'sin_gluten', precio_venta: 4600, stock_actual: 8, destacado: false, orden: 16 },
-
-    // TALLARINES
-    { codigo: 'TAL-001', nombre: 'Tallarines al Huevo', descripcion: 'Tallarines frescos al huevo, clásicos y versátiles', id_categoria: catMap['Tallarines'], tipo_harina: 'con_gluten', precio_venta: 3500, stock_actual: 50, destacado: true, orden: 20 },
-    { codigo: 'TAL-002', nombre: 'Tallarines al Morrón', descripcion: 'Tallarines rojos al morrón asado', id_categoria: catMap['Tallarines'], tipo_harina: 'con_gluten', precio_venta: 3700, stock_actual: 35, destacado: false, orden: 21 },
-    { codigo: 'TAL-003', nombre: 'Tallarines a la Espinaca', descripcion: 'Tallarines verdes a la espinaca fresca', id_categoria: catMap['Tallarines'], tipo_harina: 'con_gluten', precio_venta: 3700, stock_actual: 30, destacado: false, orden: 22 },
-    { codigo: 'TAL-004', nombre: 'Tallarines al Puerro', descripcion: 'Tallarines aromatizados con puerro', id_categoria: catMap['Tallarines'], tipo_harina: 'con_gluten', precio_venta: 3800, stock_actual: 20, destacado: false, orden: 23 },
-    { codigo: 'TAL-005', nombre: 'Tallarines Integrales', descripcion: 'Tallarines elaborados con harina integral', id_categoria: catMap['Tallarines'], tipo_harina: 'integral', precio_venta: 4000, stock_actual: 18, destacado: false, orden: 24 },
-    { codigo: 'TAL-006', nombre: 'Tallarines sin Gluten', descripcion: 'Tallarines de arroz sin gluten', id_categoria: catMap['Tallarines'], tipo_harina: 'sin_gluten', precio_venta: 4500, stock_actual: 12, destacado: false, orden: 25 },
-
-    // RAVIOLES
-    { codigo: 'RAV-001', nombre: 'Ravioles de Ricotta y Espinaca', descripcion: 'Ravioles artesanales rellenos de ricotta y espinaca fresca', id_categoria: catMap['Ravioles'], tipo_harina: 'con_gluten', precio_venta: 4500, stock_actual: 35, destacado: true, orden: 30 },
-    { codigo: 'RAV-002', nombre: 'Ravioles de Carne', descripcion: 'Ravioles rellenos de carne condimentada con especias', id_categoria: catMap['Ravioles'], tipo_harina: 'con_gluten', precio_venta: 4500, stock_actual: 30, destacado: false, orden: 31 },
-    { codigo: 'RAV-003', nombre: 'Ravioles de Jamón y Queso', descripcion: 'Ravioles rellenos de jamón cocido y queso', id_categoria: catMap['Ravioles'], tipo_harina: 'con_gluten', precio_venta: 4400, stock_actual: 25, destacado: false, orden: 32 },
-    { codigo: 'RAV-004', nombre: 'Ravioles de Pollo', descripcion: 'Ravioles rellenos de pollo desmenuzado con hierbas', id_categoria: catMap['Ravioles'], tipo_harina: 'con_gluten', precio_venta: 4600, stock_actual: 0, destacado: false, orden: 33 },
-    { codigo: 'RAV-005', nombre: 'Ravioles de Verdura', descripcion: 'Ravioles rellenos de acelga, espinaca y queso', id_categoria: catMap['Ravioles'], tipo_harina: 'con_gluten', precio_venta: 4300, stock_actual: 22, destacado: false, orden: 34 },
-    { codigo: 'RAV-006', nombre: 'Ravioles sin Gluten', descripcion: 'Ravioles de ricotta y espinaca con masa sin gluten', id_categoria: catMap['Ravioles'], tipo_harina: 'sin_gluten', precio_venta: 5200, stock_actual: 8, destacado: false, orden: 35 },
-
-    // TAPAS
-    { codigo: 'TAP-001', nombre: 'Tapas para Empanadas', descripcion: 'Tapas de masa casera para empanadas al horno o fritas', id_categoria: catMap['Tapas'], tipo_harina: 'con_gluten', precio_venta: 2800, stock_actual: 60, destacado: true, orden: 40 },
-    { codigo: 'TAP-002', nombre: 'Tapas para Pascualinas', descripcion: 'Tapas finas para tarta pascualina', id_categoria: catMap['Tapas'], tipo_harina: 'con_gluten', precio_venta: 2600, stock_actual: 45, destacado: false, orden: 41 },
-    { codigo: 'TAP-003', nombre: 'Tapas para Pastelitos', descripcion: 'Tapas crujientes para pastelitos de membrillo o batata', id_categoria: catMap['Tapas'], tipo_harina: 'con_gluten', precio_venta: 2500, stock_actual: 35, destacado: false, orden: 42 },
-    { codigo: 'TAP-004', nombre: 'Tapas para Tartas', descripcion: 'Tapas para tarta dulce o salada', id_categoria: catMap['Tapas'], tipo_harina: 'con_gluten', precio_venta: 2700, stock_actual: 40, destacado: false, orden: 43 },
-    { codigo: 'TAP-005', nombre: 'Tapas Integrales', descripcion: 'Tapas integrales para empanadas y tartas', id_categoria: catMap['Tapas'], tipo_harina: 'integral', precio_venta: 3200, stock_actual: 20, destacado: false, orden: 44 },
-    { codigo: 'TAP-006', nombre: 'Tapas sin Gluten', descripcion: 'Tapas sin gluten para empanadas y tartas', id_categoria: catMap['Tapas'], tipo_harina: 'sin_gluten', precio_venta: 3500, stock_actual: 10, destacado: false, orden: 45 },
-
-    // EMPANADAS
-    { codigo: 'EMP-001', nombre: 'Empanadas de Carne', descripcion: 'Empanadas de carne cortada a cuchillo con cebolla y especias', id_categoria: catMap['Empanadas'], tipo_harina: 'con_gluten', precio_venta: 1500, stock_actual: 80, destacado: true, orden: 50, peso_unitario_aprox: 0.15 },
-    { codigo: 'EMP-002', nombre: 'Empanadas de Pollo', descripcion: 'Empanadas de pollo con puerro y queso', id_categoria: catMap['Empanadas'], tipo_harina: 'con_gluten', precio_venta: 1400, stock_actual: 60, destacado: false, orden: 51, peso_unitario_aprox: 0.15 },
-    { codigo: 'EMP-003', nombre: 'Empanadas de Jamón y Queso', descripcion: 'Empanadas de jamón cocido y queso muzzarella', id_categoria: catMap['Empanadas'], tipo_harina: 'con_gluten', precio_venta: 1400, stock_actual: 50, destacado: false, orden: 52, peso_unitario_aprox: 0.15 },
-    { codigo: 'EMP-004', nombre: 'Empanadas de Verdura', descripcion: 'Empanadas de acelga y queso', id_categoria: catMap['Empanadas'], tipo_harina: 'con_gluten', precio_venta: 1300, stock_actual: 45, destacado: false, orden: 53, peso_unitario_aprox: 0.15 },
-    { codigo: 'EMP-005', nombre: 'Empanadas de Caprese', descripcion: 'Empanadas de tomate cherry, mozzarella y albahaca', id_categoria: catMap['Empanadas'], tipo_harina: 'con_gluten', precio_venta: 1500, stock_actual: 30, destacado: false, orden: 54, peso_unitario_aprox: 0.15 },
-    { codigo: 'EMP-006', nombre: 'Empanadas de Humita', descripcion: 'Empanadas de choclo y salsa blanca', id_categoria: catMap['Empanadas'], tipo_harina: 'con_gluten', precio_venta: 1400, stock_actual: 35, destacado: false, orden: 55, peso_unitario_aprox: 0.15 },
-    { codigo: 'EMP-007', nombre: 'Empanadas Arabes', descripcion: 'Empanadas árabes de carne con limón y especias', id_categoria: catMap['Empanadas'], tipo_harina: 'con_gluten', precio_venta: 1600, stock_actual: 25, destacado: false, orden: 56, peso_unitario_aprox: 0.15 },
-    { codigo: 'EMP-008', nombre: 'Empanadas sin Gluten', descripcion: 'Empanadas de carne con masa sin gluten', id_categoria: catMap['Empanadas'], tipo_harina: 'sin_gluten', precio_venta: 1800, stock_actual: 12, destacado: false, orden: 57, peso_unitario_aprox: 0.15 },
-
-    // TARTAS
-    { codigo: 'TRT-001', nombre: 'Tarta de Jamón y Queso', descripcion: 'Tarta de jamón cocido y queso gratinado', id_categoria: catMap['Tartas'], tipo_harina: 'con_gluten', precio_venta: 5500, stock_actual: 15, destacado: true, orden: 60 },
-    { codigo: 'TRT-002', nombre: 'Tarta de Pollo', descripcion: 'Tarta de pollo con verduras y salsa blanca', id_categoria: catMap['Tartas'], tipo_harina: 'con_gluten', precio_venta: 5200, stock_actual: 12, destacado: false, orden: 61 },
-    { codigo: 'TRT-003', nombre: 'Tarta de Verdura', descripcion: 'Tarta de acelga y espinaca con queso', id_categoria: catMap['Tartas'], tipo_harina: 'con_gluten', precio_venta: 4800, stock_actual: 18, destacado: false, orden: 62 },
-    { codigo: 'TRT-004', nombre: 'Tarta de Choclo', descripcion: 'Tarta de choclo con queso cremoso', id_categoria: catMap['Tartas'], tipo_harina: 'con_gluten', precio_venta: 5000, stock_actual: 10, destacado: false, orden: 63 },
-  ]
-
-  let productosCreados = 0
-  for (const prod of productosData) {
-    await prisma.productoTerminado.create({
-      data: {
-        codigo: prod.codigo,
-        nombre: prod.nombre,
-        descripcion: prod.descripcion,
-        id_categoria: prod.id_categoria,
-        tipo_harina: prod.tipo_harina,
-        peso_unitario_aprox: prod.peso_unitario_aprox ?? 0.5,
-        precio_venta: prod.precio_venta,
-        stock_actual: prod.stock_actual,
-        stock_minimo: 5,
-        destacado: prod.destacado,
-        orden: prod.orden,
-        visible_en_landing: true,
-        estado: true,
-      },
-    })
-    productosCreados++
-  }
-  console.log(`✅ ${productosCreados} productos terminados creados`)
+  console.log('ℹ️ No se insertan productos de prueba — solo productos manuales con foto')
 
   // ============================================
   // VERIFICACIÓN FINAL

@@ -18,6 +18,7 @@ interface ProductoParaEtiqueta {
   codigo: string | null
   precio_venta: number
   peso_unitario_aprox: number
+  unidades?: number | null
   categoria?: { nombre: string } | null
 }
 
@@ -157,6 +158,12 @@ export function EtiquetaProducto({ producto, open, onClose }: EtiquetaProductoPr
             {producto.peso_unitario_aprox > 0 && (
               <div className="text-center text-[10px] text-gray-500">
                 {producto.peso_unitario_aprox} kg aprox.
+              </div>
+            )}
+
+            {producto.unidades && producto.unidades > 0 && (
+              <div className="text-center text-[10px] text-gray-500">
+                Contiene: {producto.unidades} unidades
               </div>
             )}
 
