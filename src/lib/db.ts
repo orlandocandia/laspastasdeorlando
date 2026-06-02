@@ -9,6 +9,7 @@ import { createClient, type Client } from '@libsql/client'
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
   tursoMigrated: boolean | undefined
+  tursoMigratePromise: Promise<void> | undefined
 }
 
 /**
@@ -73,11 +74,12 @@ function createPrismaClient() {
     })
 
     // Auto-migrate Turso on first connection (idempotent)
+    // Store the promise so API routes can await it before querying
     const libsqlClient = createClient({
       url: tursoUrl,
       authToken: tursoAuthToken || undefined,
     })
-    autoMigrateTurso(libsqlClient).catch((err) => {
+    globalForPrisma.tursoMigratePromise = autoMigrateTurso(libsqlClient).catch((err) => {
       console.error('[DB Auto-Migrate] Failed:', err)
     })
 
@@ -94,3 +96,14 @@ function createPrismaClient() {
 export const db = globalForPrisma.prisma ?? createPrismaClient()
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+
+/**
+ * Await Turso auto-migration before querying.
+ * Call this at the start of API routes that depend on recently-added columns.
+ * On local SQLite this resolves immediately; on Turso it waits for ALTER TABLE to finish.
+ */
+export async function ensureDbReady() {
+  if (globalForPrisma.tursoMigratePromise) {
+    await globalForPrisma.tursoMigratePromise
+  }
+}

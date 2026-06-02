@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db, ensureDbReady } from '@/lib/db'
 
 // GET /api/productos-terminados/public - Landing page (público, sin auth)
 export async function GET(request: NextRequest) {
   try {
+    // Ensure Turso auto-migration has completed before querying
+    await ensureDbReady()
+
     const { searchParams } = new URL(request.url)
     const tipo = searchParams.get('tipo') // "con_gluten", "integral", "sin_gluten"
 
