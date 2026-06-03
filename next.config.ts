@@ -20,14 +20,14 @@ const nextConfig: NextConfig = {
   },
   images: {
     unoptimized: true,
+    // Force browser to download images instead of displaying them
+    // when accessed directly via URL (prevents easy image saving)
+    contentDispositionType: 'attachment',
+    dangerouslyAllowSVG: true,
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '*.blob.vercel-storage.com',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.public.blob.vercel-storage.com',
+        hostname: '**',
       },
     ],
   },

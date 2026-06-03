@@ -43,14 +43,45 @@ export default function ProductCard({ producto }: ProductCardProps) {
       className="group rounded-xl border border-border bg-card overflow-hidden shadow-md hover:shadow-xl hover:-translate-y-1 hover:border-mostaza/40 transition-all duration-300"
     >
       {/* Image — aspect ratio container with object-contain */}
-      <div className="aspect-[4/3] relative bg-gray-100 rounded-t-lg">
+      <div
+        className="aspect-[4/3] relative bg-gray-100 rounded-t-lg overflow-hidden"
+        onContextMenu={(e) => e.preventDefault()}
+      >
         <Image
           src={producto.imagen || '/images/placeholder-producto.jpg'}
           alt={producto.nombre}
           fill
-          className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+          className="object-contain p-2 transition-transform duration-300 group-hover:scale-105 select-none"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          draggable={false}
         />
+
+        {/* Watermark overlay — repeating diagonal pattern */}
+        <div
+          className="absolute inset-0 pointer-events-none overflow-hidden"
+          aria-hidden="true"
+        >
+          <div
+            className="absolute inset-0 select-none"
+            style={{
+              backgroundImage: `repeating-linear-gradient(
+                -25deg,
+                transparent,
+                transparent 70px,
+                rgba(92, 58, 33, 0.07) 70px,
+                rgba(92, 58, 33, 0.07) 71px
+              )`,
+            }}
+          />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span
+              className="text-marron/15 font-bold text-base sm:text-lg tracking-[0.25em] uppercase select-none whitespace-nowrap"
+              style={{ transform: 'rotate(-25deg)' }}
+            >
+              Pastas Orlando
+            </span>
+          </div>
+        </div>
 
         {/* Destacado Badge */}
         {producto.destacado && !sinStock && (

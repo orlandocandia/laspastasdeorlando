@@ -333,14 +333,24 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                       `}
                     >
                       {/* Imagen representativa */}
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-crema border-2 border-mostaza/20 transition-transform duration-300 group-hover:scale-110 flex-shrink-0">
+                      <div
+                        className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-crema border-2 border-mostaza/20 transition-transform duration-300 group-hover:scale-110 flex-shrink-0 relative"
+                        onContextMenu={(e) => e.preventDefault()}
+                      >
                         <Image
                           src={getFamiliaImagen(familia, filtro)}
                           alt={familia.nombre}
                           width={96}
                           height={96}
-                          className="object-cover w-full h-full"
+                          className="object-cover w-full h-full select-none"
+                          draggable={false}
                         />
+                        {/* Watermark on family images */}
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center" aria-hidden="true">
+                          <span className="text-marron/8 text-[7px] font-bold tracking-wider uppercase select-none" style={{ transform: 'rotate(-20deg)' }}>
+                            PO
+                          </span>
+                        </div>
                       </div>
 
                       {/* Name */}
@@ -400,13 +410,14 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                       </Button>
                       <div className="h-6 w-px bg-marron/20" />
                       <h3 className="text-xl font-bold text-marron flex items-center gap-2">
-                        <span className="w-7 h-7 rounded-full overflow-hidden inline-block bg-crema border border-mostaza/20 flex-shrink-0">
+                        <span className="w-7 h-7 rounded-full overflow-hidden inline-block bg-crema border border-mostaza/20 flex-shrink-0" onContextMenu={(e) => e.preventDefault()}>
                           <Image
                             src={imagenHeader}
                             alt={familiaActiva}
                             width={28}
                             height={28}
-                            className="object-cover w-full h-full"
+                            className="object-cover w-full h-full select-none"
+                            draggable={false}
                           />
                         </span>
                         {familiaActiva}
