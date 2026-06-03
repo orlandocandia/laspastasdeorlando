@@ -56,31 +56,19 @@ export default function ProductCard({ producto }: ProductCardProps) {
           draggable={false}
         />
 
-        {/* Watermark overlay — repeating diagonal pattern */}
+        {/* Watermark overlay — logo de Pastas Orlando */}
         <div
-          className="absolute inset-0 pointer-events-none overflow-hidden"
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
           aria-hidden="true"
         >
-          <div
-            className="absolute inset-0 select-none"
-            style={{
-              backgroundImage: `repeating-linear-gradient(
-                -25deg,
-                transparent,
-                transparent 70px,
-                rgba(92, 58, 33, 0.07) 70px,
-                rgba(92, 58, 33, 0.07) 71px
-              )`,
-            }}
+          <Image
+            src="/images/logo.png"
+            alt=""
+            width={100}
+            height={100}
+            className="opacity-15 select-none"
+            draggable={false}
           />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span
-              className="text-marron/15 font-bold text-base sm:text-lg tracking-[0.25em] uppercase select-none whitespace-nowrap"
-              style={{ transform: 'rotate(-25deg)' }}
-            >
-              Pastas Orlando
-            </span>
-          </div>
         </div>
 
         {/* Destacado Badge */}
