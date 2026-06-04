@@ -1152,6 +1152,24 @@ model DetallePresupuesto {
 }
 
 // ============================================
+// RECUPERACIÓN DE CONTRASEÑA
+// ============================================
+
+model PasswordReset {
+  id         Int       @id @default(autoincrement())
+  email      String
+  token      String    @unique
+  usado      Boolean   @default(false)
+  fecha_expiracion DateTime
+  ip         String?
+  createdAt  DateTime  @default(now())
+
+  @@index([token])
+  @@index([email])
+  @@index([fecha_expiracion])
+}
+
+// ============================================
 // CONSULTAS DESDE LA WEB (FORMULARIO DE CONTACTO)
 // ============================================
 
