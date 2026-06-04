@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Image from 'next/image'
-import { motion, AnimatePresence } from 'framer-motion'
 import { PackageOpen, ArrowLeft, Wheat, Leaf, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import ProductCard from '@/components/products/ProductCard'
@@ -87,38 +86,7 @@ const FILTROS: { key: FiltroHarina; label: string; icon: React.ReactNode }[] = [
   { key: 'sin_gluten', label: 'SIN GLUTEN', icon: <Sparkles className="h-3.5 w-3.5" /> },
 ]
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-    },
-  },
-}
-
-const cardVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: 'easeOut' },
-  },
-}
-
-const expandedVariants = {
-  hidden: { opacity: 0, height: 0 },
-  visible: {
-    opacity: 1,
-    height: 'auto',
-    transition: { duration: 0.4, ease: 'easeOut' },
-  },
-  exit: {
-    opacity: 0,
-    height: 0,
-    transition: { duration: 0.3, ease: 'easeIn' },
-  },
-}
+const TODOS_FILTROS: FiltroHarina[] = ['con_gluten', 'integral', 'sin_gluten']
 
 interface ProductosProps {
   filtroActivo?: FiltroHarina
@@ -126,48 +94,65 @@ interface ProductosProps {
 }
 
 export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange }: ProductosProps) {
-  const [productos, setProductos] = useState<ProductoPublico[]>([])
+  // Cache: productos pre-fetcheados por tipo de harina
+  const [cache, setCache] = useState<Record<FiltroHarina, ProductoPublico[]>>({
+    con_gluten: [],
+    integral: [],
+    sin_gluten: [],
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filtro, setFiltro] = useState<FiltroHarina>(filtroActivo)
   const [familiaActiva, setFamiliaActiva] = useState<string | null>(null)
+  const fetchedRef = useRef(false)
 
+  // Pre-fetch all 3 filter types in parallel on mount — no refetch on filter change
   useEffect(() => {
-    async function fetchProductos() {
+    if (fetchedRef.current) return
+    fetchedRef.current = true
+
+    async function fetchAll() {
+      setLoading(true)
+      setError('')
       try {
-        setError('')
-        const params = new URLSearchParams()
-        if (filtro) params.set('tipo', filtro)
-        const res = await fetch(`/api/productos-terminados/public?${params.toString()}`)
-        if (res.ok) {
-          const data = await res.json()
-          setProductos(data.productos || [])
-        } else {
-          setError('No se pudieron cargar los productos. Intentá más tarde.')
-        }
+        const results = await Promise.all(
+          TODOS_FILTROS.map(async (tipo) => {
+            const res = await fetch(`/api/productos-terminados/public?tipo=${tipo}`)
+            if (!res.ok) throw new Error(`Error cargando ${tipo}`)
+            const data = await res.json()
+            return { tipo, productos: (data.productos || []) as ProductoPublico[] }
+          })
+        )
+        setCache((prev) => {
+          const next = { ...prev }
+          for (const r of results) next[r.tipo] = r.productos
+          return next
+        })
       } catch {
-        setError('Error de conexión. Verificá tu internet e intentá de nuevo.')
+        setError('No se pudieron cargar los productos. Intentá más tarde.')
       } finally {
         setLoading(false)
       }
     }
-    fetchProductos()
-  }, [filtro])
+    fetchAll()
+  }, [])
 
-  // Sync with parent filtro state
+  // Sync with parent filtro state — instant, no refetch
   useEffect(() => {
     if (filtroActivo !== filtro) {
       setFiltro(filtroActivo ?? 'con_gluten')
       setFamiliaActiva(null)
     }
-  }, [filtroActivo])
+  }, [filtroActivo, filtro])
 
-  // When changing filter, reset active family and notify parent
-  const handleFiltroChange = (nuevoFiltro: FiltroHarina) => {
+  const handleFiltroChange = useCallback((nuevoFiltro: FiltroHarina) => {
     setFiltro(nuevoFiltro)
     setFamiliaActiva(null)
     onFiltroChange?.(nuevoFiltro)
-  }
+  }, [onFiltroChange])
+
+  // Current products from cache — instant swap, no network
+  const productos = cache[filtro]
 
   // Build families dynamically from product categories
   const familias: Familia[] = useMemo(() => {
@@ -184,7 +169,6 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
         })
       }
     }
-    // Sort by known order, then alphabetically
     const knownOrder = ['Sorrentinos', 'Ñoquis', 'Tallarines', 'Cintas Anchas', 'Ravioles', 'Tapas', 'Empanadas', 'Tartas', 'Pastas frescas', 'Pastas secas', 'Salsas', 'Lasagnas y canelones', 'Postres']
     return Array.from(seen.values()).sort((a, b) => {
       const ia = knownOrder.indexOf(a.nombre)
@@ -196,7 +180,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     })
   }, [productos])
 
-  // Compute product counts per family (considering the current filter)
+  // Compute product counts per family
   const familiaData = useMemo(() => {
     const data: Record<string, { count: number; hasProducts: boolean }> = {}
     for (const familia of familias) {
@@ -217,14 +201,41 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     return productos.filter((p) => p.categoria.nombre === familiaActiva)
   }, [productos, familiaActiva])
 
-  const handleFamiliaClick = (nombre: string) => {
+  const handleFamiliaClick = useCallback((nombre: string) => {
     setFamiliaActiva((prev) => (prev === nombre ? null : nombre))
-  }
+  }, [])
 
-  // Filter out families with no products for current filter
-  const familiasVisibles = familias.filter(
-    (f) => familiaData[f.nombre]?.hasProducts
+  // Filter out families with no products
+  const familiasVisibles = useMemo(
+    () => familias.filter((f) => familiaData[f.nombre]?.hasProducts),
+    [familias, familiaData]
   )
+
+  // Retry: re-fetch all
+  const handleRetry = useCallback(async () => {
+    fetchedRef.current = false
+    setLoading(true)
+    setError('')
+    try {
+      const results = await Promise.all(
+        TODOS_FILTROS.map(async (tipo) => {
+          const res = await fetch(`/api/productos-terminados/public?tipo=${tipo}`)
+          if (!res.ok) throw new Error(`Error cargando ${tipo}`)
+          const data = await res.json()
+          return { tipo, productos: (data.productos || []) as ProductoPublico[] }
+        })
+      )
+      setCache((prev) => {
+        const next = { ...prev }
+        for (const r of results) next[r.tipo] = r.productos
+        return next
+      })
+    } catch {
+      setError('Error de conexión. Verificá tu internet e intentá de nuevo.')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   return (
     <section id="productos" className="min-h-screen flex flex-col justify-center py-12 sm:py-16 md:py-20 bg-crema">
@@ -248,7 +259,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
               onClick={() => handleFiltroChange(f.key)}
               className={`
                 inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold
-                transition-all duration-200 border
+                transition-colors duration-150 border
                 ${filtro === f.key
                   ? 'bg-mostaza text-marron border-mostaza shadow-md'
                   : 'bg-white text-marron/70 border-marron/10 hover:border-mostaza/50 hover:text-marron'
@@ -259,10 +270,9 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
               {f.label}
             </button>
           ))}
-
         </div>
 
-        {/* Loading */}
+        {/* Loading — only on initial mount */}
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -280,19 +290,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
             <p className="text-muted-foreground mb-4">{error}</p>
             <Button
               variant="outline"
-              onClick={() => {
-                setLoading(true)
-                setError('')
-                const params = new URLSearchParams()
-                if (filtro) params.set('tipo', filtro)
-                fetch(`/api/productos-terminados/public?${params.toString()}`)
-                  .then((res) => res.json())
-                  .then((data) => {
-                    setProductos(data.productos || [])
-                  })
-                  .catch(() => setError('Error de conexión.'))
-                  .finally(() => setLoading(false))
-              }}
+              onClick={handleRetry}
               className="border-mostaza text-marron hover:bg-mostaza hover:text-marron"
             >
               Reintentar
@@ -307,152 +305,113 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
           </div>
         ) : (
           <>
-            {/* Family Cards Grid */}
-            <motion.div
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              key={`familias-${filtro}`}
-            >
+            {/* Family Cards Grid — instant swap, no stagger */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {familiasVisibles.map((familia) => {
                 const data = familiaData[familia.nombre]
                 const count = data?.count ?? 0
                 const isActive = familiaActiva === familia.nombre
 
                 return (
-                  <motion.div key={familia.nombre} variants={cardVariants}>
-                    <button
-                      onClick={() => handleFamiliaClick(familia.nombre)}
-                      className={`
-                        w-full group relative rounded-2xl border bg-white p-6 sm:p-8
-                        flex flex-col items-center justify-between text-center min-h-[240px]
-                        transition-all duration-300
-                        border-marron/10 hover:scale-[1.03] hover:shadow-lg cursor-pointer
-                        ${isActive ? 'ring-2 ring-mostaza shadow-lg scale-[1.03]' : ''}
-                      `}
-                    >
-                      {/* Imagen representativa */}
-                      <div
-                        className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-crema border-2 border-mostaza/20 transition-transform duration-300 group-hover:scale-110 flex-shrink-0 relative"
-                        onContextMenu={(e) => e.preventDefault()}
-                      >
-                        <Image
-                          src={getFamiliaImagen(familia, filtro)}
-                          alt={familia.nombre}
-                          width={96}
-                          height={96}
-                          className="object-cover w-full h-full select-none"
-                          draggable={false}
-                        />
-                        {/* Watermark on family images */}
-                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center" aria-hidden="true">
-                          <span className="text-marron/8 text-[7px] font-bold tracking-wider uppercase select-none" style={{ transform: 'rotate(-20deg)' }}>
-                            PO
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Name */}
-                      <h3 className="text-lg sm:text-xl font-bold text-marron line-clamp-1">
-                        {familia.nombre}
-                      </h3>
-
-                      {/* Description */}
-                      <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
-                        {familia.descripcion}
-                      </p>
-
-                      {/* Badge */}
-                      <span className="bg-mostaza/20 text-marron text-xs rounded-full px-2 py-0.5 font-semibold flex-shrink-0">
-                        {count} {count === 1 ? 'variedad' : 'variedades'}
-                      </span>
-
-                      {/* Active indicator dot */}
-                      {isActive && (
-                        <motion.div
-                          layoutId="activeFamilia"
-                          className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-mostaza"
-                          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                        />
-                      )}
-                    </button>
-                  </motion.div>
-                )
-              })}
-            </motion.div>
-
-            {/* Expanded Family Products */}
-            <AnimatePresence mode="wait">
-              {familiaActiva && (() => {
-                const familiaHeader = familias.find((f) => f.nombre === familiaActiva)
-                const imagenHeader = familiaHeader ? getFamiliaImagen(familiaHeader, filtro) : '/images/placeholder-producto.jpg'
-                return (
-                <motion.div
-                  key={familiaActiva}
-                  variants={expandedVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                  className="overflow-hidden"
-                >
-                  <div className="bg-crema/50 rounded-2xl p-6 mt-4">
-                    {/* Header */}
-                    <div className="flex items-center gap-3 mb-6">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setFamiliaActiva(null)}
-                        className="text-marron hover:bg-mostaza/20 gap-1.5 -ml-2"
-                      >
-                        <ArrowLeft className="h-4 w-4" />
-                        Volver
-                      </Button>
-                      <div className="h-6 w-px bg-marron/20" />
-                      <h3 className="text-xl font-bold text-marron flex items-center gap-2">
-                        <span className="w-7 h-7 rounded-full overflow-hidden inline-block bg-crema border border-mostaza/20 flex-shrink-0" onContextMenu={(e) => e.preventDefault()}>
-                          <Image
-                            src={imagenHeader}
-                            alt={familiaActiva}
-                            width={28}
-                            height={28}
-                            className="object-cover w-full h-full select-none"
-                            draggable={false}
-                          />
-                        </span>
-                        {familiaActiva}
-                      </h3>
-                      <span className="text-sm text-muted-foreground">
-                        — {productosFamilia.length} {productosFamilia.length === 1 ? 'variedad' : 'variedades'}
-                      </span>
+                  <button
+                    key={familia.nombre}
+                    onClick={() => handleFamiliaClick(familia.nombre)}
+                    className={`
+                      w-full group relative rounded-2xl border bg-white p-6 sm:p-8
+                      flex flex-col items-center justify-between text-center min-h-[240px]
+                      transition-shadow duration-200
+                      border-marron/10 hover:shadow-lg cursor-pointer
+                      ${isActive ? 'ring-2 ring-mostaza shadow-lg' : ''}
+                    `}
+                  >
+                    {/* Imagen representativa */}
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-crema border-2 border-mostaza/20 flex-shrink-0">
+                      <Image
+                        src={getFamiliaImagen(familia, filtro)}
+                        alt={familia.nombre}
+                        width={96}
+                        height={96}
+                        className="object-cover w-full h-full"
+                      />
                     </div>
 
-                    {/* Products Grid */}
-                    {productosFamilia.length === 0 ? (
-                      <div className="text-center py-8">
-                        <PackageOpen className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
-                        <p className="text-muted-foreground">
-                          No hay productos para este filtro en esta familia
-                        </p>
-                      </div>
-                    ) : (
-                      <motion.div
-                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
-                        variants={containerVariants}
-                        initial="hidden"
-                        animate="visible"
-                      >
-                        {productosFamilia.map((producto) => (
-                          <motion.div key={producto.id} variants={cardVariants}>
-                            <ProductCard producto={producto} />
-                          </motion.div>
-                        ))}
-                      </motion.div>
+                    {/* Name */}
+                    <h3 className="text-lg sm:text-xl font-bold text-marron line-clamp-1">
+                      {familia.nombre}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+                      {familia.descripcion}
+                    </p>
+
+                    {/* Badge */}
+                    <span className="bg-mostaza/20 text-marron text-xs rounded-full px-2 py-0.5 font-semibold flex-shrink-0">
+                      {count} {count === 1 ? 'variedad' : 'variedades'}
+                    </span>
+
+                    {/* Active indicator */}
+                    {isActive && (
+                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-mostaza" />
                     )}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Expanded Family Products — instant show/hide */}
+            {familiaActiva && (() => {
+              const familiaHeader = familias.find((f) => f.nombre === familiaActiva)
+              const imagenHeader = familiaHeader ? getFamiliaImagen(familiaHeader, filtro) : '/images/placeholder-producto.jpg'
+              return (
+                <div className="bg-crema/50 rounded-2xl p-6 mt-4">
+                  {/* Header */}
+                  <div className="flex items-center gap-3 mb-6">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setFamiliaActiva(null)}
+                      className="text-marron hover:bg-mostaza/20 gap-1.5 -ml-2"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Volver
+                    </Button>
+                    <div className="h-6 w-px bg-marron/20" />
+                    <h3 className="text-xl font-bold text-marron flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-full overflow-hidden inline-block bg-crema border border-mostaza/20 flex-shrink-0">
+                        <Image
+                          src={imagenHeader}
+                          alt={familiaActiva}
+                          width={28}
+                          height={28}
+                          className="object-cover w-full h-full"
+                        />
+                      </span>
+                      {familiaActiva}
+                    </h3>
+                    <span className="text-sm text-muted-foreground">
+                      — {productosFamilia.length} {productosFamilia.length === 1 ? 'variedad' : 'variedades'}
+                    </span>
                   </div>
-                </motion.div>
-              )})()}
-            </AnimatePresence>
+
+                  {/* Products Grid */}
+                  {productosFamilia.length === 0 ? (
+                    <div className="text-center py-8">
+                      <PackageOpen className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
+                      <p className="text-muted-foreground">
+                        No hay productos para este filtro en esta familia
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {productosFamilia.map((producto) => (
+                        <ProductCard key={producto.id} producto={producto} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
           </>
         )}
       </div>
