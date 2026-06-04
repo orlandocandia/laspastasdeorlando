@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// WhatsApp Admin Notification — CallMeBot API
+// WhatsApp Admin Notification — TextMeBot API
 // ---------------------------------------------------------------------------
 //
 // Sends a fire-and-forget WhatsApp message to the admin whenever someone
@@ -11,11 +11,14 @@ interface PasswordResetNotificationData {
   email: string;
   ip: string;
   emailExiste: boolean;
-  fecha: string;
+  fecha?: string;
 }
 
 /**
  * Notifies the admin via WhatsApp that a password-reset was requested.
+ *
+ * Uses TextMeBot API: https://api.textmebot.com/send.php
+ * Parameters: recipient (without +), apikey, text
  *
  * ⚠️  This function is async but designed to be called in fire-and-forget
  * fashion.  The caller should NOT await it if doing so would block the
@@ -32,20 +35,22 @@ export async function notifyAdminPasswordReset(
   data: PasswordResetNotificationData,
 ): Promise<void> {
   const adminPhone = process.env.ADMIN_WHATSAPP || '543754419324';
-  const apiKey = process.env.CALLMEBOT_APIKEY;
+  const apiKey = process.env.TEXTMEBOT_APIKEY;
 
   // If no API key is configured (e.g. dev environment), just log and exit.
   if (!apiKey) {
     console.warn(
-      '[whatsapp-admin] CALLMEBOT_APIKEY not set — skipping admin notification.',
+      '[whatsapp-admin] TEXTMEBOT_APIKEY not set — skipping admin notification.',
     );
     return;
   }
 
+  const fecha = data.fecha || new Date().toLocaleString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' });
+
   // Build a concise, readable message
   const message = [
     '🔐 *Solicitud de restablecimiento de contraseña*',
-    `📅 Fecha: ${data.fecha}`,
+    `📅 Fecha: ${fecha}`,
     `📧 Email: ${data.email}`,
     `🌐 IP: ${data.ip}`,
     `${data.emailExiste ? '✅ Email registrado en BD' : '❌ Email NO registrado en BD'}`,
@@ -53,22 +58,23 @@ export async function notifyAdminPasswordReset(
   ].join('\n');
 
   const url =
-    `https://api.callmebot.com/whatsapp.php` +
-    `?phone=${encodeURIComponent(adminPhone)}` +
-    `&text=${encodeURIComponent(message)}` +
-    `&apikey=${encodeURIComponent(apiKey)}`;
+    `https://api.textmebot.com/send.php` +
+    `?recipient=${encodeURIComponent(adminPhone)}` +
+    `&apikey=${encodeURIComponent(apiKey)}` +
+    `&text=${encodeURIComponent(message)}`;
 
   // Fire-and-forget: we use `.catch()` so the promise never becomes
   // unhandled and the error is logged without propagating.
   fetch(url, { method: 'GET' })
-    .then((res) => {
-      if (!res.ok) {
-        console.error(
-          `[whatsapp-admin] CallMeBot responded with status ${res.status}`,
-        );
-      } else {
+    .then(async (res) => {
+      const text = await res.text();
+      if (res.ok || text.toLowerCase().includes('success')) {
         console.log(
           `[whatsapp-admin] Admin notified for password-reset request from "${data.email}"`,
+        );
+      } else {
+        console.error(
+          `[whatsapp-admin] TextMeBot responded with status ${res.status}: ${text}`,
         );
       }
     })

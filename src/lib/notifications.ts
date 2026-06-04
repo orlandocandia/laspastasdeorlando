@@ -144,19 +144,18 @@ async function sendEmailNotification(data: ConsultaData) {
 }
 
 /**
- * WhatsApp notification via CallMeBot API.
- * Requires env vars: ADMIN_PHONE, CALLMEBOT_API_KEY
+ * WhatsApp notification via TextMeBot API.
+ * Requires env vars: ADMIN_WHATSAPP, TEXTMEBOT_APIKEY
  * This is optional — if not configured, it silently skips.
  *
- * SETUP: Add +34 644 52 74 88 to contacts → send "I allow callmebot to send me messages"
- * → receive API key → set CALLMEBOT_API_KEY env var
+ * SETUP: Get your API key at https://textmebot.com
  */
 async function sendWhatsAppNotification(data: ConsultaData) {
-  const adminPhone = process.env.ADMIN_PHONE
-  const apiKey = process.env.CALLMEBOT_API_KEY
+  const adminPhone = process.env.ADMIN_WHATSAPP || '543754419324'
+  const apiKey = process.env.TEXTMEBOT_APIKEY
 
-  if (!adminPhone || !apiKey) {
-    console.log('[Notif-WA] ⚠️ WhatsApp no configurado (falta ADMIN_PHONE o CALLMEBOT_API_KEY), se saltea')
+  if (!apiKey) {
+    console.log('[Notif-WA] ⚠️ WhatsApp no configurado (falta TEXTMEBOT_APIKEY), se saltea')
     return
   }
 
@@ -170,7 +169,7 @@ async function sendWhatsAppNotification(data: ConsultaData) {
     `💬 ${data.mensaje.length > 200 ? data.mensaje.substring(0, 200) + '...' : data.mensaje}`,
   ].filter(Boolean).join('\n')
 
-  const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(adminPhone)}&text=${encodeURIComponent(waMessage)}&apikey=${encodeURIComponent(apiKey)}`
+  const url = `https://api.textmebot.com/send.php?recipient=${encodeURIComponent(adminPhone)}&apikey=${encodeURIComponent(apiKey)}&text=${encodeURIComponent(waMessage)}`
 
   try {
     const response = await fetch(url, {
@@ -180,7 +179,7 @@ async function sendWhatsAppNotification(data: ConsultaData) {
 
     if (!response.ok) {
       const body = await response.text().catch(() => '')
-      console.error(`[Notif-WA] ❌ CallMeBot error ${response.status}: ${body}`)
+      console.error(`[Notif-WA] ❌ TextMeBot error ${response.status}: ${body}`)
       return
     }
 
