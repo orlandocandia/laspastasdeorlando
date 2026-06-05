@@ -287,8 +287,10 @@ export async function sendPasswordResetEmail(
   }
 
   try {
+    // Gmail requires the From address to match the authenticated SMTP_USER.
+    // If SMTP_FROM is not set, use SMTP_USER as the sender.
     const from =
-      process.env.SMTP_FROM || 'Pastas Orlando <noreply@pastasorlando.com>';
+      process.env.SMTP_FROM || `"Pastas Orlando" <${process.env.SMTP_USER}>`;
 
     const result = await transporter.sendMail({
       from,

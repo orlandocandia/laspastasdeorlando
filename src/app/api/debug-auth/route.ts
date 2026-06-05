@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
   }
 
   // 3. Test database connection - find user
-  const testEmail = 'orlando.candia@gmail.com'
+  const testEmail = process.env.SMTP_USER || process.env.ADMIN_EMAIL || 'admin@pastasorlando.com'
   try {
     const usuario = await db.usuario.findUnique({
       where: { email: testEmail },
