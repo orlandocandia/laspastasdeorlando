@@ -31,7 +31,10 @@ export async function notifyAdminPasswordReset(
   const adminPhone = process.env.ADMIN_WHATSAPP || '543754419324';
   const apiKey = process.env.TEXTMEBOT_APIKEY;
 
-  console.log(`[whatsapp-admin] Config check — ADMIN_WHATSAPP: "${adminPhone}" | TEXTMEBOT_APIKEY: "${apiKey ? apiKey.substring(0, 4) + '***' : '(not set)'}"`);
+  console.log('[whatsapp] ADMIN_WHATSAPP existe?', !!process.env.ADMIN_WHATSAPP);
+  console.log('[whatsapp] TEXTMEBOT_APIKEY existe?', !!process.env.TEXTMEBOT_APIKEY);
+  console.log(`[whatsapp] ADMIN_WHATSAPP value: "${adminPhone}"`);
+  console.log(`[whatsapp] TEXTMEBOT_APIKEY: "${apiKey ? apiKey.substring(0, 4) + '***' : '(not set)'}"`);
 
   // If no API key is configured (e.g. dev environment), just log and exit.
   if (!apiKey) {
