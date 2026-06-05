@@ -56,19 +56,34 @@ function isValidEmail(email: string): boolean {
   return emailRegex.test(email)
 }
 
-const GENERIC_RESPONSE = {
-  message: 'Si el email existe en nuestro sistema, recibirás un link de recuperación.',
-}
-
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request)
   console.log(`[forgot-password] Incoming request from IP: ${ip}`)
+
+  // Diagnostic info — will be included in the response
+  const diag = {
+    emailSent: false,
+    emailError: null as string | null,
+    whatsappStatus: 'not_called' as string,
+    whatsappError: null as string | null,
+    envCheck: {
+      SMTP_USER: !!process.env.SMTP_USER,
+      SMTP_PASS: !!process.env.SMTP_PASS,
+      SMTP_HOST: process.env.SMTP_HOST || '(not set)',
+      SMTP_FROM: process.env.SMTP_FROM || '(not set)',
+      ADMIN_WHATSAPP: process.env.ADMIN_WHATSAPP || '(not set)',
+      TEXTMEBOT_APIKEY: !!process.env.TEXTMEBOT_APIKEY,
+    },
+  }
 
   try {
     // Rate limiting check
     if (isRateLimited(ip)) {
       console.warn(`[forgot-password] ⚠️ Rate limited IP: ${ip}`)
-      return NextResponse.json(GENERIC_RESPONSE, { status: 200 })
+      return NextResponse.json({
+        message: 'Si el email existe en nuestro sistema, recibirás un link de recuperación.',
+        diag,
+      }, { status: 200 })
     }
 
     incrementRateLimit(ip)
@@ -80,13 +95,19 @@ export async function POST(request: NextRequest) {
       email = body.email
     } catch {
       console.warn('[forgot-password] ⚠️ Could not parse request body')
-      return NextResponse.json(GENERIC_RESPONSE, { status: 200 })
+      return NextResponse.json({
+        message: 'Si el email existe en nuestro sistema, recibirás un link de recuperación.',
+        diag,
+      }, { status: 200 })
     }
 
     // Validate email format
     if (!email || typeof email !== 'string' || !isValidEmail(email)) {
       console.warn(`[forgot-password] ⚠️ Invalid email format: "${email}"`)
-      return NextResponse.json(GENERIC_RESPONSE, { status: 200 })
+      return NextResponse.json({
+        message: 'Si el email existe en nuestro sistema, recibirás un link de recuperación.',
+        diag,
+      }, { status: 200 })
     }
 
     const normalizedEmail = email.toLowerCase().trim()
@@ -137,31 +158,48 @@ export async function POST(request: NextRequest) {
       const resetUrl = `${appUrl}/reset-password?token=${token}`
       console.log(`[forgot-password] Reset URL: ${resetUrl.substring(0, 60)}...`)
 
-      // Send password reset email (awaited — we want to know if it fails)
+      // Send password reset email
       console.log('[forgot-password] 📧 Calling sendPasswordResetEmail...')
-      await sendPasswordResetEmail(normalizedEmail, resetUrl)
-      console.log('[forgot-password] 📧 sendPasswordResetEmail completed')
+      try {
+        await sendPasswordResetEmail(normalizedEmail, resetUrl)
+        diag.emailSent = true
+        console.log('[forgot-password] 📧 sendPasswordResetEmail completed OK')
+      } catch (emailErr) {
+        diag.emailError = emailErr instanceof Error ? emailErr.message : String(emailErr)
+        console.error('[forgot-password] 📧 sendPasswordResetEmail FAILED:', emailErr)
+      }
 
-      // Send WhatsApp notification to admin (awaited so serverless doesn't kill it)
+      // Send WhatsApp notification to admin
       console.log('[forgot-password] 📱 Calling notifyAdminPasswordReset...')
-      await notifyAdminPasswordReset({
-        email: normalizedEmail,
-        emailExiste: true,
-        ip,
-      }).catch((err) => {
-        console.error('[forgot-password] WhatsApp notification error (non-blocking):', err)
-      })
-      console.log('[forgot-password] 📱 notifyAdminPasswordReset completed')
+      diag.whatsappStatus = 'calling'
+      try {
+        await notifyAdminPasswordReset({
+          email: normalizedEmail,
+          emailExiste: true,
+          ip,
+        })
+        diag.whatsappStatus = 'sent'
+        console.log('[forgot-password] 📱 notifyAdminPasswordReset completed OK')
+      } catch (waErr) {
+        diag.whatsappStatus = 'error'
+        diag.whatsappError = waErr instanceof Error ? waErr.message : String(waErr)
+        console.error('[forgot-password] 📱 notifyAdminPasswordReset FAILED:', waErr)
+      }
     } else {
       // Email doesn't exist — still notify admin via WhatsApp
       console.log('[forgot-password] Email not found — sending admin notification only')
-      await notifyAdminPasswordReset({
-        email: normalizedEmail,
-        emailExiste: false,
-        ip,
-      }).catch((err) => {
-        console.error('[forgot-password] WhatsApp notification error (non-blocking):', err)
-      })
+      diag.whatsappStatus = 'calling'
+      try {
+        await notifyAdminPasswordReset({
+          email: normalizedEmail,
+          emailExiste: false,
+          ip,
+        })
+        diag.whatsappStatus = 'sent'
+      } catch (waErr) {
+        diag.whatsappStatus = 'error'
+        diag.whatsappError = waErr instanceof Error ? waErr.message : String(waErr)
+      }
     }
 
     // Log the attempt in LogAcceso table
@@ -177,8 +215,11 @@ export async function POST(request: NextRequest) {
       console.error('[forgot-password] ⚠️ Failed to log access attempt:', logErr)
     }
 
-    // Always respond with the same generic message
-    return NextResponse.json(GENERIC_RESPONSE, { status: 200 })
+    // Return response with diagnostic info
+    return NextResponse.json({
+      message: 'Si el email existe en nuestro sistema, recibirás un link de recuperación.',
+      diag,
+    }, { status: 200 })
   } catch (error) {
     console.error('[forgot-password] ❌ Unhandled error:', error)
 
@@ -195,7 +236,12 @@ export async function POST(request: NextRequest) {
       console.error('[forgot-password] ⚠️ Failed to log error attempt:', logErr)
     }
 
-    // Always return the same generic message
-    return NextResponse.json(GENERIC_RESPONSE, { status: 200 })
+    diag.whatsappStatus = 'error_unhandled'
+    diag.whatsappError = error instanceof Error ? error.message : String(error)
+
+    return NextResponse.json({
+      message: 'Si el email existe en nuestro sistema, recibirás un link de recuperación.',
+      diag,
+    }, { status: 200 })
   }
 }
