@@ -22,6 +22,37 @@ async function autoMigrateTurso(client: Client) {
   globalForPrisma.tursoMigrated = true
 
   const migrations = [
+    // ── CREATE TABLES (idempotent — IF NOT EXISTS) ──────────────
+    { sql: `CREATE TABLE IF NOT EXISTS "PasswordReset" (
+      "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "email" TEXT NOT NULL,
+      "token" TEXT NOT NULL,
+      "usado" BOOLEAN NOT NULL DEFAULT 0,
+      "fecha_expiracion" DATETIME NOT NULL,
+      "ip" TEXT,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`, desc: 'PasswordReset table' },
+    { sql: 'CREATE UNIQUE INDEX IF NOT EXISTS "PasswordReset_token_key" ON "PasswordReset"("token")', desc: 'PasswordReset_token_key' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "PasswordReset_token_idx" ON "PasswordReset"("token")', desc: 'PasswordReset_token_idx' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "PasswordReset_email_idx" ON "PasswordReset"("email")', desc: 'PasswordReset_email_idx' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "PasswordReset_fecha_expiracion_idx" ON "PasswordReset"("fecha_expiracion")', desc: 'PasswordReset_fecha_expiracion_idx' },
+
+    // ── CREATE TABLE Consulta (if not exists) ──────────────
+    { sql: `CREATE TABLE IF NOT EXISTS "Consulta" (
+      "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "nombre" TEXT NOT NULL,
+      "email" TEXT NOT NULL,
+      "telefono" TEXT NOT NULL,
+      "mensaje" TEXT NOT NULL,
+      "leido" BOOLEAN NOT NULL DEFAULT 0,
+      "respondido" BOOLEAN NOT NULL DEFAULT 0,
+      "fecha" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )`, desc: 'Consulta table' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "Consulta_fecha_idx" ON "Consulta"("fecha")', desc: 'Consulta_fecha_idx' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "Consulta_leido_idx" ON "Consulta"("leido")', desc: 'Consulta_leido_idx' },
+
+    // ── ALTER TABLE (column additions — idempotent) ──────────
     { sql: 'ALTER TABLE "Opinion" ADD COLUMN "email" TEXT', desc: 'Opinion.email' },
     { sql: 'ALTER TABLE "ProductoTerminado" ADD COLUMN "codigo_barras" TEXT', desc: 'ProductoTerminado.codigo_barras' },
     { sql: 'ALTER TABLE "ProductoTerminado" ADD COLUMN "tipo_harina" TEXT', desc: 'ProductoTerminado.tipo_harina' },
