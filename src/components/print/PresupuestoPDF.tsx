@@ -42,7 +42,7 @@ const PresupuestoPDF = forwardRef<HTMLDivElement, PresupuestoPDFProps>(
       nombre: 'Pastas Orlando',
       direccion: 'Posadas, Misiones',
       telefono: '3754-419324',
-      email: 'laspastasdeorlando@gmail.com',
+      email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'laspastasdeorlando@gmail.com',
     }
 
     const formatDate = (dateStr: string) => {

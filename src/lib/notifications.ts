@@ -27,33 +27,42 @@ export async function sendConsultaNotifications(data: ConsultaData) {
 
 /**
  * Email notification via nodemailer (Gmail SMTP).
- * Requires env vars: SMTP_USER, SMTP_PASS
- * Optional: SMTP_HOST (default: smtp.gmail.com), SMTP_PORT (default: 587), ADMIN_EMAIL
+ * Uses the SAME env vars as the password-recovery email (SMTP_USER, SMTP_PASS, etc.)
+ * Transporter is created INSIDE the function so env vars are always read fresh.
  */
 async function sendEmailNotification(data: ConsultaData) {
+  // ── Diagnostic logs ──────────────────────────────────────────────
+  console.log('[Notif-Email] SMTP_USER existe?', !!process.env.SMTP_USER)
+  console.log('[Notif-Email] SMTP_PASS existe?', !!process.env.SMTP_PASS)
+  console.log('[Notif-Email] SMTP_HOST:', process.env.SMTP_HOST || '(not set)')
+  console.log('[Notif-Email] SMTP_PORT:', process.env.SMTP_PORT || '(not set)')
+  console.log('[Notif-Email] SMTP_SECURE:', process.env.SMTP_SECURE || '(not set)')
+
   const smtpUser = process.env.SMTP_USER
   const smtpPass = process.env.SMTP_PASS
 
   if (!smtpUser || !smtpPass) {
-    console.log('[Notif-Email] ⚠️ SMTP credentials not configured (SMTP_USER/SMTP_PASS missing), skipping email')
+    console.error('[Notif-Email] ❌ SMTP_USER o SMTP_PASS no configurados — no se puede enviar email')
     return
   }
 
   const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com'
   const smtpPort = parseInt(process.env.SMTP_PORT || '587')
+  const smtpSecure = process.env.SMTP_SECURE === 'true'
   const adminEmail = process.env.ADMIN_EMAIL || smtpUser
 
-  console.log(`[Notif-Email] Conectando a ${smtpHost}:${smtpPort} como ${smtpUser} → enviando a ${adminEmail}`)
-
+  // ── Create transporter INSIDE the function ───────────────────────
   const transporter = nodemailer.createTransport({
     host: smtpHost,
     port: smtpPort,
-    secure: false,
+    secure: smtpSecure, // false para puerto 587
     auth: {
       user: smtpUser,
       pass: smtpPass,
     },
   })
+
+  console.log(`[Notif-Email] Enviando desde ${smtpUser} → ${adminEmail}`)
 
   const whatsappReplyLink = data.telefono
     ? `https://wa.me/${data.telefono.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola ${data.nombre}, gracias por contactarte con Pastas Orlando.`)}`
@@ -61,7 +70,7 @@ async function sendEmailNotification(data: ConsultaData) {
 
   try {
     const info = await transporter.sendMail({
-      from: `"Pastas Orlando Web" <${smtpUser}>`,
+      from: process.env.SMTP_FROM || `"Pastas Orlando Web" <${smtpUser}>`,
       to: adminEmail,
       subject: '📧 Nuevo mensaje de contacto - Pastas Orlando',
       html: `
@@ -171,14 +180,19 @@ async function sendWhatsAppNotification(data: ConsultaData) {
 
   const url = `https://api.textmebot.com/send.php?recipient=${encodeURIComponent(adminPhone)}&apikey=${encodeURIComponent(apiKey)}&text=${encodeURIComponent(waMessage)}`
 
+  const maskedUrl = url.replace(/apikey=[^&]+/, 'apikey=***')
+  console.log(`[Notif-WA] Sending to TextMeBot: ${maskedUrl}`)
+
   try {
     const response = await fetch(url, {
       method: 'GET',
       signal: AbortSignal.timeout(10000),
     })
 
-    if (!response.ok) {
-      const body = await response.text().catch(() => '')
+    const body = await response.text()
+    console.log(`[Notif-WA] TextMeBot response: status=${response.status} body=${body}`)
+
+    if (!response.ok && !body.toLowerCase().includes('success')) {
       console.error(`[Notif-WA] ❌ TextMeBot error ${response.status}: ${body}`)
       return
     }
