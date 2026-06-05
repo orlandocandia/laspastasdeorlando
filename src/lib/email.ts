@@ -1,18 +1,34 @@
 import nodemailer from 'nodemailer';
 
 // ---------------------------------------------------------------------------
-// SMTP Transporter (reusable across calls)
+// SMTP Transporter — created PER CALL (not module-level)
+// ---------------------------------------------------------------------------
+// CRITICAL: In Vercel serverless, env vars may not be available at module
+// import time. Creating the transporter at module scope reads process.env
+// only once, which can result in undefined credentials even when the env
+// vars are set. We now create a fresh transporter on every call.
 // ---------------------------------------------------------------------------
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: Number(process.env.SMTP_PORT) || 587,
-  secure: false, // true for 465, false for other ports (587 uses STARTTLS)
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+function createTransporter() {
+  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+  const port = Number(process.env.SMTP_PORT) || 587;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  console.log(`[email] Creating transporter → ${host}:${port} | user="${user || '(missing)'}" | pass="${pass ? '***set***' : '(missing)'}"`);
+
+  if (!user || !pass) {
+    console.error('[email] ❌ SMTP_USER or SMTP_PASS not set — cannot send email');
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: false, // 587 uses STARTTLS
+    auth: { user, pass },
+  });
+}
 
 // ---------------------------------------------------------------------------
 // HTML Email Template
@@ -258,6 +274,18 @@ export async function sendPasswordResetEmail(
   email: string,
   resetUrl: string,
 ): Promise<void> {
+  console.log(`[email] Enviando email a: ${email}`);
+  console.log(`[email] SMTP_USER: ${process.env.SMTP_USER || '(not set)'}`);
+  console.log(`[email] SMTP_HOST: ${process.env.SMTP_HOST || '(default: smtp.gmail.com)'}`);
+  console.log(`[email] SMTP_FROM: ${process.env.SMTP_FROM || '(default)'}`);
+
+  const transporter = createTransporter();
+
+  if (!transporter) {
+    console.error(`[email] ❌ No se pudo crear el transporter — email a "${email}" NO enviado`);
+    return;
+  }
+
   try {
     const from =
       process.env.SMTP_FROM || 'Pastas Orlando <noreply@pastasorlando.com>';
@@ -271,13 +299,15 @@ export async function sendPasswordResetEmail(
     });
 
     console.log(
-      `[email] Password-reset email sent to "${email}" — messageId: ${result.messageId}`,
+      `[email] ✅ Password-reset email sent to "${email}" — messageId: ${result.messageId}`,
     );
   } catch (error) {
     console.error(
-      `[email] Failed to send password-reset email to "${email}":`,
+      `[email] ❌ Failed to send password-reset email to "${email}":`,
       error,
     );
     // Intentionally NOT re-throwing — email failure must not break the flow
+  } finally {
+    transporter.close();
   }
 }

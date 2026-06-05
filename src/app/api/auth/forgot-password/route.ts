@@ -13,7 +13,6 @@ const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000 // 1 hour
 function getClientIp(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
   if (forwarded) {
-    // x-forwarded-for may contain multiple IPs, take the first one
     return forwarded.split(',')[0].trim()
   }
   return 'unknown'
@@ -21,20 +20,13 @@ function getClientIp(request: NextRequest): string {
 
 function isRateLimited(ip: string): boolean {
   const entry = rateLimitMap.get(ip)
-
-  if (!entry) {
-    return false
-  }
+  if (!entry) return false
 
   const now = Date.now()
-  const elapsed = now - entry.firstAttempt
-
-  // Reset window if it has expired
-  if (elapsed > RATE_LIMIT_WINDOW_MS) {
+  if (now - entry.firstAttempt > RATE_LIMIT_WINDOW_MS) {
     rateLimitMap.delete(ip)
     return false
   }
-
   return entry.count >= RATE_LIMIT_MAX
 }
 
@@ -49,7 +41,7 @@ function incrementRateLimit(ip: string): void {
   }
 }
 
-// Periodically clean up stale rate limit entries to prevent memory leaks
+// Periodically clean up stale rate limit entries
 setInterval(() => {
   const now = Date.now()
   for (const [ip, entry] of rateLimitMap.entries()) {
@@ -57,10 +49,9 @@ setInterval(() => {
       rateLimitMap.delete(ip)
     }
   }
-}, 10 * 60 * 1000) // Clean every 10 minutes
+}, 10 * 60 * 1000)
 
 function isValidEmail(email: string): boolean {
-  // Basic email format validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
 }
@@ -71,11 +62,12 @@ const GENERIC_RESPONSE = {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request)
+  console.log(`[forgot-password] Incoming request from IP: ${ip}`)
 
   try {
     // Rate limiting check
     if (isRateLimited(ip)) {
-      // Still return generic message to not reveal rate limiting behavior
+      console.warn(`[forgot-password] ⚠️ Rate limited IP: ${ip}`)
       return NextResponse.json(GENERIC_RESPONSE, { status: 200 })
     }
 
@@ -87,15 +79,18 @@ export async function POST(request: NextRequest) {
       const body = await request.json()
       email = body.email
     } catch {
+      console.warn('[forgot-password] ⚠️ Could not parse request body')
       return NextResponse.json(GENERIC_RESPONSE, { status: 200 })
     }
 
     // Validate email format
     if (!email || typeof email !== 'string' || !isValidEmail(email)) {
+      console.warn(`[forgot-password] ⚠️ Invalid email format: "${email}"`)
       return NextResponse.json(GENERIC_RESPONSE, { status: 200 })
     }
 
     const normalizedEmail = email.toLowerCase().trim()
+    console.log(`[forgot-password] Processing recovery for: ${normalizedEmail}`)
 
     // Ensure database is ready
     await ensureDbReady()
@@ -106,9 +101,10 @@ export async function POST(request: NextRequest) {
     })
 
     const emailExists = !!usuario
+    console.log(`[forgot-password] Email exists in DB: ${emailExists}`)
 
     if (emailExists) {
-      // Generate a cryptographically secure random token (64 hex chars = 32 bytes)
+      // Generate a cryptographically secure random token
       const token = crypto.randomBytes(32).toString('hex')
 
       // Set expiration to 1 hour from now
@@ -139,45 +135,52 @@ export async function POST(request: NextRequest) {
       // Build the reset URL
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pastasorlando.vercel.app'
       const resetUrl = `${appUrl}/reset-password?token=${token}`
+      console.log(`[forgot-password] Reset URL: ${resetUrl.substring(0, 60)}...`)
 
-      // Send password reset email
+      // Send password reset email (awaited — we want to know if it fails)
+      console.log('[forgot-password] 📧 Calling sendPasswordResetEmail...')
       await sendPasswordResetEmail(normalizedEmail, resetUrl)
+      console.log('[forgot-password] 📧 sendPasswordResetEmail completed')
 
-      // Send WhatsApp notification to admin (fire-and-forget, don't await)
-      notifyAdminPasswordReset({
+      // Send WhatsApp notification to admin (awaited so serverless doesn't kill it)
+      console.log('[forgot-password] 📱 Calling notifyAdminPasswordReset...')
+      await notifyAdminPasswordReset({
         email: normalizedEmail,
         emailExiste: true,
         ip,
-      }).catch(() => {
-        // Silently ignore WhatsApp notification errors
+      }).catch((err) => {
+        console.error('[forgot-password] WhatsApp notification error (non-blocking):', err)
       })
+      console.log('[forgot-password] 📱 notifyAdminPasswordReset completed')
     } else {
       // Email doesn't exist — still notify admin via WhatsApp
-      notifyAdminPasswordReset({
+      console.log('[forgot-password] Email not found — sending admin notification only')
+      await notifyAdminPasswordReset({
         email: normalizedEmail,
         emailExiste: false,
         ip,
-      }).catch(() => {
-        // Silently ignore WhatsApp notification errors
+      }).catch((err) => {
+        console.error('[forgot-password] WhatsApp notification error (non-blocking):', err)
       })
     }
 
     // Log the attempt in LogAcceso table
-    await db.logAcceso.create({
-      data: {
-        email: normalizedEmail,
-        ip,
-        resultado: 'PASSWORD_RESET_REQUEST',
-      },
-    }).catch(() => {
-      // Silently ignore logging errors
-    })
+    try {
+      await db.logAcceso.create({
+        data: {
+          email: normalizedEmail,
+          ip,
+          resultado: 'PASSWORD_RESET_REQUEST',
+        },
+      })
+    } catch (logErr) {
+      console.error('[forgot-password] ⚠️ Failed to log access attempt:', logErr)
+    }
 
     // Always respond with the same generic message
     return NextResponse.json(GENERIC_RESPONSE, { status: 200 })
   } catch (error) {
-    // Log the error internally
-    console.error('[forgot-password] Error:', error)
+    console.error('[forgot-password] ❌ Unhandled error:', error)
 
     // Still try to log the attempt even on error
     try {
@@ -188,8 +191,8 @@ export async function POST(request: NextRequest) {
           resultado: 'PASSWORD_RESET_REQUEST_ERROR',
         },
       })
-    } catch {
-      // Silently ignore logging errors during error handling
+    } catch (logErr) {
+      console.error('[forgot-password] ⚠️ Failed to log error attempt:', logErr)
     }
 
     // Always return the same generic message
