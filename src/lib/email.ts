@@ -1,36 +1,6 @@
 import nodemailer from 'nodemailer';
 
 // ---------------------------------------------------------------------------
-// SMTP Transporter — created PER CALL (not module-level)
-// ---------------------------------------------------------------------------
-// CRITICAL: In Vercel serverless, env vars may not be available at module
-// import time. Creating the transporter at module scope reads process.env
-// only once, which can result in undefined credentials even when the env
-// vars are set. We now create a fresh transporter on every call.
-// ---------------------------------------------------------------------------
-
-function createTransporter() {
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = Number(process.env.SMTP_PORT) || 587;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  console.log(`[email] Creating transporter → ${host}:${port} | user="${user || '(missing)'}" | pass="${pass ? '***set***' : '(missing)'}"`);
-
-  if (!user || !pass) {
-    console.error('[email] ❌ SMTP_USER or SMTP_PASS not set — cannot send email');
-    return null;
-  }
-
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure: false, // 587 uses STARTTLS
-    auth: { user, pass },
-  });
-}
-
-// ---------------------------------------------------------------------------
 // HTML Email Template
 // ---------------------------------------------------------------------------
 
@@ -268,29 +238,50 @@ Pastas Orlando - Posadas, Misiones, Argentina
 /**
  * Sends a password-reset email with a branded HTML template.
  *
- * Errors are logged but never thrown so the calling flow is never interrupted.
+ * The transporter is created INSIDE this function on every call so that
+ * process.env is always read fresh (Vercel serverless may not have env
+ * vars available at module-import time).
+ *
+ * Errors are logged with full detail — never silently swallowed.
  */
 export async function sendPasswordResetEmail(
   email: string,
   resetUrl: string,
 ): Promise<void> {
-  console.log(`[email] Enviando email a: ${email}`);
-  console.log(`[email] SMTP_USER: ${process.env.SMTP_USER || '(not set)'}`);
-  console.log(`[email] SMTP_HOST: ${process.env.SMTP_HOST || '(default: smtp.gmail.com)'}`);
-  console.log(`[email] SMTP_FROM: ${process.env.SMTP_FROM || '(default)'}`);
+  // ── Diagnostic logs ──────────────────────────────────────────────
+  console.log('[email] Enviando email a:', email);
+  console.log('[email] SMTP_USER existe?', !!process.env.SMTP_USER);
+  console.log('[email] SMTP_PASS existe?', !!process.env.SMTP_PASS);
+  console.log('[email] SMTP_HOST:', process.env.SMTP_HOST || '(not set)');
+  console.log('[email] SMTP_PORT:', process.env.SMTP_PORT || '(not set)');
+  console.log('[email] SMTP_SECURE:', process.env.SMTP_SECURE || '(not set)');
+  console.log('[email] SMTP_FROM:', process.env.SMTP_FROM || '(not set)');
 
-  const transporter = createTransporter();
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
 
-  if (!transporter) {
-    console.error(`[email] ❌ No se pudo crear el transporter — email a "${email}" NO enviado`);
+  if (!smtpUser || !smtpPass) {
+    console.error('[email] ❌ FALTAN CREDENCIALES — SMTP_USER o SMTP_PASS no están configurados');
     return;
   }
 
+  // ── Create transporter INSIDE the function ───────────────────────
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true', // false para puerto 587
+    auth: {
+      user: smtpUser,
+      pass: smtpPass,
+    },
+  });
+
+  console.log('[email] Transporter creado OK — intentando enviar...');
+
   try {
     // Gmail requires the From address to match the authenticated SMTP_USER.
-    // If SMTP_FROM is not set, use SMTP_USER as the sender.
     const from =
-      process.env.SMTP_FROM || `"Pastas Orlando" <${process.env.SMTP_USER}>`;
+      process.env.SMTP_FROM || `"Pastas Orlando" <${smtpUser}>`;
 
     const result = await transporter.sendMail({
       from,
@@ -301,14 +292,11 @@ export async function sendPasswordResetEmail(
     });
 
     console.log(
-      `[email] ✅ Password-reset email sent to "${email}" — messageId: ${result.messageId}`,
+      `[email] ✅ Email enviado OK a "${email}" — messageId: ${result.messageId}`,
     );
   } catch (error) {
-    console.error(
-      `[email] ❌ Failed to send password-reset email to "${email}":`,
-      error,
-    );
-    // Intentionally NOT re-throwing — email failure must not break the flow
+    console.error(`[email] ❌ ERROR enviando email a "${email}":`, error);
+    // Don't re-throw — email failure must not break the recovery flow
   } finally {
     transporter.close();
   }
