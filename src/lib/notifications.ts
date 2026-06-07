@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer'
+import { notifyAdminConsulta } from '@/lib/whatsapp-admin'
 
 interface ConsultaData {
   nombre: string
@@ -12,17 +13,21 @@ interface ConsultaData {
  * Each channel catches its own errors independently.
  */
 export async function sendConsultaNotifications(data: ConsultaData) {
-  console.log('[Notif] 📨 Nueva consulta de:', data.nombre, '|', data.email)
+  console.log('[CONSULTA] 📨 Nueva consulta de:', data.nombre, '|', data.email)
 
   // Run both in parallel — one failing doesn't affect the other
   const results = await Promise.allSettled([
     sendEmailNotification(data),
-    sendWhatsAppNotification(data),
+    notifyAdminConsulta(data),
   ])
 
   const emailStatus = results[0].status === 'fulfilled' ? '✅' : '❌'
-  const waStatus = results[1].status === 'fulfilled' ? '✅' : '❌'
-  console.log(`[Notif] Resultados: Email ${emailStatus} | WhatsApp ${waStatus}`)
+  const waResult = results[1]
+  const waStatus = waResult.status === 'fulfilled'
+    ? (waResult.value.sent ? '✅ enviado' : `⚠️ ${waResult.value.reason}`)
+    : '❌'
+
+  console.log(`[CONSULTA] Resultados: Email ${emailStatus} | WhatsApp ${waStatus}`)
 }
 
 /**
@@ -32,17 +37,17 @@ export async function sendConsultaNotifications(data: ConsultaData) {
  */
 async function sendEmailNotification(data: ConsultaData) {
   // ── Diagnostic logs ──────────────────────────────────────────────
-  console.log('[Notif-Email] SMTP_USER existe?', !!process.env.SMTP_USER)
-  console.log('[Notif-Email] SMTP_PASS existe?', !!process.env.SMTP_PASS)
-  console.log('[Notif-Email] SMTP_HOST:', process.env.SMTP_HOST || '(not set)')
-  console.log('[Notif-Email] SMTP_PORT:', process.env.SMTP_PORT || '(not set)')
-  console.log('[Notif-Email] SMTP_SECURE:', process.env.SMTP_SECURE || '(not set)')
+  console.log('[CONSULTA-Email] SMTP_USER existe?', !!process.env.SMTP_USER)
+  console.log('[CONSULTA-Email] SMTP_PASS existe?', !!process.env.SMTP_PASS)
+  console.log('[CONSULTA-Email] SMTP_HOST:', process.env.SMTP_HOST || '(not set)')
+  console.log('[CONSULTA-Email] SMTP_PORT:', process.env.SMTP_PORT || '(not set)')
+  console.log('[CONSULTA-Email] SMTP_SECURE:', process.env.SMTP_SECURE || '(not set)')
 
   const smtpUser = process.env.SMTP_USER
   const smtpPass = process.env.SMTP_PASS
 
   if (!smtpUser || !smtpPass) {
-    console.error('[Notif-Email] ❌ SMTP_USER o SMTP_PASS no configurados — no se puede enviar email')
+    console.error('[CONSULTA-Email] ❌ SMTP_USER o SMTP_PASS no configurados — no se puede enviar email')
     return
   }
 
@@ -62,7 +67,7 @@ async function sendEmailNotification(data: ConsultaData) {
     },
   })
 
-  console.log(`[Notif-Email] Enviando desde ${smtpUser} → ${adminEmail}`)
+  console.log(`[CONSULTA-Email] Enviando desde ${smtpUser} → ${adminEmail}`)
 
   const whatsappReplyLink = data.telefono
     ? `https://wa.me/${data.telefono.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hola ${data.nombre}, gracias por contactarte con Pastas Orlando.`)}`
@@ -142,64 +147,12 @@ async function sendEmailNotification(data: ConsultaData) {
       `,
     })
 
-    console.log('[Notif-Email] ✅ Email enviado OK — MessageId:', info.messageId)
+    console.log('[CONSULTA-Email] ✅ Email enviado OK — MessageId:', info.messageId)
   } catch (error: unknown) {
     const errMsg = error instanceof Error ? error.message : String(error)
     const errCode = (error as { code?: string })?.code || ''
-    console.error(`[Notif-Email] ❌ Error enviando email [${errCode}]: ${errMsg}`)
+    console.error(`[CONSULTA-Email] ❌ Error enviando email [${errCode}]: ${errMsg}`)
   } finally {
     transporter.close()
-  }
-}
-
-/**
- * WhatsApp notification via TextMeBot API.
- * Requires env vars: ADMIN_WHATSAPP, TEXTMEBOT_APIKEY
- * This is optional — if not configured, it silently skips.
- *
- * SETUP: Get your API key at https://textmebot.com
- */
-async function sendWhatsAppNotification(data: ConsultaData) {
-  const adminPhone = process.env.ADMIN_WHATSAPP || '543754419324'
-  const apiKey = process.env.TEXTMEBOT_APIKEY
-
-  if (!apiKey) {
-    console.log('[Notif-WA] ⚠️ WhatsApp no configurado (falta TEXTMEBOT_APIKEY), se saltea')
-    return
-  }
-
-  const waMessage = [
-    `📋 *Nueva consulta - Pastas Orlando*`,
-    ``,
-    `👤 ${data.nombre}`,
-    `📧 ${data.email}`,
-    data.telefono ? `📱 ${data.telefono}` : '',
-    ``,
-    `💬 ${data.mensaje.length > 200 ? data.mensaje.substring(0, 200) + '...' : data.mensaje}`,
-  ].filter(Boolean).join('\n')
-
-  const url = `https://api.textmebot.com/send.php?recipient=${encodeURIComponent(adminPhone)}&apikey=${encodeURIComponent(apiKey)}&text=${encodeURIComponent(waMessage)}`
-
-  const maskedUrl = url.replace(/apikey=[^&]+/, 'apikey=***')
-  console.log(`[Notif-WA] Sending to TextMeBot: ${maskedUrl}`)
-
-  try {
-    const response = await fetch(url, {
-      method: 'GET',
-      signal: AbortSignal.timeout(10000),
-    })
-
-    const body = await response.text()
-    console.log(`[Notif-WA] TextMeBot response: status=${response.status} body=${body}`)
-
-    if (!response.ok && !body.toLowerCase().includes('success')) {
-      console.error(`[Notif-WA] ❌ TextMeBot error ${response.status}: ${body}`)
-      return
-    }
-
-    console.log('[Notif-WA] ✅ WhatsApp enviado OK a', adminPhone)
-  } catch (error: unknown) {
-    const errMsg = error instanceof Error ? error.message : String(error)
-    console.error(`[Notif-WA] ❌ Error enviando WhatsApp: ${errMsg}`)
   }
 }
