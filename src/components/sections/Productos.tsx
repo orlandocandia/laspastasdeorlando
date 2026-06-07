@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Image from 'next/image'
-import { PackageOpen, ArrowLeft, Wheat, Leaf, Sparkles } from 'lucide-react'
+import { PackageOpen, ArrowLeft, Wheat, Leaf, Sparkles, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import ProductCard from '@/components/products/ProductCard'
 
@@ -88,6 +88,9 @@ const FILTROS: { key: FiltroHarina; label: string; icon: React.ReactNode }[] = [
 
 const TODOS_FILTROS: FiltroHarina[] = ['con_gluten', 'integral', 'sin_gluten']
 
+// Products per page in the expanded family view
+const PRODUCTS_PER_PAGE = 6
+
 interface ProductosProps {
   filtroActivo?: FiltroHarina
   onFiltroChange?: (filtro: FiltroHarina) => void
@@ -104,6 +107,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   const [error, setError] = useState('')
   const [filtro, setFiltro] = useState<FiltroHarina>(filtroActivo)
   const [familiaActiva, setFamiliaActiva] = useState<string | null>(null)
+  const [visibleCount, setVisibleCount] = useState(PRODUCTS_PER_PAGE)
   const fetchedRef = useRef(false)
 
   // Pre-fetch all 3 filter types in parallel on mount — no refetch on filter change
@@ -136,6 +140,11 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     }
     fetchAll()
   }, [])
+
+  // Reset visible count when family changes
+  useEffect(() => {
+    setVisibleCount(PRODUCTS_PER_PAGE)
+  }, [familiaActiva])
 
   // Sync with parent filtro state — instant, no refetch
   useEffect(() => {
@@ -195,14 +204,25 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     return data
   }, [productos, familias])
 
-  // Products for the active family
+  // Products for the active family — paginated
   const productosFamilia = useMemo(() => {
     if (!familiaActiva) return []
     return productos.filter((p) => p.categoria.nombre === familiaActiva)
   }, [productos, familiaActiva])
 
+  // Only show the first `visibleCount` products — avoids rendering all images at once
+  const productosVisibles = useMemo(() => {
+    return productosFamilia.slice(0, visibleCount)
+  }, [productosFamilia, visibleCount])
+
+  const hasMore = visibleCount < productosFamilia.length
+
   const handleFamiliaClick = useCallback((nombre: string) => {
     setFamiliaActiva((prev) => (prev === nombre ? null : nombre))
+  }, [])
+
+  const handleLoadMore = useCallback(() => {
+    setVisibleCount((prev) => prev + PRODUCTS_PER_PAGE)
   }, [])
 
   // Filter out families with no products
@@ -360,7 +380,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
               })}
             </div>
 
-            {/* Expanded Family Products — instant show/hide */}
+            {/* Expanded Family Products — paginated with "Ver más" */}
             {familiaActiva && (() => {
               const familiaHeader = familias.find((f) => f.nombre === familiaActiva)
               const imagenHeader = familiaHeader ? getFamiliaImagen(familiaHeader, filtro) : '/images/placeholder-producto.jpg'
@@ -396,7 +416,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                     </span>
                   </div>
 
-                  {/* Products Grid */}
+                  {/* Products Grid — paginated */}
                   {productosFamilia.length === 0 ? (
                     <div className="text-center py-8">
                       <PackageOpen className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
@@ -405,11 +425,27 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                       </p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {productosFamilia.map((producto) => (
-                        <ProductCard key={producto.id} producto={producto} />
-                      ))}
-                    </div>
+                    <>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {productosVisibles.map((producto) => (
+                          <ProductCard key={producto.id} producto={producto} />
+                        ))}
+                      </div>
+
+                      {/* "Ver más" button — loads next batch without new images */}
+                      {hasMore && (
+                        <div className="flex justify-center mt-8">
+                          <Button
+                            variant="outline"
+                            onClick={handleLoadMore}
+                            className="border-mostaza text-marron hover:bg-mostaza hover:text-marron gap-2"
+                          >
+                            <ChevronDown className="h-4 w-4" />
+                            Ver más variedades ({productosFamilia.length - visibleCount} restantes)
+                          </Button>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )

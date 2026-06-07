@@ -2,7 +2,8 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SessionProvider } from 'next-auth/react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { initImagePerformanceMonitor, cleanupImagePerformanceMonitor } from '@/lib/performance'
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -16,6 +17,14 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         },
       })
   )
+
+  // Initialize image performance monitor in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      initImagePerformanceMonitor()
+      return () => cleanupImagePerformanceMonitor()
+    }
+  }, [])
 
   return (
     <SessionProvider>

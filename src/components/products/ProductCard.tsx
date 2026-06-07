@@ -57,21 +57,11 @@ export default function ProductCard({ producto }: ProductCardProps) {
           draggable={false}
         />
 
-        {/* Watermark overlay — logo de Pastas Orlando */}
+        {/* Watermark overlay — CSS background-image instead of N separate <Image> components */}
         <div
-          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+          className="absolute inset-0 flex items-center justify-center pointer-events-none bg-[url('/images/logo.png')] bg-center bg-no-repeat bg-[length:60px_60px] opacity-15 select-none"
           aria-hidden="true"
-        >
-          <Image
-            src="/images/logo.png"
-            alt=""
-            width={100}
-            height={100}
-            loading="lazy"
-            className="opacity-15 select-none"
-            draggable={false}
-          />
-        </div>
+        />
 
         {/* Destacado Badge */}
         {producto.destacado && !sinStock && (
