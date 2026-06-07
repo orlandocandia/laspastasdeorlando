@@ -56,15 +56,6 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16 lg:h-20">
-          {/* Logo — visible on mobile/tablet only, desktop uses centered nav links */}
-          <a href="#inicio" onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="lg:hidden flex items-center">
-            <img
-              src="/images/logo.png"
-              alt="Pastas Orlando"
-              className={`h-8 sm:h-9 w-auto transition-all ${scrolled ? 'drop-shadow-sm' : 'brightness-0 invert drop-shadow-lg'}`}
-            />
-          </a>
-
           {/* Desktop Navigation - centered */}
           <div className="hidden lg:flex items-center justify-center w-full gap-1">
             {navLinks.map((link) => (
