@@ -87,6 +87,7 @@ export default function LoginPage() {
               alt="Pastas Orlando"
               width={80}
               height={80}
+              priority
               className="object-contain"
             />
           </div>

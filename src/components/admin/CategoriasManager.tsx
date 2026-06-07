@@ -322,7 +322,9 @@ export default function CategoriasManager() {
                         src={nuevaImagen}
                         alt="Imagen de categoría"
                         fill
+                        loading="lazy"
                         className="object-cover"
+                        sizes="96px"
                       />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <Button
@@ -391,6 +393,7 @@ export default function CategoriasManager() {
                                   alt={cat.nombre}
                                   width={40}
                                   height={40}
+                                  loading="lazy"
                                   className="object-cover w-full h-full"
                                 />
                               </div>
@@ -490,7 +493,9 @@ export default function CategoriasManager() {
                       src={editImagen}
                       alt="Imagen de categoría"
                       fill
+                      loading="lazy"
                       className="object-cover"
+                      sizes="96px"
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       <Button

@@ -98,6 +98,7 @@ function StepImage({ src, alt }: { src: string; alt: string }) {
       src={src}
       alt={alt}
       fill
+      loading="lazy"
       className="object-cover"
       sizes="(max-width: 768px) 100vw, 33vw"
       onError={() => setError(true)}

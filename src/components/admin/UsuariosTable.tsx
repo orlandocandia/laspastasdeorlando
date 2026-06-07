@@ -228,7 +228,9 @@ export default function UsuariosTable() {
                             src={usuario.imagen}
                             alt={usuario.email}
                             fill
+                            loading="lazy"
                             className="object-cover"
+                            sizes="48px"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">

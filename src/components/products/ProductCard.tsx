@@ -51,6 +51,7 @@ export default function ProductCard({ producto }: ProductCardProps) {
           src={producto.imagen || '/images/placeholder-producto.jpg'}
           alt={producto.nombre}
           fill
+          loading="lazy"
           className="object-contain p-2 group-hover:scale-105 select-none"
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           draggable={false}
@@ -66,6 +67,7 @@ export default function ProductCard({ producto }: ProductCardProps) {
             alt=""
             width={100}
             height={100}
+            loading="lazy"
             className="opacity-15 select-none"
             draggable={false}
           />

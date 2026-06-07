@@ -658,7 +658,9 @@ export default function PersonaForm({ persona, onSuccess }: PersonaFormProps) {
                     src={imageUrl}
                     alt="Foto de persona"
                     fill
+                    loading="lazy"
                     className="object-cover"
+                    sizes="96px"
                   />
                 </div>
                 <div className="flex gap-2">

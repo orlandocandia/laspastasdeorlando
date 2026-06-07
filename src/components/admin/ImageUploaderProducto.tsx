@@ -107,7 +107,9 @@ export default function ImageUploaderProducto({ currentImage, onUpload, uploadUr
               src={preview}
               alt="Vista previa"
               fill
+              loading="lazy"
               className="object-cover"
+              sizes="192px"
             />
           </div>
           {!uploading && (

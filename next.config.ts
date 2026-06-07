@@ -19,7 +19,8 @@ const nextConfig: NextConfig = {
     DATABASE_URL_FILE: 'file:./dev.db',
   },
   images: {
-    unoptimized: true,
+    // NOTE: Removed `unoptimized: true` to enable automatic WebP/AVIF conversion
+    // and responsive srcset generation on Vercel. This is the #1 image perf optimization.
     // Force browser to download images instead of displaying them
     // when accessed directly via URL (prevents easy image saving)
     contentDispositionType: 'attachment',

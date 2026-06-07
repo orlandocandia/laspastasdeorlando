@@ -434,7 +434,9 @@ export default function UsuarioForm({ usuario, onSuccess }: UsuarioFormProps) {
                     src={imageUrl}
                     alt="Foto de perfil"
                     fill
+                    loading="lazy"
                     className="object-cover"
+                    sizes="96px"
                   />
                 </div>
                 <div className="flex gap-2">

@@ -251,7 +251,9 @@ export default function PersonaDetailPage() {
                 src={persona.imagen}
                 alt={`${persona.nombre} ${persona.apellido}`}
                 fill
+                loading="lazy"
                 className="object-cover"
+                sizes="128px"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">

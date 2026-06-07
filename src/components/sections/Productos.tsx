@@ -331,6 +331,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                         alt={familia.nombre}
                         width={96}
                         height={96}
+                        loading="lazy"
                         className="object-cover w-full h-full"
                       />
                     </div>
@@ -384,6 +385,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                           alt={familiaActiva}
                           width={28}
                           height={28}
+                          loading="lazy"
                           className="object-cover w-full h-full"
                         />
                       </span>

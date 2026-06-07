@@ -270,6 +270,7 @@ export default function TwoFAPage() {
                       alt="Código QR para 2FA"
                       width={200}
                       height={200}
+                      loading="lazy"
                       className="rounded"
                       unoptimized
                     />

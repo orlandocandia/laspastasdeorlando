@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -627,10 +628,11 @@ export default function EtiquetasPage() {
                     <div className="flex items-center mb-1">
                       {incluirLogo && (
                         <div className="w-[30%] flex items-center justify-center pr-1">
-                          <img
+                          <Image
                             src="/images/logoweb.png"
                             alt="Logo"
-                            style={{ width: tamano === 'pequena' ? '18px' : '40px', height: tamano === 'pequena' ? '18px' : '40px' }}
+                            width={tamano === 'pequena' ? 18 : 40}
+                            height={tamano === 'pequena' ? 18 : 40}
                             className="object-contain"
                           />
                         </div>

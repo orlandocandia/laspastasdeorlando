@@ -73,6 +73,7 @@ export default function ForgotPasswordPage() {
               alt="Pastas Orlando"
               width={80}
               height={80}
+              loading="lazy"
               className="object-contain"
             />
           </div>

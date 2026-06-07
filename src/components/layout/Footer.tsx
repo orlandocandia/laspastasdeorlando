@@ -18,6 +18,7 @@ export default function Footer() {
               alt="Pastas Orlando"
               width={52}
               height={52}
+              loading="lazy"
               className="h-13 w-13 object-contain"
             />
             <p className="text-sm text-crema/70">

@@ -168,7 +168,9 @@ export default function ProductosTable() {
                             src={producto.imagen}
                             alt={producto.nombre}
                             fill
+                            loading="lazy"
                             className="object-cover"
+                            sizes="48px"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">

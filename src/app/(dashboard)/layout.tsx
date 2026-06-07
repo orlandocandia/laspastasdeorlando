@@ -412,6 +412,7 @@ export default function DashboardLayout({
                 alt="Pastas Orlando"
                 width={32}
                 height={32}
+                loading="lazy"
                 className="object-contain"
               />
             </div>
