@@ -56,12 +56,12 @@ export default function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16 lg:h-20">
-          {/* Logo on mobile — visible only on small screens */}
-          {scrolled && (
-            <div className="lg:hidden flex items-center">
-              <span className="font-bold text-marron text-sm">Pastas Orlando</span>
-            </div>
-          )}
+          {/* Logo — always visible on mobile, hidden on desktop (nav links are centered) */}
+          <div className="lg:hidden flex items-center">
+            <span className={`font-bold text-sm transition-colors ${scrolled ? 'text-marron' : 'text-white'}`}>
+              Pastas Orlando
+            </span>
+          </div>
 
           {/* Desktop Navigation - centered */}
           <div className="hidden lg:flex items-center justify-center w-full gap-1">

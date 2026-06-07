@@ -483,7 +483,7 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
               <FormItem>
                 <FormLabel>Orden de aparición</FormLabel>
                 <FormControl>
-                  <Input type="number" step="1" min="0" placeholder="0" className="w-32" {...field} />
+                  <Input type="number" step="1" min="0" placeholder="0" className="w-full sm:w-32" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

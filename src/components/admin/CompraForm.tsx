@@ -769,7 +769,8 @@ export default function CompraForm({ compra, onSuccess, onCancel }: CompraFormPr
               Detalle de la Compra (solo lectura)
             </Label>
             <div className="rounded-lg border border-marron/10 overflow-hidden">
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[500px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-2 text-muted-foreground font-medium">Producto</th>
@@ -802,6 +803,7 @@ export default function CompraForm({ compra, onSuccess, onCancel }: CompraFormPr
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
             <div className="flex justify-end mt-3">
               <div className="w-64 space-y-1">

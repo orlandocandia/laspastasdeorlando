@@ -253,6 +253,7 @@ export default function EstadoGeneralManager() {
         </div>
       ) : (
         <div className="rounded-lg border border-marron/10 bg-card overflow-hidden">
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50">
@@ -288,7 +289,7 @@ export default function EstadoGeneralManager() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 hover:bg-mostaza/10"
+                        className="h-10 w-10 hover:bg-mostaza/10"
                         onClick={() => handleEdit(estado)}
                       >
                         <Pencil className="h-4 w-4 text-mostaza" />
@@ -296,7 +297,7 @@ export default function EstadoGeneralManager() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 hover:bg-rojo/10"
+                        className="h-10 w-10 hover:bg-rojo/10"
                         onClick={() => setDeleteItem(estado)}
                       >
                         <Trash2 className="h-4 w-4 text-rojo" />
@@ -307,6 +308,7 @@ export default function EstadoGeneralManager() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </div>
       )}
 

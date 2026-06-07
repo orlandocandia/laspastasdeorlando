@@ -367,6 +367,7 @@ export default function CategoriasManager() {
               </div>
             ) : (
               <div className="rounded-lg border border-marron/10 bg-card overflow-hidden">
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-muted/50">
@@ -422,7 +423,7 @@ export default function CategoriasManager() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-mostaza/10"
+                              className="h-10 w-10 hover:bg-mostaza/10"
                               onClick={() => handleEdit(cat)}
                             >
                               <Pencil className="h-4 w-4 text-mostaza" />
@@ -430,7 +431,7 @@ export default function CategoriasManager() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-rojo/10"
+                              className="h-10 w-10 hover:bg-rojo/10"
                               onClick={() => setDeleteItem(cat)}
                             >
                               <Trash2 className="h-4 w-4 text-rojo" />
@@ -441,6 +442,7 @@ export default function CategoriasManager() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </div>
             )}
           </TabsContent>

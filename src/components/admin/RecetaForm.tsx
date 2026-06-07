@@ -450,6 +450,7 @@ export default function RecetaForm({ receta, onSuccess, onCancel }: RecetaFormPr
           </div>
         ) : (
           <div className="rounded-lg border border-marron/10 overflow-hidden">
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
@@ -545,6 +546,7 @@ export default function RecetaForm({ receta, onSuccess, onCancel }: RecetaFormPr
                   ))}
                 </TableBody>
               </Table>
+            </div>
 
             {/* Total row */}
             <div className="flex items-center justify-end gap-3 px-4 py-3 bg-muted/30 border-t border-marron/10">

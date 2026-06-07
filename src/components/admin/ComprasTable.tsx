@@ -331,7 +331,7 @@ export default function ComprasTable() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 hover:bg-mostaza/10"
+                          className="h-10 w-10 hover:bg-mostaza/10"
                           onClick={() => openEdit(compra)}
                         >
                           <Pencil className="h-4 w-4 text-mostaza" />
@@ -339,7 +339,7 @@ export default function ComprasTable() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 hover:bg-rojo/10"
+                          className="h-10 w-10 hover:bg-rojo/10"
                           disabled={compra.estado?.nombre_estado?.toLowerCase() !== 'pendiente'}
                           onClick={() => {
                             setDeleteId(compra.id)

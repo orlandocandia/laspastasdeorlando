@@ -502,7 +502,7 @@ export default function PedidoProveedorForm({ pedido, onSuccess, onCancel }: Ped
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 hover:bg-rojo/10"
+                        className="h-9 w-9 hover:bg-rojo/10"
                         onClick={() => removeDetailRow(detalle.key)}
                       >
                         <Trash2 className="h-3.5 w-3.5 text-rojo" />
@@ -613,7 +613,8 @@ export default function PedidoProveedorForm({ pedido, onSuccess, onCancel }: Ped
               Detalle del Pedido (solo lectura)
             </Label>
             <div className="rounded-lg border border-marron/10 overflow-hidden">
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+              <table className="w-full min-w-[500px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-2 text-muted-foreground font-medium">Producto</th>
@@ -641,9 +642,10 @@ export default function PedidoProveedorForm({ pedido, onSuccess, onCancel }: Ped
                   ))}
                 </tbody>
               </table>
+              </div>
             </div>
             <div className="flex justify-end mt-3">
-              <div className="w-64">
+              <div className="w-full sm:w-64">
                 <div className="flex justify-between font-bold text-marron">
                   <span>Total Estimado</span>
                   <span>{formatCurrency(pedido.total_estimado)}</span>

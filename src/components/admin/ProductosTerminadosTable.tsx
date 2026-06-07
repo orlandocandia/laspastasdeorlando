@@ -354,7 +354,7 @@ export default function ProductosTerminadosTable() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 hover:bg-mostaza/10"
+                            className="h-10 w-10 hover:bg-mostaza/10"
                             title="Imprimir etiqueta"
                             onClick={() => {
                               setProductoEtiqueta(pt)
@@ -366,7 +366,7 @@ export default function ProductosTerminadosTable() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 hover:bg-mostaza/10"
+                            className="h-10 w-10 hover:bg-mostaza/10"
                             onClick={() => openEdit(pt)}
                           >
                             <Pencil className="h-4 w-4 text-mostaza" />
@@ -374,7 +374,7 @@ export default function ProductosTerminadosTable() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 hover:bg-rojo/10"
+                            className="h-10 w-10 hover:bg-rojo/10"
                             onClick={() => setDeleteId(pt.id)}
                           >
                             <Trash2 className="h-4 w-4 text-rojo" />

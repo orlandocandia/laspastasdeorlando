@@ -258,7 +258,7 @@ export default function PersonasTable({ onNewPersona }: PersonasTableProps) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 hover:bg-mostaza/10"
+                          className="h-10 w-10 hover:bg-mostaza/10"
                           onClick={() => router.push(`/admin/personas/${persona.id}`)}
                         >
                           <Pencil className="h-4 w-4 text-mostaza" />
@@ -266,7 +266,7 @@ export default function PersonasTable({ onNewPersona }: PersonasTableProps) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 hover:bg-rojo/10"
+                          className="h-10 w-10 hover:bg-rojo/10"
                           onClick={() => setDeleteId(persona.id)}
                         >
                           <Trash2 className="h-4 w-4 text-rojo" />

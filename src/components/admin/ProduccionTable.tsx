@@ -345,7 +345,7 @@ export default function ProduccionTable() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 hover:bg-oliva/10"
+                            className="h-10 w-10 hover:bg-oliva/10"
                             onClick={() => setCompletarId(prod.id)}
                             title="Completar producción"
                           >
@@ -355,7 +355,7 @@ export default function ProduccionTable() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 hover:bg-mostaza/10"
+                          className="h-10 w-10 hover:bg-mostaza/10"
                           onClick={() => openDetalle(prod)}
                           title="Ver detalle"
                         >
@@ -484,7 +484,8 @@ export default function ProduccionTable() {
                 </h3>
                 {selectedProduccion.detalleConsumos && selectedProduccion.detalleConsumos.length > 0 ? (
                   <div className="rounded-lg border border-marron/10 overflow-hidden">
-                    <table className="w-full text-sm">
+                    <div className="overflow-x-auto">
+                    <table className="w-full min-w-[500px] text-sm">
                       <thead className="bg-muted/50">
                         <tr>
                           <th className="text-left p-2 text-muted-foreground font-medium">Tipo</th>
@@ -523,6 +524,7 @@ export default function ProduccionTable() {
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">No hay consumos registrados</p>
@@ -536,7 +538,8 @@ export default function ProduccionTable() {
                 </h3>
                 {selectedProduccion.detalleGenerados && selectedProduccion.detalleGenerados.length > 0 ? (
                   <div className="rounded-lg border border-marron/10 overflow-hidden">
-                    <table className="w-full text-sm">
+                    <div className="overflow-x-auto">
+                    <table className="w-full min-w-[500px] text-sm">
                       <thead className="bg-muted/50">
                         <tr>
                           <th className="text-left p-2 text-muted-foreground font-medium">Producto</th>
@@ -560,6 +563,7 @@ export default function ProduccionTable() {
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">No hay productos generados registrados</p>

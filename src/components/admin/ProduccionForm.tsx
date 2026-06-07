@@ -373,7 +373,8 @@ export default function ProduccionForm({ onSuccess, onCancel }: ProduccionFormPr
 
                 {!stockValidation.puede_producir && stockValidation.faltantes.length > 0 && (
                   <div className="mt-3 rounded-lg border border-rojo/20 overflow-hidden">
-                    <table className="w-full text-sm">
+                    <div className="overflow-x-auto">
+                    <table className="w-full min-w-[500px] text-sm">
                       <thead className="bg-rojo/5">
                         <tr>
                           <th className="text-left p-2 text-muted-foreground font-medium">Tipo</th>
@@ -408,6 +409,7 @@ export default function ProduccionForm({ onSuccess, onCancel }: ProduccionFormPr
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 )}
               </div>
