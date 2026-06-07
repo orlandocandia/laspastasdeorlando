@@ -37,6 +37,16 @@ export async function GET() {
     adminWhatsapp: adminWhatsapp || '(not set)',
     adminWhatsappLength: adminWhatsapp ? adminWhatsapp.length : 0,
 
+    // ── URLs y dominio ────────────────────────────────────────────────
+    nextauthUrl: process.env.NEXTAUTH_URL || '(not set)',
+    nextPublicAppUrl: process.env.NEXT_PUBLIC_APP_URL || '(not set)',
+    smtpHost: process.env.SMTP_HOST || '(not set)',
+    smtpUser: process.env.SMTP_USER || '(not set)',
+    smtpPassExists: typeof process.env.SMTP_PASS === 'string' && process.env.SMTP_PASS.length > 0,
+    smtpPort: process.env.SMTP_PORT || '(not set)',
+    smtpFrom: process.env.SMTP_FROM || '(not set)',
+    adminEmail: process.env.ADMIN_EMAIL || '(not set)',
+
     // ── Environment ───────────────────────────────────────────────────
     nodeEnv: process.env.NODE_ENV || '(not set)',
     allEnvKeys: Object.keys(process.env).sort(),
