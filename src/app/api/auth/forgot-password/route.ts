@@ -58,14 +58,14 @@ function isValidEmail(email: string): boolean {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request)
-  console.log(`[forgot-password] Incoming request from IP: ${ip}`)
+  console.log(`[RECOVERY] Incoming request from IP: ${ip}`)
 
   // Diagnostic info — will be included in the response
   const diag = {
     emailSent: false,
     emailError: null as string | null,
-    whatsappStatus: 'not_called' as string,
-    whatsappError: null as string | null,
+    whatsappSent: false,
+    whatsappReason: null as string | null,
     envCheck: {
       SMTP_USER: !!process.env.SMTP_USER,
       SMTP_PASS: !!process.env.SMTP_PASS,
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting check
     if (isRateLimited(ip)) {
-      console.warn(`[forgot-password] ⚠️ Rate limited IP: ${ip}`)
+      console.warn(`[RECOVERY] ⚠️ Rate limited IP: ${ip}`)
       return NextResponse.json({
         message: 'Si el email existe en nuestro sistema, recibirás un link de recuperación.',
         diag,
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       const body = await request.json()
       email = body.email
     } catch {
-      console.warn('[forgot-password] ⚠️ Could not parse request body')
+      console.warn('[RECOVERY] ⚠️ Could not parse request body')
       return NextResponse.json({
         message: 'Si el email existe en nuestro sistema, recibirás un link de recuperación.',
         diag,
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
 
     // Validate email format
     if (!email || typeof email !== 'string' || !isValidEmail(email)) {
-      console.warn(`[forgot-password] ⚠️ Invalid email format: "${email}"`)
+      console.warn(`[RECOVERY] ⚠️ Invalid email format: "${email}"`)
       return NextResponse.json({
         message: 'Si el email existe en nuestro sistema, recibirás un link de recuperación.',
         diag,
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     }
 
     const normalizedEmail = email.toLowerCase().trim()
-    console.log(`[forgot-password] Processing recovery for: ${normalizedEmail}`)
+    console.log(`[RECOVERY] Processing recovery for: ${normalizedEmail}`)
 
     // Ensure database is ready
     await ensureDbReady()
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     })
 
     const emailExists = !!usuario
-    console.log(`[forgot-password] Email exists in DB: ${emailExists}`)
+    console.log(`[RECOVERY] Email exists in DB: ${emailExists}`)
 
     if (emailExists) {
       // Generate a cryptographically secure random token
@@ -156,49 +156,59 @@ export async function POST(request: NextRequest) {
       // Build the reset URL
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pastasorlando.vercel.app'
       const resetUrl = `${appUrl}/reset-password?token=${token}`
-      console.log(`[forgot-password] Reset URL: ${resetUrl.substring(0, 60)}...`)
+      console.log(`[RECOVERY] Reset URL: ${resetUrl.substring(0, 60)}...`)
 
       // Send password reset email
-      console.log('[forgot-password] 📧 Calling sendPasswordResetEmail...')
+      console.log('[RECOVERY] 📧 Calling sendPasswordResetEmail...')
       try {
         await sendPasswordResetEmail(normalizedEmail, resetUrl)
         diag.emailSent = true
-        console.log('[forgot-password] 📧 sendPasswordResetEmail completed OK')
+        console.log('[RECOVERY] 📧 Email enviado con éxito')
       } catch (emailErr) {
         diag.emailError = emailErr instanceof Error ? emailErr.message : String(emailErr)
-        console.error('[forgot-password] 📧 sendPasswordResetEmail FAILED:', emailErr)
+        console.error('[RECOVERY] 📧 Error enviando email:', emailErr)
       }
 
       // Send WhatsApp notification to admin
-      console.log('[forgot-password] 📱 Calling notifyAdminPasswordReset...')
-      diag.whatsappStatus = 'calling'
+      console.log('[RECOVERY] 📱 Iniciando envío de WhatsApp...')
       try {
-        await notifyAdminPasswordReset({
+        const waResult = await notifyAdminPasswordReset({
           email: normalizedEmail,
           emailExiste: true,
           ip,
         })
-        diag.whatsappStatus = 'sent'
-        console.log('[forgot-password] 📱 notifyAdminPasswordReset completed OK')
+        diag.whatsappSent = waResult.sent
+        diag.whatsappReason = waResult.reason || null
+        if (waResult.sent) {
+          console.log('[RECOVERY] 📱 WhatsApp enviado con éxito')
+        } else {
+          console.error(`[RECOVERY] 📱 Error en WhatsApp: ${waResult.reason}`)
+        }
       } catch (waErr) {
-        diag.whatsappStatus = 'error'
-        diag.whatsappError = waErr instanceof Error ? waErr.message : String(waErr)
-        console.error('[forgot-password] 📱 notifyAdminPasswordReset FAILED:', waErr)
+        diag.whatsappSent = false
+        diag.whatsappReason = waErr instanceof Error ? waErr.message : String(waErr)
+        console.error('[RECOVERY] 📱 Error en WhatsApp (excepción):', waErr)
       }
     } else {
       // Email doesn't exist — still notify admin via WhatsApp
-      console.log('[forgot-password] Email not found — sending admin notification only')
-      diag.whatsappStatus = 'calling'
+      console.log('[RECOVERY] Email not found — sending admin notification only')
       try {
-        await notifyAdminPasswordReset({
+        const waResult = await notifyAdminPasswordReset({
           email: normalizedEmail,
           emailExiste: false,
           ip,
         })
-        diag.whatsappStatus = 'sent'
+        diag.whatsappSent = waResult.sent
+        diag.whatsappReason = waResult.reason || null
+        if (waResult.sent) {
+          console.log('[RECOVERY] 📱 WhatsApp enviado con éxito (email no existe)')
+        } else {
+          console.error(`[RECOVERY] 📱 Error en WhatsApp: ${waResult.reason}`)
+        }
       } catch (waErr) {
-        diag.whatsappStatus = 'error'
-        diag.whatsappError = waErr instanceof Error ? waErr.message : String(waErr)
+        diag.whatsappSent = false
+        diag.whatsappReason = waErr instanceof Error ? waErr.message : String(waErr)
+        console.error('[RECOVERY] 📱 Error en WhatsApp (excepción):', waErr)
       }
     }
 
@@ -212,7 +222,7 @@ export async function POST(request: NextRequest) {
         },
       })
     } catch (logErr) {
-      console.error('[forgot-password] ⚠️ Failed to log access attempt:', logErr)
+      console.error('[RECOVERY] ⚠️ Failed to log access attempt:', logErr)
     }
 
     // Return response with diagnostic info
@@ -221,7 +231,7 @@ export async function POST(request: NextRequest) {
       diag,
     }, { status: 200 })
   } catch (error) {
-    console.error('[forgot-password] ❌ Unhandled error:', error)
+    console.error('[RECOVERY] ❌ Unhandled error:', error)
 
     // Still try to log the attempt even on error
     try {
@@ -233,11 +243,10 @@ export async function POST(request: NextRequest) {
         },
       })
     } catch (logErr) {
-      console.error('[forgot-password] ⚠️ Failed to log error attempt:', logErr)
+      console.error('[RECOVERY] ⚠️ Failed to log error attempt:', logErr)
     }
 
-    diag.whatsappStatus = 'error_unhandled'
-    diag.whatsappError = error instanceof Error ? error.message : String(error)
+    diag.whatsappReason = error instanceof Error ? error.message : String(error)
 
     return NextResponse.json({
       message: 'Si el email existe en nuestro sistema, recibirás un link de recuperación.',

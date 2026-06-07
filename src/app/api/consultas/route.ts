@@ -78,10 +78,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { nombre, email, telefono, mensaje } = body
 
+    console.log('[CONSULTA] Nueva consulta recibida de:', nombre, '|', email)
+
     if (!nombre || !email || !mensaje) {
+      console.warn('[CONSULTA] ⚠️ Faltan campos requeridos:', { nombre: !!nombre, email: !!email, mensaje: !!mensaje })
       return NextResponse.json({ error: 'Nombre, email y mensaje son requeridos' }, { status: 400 })
     }
 
+    // Guardar consulta en la base de datos
     const consulta = await db.consulta.create({
       data: {
         nombre,
@@ -92,14 +96,19 @@ export async function POST(request: NextRequest) {
         respondido: false,
       },
     })
+    console.log('[CONSULTA] ✅ Consulta guardada en BD — ID:', consulta.id)
 
     // Send email + WhatsApp notifications (await to guarantee delivery in serverless)
-    // Errors are caught internally — won't affect the API response
+    // Both are handled by sendConsultaNotifications() which calls:
+    //   1. sendEmailNotification() — email al admin
+    //   2. notifyAdminConsulta() — WhatsApp al admin via TextMeBot
+    console.log('[CONSULTA] 📨 Enviando notificaciones (email + WhatsApp)...')
     await sendConsultaNotifications({ nombre, email, telefono: telefono || '', mensaje })
+    console.log('[CONSULTA] 📨 Notificaciones procesadas')
 
     return NextResponse.json(consulta, { status: 201 })
   } catch (error) {
-    console.error('Error al crear consulta:', error)
+    console.error('[CONSULTA] ❌ Error al crear consulta:', error)
     return NextResponse.json({ error: 'Error al crear consulta', details: error instanceof Error ? error.message : String(error) }, { status: 500 })
   }
 }
