@@ -16,22 +16,20 @@ const beneficios: Beneficio[] = [
   { icon: Home, texto: 'De puerta en puerta' },
 ]
 
+const HERO_BG_IMAGE = '/images/hero-bg.jpg'
+
 export default function Hero() {
-  const bgImage = '/images/hero-bg.jpg'
+  const bgImage = HERO_BG_IMAGE
 
   return (
     <section
       id="inicio"
       className="hero-section relative min-h-screen flex items-center justify-center overflow-hidden"
     >
-      {/* Parallax Background — next/image for automatic WebP, responsive srcset & LCP priority */}
-      <Image
-        src={bgImage}
-        alt=""
-        fill
-        priority
-        className="parallax-bg object-cover object-center z-0 transition-all duration-1000"
-        sizes="100vw"
+      {/* Parallax Background */}
+      <div
+        className="parallax-bg absolute inset-0 z-0 transition-all duration-1000"
+        style={{ backgroundImage: `url('${bgImage}')` }}
       />
 
       {/* Dark Overlay */}

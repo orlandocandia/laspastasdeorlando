@@ -183,23 +183,17 @@
   animation: bounce-arrow 2s ease-in-out infinite;
 }
 
-/* Hero background image — uses <Image fill> from next/image, not CSS background-image.
-   background-attachment: fixed has no effect on <img> elements, so we use
-   position: fixed + object-cover for a lightweight parallax effect. */
+/* Parallax */
 .parallax-bg {
-  position: fixed !important;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  object-fit: cover;
-  object-position: center;
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 @media (max-width: 768px) {
   .parallax-bg {
-    position: absolute !important;
-    width: 100%;
-    height: 100%;
+    background-attachment: scroll;
   }
 }
 
