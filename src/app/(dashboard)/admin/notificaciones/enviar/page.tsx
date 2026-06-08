@@ -166,6 +166,10 @@ export default function EnviarNotificacionPage() {
     fetchPlantillas()
   }, [fetchPlantillas])
 
+  // Whether user can choose tipo (personalizado or canal='ambos')
+  const canChooseTipo = selectedPlantillaId === 'personalizado' ||
+    (selectedPlantilla?.canal === 'ambos')
+
   // When plantilla changes, auto-fill tipo and asunto
   const handlePlantillaChange = (value: string) => {
     setSelectedPlantillaId(value)
@@ -181,6 +185,8 @@ export default function EnviarNotificacionPage() {
       // Set tipo based on plantilla canal
       if (plantilla.canal === 'whatsapp') {
         setTipo('whatsapp')
+      } else if (plantilla.canal === 'ambos') {
+        // For 'ambos', keep current selection (user can change it)
       } else {
         setTipo('email')
       }
@@ -373,7 +379,7 @@ export default function EnviarNotificacionPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Tipo */}
-              {selectedPlantillaId === 'personalizado' && (
+              {canChooseTipo && (
                 <div className="grid gap-2">
                   <Label className="text-marron font-medium">Tipo de notificación</Label>
                   <Select
@@ -579,12 +585,14 @@ export default function EnviarNotificacionPage() {
                 )}
               </div>
 
-              {/* WhatsApp link preview */}
+              {/* WhatsApp sending info */}
               {tipo === 'whatsapp' && destinatario && previewMessage && (
                 <div className="rounded-lg bg-green-50 border border-green-200 p-3">
-                  <p className="text-xs text-green-700 font-medium mb-1">Se generará un link de WhatsApp:</p>
-                  <p className="text-xs text-green-600 break-all">
-                    https://wa.me/{destinatario.replace(/\D/g, '')}?text=...
+                  <p className="text-xs text-green-700 font-medium mb-1">
+                    📱 El mensaje se enviará directamente por WhatsApp
+                  </p>
+                  <p className="text-xs text-green-600">
+                    Destino: +{destinatario.replace(/\D/g, '').startsWith('54') ? destinatario.replace(/\D/g, '') : '54' + destinatario.replace(/\D/g, '')}
                   </p>
                 </div>
               )}
@@ -647,10 +655,19 @@ export default function EnviarNotificacionPage() {
                   )}
                   <div className="text-sm space-y-1">
                     <p className={`font-semibold ${lastResult.success ? 'text-oliva' : 'text-rojo'}`}>
-                      {lastResult.success ? 'Notificación enviada' : 'Error al enviar'}
+                      {lastResult.success
+                        ? lastResult.envio && (lastResult.envio as Record<string, unknown>).link
+                          ? 'Link de WhatsApp generado'
+                          : 'Notificación enviada correctamente'
+                        : 'Error al enviar'}
                     </p>
                     {lastResult.error && (
                       <p className="text-rojo text-xs">{lastResult.error}</p>
+                    )}
+                    {lastResult.success && lastResult.envio && (lastResult.envio as Record<string, unknown>).message && (
+                      <p className="text-xs text-muted-foreground">
+                        {(lastResult.envio as Record<string, unknown>).message as string}
+                      </p>
                     )}
                     {lastResult.success && lastResult.notificacion && (
                       <div className="text-xs text-muted-foreground space-y-0.5">

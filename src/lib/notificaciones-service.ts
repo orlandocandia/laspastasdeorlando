@@ -9,7 +9,6 @@
 import { db } from '@/lib/db'
 import { renderPlantilla } from '@/lib/plantillas'
 import { sendMail } from '@/lib/smtp-transporter'
-import { sendWhatsAppMessage } from '@/lib/whatsapp-admin'
 
 // ============================================
 // ENVÍO DE EMAIL (REAL — usa SMTP pooled)
