@@ -30,11 +30,11 @@ const steps: Step[] = [
         <MercadoPagoIcon className="w-12 h-12" />
       </div>
     ),
-    title: 'Hacé tu consulta y reservá tu pedido',
+    title: 'Consultá y reservá tu pedido',
     image: '/images/pasos/pedido-sena.jpg',
     imageAlt: 'Pedido y seña por WhatsApp y Mercado Pago',
     description:
-      'Consultanos por WhatsApp, email, redes sociales o mediante nuestro formulario web. Te confirmamos al instante si hay stock disponible o cuánto tiempo llevará la elaboración. Una vez confirmada la disponibilidad, abonás la seña por Mercado Pago y reservamos tu pedido.',
+      'Consultanos por WhatsApp, email, redes sociales o mediante nuestro formulario web. Te confirmamos al instante si hay stock disponible o cuánto tiempo llevará la elaboración. Una vez confirmada la disponibilidad, abonás la seña mediante transferencia y reservamos tu pedido.',
   },
   {
     icons: (
@@ -46,7 +46,7 @@ const steps: Step[] = [
     image: '/images/pasos/coordinacion.jpg',
     imageAlt: 'Coordinación de entrega a domicilio',
     description:
-      'Con la seña abonada, coordinamos el lugar, horario de entrega y la persona que recibirá el pedido. ¡El envío es GRATIS!',
+      'Con la seña abonada, coordinamos el lugar, horario de entrega y la persona que recibirá el pedido. El envío es GRATIS dentro de la ciudad de Posadas. Si te encontrás en otra localidad, consultanos y evaluaremos la posibilidad de entrega según la ubicación, el volumen del pedido y la disponibilidad logística.',
   },
   {
     icons: (
