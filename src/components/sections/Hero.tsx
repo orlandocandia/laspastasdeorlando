@@ -38,7 +38,7 @@ export default function Hero() {
       {/* Content */}
       <div className="hero-content relative z-10 flex flex-col items-center text-center px-4 sm:px-6 py-12 sm:py-16 md:py-20">
         {/* 1. Logo — responsive: smallest on phone, scales up */}
-        <div className="hero-logo mb-2 sm:mb-3 flex justify-center relative overflow-hidden rounded-full">
+        <div className="hero-logo mb-2 sm:mb-3 flex justify-center">
           <Image
             src="/images/logo.png"
             alt="Pastas Orlando"
@@ -47,10 +47,6 @@ export default function Hero() {
             className="h-44 w-44 sm:h-56 sm:w-56 md:h-72 md:w-72 lg:h-96 lg:w-96 object-contain drop-shadow-2xl hero-logo-img"
             priority
           />
-          {/* Shimmer destello sobre el palo de amasar */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="logo-shimmer" />
-          </div>
         </div>
 
         {/* 2. Línea dorada + Título agrupados */}
