@@ -70,7 +70,7 @@ export default function OpinionForm() {
         Dejá tu opinión
       </h3>
       <p className="text-sm text-muted-foreground mb-4">
-        ✅ Tu opinión es importante. Se revisa antes de publicarse.
+        ✅ Tu experiencia nos ayuda a seguir mejorando. Todos los comentarios son revisados antes de ser publicados.
       </p>
 
       {/* Nombre */}
