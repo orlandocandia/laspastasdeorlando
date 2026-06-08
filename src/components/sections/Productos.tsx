@@ -267,7 +267,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
           </h2>
           <div className="h-1 w-20 bg-mostaza mx-auto mt-4 rounded-full" />
           <p className="text-muted-foreground mt-3 max-w-lg mx-auto text-sm sm:text-base">
-            Pastas artesanales elaboradas con ingredientes frescos y de calidad. Filtrá por tipo de harina y explorá nuestras familias.
+            Pastas artesanales elaboradas con ingredientes frescos y de calidad. Elegí el tipo de pasta que más te guste.
           </p>
         </div>
 
@@ -345,7 +345,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                     `}
                   >
                     {/* Imagen representativa */}
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-crema border-2 border-mostaza/20 flex-shrink-0">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-crema border-2 border-mostaza/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_8px_20px_rgba(0,0,0,0.15)]">
                       <Image
                         src={getFamiliaImagen(familia, filtro)}
                         alt={familia.nombre}

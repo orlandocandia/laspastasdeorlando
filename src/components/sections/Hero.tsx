@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { ChevronDown, Sparkles, Truck, Star, Home } from 'lucide-react'
+import { ChevronDown, Sparkles, Truck, MessageSquare, Home } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 interface Beneficio {
@@ -12,7 +12,7 @@ interface Beneficio {
 const beneficios: Beneficio[] = [
   { icon: Sparkles, texto: 'Pastas artesanales' },
   { icon: Truck, texto: 'Envío GRATIS con seña' },
-  { icon: Star, texto: 'Opiniones reales' },
+  { icon: MessageSquare, texto: 'Opiniones reales' },
   { icon: Home, texto: 'De puerta en puerta' },
 ]
 
