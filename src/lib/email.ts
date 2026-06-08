@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import { sendMail } from '@/lib/smtp-transporter';
 
 // ---------------------------------------------------------------------------
 // HTML Email Template
@@ -249,42 +249,26 @@ export async function sendPasswordResetEmail(
   resetUrl: string,
 ): Promise<void> {
   // ── Diagnostic logs ──────────────────────────────────────────────
-  console.log('[email] Enviando email a:', email);
-  console.log('[email] SMTP_USER existe?', !!process.env.SMTP_USER);
-  console.log('[email] SMTP_PASS existe?', !!process.env.SMTP_PASS);
-  console.log('[email] SMTP_HOST:', process.env.SMTP_HOST || '(not set)');
-  console.log('[email] SMTP_PORT:', process.env.SMTP_PORT || '(not set)');
-  console.log('[email] SMTP_SECURE:', process.env.SMTP_SECURE || '(not set)');
-  console.log('[email] SMTP_FROM:', process.env.SMTP_FROM || '(not set)');
+  console.log('[RECOVERY-Email] Enviando email a:', email);
+  console.log('[RECOVERY-Email] SMTP_USER existe?', !!process.env.SMTP_USER);
+  console.log('[RECOVERY-Email] SMTP_PASS existe?', !!process.env.SMTP_PASS);
+  console.log('[RECOVERY-Email] SMTP_HOST:', process.env.SMTP_HOST || '(not set)');
+  console.log('[RECOVERY-Email] SMTP_PORT:', process.env.SMTP_PORT || '(not set)');
+  console.log('[RECOVERY-Email] SMTP_SECURE:', process.env.SMTP_SECURE || '(not set)');
+  console.log('[RECOVERY-Email] SMTP_FROM:', process.env.SMTP_FROM || '(not set)');
 
   const smtpUser = process.env.SMTP_USER;
   const smtpPass = process.env.SMTP_PASS;
 
   if (!smtpUser || !smtpPass) {
-    console.error('[email] ❌ FALTAN CREDENCIALES — SMTP_USER o SMTP_PASS no están configurados');
+    console.error('[RECOVERY-Email] ❌ FALTAN CREDENCIALES — SMTP_USER o SMTP_PASS no están configurados');
     return;
   }
 
-  // ── Create transporter INSIDE the function ───────────────────────
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true', // false para puerto 587
-    auth: {
-      user: smtpUser,
-      pass: smtpPass,
-    },
-  });
-
-  console.log('[email] Transporter creado OK — intentando enviar...');
+  console.log('[RECOVERY-Email] Usando transporter pooled (pool=true)...');
 
   try {
-    // Gmail requires the From address to match the authenticated SMTP_USER.
-    const from =
-      process.env.SMTP_FROM || `"Pastas Orlando" <${smtpUser}>`;
-
-    const result = await transporter.sendMail({
-      from,
+    const result = await sendMail({
       to: email,
       subject: 'Restablecer tu contraseña — Pastas Orlando',
       html: buildPasswordResetHtml(resetUrl),
@@ -292,12 +276,10 @@ export async function sendPasswordResetEmail(
     });
 
     console.log(
-      `[email] ✅ Email enviado OK a "${email}" — messageId: ${result.messageId}`,
+      `[RECOVERY-Email] ✅ Email enviado OK a "${email}" — messageId: ${result.messageId}`,
     );
   } catch (error) {
-    console.error(`[email] ❌ ERROR enviando email a "${email}":`, error);
+    console.error(`[RECOVERY-Email] ❌ ERROR enviando email a "${email}":`, error);
     // Don't re-throw — email failure must not break the recovery flow
-  } finally {
-    transporter.close();
   }
 }

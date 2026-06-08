@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
     try {
       await db.logAcceso.create({
         data: {
-          email: normalizedEmail,
+          email_intento: normalizedEmail,
           ip,
           resultado: 'PASSWORD_RESET_REQUEST',
         },

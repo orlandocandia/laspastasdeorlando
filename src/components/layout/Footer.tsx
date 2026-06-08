@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { Heart, Facebook, Instagram, MessageCircle } from 'lucide-react'
+import { Heart, Instagram, MessageCircle } from 'lucide-react'
 
 const whatsappLink = 'https://wa.me/549376419324?text=Hola!%20Quiero%20hacer%20un%20pedido%20de%20pastas'
 
@@ -41,16 +41,7 @@ export default function Footer() {
           {/* Redes sociales */}
           <div className="flex items-center gap-4">
             <a
-              href="https://facebook.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-crema/70 hover:text-mostaza transition-colors"
-              aria-label="Facebook"
-            >
-              <Facebook className="h-5 w-5" />
-            </a>
-            <a
-              href="https://instagram.com"
+              href="https://instagram.com/laspastasdeorlando"
               target="_blank"
               rel="noopener noreferrer"
               className="text-crema/70 hover:text-mostaza transition-colors"

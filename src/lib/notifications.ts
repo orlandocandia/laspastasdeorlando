@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer'
+import { sendMail } from '@/lib/smtp-transporter'
 import { notifyAdminConsulta } from '@/lib/whatsapp-admin'
 
 interface ConsultaData {
@@ -31,17 +31,13 @@ export async function sendConsultaNotifications(data: ConsultaData) {
 }
 
 /**
- * Email notification via nodemailer (Gmail SMTP).
- * Uses the SAME env vars as the password-recovery email (SMTP_USER, SMTP_PASS, etc.)
- * Transporter is created INSIDE the function so env vars are always read fresh.
+ * Email notification via shared pooled SMTP transporter.
+ * Uses the SAME transporter as password-recovery (pool=true, cached).
  */
 async function sendEmailNotification(data: ConsultaData) {
   // ── Diagnostic logs ──────────────────────────────────────────────
   console.log('[CONSULTA-Email] SMTP_USER existe?', !!process.env.SMTP_USER)
   console.log('[CONSULTA-Email] SMTP_PASS existe?', !!process.env.SMTP_PASS)
-  console.log('[CONSULTA-Email] SMTP_HOST:', process.env.SMTP_HOST || '(not set)')
-  console.log('[CONSULTA-Email] SMTP_PORT:', process.env.SMTP_PORT || '(not set)')
-  console.log('[CONSULTA-Email] SMTP_SECURE:', process.env.SMTP_SECURE || '(not set)')
 
   const smtpUser = process.env.SMTP_USER
   const smtpPass = process.env.SMTP_PASS
@@ -51,22 +47,9 @@ async function sendEmailNotification(data: ConsultaData) {
     return
   }
 
-  const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com'
-  const smtpPort = parseInt(process.env.SMTP_PORT || '587')
-  const smtpSecure = process.env.SMTP_SECURE === 'true'
   const adminEmail = process.env.ADMIN_EMAIL || smtpUser
 
-  // ── Create transporter INSIDE the function ───────────────────────
-  const transporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure: smtpSecure, // false para puerto 587
-    auth: {
-      user: smtpUser,
-      pass: smtpPass,
-    },
-  })
-
+  console.log(`[CONSULTA-Email] Usando transporter pooled (pool=true)...`)
   console.log(`[CONSULTA-Email] Enviando desde ${smtpUser} → ${adminEmail}`)
 
   const whatsappReplyLink = data.telefono
@@ -74,8 +57,7 @@ async function sendEmailNotification(data: ConsultaData) {
     : null
 
   try {
-    const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM || `"Pastas Orlando Web" <${smtpUser}>`,
+    const info = await sendMail({
       to: adminEmail,
       subject: '📧 Nuevo mensaje de contacto - Pastas Orlando',
       html: `
@@ -152,7 +134,5 @@ async function sendEmailNotification(data: ConsultaData) {
     const errMsg = error instanceof Error ? error.message : String(error)
     const errCode = (error as { code?: string })?.code || ''
     console.error(`[CONSULTA-Email] ❌ Error enviando email [${errCode}]: ${errMsg}`)
-  } finally {
-    transporter.close()
   }
 }
