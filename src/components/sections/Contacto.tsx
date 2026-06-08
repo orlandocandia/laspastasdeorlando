@@ -142,21 +142,26 @@ export default function Contacto() {
               </button>
 
               {/* Email */}
-              <a
-                href="mailto:laspastasdeorlando@gmail.com"
-                className="flex items-center gap-4 p-4 rounded-xl bg-amber-50 border border-amber-100 hover:bg-amber-100 transition-colors group"
-              >
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform"
-                  style={{ backgroundColor: MARRON }}
+              <div>
+                <a
+                  href="mailto:laspastasdeorlando@gmail.com"
+                  className="flex items-center gap-4 p-4 rounded-xl bg-amber-50 border border-amber-100 hover:bg-amber-100 transition-colors group"
                 >
-                  <Mail className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-amber-900">Email</div>
-                  <div className="text-sm text-amber-700">laspastasdeorlando@gmail.com</div>
-                </div>
-              </a>
+                  <div
+                    className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform"
+                    style={{ backgroundColor: MARRON }}
+                  >
+                    <Mail className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-amber-900">Email</div>
+                    <div className="text-sm text-amber-700">laspastasdeorlando@gmail.com</div>
+                  </div>
+                </a>
+                <p className="text-xs text-gray-400 mt-1 px-1">
+                  Si tu correo no se abre automáticamente, escribí a esta dirección.
+                </p>
+              </div>
 
               {/* Instagram */}
               <a
