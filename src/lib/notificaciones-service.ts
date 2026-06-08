@@ -1,13 +1,18 @@
 /**
  * Servicio de notificaciones para Pastas Orlando
  * Maneja envío de emails, WhatsApp y procesamiento de alertas
+ *
+ * Usa el mismo transporte SMTP pooled que el resto del sistema
+ * (smtp-transporter.ts) y TextMeBot para WhatsApp (whatsapp-admin.ts).
  */
 
 import { db } from '@/lib/db'
 import { renderPlantilla } from '@/lib/plantillas'
+import { sendMail } from '@/lib/smtp-transporter'
+import { sendWhatsAppMessage } from '@/lib/whatsapp-admin'
 
 // ============================================
-// ENVÍO DE EMAIL
+// ENVÍO DE EMAIL (REAL — usa SMTP pooled)
 // ============================================
 
 interface EmailResult {
@@ -19,8 +24,8 @@ interface EmailResult {
 }
 
 /**
- * Envía un email. En producción se conectaría con un servicio SMTP/API.
- * Por ahora simula el envío y lo registra.
+ * Envía un email real usando el transporte SMTP compartido (pool=true).
+ * El mismo que usan el formulario de contacto y la recuperación de contraseña.
  */
 export async function enviarEmail(
   destinatario: string,
@@ -28,33 +33,66 @@ export async function enviarEmail(
   mensaje: string
 ): Promise<EmailResult> {
   try {
-    // En producción: integrar con servicio de email (SendGrid, Mailgun, etc.)
-    // Por ahora simulamos el envío exitoso
-    console.log(`[EMAIL] Enviando a: ${destinatario}, Asunto: ${asunto}`)
+    console.log(`[NOTIF-EMAIL] Enviando a: ${destinatario}, Asunto: ${asunto}`)
 
-    // Simulación de envío
-    const simulatedSuccess = true
+    const smtpUser = process.env.SMTP_USER
+    const smtpPass = process.env.SMTP_PASS
 
-    if (simulatedSuccess) {
-      return {
-        success: true,
-        message: 'Email enviado correctamente',
-        destinatario,
-        asunto,
-      }
-    } else {
+    if (!smtpUser || !smtpPass) {
+      console.error('[NOTIF-EMAIL] ❌ SMTP_USER o SMTP_PASS no configurados')
       return {
         success: false,
-        error: 'Error al enviar email',
+        error: 'Credenciales SMTP no configuradas',
         destinatario,
         asunto,
       }
     }
+
+    // Detectar si el mensaje ya es HTML (tiene etiquetas) o es texto plano
+    const isHtml = /<[a-z][\s\S]*>/i.test(mensaje)
+
+    const htmlContent = isHtml
+      ? mensaje
+      : `
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #FFF8E7;">
+          <!-- Encabezado -->
+          <div style="background: linear-gradient(135deg, #5C3A21 0%, #7A4E2D 100%); padding: 28px 24px; text-align: center; border-radius: 12px 12px 0 0;">
+            <div style="font-size: 32px; margin-bottom: 4px;">🍝</div>
+            <div style="font-size: 22px; font-weight: 800; color: #E1AD01; letter-spacing: 1.5px;">PASTAS ORLANDO</div>
+          </div>
+          <!-- Cuerpo -->
+          <div style="background: #ffffff; padding: 32px 28px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 24px rgba(92,58,33,0.10);">
+            <div style="color: #5C3A21; font-size: 15px; line-height: 1.7; white-space: pre-wrap;">${mensaje}</div>
+          </div>
+          <!-- Footer -->
+          <div style="text-align: center; padding: 16px 0; color: #5C3A21; opacity: 0.5; font-size: 12px;">
+            Pastas Orlando — Posadas, Misiones, Argentina
+          </div>
+        </div>`
+
+    const textContent = isHtml ? undefined : mensaje
+
+    const result = await sendMail({
+      to: destinatario,
+      subject: asunto,
+      html: htmlContent,
+      text: textContent,
+    })
+
+    console.log(`[NOTIF-EMAIL] ✅ Email enviado OK a "${destinatario}" — messageId: ${result.messageId}`)
+
+    return {
+      success: true,
+      message: 'Email enviado correctamente',
+      destinatario,
+      asunto,
+    }
   } catch (error) {
-    console.error('Error en enviarEmail:', error)
+    const errMsg = error instanceof Error ? error.message : 'Error desconocido'
+    console.error(`[NOTIF-EMAIL] ❌ Error enviando email a "${destinatario}":`, errMsg)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Error desconocido',
+      error: errMsg,
       destinatario,
       asunto,
     }
@@ -62,7 +100,7 @@ export async function enviarEmail(
 }
 
 // ============================================
-// ENVÍO DE WHATSAPP
+// ENVÍO DE WHATSAPP (REAL — usa TextMeBot)
 // ============================================
 
 interface WhatsAppResult {
@@ -74,8 +112,10 @@ interface WhatsAppResult {
 }
 
 /**
- * Genera un link de WhatsApp para enviar un mensaje.
- * En producción se integraría con WhatsApp Business API.
+ * Envía un WhatsApp real usando TextMeBot (la misma API que usa
+ * whatsapp-admin.ts para notificaciones de contacto y recuperación).
+ *
+ * Si TextMeBot no está configurado, genera un link wa.me como fallback.
  */
 export async function enviarWhatsApp(
   destinatario: string,
@@ -90,20 +130,56 @@ export async function enviarWhatsApp(
       ? numeroLimpio
       : `54${numeroLimpio}`
 
-    // Generar link de WhatsApp
+    const apiKey = process.env.TEXTMEBOT_APIKEY
+
+    // Si hay API key de TextMeBot, enviar realmente
+    if (apiKey) {
+      console.log(`[NOTIF-WHATSAPP] Enviando via TextMeBot a: ${numeroCompleto}`)
+
+      const url =
+        `https://api.textmebot.com/send.php` +
+        `?recipient=${encodeURIComponent(numeroCompleto)}` +
+        `&apikey=${encodeURIComponent(apiKey)}` +
+        `&text=${encodeURIComponent(mensaje)}`
+
+      const res = await fetch(url, {
+        method: 'GET',
+        signal: AbortSignal.timeout(15_000),
+      })
+
+      const body = await res.text()
+      console.log(`[NOTIF-WHATSAPP] TextMeBot response: status=${res.status} body=${body}`)
+
+      if (res.ok || body.toLowerCase().includes('success')) {
+        return {
+          success: true,
+          message: 'WhatsApp enviado correctamente via TextMeBot',
+          destinatario,
+        }
+      } else {
+        const errorMsg = `TextMeBot respondió con status ${res.status}: ${body}`
+        console.error(`[NOTIF-WHATSAPP] ❌ ${errorMsg}`)
+        return {
+          success: false,
+          error: errorMsg,
+          destinatario,
+        }
+      }
+    }
+
+    // Fallback: generar link wa.me si no hay API key
+    console.log(`[NOTIF-WHATSAPP] TEXTMEBOT_APIKEY no configurado — generando link wa.me`)
     const mensajeEncoded = encodeURIComponent(mensaje)
     const link = `https://wa.me/${numeroCompleto}?text=${mensajeEncoded}`
 
-    console.log(`[WHATSAPP] Link generado para: ${destinatario}`)
-
     return {
       success: true,
-      message: 'Link de WhatsApp generado correctamente',
+      message: 'Link de WhatsApp generado (TextMeBot no configurado)',
       destinatario,
       link,
     }
   } catch (error) {
-    console.error('Error en enviarWhatsApp:', error)
+    console.error('[NOTIF-WHATSAPP] Error:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Error desconocido',
