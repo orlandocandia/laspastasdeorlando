@@ -30,7 +30,7 @@ const carteles: Cartel[] = [
       </>
     ),
     title: 'Elaboración artesanal',
-    image: '/images/nosotros/artesanal.jpg',
+    image: '/images/nosotros/artesanal-manos-masa.jpg',
     imageAlt: 'Elaboración artesanal de pastas',
     description:
       'Combinamos la tradición de las recetas caseras con el uso de maquinaria específica que nos permite mantener la calidad y la consistencia en cada elaboración. Respetamos los tiempos de cada preparación para lograr la textura y el sabor que nos caracterizan.',
@@ -38,7 +38,7 @@ const carteles: Cartel[] = [
   {
     icons: <Clock size={40} className="text-mostaza" />,
     title: 'Tradición familiar',
-    image: '/images/nosotros/tradicion.jpg',
+    image: '/images/nosotros/tradicion-real.jpg',
     imageAlt: 'Tradición familiar en la elaboración de pasta',
     description:
       'Cada receta nace de conocimientos transmitidos de generación en generación y perfeccionados con años de experiencia. Conservamos la esencia de la cocina casera para ofrecer el sabor auténtico de siempre.',
@@ -59,7 +59,7 @@ const carteles: Cartel[] = [
       </>
     ),
     title: 'Frescas o freezadas',
-    image: '/images/nosotros/fresco-congelado.jpg',
+    image: '/images/nosotros/fresco-congelado-crudo.jpg',
     imageAlt: 'Pastas frescas o freezadas',
     description:
       'Ofrecemos pastas frescas, ideales para disfrutar en el momento, y opciones freezadas que conservan intactos su sabor, textura y calidad. Así podés tener siempre una comida casera lista para cuando la necesites.',
