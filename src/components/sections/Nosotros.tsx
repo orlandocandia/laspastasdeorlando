@@ -29,27 +29,27 @@ const carteles: Cartel[] = [
         <Hand size={32} className="text-rojo ml-1" />
       </>
     ),
-    title: 'Artesanal',
+    title: 'Elaboración artesanal',
     image: '/images/nosotros/artesanal.jpg',
     imageAlt: 'Elaboración artesanal de pastas',
     description:
-      'Elaboramos nuestras pastas combinando la tradición familiar con el uso de maquinaria específica. Respetamos los tiempos de cada preparación para lograr la textura y el sabor que nos distinguen.',
+      'Combinamos la tradición de las recetas caseras con el uso de maquinaria específica que nos permite mantener la calidad y la consistencia en cada elaboración. Respetamos los tiempos de cada preparación para lograr la textura y el sabor que nos caracterizan.',
   },
   {
     icons: <Clock size={40} className="text-mostaza" />,
-    title: 'Tradición',
+    title: 'Tradición familiar',
     image: '/images/nosotros/tradicion.jpg',
-    imageAlt: 'Recetas tradicionales de pasta',
+    imageAlt: 'Tradición familiar en la elaboración de pasta',
     description:
-      'Recetas heredadas que se perfeccionan con cada vuelta de masa, manteniendo la esencia.',
+      'Cada receta nace de conocimientos transmitidos de generación en generación y perfeccionados con años de experiencia. Conservamos la esencia de la cocina casera para ofrecer el sabor auténtico de siempre.',
   },
   {
     icons: <Medal size={40} className="text-mostaza" />,
-    title: 'Calidad',
+    title: 'Ingredientes de calidad',
     image: '/images/nosotros/calidad.jpg',
     imageAlt: 'Ingredientes frescos y de calidad',
     description:
-      'Seleccionamos cuidadosamente cada materia prima: harinas de primera calidad, huevos frescos, verduras de estación y productores locales. Creemos que una buena pasta empieza mucho antes de la mesa.',
+      'Seleccionamos cuidadosamente cada materia prima: harinas de primera calidad, huevos frescos y verduras seleccionadas. Estamos convencidos de que una buena pasta comienza con ingredientes nobles y una elaboración responsable.',
   },
   {
     icons: (
@@ -58,11 +58,11 @@ const carteles: Cartel[] = [
         <Sun size={32} className="text-mostaza ml-1" />
       </>
     ),
-    title: 'Fresco o congelado',
+    title: 'Frescas o freezadas',
     image: '/images/nosotros/fresco-congelado.jpg',
-    imageAlt: 'Pastas frescas o congeladas',
+    imageAlt: 'Pastas frescas o freezadas',
     description:
-      'Trabajamos con pastas frescas, ideales para cocinar en el momento. También ofrecemos opciones freezadas, manteniendo intactos el sabor y la calidad, para que tengas siempre una comida casera lista cuando la necesites.',
+      'Ofrecemos pastas frescas, ideales para disfrutar en el momento, y opciones freezadas que conservan intactos su sabor, textura y calidad. Así podés tener siempre una comida casera lista para cuando la necesites.',
   },
 ]
 
