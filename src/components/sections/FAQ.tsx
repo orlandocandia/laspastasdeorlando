@@ -11,37 +11,37 @@ const faqs = [
   {
     question: '¿Cómo hago para pedir pastas?',
     answer:
-      '¡Es muy fácil! Podés escribirnos por WhatsApp al 3754-419324, completar el formulario de contacto o utilizar cualquiera de los medios disponibles en nuestra web para comunicarte con nosotros.\n\nContanos qué productos y cantidades necesitás, y te confirmaremos el stock disponible o el tiempo de elaboración a la brevedad.\n\nPara confirmar el pedido, solicitamos una seña mediante transferencia o billetera virtual, y el saldo restante se abona al momento de la entrega. Las transferencias pueden realizarse sin inconvenientes a nuestra cuenta de Mercado Pago.\n\nAdemás, todos los datos enviados a través del formulario son tratados de manera segura y confidencial. Una vez confirmado el pedido, coordinamos el punto de entrega.',
+      '¡Es muy fácil! Podés contactarnos por WhatsApp, email, redes sociales o mediante nuestro formulario web. Contanos qué productos y cantidades necesitás, y te confirmaremos la disponibilidad de stock o el tiempo estimado de elaboración.\n\nUna vez confirmado el pedido, solicitamos una seña mediante transferencia bancaria o Mercado Pago para reservarlo. El saldo restante se abona al momento de la entrega.',
   },
   {
     question: '¿Cuánto cuesta el envío?',
     answer:
-      'El envío es gratuito dentro de la ciudad de Posadas abonando la seña correspondiente.\n\nPara localidades cercanas o alrededores, podés consultarnos por WhatsApp o utilizar cualquiera de los medios de contacto disponibles en nuestra web, y te informaremos el costo según la zona de entrega.',
+      'El envío es gratuito dentro de la ciudad de Posadas.\n\nSi te encontrás en otra localidad, consultanos y evaluaremos la posibilidad de entrega según la ubicación, el volumen del pedido y la disponibilidad logística.',
   },
   {
     question: '¿Las pastas vienen frescas o congeladas?',
     answer:
-      '¡Vos elegís! Podés pedirlas frescas para consumir en el momento o freezadas para conservarlas y disfrutarlas cuando quieras.\n\nEn ambas presentaciones mantenemos la misma calidad, sabor y elaboración artesanal que nos caracteriza.',
+      'Ofrecemos pastas frescas, ideales para cocinar y disfrutar en el momento, y también opciones freezadas para que puedas conservarlas por más tiempo.\n\nEn ambas presentaciones mantenemos la misma calidad, sabor y elaboración artesanal que nos caracteriza.',
   },
   {
     question: '¿Con cuánta anticipación debo realizar el pedido?',
     answer:
-      'Recomendamos realizar los pedidos con al menos 24 a 48 horas de anticipación en productos sin stock disponible o en pedidos de gran cantidad, para poder elaborarlos con el tiempo, la frescura y la dedicación que merecen.',
+      'Recomendamos realizar los pedidos con al menos 24 a 48 horas de anticipación cuando se trate de productos sin stock disponible o de pedidos de gran volumen.\n\nDe esta manera podemos garantizar la frescura, la calidad y la dedicación que ponemos en cada elaboración.',
   },
   {
     question: '¿Qué medios de pago aceptan?',
     answer:
-      'Aceptamos pagos mediante transferencias bancarias, billeteras virtuales y efectivo.\n\nLas transferencias pueden realizarse sin inconvenientes a nuestra cuenta de Mercado Pago. En algunos pedidos solicitamos una seña previa para confirmar la reserva, mientras que el saldo restante se abona al momento de la entrega.',
+      'Aceptamos transferencias bancarias, Mercado Pago y efectivo.\n\nPara reservar el pedido solicitamos una seña previa mediante transferencia bancaria o Mercado Pago. El saldo restante puede abonarse al momento de la entrega.',
   },
   {
     question: '¿Cuentan con local físico?',
     answer:
-      'Actualmente no contamos con atención en local físico. Elaboramos nuestros productos de manera artesanal en nuestra fábrica de pastas y realizamos entregas a domicilio.\n\nEsta modalidad nos permite mantener la frescura, la calidad de cada elaboración y ofrecer precios accesibles a nuestros clientes.',
+      'Actualmente no contamos con atención en local físico. Elaboramos nuestros productos de manera artesanal y trabajamos principalmente por pedido.\n\nEsta modalidad nos permite mantener la frescura, la calidad de cada elaboración y una atención más personalizada.',
   },
   {
-    question: '¿Realizan pedidos para eventos, instituciones o fiestas?',
+    question: '¿Realizan pedidos por cantidad?',
     answer:
-      'Sí, trabajamos con pedidos para eventos, reuniones, instituciones y celebraciones. Elaboramos productos en cantidades especiales según las necesidades de cada cliente.\n\nPodés realizar tu consulta por WhatsApp o completando el formulario de contacto para enviarnos tu solicitud. Todos los mensajes y pedidos son respondidos a la brevedad para brindarte una atención rápida y personalizada.',
+      'Sí. Podemos elaborar pedidos de mayor volumen para reuniones familiares, instituciones, reventa y otras ocasiones especiales.\n\nTe recomendamos consultarnos con anticipación para confirmar disponibilidad, tiempos de elaboración y coordinación de entrega.',
   },
 ]
 
