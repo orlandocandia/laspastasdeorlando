@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manual de Usuario - Pastas Orlando</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  .poster {
+    width: 794px;
+    height: 1123px;
+    background: #ffffff;
+    position: relative;
+    overflow: hidden;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  /* Accent bar on left */
+  .poster::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 8px;
+    height: 100%;
+    background: #502ac2;
+  }
+
+  /* Decorative circle top-right */
+  .poster::after {
+    content: '';
+    position: absolute;
+    right: -120px;
+    top: -120px;
+    width: 360px;
+    height: 360px;
+    border-radius: 50%;
+    background: rgba(80, 42, 194, 0.06);
+  }
+
+  .content {
+    position: relative;
+    z-index: 1;
+    padding: 80px 72px 60px 72px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #502ac2;
+    margin-bottom: 32px;
+  }
+
+  .title {
+    font-size: 52px;
+    font-weight: 700;
+    color: #1f2022;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+  }
+
+  .subtitle {
+    font-size: 22px;
+    font-weight: 400;
+    color: #502ac2;
+    margin-bottom: 48px;
+    line-height: 1.4;
+  }
+
+  .divider {
+    width: 60px;
+    height: 3px;
+    background: #502ac2;
+    margin-bottom: 48px;
+  }
+
+  .description {
+    font-size: 14px;
+    font-weight: 400;
+    color: #83898f;
+    line-height: 1.7;
+    max-width: 480px;
+    margin-bottom: auto;
+  }
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-top: 40px;
+    border-top: 1px solid #e2e4e7;
+  }
+
+  .footer-left {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1f2022;
+    line-height: 1.6;
+  }
+
+  .footer-right {
+    font-size: 12px;
+    font-weight: 400;
+    color: #83898f;
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  .brand {
+    color: #502ac2;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="content">
+    <div class="label">Sistema de Gestion Integral</div>
+    <div class="title">Manual de<br>Usuario</div>
+    <div class="subtitle">Pastas Orlando</div>
+    <div class="divider"></div>
+    <div class="description">
+      Sistema de gestion integral para la elaboracion artesanal de pastas.
+      Fabrica de pastas artesanales ubicada en Posadas, Misiones, Argentina.
+    </div>
+    <div class="footer">
+      <div class="footer-left">
+        <span class="brand">Pastas Orlando</span><br>
+        Posadas, Misiones, Argentina
+      </div>
+      <div class="footer-right">
+        Marzo 2025<br>
+        Version 1.0
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
