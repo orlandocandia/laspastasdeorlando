@@ -140,16 +140,16 @@ export default function Nosotros() {
           viewport={{ once: true }}
         >
           <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-4">
-            <strong className="text-marron">Hace más de diez años comenzamos este camino con una idea simple: salir adelante haciendo las cosas con dedicación, responsabilidad y pasión.</strong>
+            <strong className="text-marron">Hace más de diez años comenzamos este camino con una idea simple: salir adelante a través del trabajo, haciendo las cosas con dedicación, responsabilidad y pasión.</strong>
           </p>
           <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-4">
-            Después de atravesar momentos difíciles y buscando reinventarnos laboralmente, encontramos en la elaboración de pastas frescas un oficio que terminó convirtiéndose en nuestra vocación. Gracias a la enseñanza familiar, la capacitación constante y el esfuerzo diario, nació Las Pastas de Orlando.
+            Tras atravesar momentos difíciles y en la búsqueda de reinventarnos laboralmente, encontramos en la elaboración de pastas frescas un oficio que, con el tiempo, se convirtió en nuestra verdadera vocación. Gracias a las enseñanzas familiares, la capacitación constante y el esfuerzo de cada día, nació Las Pastas de Orlando.
           </p>
           <p className="text-muted-foreground text-base sm:text-lg leading-relaxed mb-4">
-            Hoy seguimos creciendo junto a un pequeño equipo comprometido con ofrecer productos frescos, artesanales y de calidad, manteniendo siempre el sabor casero y la atención cercana que nos identifica desde el primer día.
+            Hoy seguimos creciendo junto a un equipo comprometido con ofrecer productos frescos, artesanales y de calidad, manteniendo siempre el sabor casero y la atención cercana que nos distinguen desde nuestros comienzos.
           </p>
           <p className="text-muted-foreground text-base sm:text-lg leading-relaxed">
-            <strong className="text-marron">Creemos en el trabajo honesto, en los detalles y en llevar a cada mesa una experiencia hecha con dedicación.</strong>
+            <strong className="text-marron">Creemos en el valor del trabajo honesto, en el cuidado de cada detalle y en llevar a cada mesa una experiencia elaborada con dedicación, calidad y mucho cariño.</strong>
           </p>
         </motion.div>
 
