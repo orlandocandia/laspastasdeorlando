@@ -4,7 +4,6 @@ import { useState } from 'react'
 import {
   Mail,
   Instagram,
-  Facebook,
   Send,
   CheckCircle2,
   AlertCircle,
@@ -157,40 +156,21 @@ export default function Contacto() {
                 </div>
               </a>
 
-              {/* Instagram + Facebook — 2-column grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Instagram */}
-                <a
-                  href="https://instagram.com/laspastasdeorlando"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-100 hover:from-pink-100 hover:to-purple-100 transition-colors group"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-                    <Instagram className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="text-sm">
-                    <div className="font-semibold text-pink-900">@laspastasdeorlando</div>
-                    <div className="text-xs text-pink-600">Instagram</div>
-                  </div>
-                </a>
-
-                {/* Facebook */}
-                <a
-                  href="https://facebook.com/laspastasdeorlando"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-4 rounded-xl bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors group"
-                >
-                  <div className="w-10 h-10 rounded-lg bg-[#1877F2] flex items-center justify-center group-hover:scale-105 transition-transform">
-                    <Facebook className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="text-sm">
-                    <div className="font-semibold text-blue-900">laspastasdeorlando</div>
-                    <div className="text-xs text-blue-600">Facebook</div>
-                  </div>
-                </a>
-              </div>
+              {/* Instagram */}
+              <a
+                href="https://instagram.com/laspastasdeorlando"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-pink-50 to-purple-50 border border-pink-100 hover:from-pink-100 hover:to-purple-100 transition-colors group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Instagram className="w-5 h-5 text-white" />
+                </div>
+                <div className="text-sm">
+                  <div className="font-semibold text-pink-900">@laspastasdeorlando</div>
+                  <div className="text-xs text-pink-600">Instagram</div>
+                </div>
+              </a>
             </div>
 
             {/* QR Code Card */}
