@@ -30,11 +30,11 @@ const steps: Step[] = [
         <MercadoPagoIcon className="w-12 h-12" />
       </div>
     ),
-    title: 'Pedido y seña',
+    title: 'Hacé tu consulta y reservá tu pedido',
     image: '/images/pasos/pedido-sena.jpg',
     imageAlt: 'Pedido y seña por WhatsApp y Mercado Pago',
     description:
-      'Consultanos por WhatsApp, email, redes sociales o el formulario web. Te confirmamos al instante el stock o el tiempo de elaboración. Si hay, abonás la seña por Mercado Pago y agendamos tu pedido.',
+      'Consultanos por WhatsApp, email, redes sociales o mediante nuestro formulario web. Te confirmamos al instante si hay stock disponible o cuánto tiempo llevará la elaboración. Una vez confirmada la disponibilidad, abonás la seña por Mercado Pago y reservamos tu pedido.',
   },
   {
     icons: (
@@ -46,7 +46,7 @@ const steps: Step[] = [
     image: '/images/pasos/coordinacion.jpg',
     imageAlt: 'Coordinación de entrega a domicilio',
     description:
-      'Con la seña lista, coordinamos lugar, horario y quién recibe. Envío GRATIS.',
+      'Con la seña abonada, coordinamos el lugar, horario de entrega y la persona que recibirá el pedido. ¡El envío es GRATIS!',
   },
   {
     icons: (
@@ -54,11 +54,11 @@ const steps: Step[] = [
         <ThumbsUp size={40} className="text-rojo" />
       </div>
     ),
-    title: 'Disfrutás y volvés',
+    title: 'Disfrutás y volvé a elegirnos',
     image: '/images/pasos/disfrute.jpg',
     imageAlt: 'Persona disfrutando pastas caseras',
     description:
-      'Recibís, pagás el resto, cocinás y disfrutás. ¿Te gustó? Dejá tu opinión.',
+      'Recibís tu pedido, abonás el saldo restante, cocinás y disfrutás de unas pastas caseras listas para compartir. Si te gustó la experiencia, ¡dejános tu opinión y te esperamos nuevamente para seguir compartiendo el sabor de lo casero!',
   },
 ]
 
