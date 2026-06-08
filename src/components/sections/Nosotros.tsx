@@ -133,7 +133,7 @@ export default function Nosotros() {
 
         {/* Story */}
         <motion.div
-          className="max-w-3xl mx-auto text-center mb-14"
+          className="max-w-4xl mx-auto text-center mb-14"
           variants={textVariants}
           initial="hidden"
           whileInView="visible"
