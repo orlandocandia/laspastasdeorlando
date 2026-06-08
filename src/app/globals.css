@@ -344,6 +344,40 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
 }
 
+/* ============================================
+   LOGO — Efecto shimmer (destello en palo de amasar)
+   Línea de luz blanca que se desliza cada 6s
+   ============================================ */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) skewX(-15deg);
+  }
+  15% {
+    transform: translateX(100%) skewX(-15deg);
+  }
+  100% {
+    transform: translateX(100%) skewX(-15deg);
+  }
+}
+
+.logo-shimmer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.08) 40%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.08) 60%,
+    transparent 100%
+  );
+  animation: shimmer 6s ease-in-out infinite;
+  border-radius: inherit;
+}
+
 /* Ajuste extra para viewports muy bajos (≤ 650px alto) — solo notebooks */
 @media (max-height: 650px) and (min-width: 640px) {
   .hero-content {

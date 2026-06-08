@@ -38,7 +38,7 @@ export default function Hero() {
       {/* Content */}
       <div className="hero-content relative z-10 flex flex-col items-center text-center px-4 sm:px-6 py-12 sm:py-16 md:py-20">
         {/* 1. Logo — responsive: smallest on phone, scales up */}
-        <div className="hero-logo mb-2 sm:mb-3 flex justify-center">
+        <div className="hero-logo mb-2 sm:mb-3 flex justify-center relative overflow-hidden rounded-full">
           <Image
             src="/images/logo.png"
             alt="Pastas Orlando"
@@ -47,6 +47,10 @@ export default function Hero() {
             className="h-44 w-44 sm:h-56 sm:w-56 md:h-72 md:w-72 lg:h-96 lg:w-96 object-contain drop-shadow-2xl hero-logo-img"
             priority
           />
+          {/* Shimmer destello sobre el palo de amasar */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="logo-shimmer" />
+          </div>
         </div>
 
         {/* 2. Línea dorada + Título agrupados */}
@@ -70,9 +74,9 @@ export default function Hero() {
             return (
               <div
                 key={i}
-                className="flex flex-col items-center gap-1.5 hero-icono-item"
+                className="flex flex-col items-center gap-1.5 hero-icono-item group"
               >
-                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-mostaza/15 hero-icono-circulo">
+                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-mostaza/15 hero-icono-circulo transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
                   <Icon className="h-5 w-5 text-mostaza hero-icono-svg" strokeWidth={1.8} />
                 </div>
                 <span className="text-crema text-center leading-tight text-[11px] hero-icono-texto">
@@ -90,9 +94,9 @@ export default function Hero() {
             return (
               <div
                 key={i}
-                className="flex flex-col items-center gap-2 flex-shrink-0 hero-icono-item"
+                className="flex flex-col items-center gap-2 flex-shrink-0 hero-icono-item group"
               >
-                <div className="flex items-center justify-center h-12 w-12 md:h-14 md:w-14 rounded-full bg-mostaza/15 hero-icono-circulo">
+                <div className="flex items-center justify-center h-12 w-12 md:h-14 md:w-14 rounded-full bg-mostaza/15 hero-icono-circulo transition-all duration-300 group-hover:scale-110 group-hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
                   <Icon className="h-6 w-6 md:h-7 md:w-7 text-mostaza hero-icono-svg" strokeWidth={1.8} />
                 </div>
                 <span className="text-crema text-center leading-tight max-w-[100px] md:max-w-[120px] text-xs md:text-sm hero-icono-texto">

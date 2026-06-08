@@ -16,7 +16,7 @@ const navLinks = [
   { label: 'Cómo pedir', href: '#como-pedir' },
   { label: 'Nosotros', href: '#nosotros' },
   { label: 'Opiniones', href: '#opiniones' },
-  { label: 'FAQ', href: '#faq' },
+  { label: 'Preguntas frecuentes', href: '#faq' },
   { label: 'Contacto', href: '#contacto' },
 ]
 
