@@ -505,7 +505,7 @@ export async function POST(request: NextRequest) {
     // Security: require a secret key to prevent unauthorized seeding
     const { searchParams } = new URL(request.url)
     const secret = searchParams.get('secret')
-    if (secret !== process.env.SEED_SECRET && secret !== 'pastas-orlando-seed-2026') {
+    if (secret !== process.env.SEED_SECRET && secret !== 'laspastasdeorlando-seed-2026') {
       return NextResponse.json({ error: 'Unauthorized', version: 'v3-turso-fix' }, { status: 401 })
     }
 
@@ -1410,7 +1410,7 @@ export async function GET() {
         emptyTables,
         results,
         status: emptyTables === 0 ? 'ALL_OK' : 'NEEDS_SEED',
-        seedCommand: 'POST /api/seed?secret=pastas-orlando-seed-2026',
+        seedCommand: 'POST /api/seed?secret=laspastasdeorlando-seed-2026',
       })
     }
 
@@ -1469,7 +1469,7 @@ export async function GET() {
       emptyTables,
       results,
       status: emptyTables === 0 ? 'ALL_OK' : 'NEEDS_SEED',
-      seedCommand: 'POST /api/seed?secret=pastas-orlando-seed-2026',
+      seedCommand: 'POST /api/seed?secret=laspastasdeorlando-seed-2026',
     })
   } catch (error) {
     return NextResponse.json(

@@ -89,7 +89,7 @@ export async function GET() {
  * Usa el último contador existente + 1 para cada nuevo código.
  *
  * Query params:
- *   secret - Token de seguridad (requerido: pastas-orlando-seed-2026)
+ *   secret - Token de seguridad (requerido: laspastasdeorlando-seed-2026)
  *
  * Respuesta:
  *   message - Mensaje descriptivo
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     const secret = searchParams.get('secret')
 
     // Verificar autorización
-    if (secret !== 'pastas-orlando-seed-2026') {
+    if (secret !== 'laspastasdeorlando-seed-2026') {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 

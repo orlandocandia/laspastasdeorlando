@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function POST(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const secret = searchParams.get('secret')
-  if (secret !== process.env.SEED_SECRET && secret !== 'pastas-orlando-seed-2026') {
+  if (secret !== process.env.SEED_SECRET && secret !== 'laspastasdeorlando-seed-2026') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

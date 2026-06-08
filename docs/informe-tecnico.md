@@ -4,7 +4,7 @@
 > **Fecha:** Marzo 2026  
 > **Autor:** Equipo de Desarrollo  
 > **URL Producción:** [https://laspastasdeorlando.vercel.app](https://laspastasdeorlando.vercel.app)  
-> **Repositorio:** [https://github.com/orlandocandia/pastas-orlando](https://github.com/orlandocandia/pastas-orlando)
+> **Repositorio:** [https://github.com/orlandocandia/laspastasdeorlando](https://github.com/orlandocandia/laspastasdeorlando)
 
 ---
 
@@ -2062,8 +2062,8 @@ Registro inmutable de todas las acciones significativas. El campo `detalles` alm
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/orlandocandia/pastas-orlando.git
-cd pastas-orlando
+git clone https://github.com/orlandocandia/laspastasdeorlando.git
+cd laspastasdeorlando
 
 # Instalar dependencias
 bun install
@@ -2263,4 +2263,4 @@ El despliegue se realiza automáticamente mediante Vercel al hacer `git push` a 
 
 > **Fin del Informe Técnico — Pastas Orlando v1.0.0**
 >
-> Para consultas técnicas adicionales, contactar al equipo de desarrollo o consultar el repositorio en [GitHub](https://github.com/orlandocandia/pastas-orlando).
+> Para consultas técnicas adicionales, contactar al equipo de desarrollo o consultar el repositorio en [GitHub](https://github.com/orlandocandia/laspastasdeorlando).

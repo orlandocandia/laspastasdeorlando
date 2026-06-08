@@ -332,7 +332,7 @@ def build_story():
         ["Tecnologia principal", "Next.js 16 + TypeScript + Tailwind CSS 4 + Prisma + Turso (libSQL)"],
         ["Despliegue", "Vercel (produccion), SQLite (desarrollo local)"],
         ["Dominio", "https://laspastasdeorlando.com.ar"],
-        ["Repositorio", "https://github.com/orlandocandia/pastas-orlando"],
+        ["Repositorio", "https://github.com/orlandocandia/laspastasdeorlando"],
     ]
     story.append(make_table(
         ["Campo", "Detalle"],
@@ -762,7 +762,7 @@ public/
 
     install_steps = [
         ("Paso 1: Clonar repositorio",
-         "git clone https://github.com/orlandocandia/pastas-orlando.git"),
+         "git clone https://github.com/orlandocandia/laspastasdeorlando.git"),
         ("Paso 2: Instalar dependencias",
          "npm install"),
         ("Paso 3: Configurar variables de entorno",

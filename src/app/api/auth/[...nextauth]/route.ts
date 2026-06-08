@@ -293,7 +293,7 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
     maxAge: 24 * 60 * 60,
   },
-  secret: process.env.NEXTAUTH_SECRET || 'pastas-orlando-secret-key-2026',
+  secret: process.env.NEXTAUTH_SECRET || 'laspastasdeorlando-secret-key-2026',
 }
 
 const handler = NextAuth(authOptions)

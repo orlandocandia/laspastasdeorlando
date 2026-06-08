@@ -1139,7 +1139,7 @@ export async function POST(request: NextRequest) {
     // 1. Check secret
     const { searchParams } = new URL(request.url)
     const secret = searchParams.get('secret')
-    if (secret !== 'pastas-orlando-seed-2026') {
+    if (secret !== 'laspastasdeorlando-seed-2026') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 

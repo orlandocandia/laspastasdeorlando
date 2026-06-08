@@ -7,7 +7,7 @@ import { createClient } from '@libsql/client'
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const secret = searchParams.get('secret')
-  if (secret !== 'pastas-orlando-debug-2026') {
+  if (secret !== 'laspastasdeorlando-debug-2026') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

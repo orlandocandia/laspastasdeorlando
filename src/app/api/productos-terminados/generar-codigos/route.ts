@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     const secret = searchParams.get('secret')
 
     // Verificar token de seguridad si se proporciona
-    if (secret && secret !== 'pastas-orlando-seed-2026') {
+    if (secret && secret !== 'laspastasdeorlando-seed-2026') {
       return NextResponse.json({ error: 'Token de seguridad inválido' }, { status: 403 })
     }
 
