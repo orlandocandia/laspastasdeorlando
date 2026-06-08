@@ -181,10 +181,10 @@ export default function Contacto() {
               onMouseEnter={handleQRHover}
             >
               <p className="text-sm font-semibold text-amber-900 mb-1">
-                Escaneá y escribile a Orlando
+                ¿Tenés alguna consulta?
               </p>
               <p className="text-xs text-amber-700 mb-4">
-                Apretá con la cámara de tu celular
+                Escaneá el QR y escribime por WhatsApp.
               </p>
               <div className="bg-white p-3 rounded-2xl shadow-lg border border-amber-200">
                 <QRCode
@@ -199,7 +199,7 @@ export default function Contacto() {
                 <svg viewBox="0 0 32 32" className="w-4 h-4" fill="#25D366">
                   <path d="M16.004 0h-.008C7.174 0 0 7.176 0 16.004c0 3.5 1.132 6.742 3.054 9.378L1.054 31.29l6.118-1.962A15.9 15.9 0 0016.004 32C24.826 32 32 24.826 32 16.004S24.826 0 16.004 0zm9.31 22.61c-.39 1.1-1.932 2.014-3.164 2.28-.844.18-1.946.324-5.66-1.216-4.748-1.97-7.804-6.78-8.038-7.094-.226-.314-1.886-2.512-1.886-4.79s1.194-3.398 1.618-3.864c.39-.428.852-.536 1.136-.536.282 0 .566.002.812.016.262.012.614-.1.96.732.356.854 1.21 2.95 1.316 3.164.108.214.18.466.036.748-.136.282-.204.458-.408.706-.214.248-.448.554-.638.744-.214.214-.436.446-.188.876.248.428 1.104 1.82 2.37 2.948 1.63 1.452 3.004 1.902 3.432 2.116.428.214.676.18.924-.108.248-.288 1.064-1.24 1.348-1.666.282-.428.566-.356.952-.214.39.142 2.478 1.168 2.902 1.382.428.214.712.322.818.498.108.178.108 1.022-.282 2.12z" />
                 </svg>
-                WhatsApp 3754-419324
+                3754-419324
               </p>
             </div>
           </div>
@@ -327,7 +327,7 @@ export default function Contacto() {
               </form>
 
               <p className="text-xs text-muted-foreground text-center mt-5">
-                Al enviar este formulario, aceptás que me comunique con vos para responder tu consulta. Tus datos están protegidos.
+                Al enviar este formulario, aceptás que me comunique con vos para responder tu consulta. Tu información será tratada de forma confidencial y utilizada únicamente para atender tu solicitud.
               </p>
             </div>
           </div>
