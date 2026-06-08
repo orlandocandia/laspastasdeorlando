@@ -110,9 +110,11 @@ export default function Contacto() {
             <span className="text-rojo">Contacto</span>
           </h2>
           <div className="h-1 w-20 bg-mostaza mx-auto mt-4 rounded-full" />
-          <p className="text-muted-foreground mt-3 max-w-2xl mx-auto text-sm sm:text-base">
-            ¿Listo para hacer tu pedido? Completá el formulario y me comunico con vos al instante.
-            También podés contactarme directamente por los siguientes canales:
+          <p className="text-marron font-semibold mt-4 text-base sm:text-lg">
+            ¿Listo para hacer tu pedido?
+          </p>
+          <p className="text-muted-foreground mt-1 max-w-2xl mx-auto text-sm sm:text-base">
+            Completá el formulario y me pondré en contacto con vos lo antes posible. También podés comunicarte directamente a través de cualquiera de los siguientes canales:
           </p>
         </div>
 
