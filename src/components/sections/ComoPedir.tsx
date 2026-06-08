@@ -9,6 +9,7 @@ import {
   ImageIcon,
   ChevronRight,
   ChevronDown,
+  Landmark,
 } from 'lucide-react'
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon'
 import { MercadoPagoIcon } from '@/components/icons/MercadoPagoIcon'
@@ -28,13 +29,17 @@ const steps: Step[] = [
         <WhatsAppIcon className="w-12 h-12" />
         <span className="text-2xl font-light text-gray-400">+</span>
         <MercadoPagoIcon className="w-12 h-12" />
+        <span className="text-2xl font-light text-gray-400">+</span>
+        <div className="w-12 h-12 bg-white rounded-full shadow-md flex items-center justify-center">
+          <Landmark size={28} className="text-marron" />
+        </div>
       </div>
     ),
     title: 'Consultá y reservá tu pedido',
     image: '/images/pasos/pedido-sena.jpg',
     imageAlt: 'Pedido y seña por WhatsApp y Mercado Pago',
     description:
-      'Consultanos por WhatsApp, email, redes sociales o mediante nuestro formulario web. Te confirmamos al instante si hay stock disponible o cuánto tiempo llevará la elaboración. Una vez confirmada la disponibilidad, abonás la seña mediante transferencia y reservamos tu pedido.',
+      'Consultanos por WhatsApp, email, redes sociales o mediante nuestro formulario web. Te confirmamos al instante si hay stock disponible o cuánto tiempo llevará la elaboración. Una vez confirmada la disponibilidad, abonás la seña mediante transferencia bancaria o Mercado Pago, y reservamos tu pedido. 🏦'
   },
   {
     icons: (
