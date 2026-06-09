@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db, ensureDbReady } from '@/lib/db'
 
 // GET /api/productos-terminados/public - Landing page (público, sin auth)
-// Supports pagination via ?limit=12&offset=0
+// Supports pagination via ?limit=50&offset=0
+// tipo: "con_gluten", "integral", "sin_gluten", or omitted for all products
+//
+// Products with tipo_harina=null are included in ALL filter results
+// (they don't belong to a specific flour type, so they should appear everywhere)
 export async function GET(request: NextRequest) {
   try {
     // Ensure Turso auto-migration has completed before querying
@@ -10,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const tipo = searchParams.get('tipo') // "con_gluten", "integral", "sin_gluten"
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50'), 100) // Cap at 100
+    const limit = Math.min(parseInt(searchParams.get('limit') || '200'), 500) // Generous limit
     const offset = Math.max(parseInt(searchParams.get('offset') || '0'), 0)
 
     const where: Record<string, unknown> = {
@@ -19,8 +23,14 @@ export async function GET(request: NextRequest) {
     }
 
     if (tipo && ['con_gluten', 'integral', 'sin_gluten'].includes(tipo)) {
-      where.tipo_harina = tipo
+      // Include products of the requested type PLUS products with tipo_harina=null
+      // (null means "not specified" — they should appear in all views)
+      where.OR = [
+        { tipo_harina: tipo },
+        { tipo_harina: null },
+      ]
     }
+    // If no tipo specified, return all visible products (no tipo_harina filter)
 
     const [productos, total] = await Promise.all([
       db.productoTerminado.findMany({
