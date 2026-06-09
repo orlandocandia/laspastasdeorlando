@@ -89,7 +89,8 @@ const FILTROS: { key: FiltroHarina; label: string; icon: React.ReactNode }[] = [
 const TODOS_FILTROS: FiltroHarina[] = ['con_gluten', 'integral', 'sin_gluten']
 
 // Products per page in the expanded family view
-const PRODUCTS_PER_PAGE = 6
+// Show all products by default (no arbitrary limit)
+const PRODUCTS_PER_PAGE = 50
 
 interface ProductosProps {
   filtroActivo?: FiltroHarina
@@ -142,6 +143,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   }, [])
 
   // Reset visible count when family changes
+  // Show all products initially (PRODUCTS_PER_PAGE=50 covers all families)
   useEffect(() => {
     setVisibleCount(PRODUCTS_PER_PAGE)
   }, [familiaActiva])
