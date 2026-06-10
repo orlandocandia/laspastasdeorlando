@@ -9,11 +9,17 @@ import { requireAuth } from '@/lib/auth-helpers'
  * Idempotent (skips products that already have modo_coccion).
  */
 export async function POST(request: NextRequest) {
-  // TEMP: One-time seed — auth disabled for initial Turso seeding
-  // Will be re-enabled after first run
-  // const auth = await requireAuth()
-  // if (!auth.authorized) return auth.response!
-  void request
+  // Auth required — use session or ?secret=SEED_MODO_COCCION_SECRET env var
+  const { searchParams } = new URL(request.url)
+  const secret = searchParams.get('secret')
+  const seedSecret = process.env.SEED_MODO_COCCION_SECRET
+
+  if (secret && seedSecret && secret === seedSecret) {
+    // Secret matches — authorized
+  } else {
+    const auth = await requireAuth()
+    if (!auth.authorized) return auth.response!
+  }
 
   try {
     await ensureDbReady()
