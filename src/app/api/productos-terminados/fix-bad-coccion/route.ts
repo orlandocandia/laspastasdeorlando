@@ -8,17 +8,17 @@ import { requireAuth } from '@/lib/auth-helpers'
  * Replaces any modo_coccion that looks like test data with the correct template.
  */
 export async function POST(request: NextRequest) {
-  // TEMP: One-time fix — auth disabled for initial Turso fix
-  // const { searchParams } = new URL(request.url)
-  // const secret = searchParams.get('secret')
-  // const seedSecret = process.env.SEED_MODO_COCCION_SECRET
-  // if (secret && seedSecret && secret === seedSecret) {
-  //   // Secret matches — authorized
-  // } else {
-  //   const auth = await requireAuth()
-  //   if (!auth.authorized) return auth.response!
-  // }
-  void request
+  // Auth required — use session or secret
+  const { searchParams } = new URL(request.url)
+  const secret = searchParams.get('secret')
+  const seedSecret = process.env.SEED_MODO_COCCION_SECRET
+
+  if (secret && seedSecret && secret === seedSecret) {
+    // Secret matches — authorized
+  } else {
+    const auth = await requireAuth()
+    if (!auth.authorized) return auth.response!
+  }
 
   try {
     await ensureDbReady()
