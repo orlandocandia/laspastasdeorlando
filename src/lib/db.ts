@@ -63,6 +63,8 @@ async function autoMigrateTurso(client: Client) {
     { sql: 'ALTER TABLE "DetalleCompra" ADD COLUMN "codigo_barras_escaner" TEXT', desc: 'DetalleCompra.codigo_barras_escaner' },
     { sql: 'ALTER TABLE "DetallePresupuesto" ADD COLUMN "observaciones" TEXT', desc: 'DetallePresupuesto.observaciones' },
     { sql: 'ALTER TABLE "ProductoTerminado" ADD COLUMN "unidades" INTEGER', desc: 'ProductoTerminado.unidades' },
+    { sql: 'ALTER TABLE "CategoriaProductoTerminado" ADD COLUMN "imagen_integral" TEXT', desc: 'CategoriaProductoTerminado.imagen_integral' },
+    { sql: 'ALTER TABLE "CategoriaProductoTerminado" ADD COLUMN "imagen_sin_gluten" TEXT', desc: 'CategoriaProductoTerminado.imagen_sin_gluten' },
   ]
 
   for (const migration of migrations) {
