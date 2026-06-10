@@ -55,7 +55,7 @@ export default function ProductCard({ producto }: ProductCardProps) {
     return `${Math.round(kg * 1000)}g`
   }
 
-  // Handle flip via click/tap
+  // Handle flip via click/tap — ALWAYS enabled
   const handleFlip = () => {
     setIsFlipped((prev) => !prev)
   }
@@ -77,11 +77,11 @@ export default function ProductCard({ producto }: ProductCardProps) {
   return (
     <div
       ref={cardRef}
-      className="product-card group rounded-xl border border-border bg-card overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-150"
+      className="product-card group rounded-xl border border-border bg-card shadow-md hover:shadow-xl transition-shadow duration-150"
       style={{ perspective: '1000px' }}
     >
       <div
-        className={`card-inner relative w-full ${isFlipped ? 'flipped' : ''}`}
+        className="card-inner relative w-full"
         style={{
           transition: 'transform 0.6s ease-in-out',
           transformStyle: 'preserve-3d',
@@ -91,15 +91,15 @@ export default function ProductCard({ producto }: ProductCardProps) {
       >
         {/* ===== FRONT FACE ===== */}
         <div
-          className="card-front absolute inset-0"
+          className="card-front absolute inset-0 rounded-xl overflow-hidden"
           style={{
             backfaceVisibility: 'hidden',
-            borderRadius: 'inherit',
+            WebkitBackfaceVisibility: 'hidden',
           }}
         >
           <div
             className="h-full flex flex-col cursor-pointer"
-            onClick={hasModoCoccion ? handleFlip : undefined}
+            onClick={handleFlip}
           >
             {/* Image */}
             <div
@@ -132,13 +132,11 @@ export default function ProductCard({ producto }: ProductCardProps) {
               )}
 
               {/* Cooking hint overlay on hover */}
-              {hasModoCoccion && (
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100">
-                  <span className="bg-white/90 text-marron text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">
-                    🍳 Ver modo de cocción
-                  </span>
-                </div>
-              )}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100">
+                <span className="bg-white/90 text-marron text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">
+                  🍳 Ver modo de cocción
+                </span>
+              </div>
             </div>
 
             {/* Content */}
@@ -207,11 +205,11 @@ export default function ProductCard({ producto }: ProductCardProps) {
 
         {/* ===== BACK FACE ===== */}
         <div
-          className="card-back absolute inset-0 bg-white rounded-xl flex flex-col"
+          className="card-back absolute inset-0 bg-white rounded-xl flex flex-col overflow-hidden"
           style={{
             backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
-            borderRadius: 'inherit',
           }}
         >
           {/* Header */}
@@ -221,7 +219,7 @@ export default function ProductCard({ producto }: ProductCardProps) {
             </h3>
             <button
               onClick={handleFlip}
-              className="text-marron/50 hover:text-marron text-sm font-medium flex-shrink-0 transition-colors"
+              className="text-marron/50 hover:text-marron text-lg font-medium flex-shrink-0 transition-colors w-8 h-8 flex items-center justify-center rounded-full hover:bg-marron/5"
               aria-label="Volver al frente"
             >
               ✕
