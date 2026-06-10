@@ -22,6 +22,8 @@ interface ProductoPublico {
     nombre: string
     descripcion: string | null
     imagen: string | null
+    imagen_integral: string | null
+    imagen_sin_gluten: string | null
   }
 }
 
@@ -30,6 +32,8 @@ export type FiltroHarina = 'con_gluten' | 'integral' | 'sin_gluten'
 interface Familia {
   nombre: string
   imagen: string | null
+  imagen_integral: string | null
+  imagen_sin_gluten: string | null
   descripcion: string
   categoriaId: number
   descripcionDB: string | null
@@ -64,19 +68,31 @@ const IMAGENES_DEFAULT: Record<string, string> = {
   'Tartas': '/images/familias/tartas.png',
 }
 
-// Imagen dinámica según filtro para familias con variante integral
+// Imagen dinámica según filtro para familias con variante integral/sin gluten
 function getFamiliaImagen(familia: Familia, filtro: FiltroHarina): string {
+  // 1) Si la categoría tiene imagen de variante en la BD, usarla (definitivo)
+  if (filtro === 'integral' && familia.imagen_integral) return familia.imagen_integral
+  if (filtro === 'sin_gluten' && familia.imagen_sin_gluten) return familia.imagen_sin_gluten
+
+  // 2) Fallback hardcodeado para familias con imágenes pre-existentes (hotfix)
   if (familia.nombre === 'Tallarines' && filtro === 'integral') {
     return '/images/familias/tallarinesintegrales.png'
   }
   if (familia.nombre === 'Cintas Anchas' && filtro === 'integral') {
     return '/images/familias/cintasanchasintegrales.png'
   }
-  // Si la categoría tiene imagen propia (subida desde el dashboard), usarla
+  if (familia.nombre === 'Tapas' && filtro === 'integral') {
+    return '/images/familias/tapasintegrales.png'
+  }
+  if (familia.nombre === 'Tapas' && filtro === 'sin_gluten') {
+    return '/images/familias/tapassingluten.png'
+  }
+
+  // 3) Si la categoría tiene imagen propia (subida desde el dashboard), usarla
   if (familia.imagen) {
     return familia.imagen
   }
-  // Si no, usar la imagen por defecto hardcodeada
+  // 4) Si no, usar la imagen por defecto hardcodeada
   return IMAGENES_DEFAULT[familia.nombre] || '/images/placeholder-producto.jpg'
 }
 
@@ -174,6 +190,8 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
         seen.set(catNombre, {
           nombre: catNombre,
           imagen: p.categoria.imagen || null,
+          imagen_integral: p.categoria.imagen_integral || null,
+          imagen_sin_gluten: p.categoria.imagen_sin_gluten || null,
           descripcion: p.categoria.descripcion || DESCRIPCIONES_DEFAULT[catNombre] || `Productos de ${catNombre.toLowerCase()}`,
           descripcionDB: p.categoria.descripcion,
           categoriaId: p.categoria.id,

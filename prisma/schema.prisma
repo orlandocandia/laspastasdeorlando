@@ -421,12 +421,14 @@ model Marca {
 // ============================================
 
 model CategoriaProductoTerminado {
-  id          Int       @id @default(autoincrement())
-  nombre      String    @unique
-  descripcion String?
-  imagen      String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime? @updatedAt
+  id                Int       @id @default(autoincrement())
+  nombre            String    @unique
+  descripcion       String?
+  imagen            String?
+  imagen_integral   String?
+  imagen_sin_gluten String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime? @updatedAt
 
   // Relaciones
   productosTerminados ProductoTerminado[]

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import { toast } from 'sonner'
-import { Pencil, Trash2, Plus, Loader2, Upload, X, ImagePlus } from 'lucide-react'
+import { Pencil, Trash2, Plus, Loader2, Upload, X, ImagePlus, Leaf, Sparkles } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -39,6 +39,8 @@ interface CategoriaItem {
   nombre: string
   descripcion?: string | null
   imagen?: string | null
+  imagen_integral?: string | null
+  imagen_sin_gluten?: string | null
   _count?: { productosTerminados?: number }
 }
 
@@ -49,6 +51,93 @@ const TABS: { value: TipoCategoria; label: string }[] = [
   { value: 'productos-terminados', label: 'Productos Terminados' },
   { value: 'tipos-insumo', label: 'Tipos de Insumo' },
 ]
+
+// Reusable variant image upload component
+function VariantImageUploader({
+  label,
+  icon,
+  imageUrl,
+  onImageChange,
+  onImageRemove,
+  uploading,
+  inputRef,
+  onFileSelect,
+}: {
+  label: string
+  icon: React.ReactNode
+  imageUrl: string | null
+  onImageChange: (url: string | null) => void
+  onImageRemove: () => void
+  uploading: boolean
+  inputRef: React.RefObject<HTMLInputElement | null>
+  onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
+}) {
+  return (
+    <div>
+      <label className="text-sm font-medium text-marron mb-1 flex items-center gap-1.5">
+        {icon}
+        {label}
+      </label>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        onChange={onFileSelect}
+        className="hidden"
+      />
+      {imageUrl ? (
+        <div className="relative group w-full h-24 rounded-lg overflow-hidden border border-marron/10">
+          <Image
+            src={imageUrl}
+            alt={label}
+            fill
+            loading="lazy"
+            className="object-cover"
+            sizes="200px"
+          />
+          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => inputRef.current?.click()}
+            >
+              <Upload className="h-3.5 w-3.5 mr-1" />
+              Cambiar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={onImageRemove}
+            >
+              <X className="h-3.5 w-3.5 mr-1" />
+              Quitar
+            </Button>
+          </div>
+          {uploading && (
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-white" />
+            </div>
+          )}
+        </div>
+      ) : (
+        <button
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="w-full flex items-center justify-center gap-2 px-3 py-4 rounded-lg border-2 border-dashed border-marron/20 hover:border-mostaza/50 hover:bg-mostaza/5 transition-colors text-sm text-muted-foreground"
+        >
+          {uploading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ImagePlus className="h-4 w-4" />
+          )}
+          Subir imagen {label.toLowerCase()}
+        </button>
+      )}
+    </div>
+  )
+}
 
 export default function CategoriasManager() {
   const [activeTab, setActiveTab] = useState<TipoCategoria>('materias-primas')
@@ -64,6 +153,8 @@ export default function CategoriasManager() {
   const [editNombre, setEditNombre] = useState('')
   const [editDescripcion, setEditDescripcion] = useState('')
   const [editImagen, setEditImagen] = useState<string | null>(null)
+  const [editImagenIntegral, setEditImagenIntegral] = useState<string | null>(null)
+  const [editImagenSinGluten, setEditImagenSinGluten] = useState<string | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -72,9 +163,13 @@ export default function CategoriasManager() {
 
   // Upload states
   const [uploadingNew, setUploadingNew] = useState(false)
-  const [uploadingEdit, setUploadingEdit] = useState(false)
+  const [uploadingEditBase, setUploadingEditBase] = useState(false)
+  const [uploadingEditIntegral, setUploadingEditIntegral] = useState(false)
+  const [uploadingEditSinGluten, setUploadingEditSinGluten] = useState(false)
   const newInputRef = useRef<HTMLInputElement>(null)
-  const editInputRef = useRef<HTMLInputElement>(null)
+  const editBaseInputRef = useRef<HTMLInputElement>(null)
+  const editIntegralInputRef = useRef<HTMLInputElement>(null)
+  const editSinGlutenInputRef = useRef<HTMLInputElement>(null)
 
   const isProductosTab = activeTab === 'productos-terminados'
 
@@ -110,52 +205,53 @@ export default function CategoriasManager() {
     return data.url
   }
 
-  const handleNewImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
+  const handleFileUpload = async (
+    file: File,
+    setUploading: (v: boolean) => void,
+    inputRef: React.RefObject<HTMLInputElement | null>,
+    onUrl: (url: string) => void
+  ) => {
     if (!file.type.startsWith('image/')) {
       toast.error('Solo se permiten imágenes')
       return
     }
-
-    setUploadingNew(true)
+    setUploading(true)
     try {
       const url = await uploadImage(file)
       if (url) {
-        setNuevaImagen(url)
+        onUrl(url)
         toast.success('Imagen subida')
       }
     } catch {
       toast.error('Error al subir la imagen')
     } finally {
-      setUploadingNew(false)
-      if (newInputRef.current) newInputRef.current.value = ''
+      setUploading(false)
+      if (inputRef.current) inputRef.current.value = ''
     }
   }
 
-  const handleEditImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNewImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    await handleFileUpload(file, setUploadingNew, newInputRef, setNuevaImagen)
+  }
 
-    if (!file.type.startsWith('image/')) {
-      toast.error('Solo se permiten imágenes')
-      return
-    }
+  const handleEditBaseUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await handleFileUpload(file, setUploadingEditBase, editBaseInputRef, setEditImagen)
+  }
 
-    setUploadingEdit(true)
-    try {
-      const url = await uploadImage(file)
-      if (url) {
-        setEditImagen(url)
-        toast.success('Imagen subida')
-      }
-    } catch {
-      toast.error('Error al subir la imagen')
-    } finally {
-      setUploadingEdit(false)
-      if (editInputRef.current) editInputRef.current.value = ''
-    }
+  const handleEditIntegralUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await handleFileUpload(file, setUploadingEditIntegral, editIntegralInputRef, (url) => setEditImagenIntegral(url))
+  }
+
+  const handleEditSinGlutenUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    await handleFileUpload(file, setUploadingEditSinGluten, editSinGlutenInputRef, (url) => setEditImagenSinGluten(url))
   }
 
   const handleCreate = async () => {
@@ -199,6 +295,8 @@ export default function CategoriasManager() {
     setEditNombre(item.nombre)
     setEditDescripcion(item.descripcion || '')
     setEditImagen(item.imagen || null)
+    setEditImagenIntegral(item.imagen_integral || null)
+    setEditImagenSinGluten(item.imagen_sin_gluten || null)
     setEditOpen(true)
   }
 
@@ -214,6 +312,8 @@ export default function CategoriasManager() {
       }
       if (isProductosTab) {
         body.imagen = editImagen || null
+        body.imagen_integral = editImagenIntegral || null
+        body.imagen_sin_gluten = editImagenSinGluten || null
       }
       const res = await fetch('/api/categorias', {
         method: 'PUT',
@@ -377,69 +477,97 @@ export default function CategoriasManager() {
                       <TableHead>Nombre</TableHead>
                       <TableHead className="hidden sm:table-cell">Descripción</TableHead>
                       {tab.value === 'productos-terminados' && (
-                        <TableHead className="text-center hidden sm:table-cell">Productos</TableHead>
+                        <>
+                          <TableHead className="text-center hidden md:table-cell">Productos</TableHead>
+                          <TableHead className="text-center hidden lg:table-cell">Variantes</TableHead>
+                        </>
                       )}
                       <TableHead className="text-right">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {categorias.map((cat) => (
-                      <TableRow key={cat.id} className="hover:bg-mostaza/5">
-                        {tab.value === 'productos-terminados' && (
-                          <TableCell>
-                            {cat.imagen ? (
-                              <div className="w-10 h-10 rounded-full overflow-hidden border border-mostaza/20 bg-crema">
-                                <Image
-                                  src={cat.imagen}
-                                  alt={cat.nombre}
-                                  width={40}
-                                  height={40}
-                                  loading="lazy"
-                                  className="object-cover w-full h-full"
-                                />
-                              </div>
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-muted border border-marron/10 flex items-center justify-center">
-                                <ImagePlus className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                            )}
+                    {categorias.map((cat) => {
+                      const variantCount = [cat.imagen_integral, cat.imagen_sin_gluten].filter(Boolean).length
+                      return (
+                        <TableRow key={cat.id} className="hover:bg-mostaza/5">
+                          {tab.value === 'productos-terminados' && (
+                            <TableCell>
+                              {cat.imagen ? (
+                                <div className="w-10 h-10 rounded-full overflow-hidden border border-mostaza/20 bg-crema">
+                                  <Image
+                                    src={cat.imagen}
+                                    alt={cat.nombre}
+                                    width={40}
+                                    height={40}
+                                    loading="lazy"
+                                    className="object-cover w-full h-full"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-muted border border-marron/10 flex items-center justify-center">
+                                  <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                              )}
+                            </TableCell>
+                          )}
+                          <TableCell className="font-medium text-marron">
+                            {cat.nombre}
                           </TableCell>
-                        )}
-                        <TableCell className="font-medium text-marron">
-                          {cat.nombre}
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell text-muted-foreground">
-                          {cat.descripcion || '-'}
-                        </TableCell>
-                        {tab.value === 'productos-terminados' && (
-                          <TableCell className="text-center hidden sm:table-cell">
-                            <span className="bg-mostaza/15 text-marron text-xs rounded-full px-2 py-0.5 font-semibold">
-                              {cat._count?.productosTerminados ?? 0}
-                            </span>
+                          <TableCell className="hidden sm:table-cell text-muted-foreground">
+                            {cat.descripcion || '-'}
                           </TableCell>
-                        )}
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-10 w-10 hover:bg-mostaza/10"
-                              onClick={() => handleEdit(cat)}
-                            >
-                              <Pencil className="h-4 w-4 text-mostaza" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-10 w-10 hover:bg-rojo/10"
-                              onClick={() => setDeleteItem(cat)}
-                            >
-                              <Trash2 className="h-4 w-4 text-rojo" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          {tab.value === 'productos-terminados' && (
+                            <>
+                              <TableCell className="text-center hidden md:table-cell">
+                                <span className="bg-mostaza/15 text-marron text-xs rounded-full px-2 py-0.5 font-semibold">
+                                  {cat._count?.productosTerminados ?? 0}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-center hidden lg:table-cell">
+                                {variantCount > 0 ? (
+                                  <div className="flex items-center justify-center gap-1">
+                                    {cat.imagen_integral && (
+                                      <span className="inline-flex items-center gap-0.5 bg-green-50 text-green-700 text-xs rounded-full px-1.5 py-0.5 font-medium">
+                                        <Leaf className="h-3 w-3" />
+                                        Int
+                                      </span>
+                                    )}
+                                    {cat.imagen_sin_gluten && (
+                                      <span className="inline-flex items-center gap-0.5 bg-purple-50 text-purple-700 text-xs rounded-full px-1.5 py-0.5 font-medium">
+                                        <Sparkles className="h-3 w-3" />
+                                        SG
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">-</span>
+                                )}
+                              </TableCell>
+                            </>
+                          )}
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 hover:bg-mostaza/10"
+                                onClick={() => handleEdit(cat)}
+                              >
+                                <Pencil className="h-4 w-4 text-mostaza" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-10 w-10 hover:bg-rojo/10"
+                                onClick={() => setDeleteItem(cat)}
+                              >
+                                <Trash2 className="h-4 w-4 text-rojo" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                   </TableBody>
                 </Table>
                 </div>
@@ -454,7 +582,7 @@ export default function CategoriasManager() {
         setEditOpen(open)
         if (!open) setEditItem(null)
       }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-marron">Editar Categoría</DialogTitle>
           </DialogHeader>
@@ -478,71 +606,105 @@ export default function CategoriasManager() {
               />
             </div>
 
-            {/* Image upload for productos-terminados */}
+            {/* Image uploads for productos-terminados */}
             {isProductosTab && (
-              <div>
-                <label className="text-sm font-medium text-marron mb-1 block">Imagen</label>
-                <input
-                  ref={editInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleEditImageUpload}
-                  className="hidden"
-                />
-                {editImagen ? (
-                  <div className="relative group w-full h-32 rounded-lg overflow-hidden border border-marron/10">
-                    <Image
-                      src={editImagen}
-                      alt="Imagen de categoría"
-                      fill
-                      loading="lazy"
-                      className="object-cover"
-                      sizes="96px"
-                    />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => editInputRef.current?.click()}
-                      >
-                        <Upload className="h-4 w-4 mr-1" />
-                        Cambiar
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => setEditImagen(null)}
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Eliminar
-                      </Button>
-                    </div>
-                    {uploadingEdit && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <Loader2 className="h-6 w-6 animate-spin text-white" />
+              <div className="space-y-4">
+                {/* Base image */}
+                <div>
+                  <label className="text-sm font-medium text-marron mb-1 block">
+                    Imagen principal (con gluten)
+                  </label>
+                  <input
+                    ref={editBaseInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleEditBaseUpload}
+                    className="hidden"
+                  />
+                  {editImagen ? (
+                    <div className="relative group w-full h-32 rounded-lg overflow-hidden border border-marron/10">
+                      <Image
+                        src={editImagen}
+                        alt="Imagen de categoría"
+                        fill
+                        loading="lazy"
+                        className="object-cover"
+                        sizes="200px"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => editBaseInputRef.current?.click()}
+                        >
+                          <Upload className="h-4 w-4 mr-1" />
+                          Cambiar
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setEditImagen(null)}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Eliminar
+                        </Button>
                       </div>
-                    )}
+                      {uploadingEditBase && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <Loader2 className="h-6 w-6 animate-spin text-white" />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => editBaseInputRef.current?.click()}
+                      disabled={uploadingEditBase}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-marron/20 hover:border-mostaza/50 hover:bg-mostaza/5 transition-colors text-sm text-muted-foreground"
+                    >
+                      {uploadingEditBase ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <ImagePlus className="h-5 w-5" />
+                      )}
+                      Subir imagen principal
+                    </button>
+                  )}
+                </div>
+
+                {/* Variant images section */}
+                <div className="border-t border-marron/10 pt-4">
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Las imágenes de variantes se muestran en la landing cuando el usuario filtra por tipo de harina.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <VariantImageUploader
+                      label="Integral"
+                      icon={<Leaf className="h-3.5 w-3.5 text-green-600" />}
+                      imageUrl={editImagenIntegral}
+                      onImageChange={setEditImagenIntegral}
+                      onImageRemove={() => setEditImagenIntegral(null)}
+                      uploading={uploadingEditIntegral}
+                      inputRef={editIntegralInputRef}
+                      onFileSelect={handleEditIntegralUpload}
+                    />
+                    <VariantImageUploader
+                      label="Sin Gluten"
+                      icon={<Sparkles className="h-3.5 w-3.5 text-purple-600" />}
+                      imageUrl={editImagenSinGluten}
+                      onImageChange={setEditImagenSinGluten}
+                      onImageRemove={() => setEditImagenSinGluten(null)}
+                      uploading={uploadingEditSinGluten}
+                      inputRef={editSinGlutenInputRef}
+                      onFileSelect={handleEditSinGlutenUpload}
+                    />
                   </div>
-                ) : (
-                  <button
-                    onClick={() => editInputRef.current?.click()}
-                    disabled={uploadingEdit}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-marron/20 hover:border-mostaza/50 hover:bg-mostaza/5 transition-colors text-sm text-muted-foreground"
-                  >
-                    {uploadingEdit ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    ) : (
-                      <ImagePlus className="h-5 w-5" />
-                    )}
-                    Subir imagen de categoría
-                  </button>
-                )}
+                </div>
               </div>
             )}
 
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 pt-2">
               <Button
                 variant="outline"
                 onClick={() => {

@@ -73,7 +73,13 @@ export async function POST(request: NextRequest) {
 
     if (tipo === 'productos-terminados') {
       const categoria = await db.categoriaProductoTerminado.create({
-        data: { nombre, descripcion: descripcion || null, imagen: body.imagen || null },
+        data: {
+          nombre,
+          descripcion: descripcion || null,
+          imagen: body.imagen || null,
+          imagen_integral: body.imagen_integral || null,
+          imagen_sin_gluten: body.imagen_sin_gluten || null,
+        },
       })
       return NextResponse.json(categoria, { status: 201 })
     }
@@ -123,10 +129,12 @@ export async function PUT(request: NextRequest) {
     }
 
     if (tipo === 'productos-terminados') {
-      const updateDataPT: { nombre?: string; descripcion?: string | null; imagen?: string | null } = {}
+      const updateDataPT: { nombre?: string; descripcion?: string | null; imagen?: string | null; imagen_integral?: string | null; imagen_sin_gluten?: string | null } = {}
       if (nombre !== undefined) updateDataPT.nombre = nombre
       if (descripcion !== undefined) updateDataPT.descripcion = descripcion || null
       if (body.imagen !== undefined) updateDataPT.imagen = body.imagen || null
+      if (body.imagen_integral !== undefined) updateDataPT.imagen_integral = body.imagen_integral || null
+      if (body.imagen_sin_gluten !== undefined) updateDataPT.imagen_sin_gluten = body.imagen_sin_gluten || null
       const categoria = await db.categoriaProductoTerminado.update({
         where: { id: parseInt(id) },
         data: updateDataPT,
