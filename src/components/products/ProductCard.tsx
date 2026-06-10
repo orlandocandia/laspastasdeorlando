@@ -86,19 +86,18 @@ export default function ProductCard({ producto }: ProductCardProps) {
           transition: 'transform 0.6s ease-in-out',
           transformStyle: 'preserve-3d',
           transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-          minHeight: '380px',
         }}
       >
-        {/* ===== FRONT FACE ===== */}
+        {/* ===== FRONT FACE — relative so it determines card height ===== */}
         <div
-          className="card-front absolute inset-0 rounded-xl overflow-hidden"
+          className="card-front relative rounded-xl overflow-hidden"
           style={{
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
           }}
         >
           <div
-            className="h-full flex flex-col cursor-pointer"
+            className="flex flex-col cursor-pointer min-h-[340px] sm:min-h-[360px]"
             onClick={handleFlip}
           >
             {/* Image */}
