@@ -59,7 +59,7 @@ const carteles: Cartel[] = [
       </>
     ),
     title: 'Frescas o freezadas',
-    image: '/images/nosotros/fresco-congelado-crudo.jpg',
+    image: '/images/familias/frescocongelado.png',
     imageAlt: 'Pastas frescas o freezadas',
     description:
       'Ofrecemos pastas frescas, ideales para disfrutar en el momento, y opciones freezadas que conservan intactos su sabor, textura y calidad. Así podés tener siempre una comida casera lista para cuando la necesites.',
