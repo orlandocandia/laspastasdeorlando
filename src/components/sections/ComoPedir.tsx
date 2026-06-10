@@ -60,7 +60,7 @@ const steps: Step[] = [
       </div>
     ),
     title: 'Disfrutás y volvé a elegirnos',
-    image: '/images/pasos/disfrute.jpg',
+    image: '/images/pasos/disfrute-nueva.jpg',
     imageAlt: 'Persona disfrutando pastas caseras',
     description:
       'Recibís tu pedido, abonás el saldo restante, cocinás y disfrutás de unas pastas caseras listas para compartir. Si te gustó la experiencia, ¡dejános tu opinión y te esperamos nuevamente para seguir compartiendo el sabor de lo casero!',
