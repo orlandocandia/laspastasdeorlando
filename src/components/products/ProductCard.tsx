@@ -251,12 +251,6 @@ export default function ProductCard({ producto }: ProductCardProps) {
             )}
           </div>
 
-          {/* Footer */}
-          <div className="p-3 pt-2 border-t border-marron/10 flex-shrink-0">
-            <p className="text-mostaza font-bold text-base">
-              {priceFormatter.format(producto.precio_venta)}
-            </p>
-          </div>
         </div>
       </div>
     </div>
