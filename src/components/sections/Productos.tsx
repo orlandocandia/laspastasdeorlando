@@ -17,6 +17,7 @@ interface ProductoPublico {
   stock_actual: number
   destacado: boolean
   tipo_harina: string | null
+  modo_coccion: string | null
   categoria: {
     id: number
     nombre: string

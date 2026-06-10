@@ -45,6 +45,7 @@ const productoTerminadoSchema = z.object({
   orden: z.coerce.number().min(0, 'El orden no puede ser negativo').default(0),
   visible_en_landing: z.boolean().default(true),
   imagen: z.string().optional(),
+  modo_coccion: z.string().optional(),
   estado: z.boolean().default(true),
 })
 
@@ -89,6 +90,7 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
       orden: productoTerminado?.orden ?? 0,
       visible_en_landing: productoTerminado?.visible_en_landing ?? true,
       imagen: productoTerminado?.imagen || '',
+      modo_coccion: productoTerminado?.modo_coccion || '',
       estado: productoTerminado?.estado ?? true,
     },
   })
@@ -110,6 +112,7 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
       orden: productoTerminado?.orden ?? 0,
       visible_en_landing: productoTerminado?.visible_en_landing ?? true,
       imagen: productoTerminado?.imagen || '',
+      modo_coccion: productoTerminado?.modo_coccion || '',
       estado: productoTerminado?.estado ?? true,
     }
     form.reset(defaults)
@@ -163,6 +166,7 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
         id_categoria: parseInt(data.id_categoria),
         tipo_harina: data.tipo_harina || null,
         unidades: data.unidades || null,
+        modo_coccion: data.modo_coccion || null,
       }
 
       let url = '/api/productos-terminados'
@@ -417,6 +421,29 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
             </p>
           </div>
         )}
+
+        {/* Modo de cocción */}
+        <FormField
+          control={form.control}
+          name="modo_coccion"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Modo de cocción (opcional)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder={`🍝 **Tallarines**\n\n**Frescos**\n✅ Agua hirviendo con sal.\n⏱️ 5 minutos.\n👨‍🍳 Probar antes de escurrir.\n\n**Freezados**\n❄️ Directo al agua hirviendo.\n🔄 Separar suavemente el primer minuto.\n⏱️ 7 a 9 minutos.`}
+                  className="resize-none"
+                  rows={8}
+                  {...field}
+                />
+              </FormControl>
+              <p className="text-xs text-muted-foreground">
+                💡 Podés usar emojis (🍝✅❄️⏱️👨‍🍳🥟🌾), negritas con **texto**, y saltos de línea. Si lo dejás vacío, se mostrará un enlace a WhatsApp.
+              </p>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div>
           <FormLabel>Foto</FormLabel>

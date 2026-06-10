@@ -53,6 +53,7 @@ export async function PUT(
       orden,
       visible_en_landing,
       imagen,
+      modo_coccion,
       estado,
     } = body
 
@@ -115,6 +116,7 @@ export async function PUT(
         orden: orden !== undefined ? parseInt(orden) : undefined,
         visible_en_landing: visible_en_landing !== undefined ? visible_en_landing : undefined,
         imagen: imagen !== undefined ? imagen || null : undefined,
+        modo_coccion: modo_coccion !== undefined ? modo_coccion || null : undefined,
         estado: estado !== undefined ? estado : undefined,
       },
       include: {

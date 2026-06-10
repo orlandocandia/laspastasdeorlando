@@ -140,6 +140,7 @@ export async function POST(request: NextRequest) {
       orden,
       visible_en_landing,
       imagen,
+      modo_coccion,
       estado,
     } = body
 
@@ -193,6 +194,7 @@ export async function POST(request: NextRequest) {
         orden: parseInt(orden) || 0,
         visible_en_landing: visible_en_landing !== false,
         imagen: imagen || null,
+        modo_coccion: modo_coccion || null,
         estado: estado !== false,
       },
       include: {

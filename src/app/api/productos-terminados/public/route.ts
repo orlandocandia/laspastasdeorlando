@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
           stock_actual: true,
           destacado: true,
           tipo_harina: true,
+          modo_coccion: true,
           categoria: {
             select: {
               id: true,
