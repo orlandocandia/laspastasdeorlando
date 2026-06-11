@@ -74,6 +74,13 @@ export default function ProductCard({ producto }: ProductCardProps) {
 
   const hasModoCoccion = !!producto.modo_coccion?.trim()
 
+  // Detectar si la categoría es de "uso" (tapas, empanadas, etc.) vs "cocción" (pastas)
+  const categoriaNombre = producto.categoria.nombre.toLowerCase()
+  const esCategoriaUso = /tapa|empanada|pastelito|pascualina|tarta/.test(categoriaNombre)
+  const tituloReverso = esCategoriaUso
+    ? '📦 Modo de uso y conservación'
+    : '🍝 Modo de cocción'
+
   return (
     <div
       ref={cardRef}
@@ -130,10 +137,10 @@ export default function ProductCard({ producto }: ProductCardProps) {
                 </div>
               )}
 
-              {/* Cooking hint overlay on hover */}
+              {/* Cooking/usage hint overlay on hover */}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100">
                 <span className="bg-white/90 text-marron text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">
-                  🍳 Ver modo de cocción
+                  {esCategoriaUso ? '📦 Ver modo de uso' : '🍳 Ver modo de cocción'}
                 </span>
               </div>
             </div>
@@ -214,7 +221,7 @@ export default function ProductCard({ producto }: ProductCardProps) {
           {/* Header */}
           <div className="flex items-center justify-between p-4 pb-2 border-b border-marron/10 flex-shrink-0">
             <h3 className="font-bold text-marron text-sm line-clamp-1 flex-1 mr-2">
-              🍳 {producto.nombre}
+              {tituloReverso} — {producto.nombre}
             </h3>
             <button
               onClick={handleFlip}
@@ -235,7 +242,7 @@ export default function ProductCard({ producto }: ProductCardProps) {
             ) : (
               <div className="coccion-default text-center flex flex-col items-center justify-center h-full">
                 <p className="text-2xl mb-2">📖</p>
-                <p className="font-semibold text-marron mb-2">Modo de cocción</p>
+                <p className="font-semibold text-marron mb-2">{tituloReverso}</p>
                 <p className="text-sm text-muted-foreground mb-3">
                   Consultános por WhatsApp para más información.
                 </p>
