@@ -78,7 +78,7 @@ export default function ProductCard({ producto }: ProductCardProps) {
   const categoriaNombre = producto.categoria.nombre.toLowerCase()
   const esCategoriaUso = /tapa|empanada|pastelito|pascualina|tarta/.test(categoriaNombre)
   const tituloReverso = esCategoriaUso
-    ? '📦 Modo de uso y conservación'
+    ? '📦 Uso y Conservación'
     : '🍝 Modo de cocción'
 
   return (
@@ -221,7 +221,7 @@ export default function ProductCard({ producto }: ProductCardProps) {
           {/* Header */}
           <div className="flex items-center justify-between p-4 pb-2 border-b border-marron/10 flex-shrink-0">
             <h3 className="font-bold text-marron text-sm line-clamp-1 flex-1 mr-2">
-              {tituloReverso} — {producto.nombre}
+              {tituloReverso}
             </h3>
             <button
               onClick={handleFlip}
