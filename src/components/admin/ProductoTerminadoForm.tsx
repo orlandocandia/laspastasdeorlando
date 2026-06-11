@@ -422,27 +422,49 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
           </div>
         )}
 
-        {/* Modo de cocción */}
+        {/* Modo de cocción / uso — etiqueta dinámica según categoría */}
         <FormField
           control={form.control}
           name="modo_coccion"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Modo de cocción (opcional)</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder={`🍝 **Tallarines**\n\n**Frescos**\n✅ Agua hirviendo con sal.\n⏱️ 5 minutos.\n👨‍🍳 Probar antes de escurrir.\n\n**Freezados**\n❄️ Directo al agua hirviendo.\n🔄 Separar suavemente el primer minuto.\n⏱️ 7 a 9 minutos.`}
-                  className="resize-none"
-                  rows={8}
-                  {...field}
-                />
-              </FormControl>
-              <p className="text-xs text-muted-foreground">
-                💡 Podés usar emojis (🍝✅❄️⏱️👨‍🍳🥟🌾), negritas con **texto**, y saltos de línea. Si lo dejás vacío, se mostrará un enlace a WhatsApp.
-              </p>
-              <FormMessage />
-            </FormItem>
-          )}
+          render={({ field }) => {
+            const selectedCatId = form.watch('id_categoria')
+            const selectedCat = categorias.find((c) => c.id.toString() === selectedCatId)
+            const catNombre = selectedCat?.nombre?.toLowerCase() || ''
+
+            const esCategoriaUso = /tapa|empanada|pastelito|pascualina|tarta/.test(catNombre)
+
+            const etiqueta = esCategoriaUso
+              ? '📦 Modo de uso y conservación (opcional)'
+              : '🍝 Modo de cocción (opcional)'
+
+            const placeholderUso = `📦 **Modo de Uso y Conservación**\n\n🌿 **Producto Fresco**\n🥟 Conservar refrigerado.\n🍴 Listo para usar.\n❄️ Si no lo utiliza, puede congelarlo.\n\n---\n\n❄️ **Producto Congelado**\n🧊 Descongelar en heladera.\n🥟 Utilizar una vez que las tapas estén flexibles.\n🚫 Evitar volver a congelar para conservar su textura y calidad.`
+
+            const placeholderCoccion = `🍝 **Tallarines**\n\n🌾 **Frescos**\n💧 Agua hirviendo con sal a gusto.\n🍴 Separar suavemente los fideos durante el primer minuto.\n⏱️ Cocinar 4 a 5 min, revolviendo ocasionalmente.\n👨‍🍳 Probar antes de escurrir. Si es necesario, cocinar 1 o 2 min más.\n\n❄️ **Freezados**\n💧 Directo al agua hirviendo con sal a gusto.\n🍴 Separar suavemente los fideos durante el primer minuto.\n⏱️ Cocinar 6 a 8 min, revolviendo ocasionalmente.\n👨‍🍳 Probar antes de escurrir. Si es necesario, cocinar 1 o 2 min más.`
+
+            const placeholder = esCategoriaUso ? placeholderUso : placeholderCoccion
+
+            const helpText = esCategoriaUso
+              ? '💡 Podés usar emojis (📦🌿🥟❄️🧊🚫🍴), negritas con **texto**, y saltos de línea. Si lo dejás vacío, se mostrará un enlace a WhatsApp.'
+              : '💡 Podés usar emojis (🍝✅❄️⏱️👨‍🍳🥟🌾), negritas con **texto**, y saltos de línea. Si lo dejás vacío, se mostrará un enlace a WhatsApp.'
+
+            return (
+              <FormItem>
+                <FormLabel>{etiqueta}</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder={placeholder}
+                    className="resize-none"
+                    rows={8}
+                    {...field}
+                  />
+                </FormControl>
+                <p className="text-xs text-muted-foreground">
+                  {helpText}
+                </p>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
         />
 
         <div>
