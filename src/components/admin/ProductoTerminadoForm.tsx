@@ -46,6 +46,8 @@ const productoTerminadoSchema = z.object({
   visible_en_landing: z.boolean().default(true),
   imagen: z.string().optional(),
   modo_coccion: z.string().optional(),
+  texto_frente: z.string().optional(),
+  texto_reverso: z.string().optional(),
   estado: z.boolean().default(true),
 })
 
@@ -91,6 +93,8 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
       visible_en_landing: productoTerminado?.visible_en_landing ?? true,
       imagen: productoTerminado?.imagen || '',
       modo_coccion: productoTerminado?.modo_coccion || '',
+      texto_frente: productoTerminado?.texto_frente || '',
+      texto_reverso: productoTerminado?.texto_reverso || '',
       estado: productoTerminado?.estado ?? true,
     },
   })
@@ -113,6 +117,8 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
       visible_en_landing: productoTerminado?.visible_en_landing ?? true,
       imagen: productoTerminado?.imagen || '',
       modo_coccion: productoTerminado?.modo_coccion || '',
+      texto_frente: productoTerminado?.texto_frente || '',
+      texto_reverso: productoTerminado?.texto_reverso || '',
       estado: productoTerminado?.estado ?? true,
     }
     form.reset(defaults)
@@ -167,6 +173,8 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
         tipo_harina: data.tipo_harina || null,
         unidades: data.unidades || null,
         modo_coccion: data.modo_coccion || null,
+        texto_frente: data.texto_frente || null,
+        texto_reverso: data.texto_reverso || null,
       }
 
       let url = '/api/productos-terminados'
@@ -466,6 +474,43 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
             )
           }}
         />
+
+        {/* Textos personalizados frente/reverso */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="texto_frente"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Texto del frente (opcional)</FormLabel>
+                <FormControl>
+                  <Input placeholder="Ej: 🍝 Modo de cocción" {...field} />
+                </FormControl>
+                <p className="text-xs text-muted-foreground">
+                  Se muestra al pasar el mouse sobre la tarjeta. Si lo dejás vacío, se usa el valor por defecto según categoría.
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="texto_reverso"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Texto del reverso (opcional)</FormLabel>
+                <FormControl>
+                  <Input placeholder="Ej: 🍝 Modo de cocción" {...field} />
+                </FormControl>
+                <p className="text-xs text-muted-foreground">
+                  Título en el reverso de la tarjeta. Si lo dejás vacío, se usa el valor por defecto según categoría.
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div>
           <FormLabel>Foto</FormLabel>

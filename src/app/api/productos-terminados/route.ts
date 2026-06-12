@@ -141,6 +141,8 @@ export async function POST(request: NextRequest) {
       visible_en_landing,
       imagen,
       modo_coccion,
+      texto_frente,
+      texto_reverso,
       estado,
     } = body
 
@@ -195,6 +197,8 @@ export async function POST(request: NextRequest) {
         visible_en_landing: visible_en_landing !== false,
         imagen: imagen || null,
         modo_coccion: modo_coccion || null,
+        texto_frente: texto_frente || null,
+        texto_reverso: texto_reverso || null,
         estado: estado !== false,
       },
       include: {

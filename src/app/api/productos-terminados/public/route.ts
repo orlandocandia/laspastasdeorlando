@@ -52,6 +52,8 @@ export async function GET(request: NextRequest) {
           destacado: true,
           tipo_harina: true,
           modo_coccion: true,
+          texto_frente: true,
+          texto_reverso: true,
           categoria: {
             select: {
               id: true,

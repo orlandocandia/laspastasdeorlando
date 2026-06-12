@@ -456,6 +456,8 @@ model ProductoTerminado {
   visible_en_landing  Boolean   @default(true)
   imagen              String?
   modo_coccion        String?
+  texto_frente        String?   @map("texto_frente")   // Texto personalizado en hover del frente
+  texto_reverso       String?   @map("texto_reverso")  // Título personalizado en el reverso
   estado              Boolean   @default(true)
   createdAt           DateTime  @default(now())
   updatedAt           DateTime? @updatedAt

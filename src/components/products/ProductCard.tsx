@@ -19,6 +19,8 @@ interface ProductCardProps {
     destacado: boolean
     tipo_harina?: string | null
     modo_coccion?: string | null
+    texto_frente?: string | null
+    texto_reverso?: string | null
     categoria: {
       id: number
       nombre: string
@@ -77,8 +79,12 @@ export default function ProductCard({ producto }: ProductCardProps) {
   // Detectar si la categoría es de "uso" (tapas, empanadas, etc.) vs "cocción" (pastas)
   const categoriaNombre = producto.categoria.nombre.toLowerCase()
   const esTapa = /tapa|empanada|pastelito|pascualina|tarta/i.test(categoriaNombre)
-  const textoFrente = esTapa ? '📦 Uso y Conservación' : '🍝 Modo de cocción'
-  const tituloReverso = esTapa ? '📦 Uso y Conservación' : '🍝 Modo de cocción'
+
+  // Prioridad: texto personalizado > fallback por categoría
+  const defaultFrente = esTapa ? '📦 Uso y Conservación' : '🍝 Modo de cocción'
+  const defaultReverso = esTapa ? '📦 Uso y Conservación' : '🍝 Modo de cocción'
+  const textoFrente = producto.texto_frente?.trim() || defaultFrente
+  const tituloReverso = producto.texto_reverso?.trim() || defaultReverso
 
   return (
     <div
