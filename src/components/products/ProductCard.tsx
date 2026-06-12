@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { MessageCircle } from 'lucide-react'
 
 interface ProductCardProps {
   producto: {
@@ -204,9 +203,8 @@ export default function ProductCard({ producto }: ProductCardProps) {
                       contactoSection.scrollIntoView({ behavior: 'smooth' })
                     }
                   }}
-                  className="bg-mostaza hover:bg-green-700 hover:scale-105 hover:text-white text-marron font-semibold gap-1.5 transition-all cursor-pointer min-h-[44px] px-4"
+                  className="bg-green-600 text-white text-sm md:text-xs px-3 py-1.5 md:px-2 md:py-1 rounded-full hover:bg-green-700 hover:scale-105 transition-all cursor-pointer font-semibold gap-1 w-auto min-h-[44px] md:min-h-0"
                 >
-                  <MessageCircle className="h-4 w-4" />
                   📝 Consultar Disponibilidad
                 </Button>
               </div>
