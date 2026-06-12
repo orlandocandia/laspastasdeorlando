@@ -127,6 +127,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   const [familiaActiva, setFamiliaActiva] = useState<string | null>(null)
   const [visibleCount, setVisibleCount] = useState(PRODUCTS_PER_PAGE)
   const fetchedRef = useRef(false)
+  const productosGridRef = useRef<HTMLDivElement>(null)
 
   // Pre-fetch all 3 filter types in parallel on mount — no refetch on filter change
   useEffect(() => {
@@ -241,6 +242,17 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   const handleFamiliaClick = useCallback((nombre: string) => {
     setFamiliaActiva((prev) => (prev === nombre ? null : nombre))
   }, [])
+
+  // Smooth scroll al contenedor de productos cuando se selecciona una familia
+  useEffect(() => {
+    if (!familiaActiva || !productosGridRef.current) return
+    const yOffset = -100
+    const y = productosGridRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset
+    // Solo hacer scroll si el contenedor no está visible en el viewport
+    if (y < window.pageYOffset || y > window.pageYOffset + window.innerHeight - 200) {
+      window.scrollTo({ top: y, behavior: 'smooth' })
+    }
+  }, [familiaActiva])
 
   const handleLoadMore = useCallback(() => {
     setVisibleCount((prev) => prev + PRODUCTS_PER_PAGE)
@@ -406,7 +418,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
               const familiaHeader = familias.find((f) => f.nombre === familiaActiva)
               const imagenHeader = familiaHeader ? getFamiliaImagen(familiaHeader, filtro) : '/images/placeholder-producto.jpg'
               return (
-                <div className="bg-crema/50 rounded-2xl p-6 mt-4">
+                <div ref={productosGridRef} className="bg-crema/50 rounded-2xl p-6 mt-4">
                   {/* Header */}
                   <div className="flex items-center gap-3 mb-6">
                     <Button
