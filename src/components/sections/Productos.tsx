@@ -424,7 +424,15 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setFamiliaActiva(null)}
+                      onClick={() => {
+                        setFamiliaActiva(null)
+                        const productosSection = document.getElementById('productos')
+                        if (productosSection) {
+                          const yOffset = -100
+                          const y = productosSection.getBoundingClientRect().top + window.pageYOffset + yOffset
+                          window.scrollTo({ top: y, behavior: 'smooth' })
+                        }
+                      }}
                       className="text-marron hover:bg-mostaza/20 gap-1.5 -ml-2"
                     >
                       <ArrowLeft className="h-4 w-4" />
