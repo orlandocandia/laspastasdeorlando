@@ -210,6 +210,11 @@ export default function ProductCard({ producto }: ProductCardProps) {
                   Consultar
                 </Button>
               </div>
+              {/* Mobile tap hint — solo visible en pantallas < 768px */}
+              <div className="flex md:hidden items-center justify-center gap-1 mt-2 pt-1">
+                <span className="text-xs">👆</span>
+                <span className="text-[11px] text-muted-foreground">Tocá para ver {esTapa ? 'uso y conservación' : 'modo de cocción'}</span>
+              </div>
             </div>
           </div>
         </div>
