@@ -76,10 +76,9 @@ export default function ProductCard({ producto }: ProductCardProps) {
 
   // Detectar si la categoría es de "uso" (tapas, empanadas, etc.) vs "cocción" (pastas)
   const categoriaNombre = producto.categoria.nombre.toLowerCase()
-  const esCategoriaUso = /tapa|empanada|pastelito|pascualina|tarta/.test(categoriaNombre)
-  const tituloReverso = esCategoriaUso
-    ? '📦 Uso y Conservación'
-    : '🍝 Modo de cocción'
+  const esTapa = /tapa|empanada|pastelito|pascualina|tarta/i.test(categoriaNombre)
+  const textoFrente = esTapa ? '📦 Uso y Conservación' : '🍝 Modo de cocción'
+  const tituloReverso = esTapa ? '📦 Uso y Conservación' : '🍝 Modo de cocción'
 
   return (
     <div
@@ -140,7 +139,7 @@ export default function ProductCard({ producto }: ProductCardProps) {
               {/* Cooking/usage hint overlay on hover */}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100">
                 <span className="bg-white/90 text-marron text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">
-                  {esCategoriaUso ? '📦 Ver modo de uso' : '🍳 Ver modo de cocción'}
+                  {textoFrente}
                 </span>
               </div>
             </div>
