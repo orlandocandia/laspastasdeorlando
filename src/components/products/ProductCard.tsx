@@ -204,10 +204,10 @@ export default function ProductCard({ producto }: ProductCardProps) {
                       contactoSection.scrollIntoView({ behavior: 'smooth' })
                     }
                   }}
-                  className="bg-mostaza hover:bg-mostaza/90 text-marron font-semibold gap-1.5 transition-colors duration-300"
+                  className="bg-mostaza hover:bg-green-700 hover:scale-105 hover:text-white text-marron font-semibold gap-1.5 transition-all cursor-pointer min-h-[44px] px-4"
                 >
                   <MessageCircle className="h-4 w-4" />
-                  Consultar
+                  📝 Consultar Disponibilidad
                 </Button>
               </div>
               {/* Mobile tap hint — solo visible en pantallas < 768px */}
