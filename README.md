@@ -272,4 +272,4 @@ La página pública incluye:
 
 ## 📄 Licencia
 
-Proyecto privado — **Pastas Orlando** © 2025. Todos los derechos reservados.
+Proyecto privado — **laspastasdeorlando** © 2026. Todos los derechos reservados.
