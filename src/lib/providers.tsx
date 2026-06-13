@@ -26,6 +26,19 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Deshabilitar restauración automática de scroll del navegador
+  useEffect(() => {
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual'
+    }
+    // Limpiar hash si existe
+    if (window.location.hash) {
+      window.history.replaceState(null, '', window.location.pathname)
+    }
+    // Scroll al inicio
+    window.scrollTo(0, 0)
+  }, [])
+
   return (
     <SessionProvider>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
