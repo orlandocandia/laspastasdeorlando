@@ -71,6 +71,12 @@ async function autoMigrateTurso(client: Client) {
     { sql: 'ALTER TABLE "CategoriaProductoTerminado" ADD COLUMN "seccion" TEXT', desc: 'CategoriaProductoTerminado.seccion' },
   ]
 
+  // Data migrations: set seccion for known categories (idempotent — WHERE seccion IS NULL)
+  const dataMigrations = [
+    { sql: `UPDATE "CategoriaProductoTerminado" SET "seccion" = 'pastas' WHERE "nombre" IN ('Sorrentinos', 'Ñoquis', 'Tallarines', 'Cintas Anchas', 'Ravioles', 'Tapas', 'Pastas frescas', 'Pastas secas', 'Salsas', 'Lasagnas y canelones') AND "seccion" IS NULL`, desc: 'Set seccion=pastas for known pasta categories' },
+    { sql: `UPDATE "CategoriaProductoTerminado" SET "seccion" = 'horneados' WHERE "nombre" IN ('Empanadas', 'Tartas') AND "seccion" IS NULL`, desc: 'Set seccion=horneados for known horneado categories' },
+  ]
+
   for (const migration of migrations) {
     try {
       await client.execute(migration.sql)
@@ -80,6 +86,16 @@ async function autoMigrateTurso(client: Client) {
       if (!errMsg.includes('duplicate column name') && !errMsg.includes('already exists')) {
         console.error(`[DB Auto-Migrate] ERROR: ${migration.desc}:`, errMsg)
       }
+    }
+  }
+
+  // Run data migrations (UPDATE statements — idempotent via WHERE conditions)
+  for (const migration of dataMigrations) {
+    try {
+      await client.execute(migration.sql)
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : String(err)
+      console.error(`[DB Auto-Migrate] DATA ERROR: ${migration.desc}:`, errMsg)
     }
   }
 
