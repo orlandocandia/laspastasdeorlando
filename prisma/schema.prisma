@@ -424,6 +424,7 @@ model CategoriaProductoTerminado {
   id                Int       @id @default(autoincrement())
   nombre            String    @unique
   descripcion       String?
+  seccion           String?   @map("seccion")  // "pastas" | "horneados" | null
   imagen            String?
   imagen_integral   String?
   imagen_sin_gluten String?

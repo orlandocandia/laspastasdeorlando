@@ -38,6 +38,7 @@ interface CategoriaItem {
   id: number
   nombre: string
   descripcion?: string | null
+  seccion?: string | null
   imagen?: string | null
   imagen_integral?: string | null
   imagen_sin_gluten?: string | null
@@ -146,12 +147,14 @@ export default function CategoriasManager() {
   const [nuevoNombre, setNuevoNombre] = useState('')
   const [nuevaDescripcion, setNuevaDescripcion] = useState('')
   const [nuevaImagen, setNuevaImagen] = useState<string | null>(null)
+  const [nuevaSeccion, setNuevaSeccion] = useState<string>('pastas')
   const [creating, setCreating] = useState(false)
 
   // Edit dialog
   const [editItem, setEditItem] = useState<CategoriaItem | null>(null)
   const [editNombre, setEditNombre] = useState('')
   const [editDescripcion, setEditDescripcion] = useState('')
+  const [editSeccion, setEditSeccion] = useState<string>('')
   const [editImagen, setEditImagen] = useState<string | null>(null)
   const [editImagenIntegral, setEditImagenIntegral] = useState<string | null>(null)
   const [editImagenSinGluten, setEditImagenSinGluten] = useState<string | null>(null)
@@ -268,6 +271,7 @@ export default function CategoriasManager() {
       }
       if (isProductosTab) {
         body.imagen = nuevaImagen || null
+        body.seccion = nuevaSeccion || null
       }
       const res = await fetch('/api/categorias', {
         method: 'POST',
@@ -282,6 +286,7 @@ export default function CategoriasManager() {
       setNuevoNombre('')
       setNuevaDescripcion('')
       setNuevaImagen(null)
+      setNuevaSeccion('pastas')
       fetchCategorias()
     } catch (error: any) {
       toast.error(error.message || 'Error al crear categoría')
@@ -294,6 +299,7 @@ export default function CategoriasManager() {
     setEditItem(item)
     setEditNombre(item.nombre)
     setEditDescripcion(item.descripcion || '')
+    setEditSeccion(item.seccion || '')
     setEditImagen(item.imagen || null)
     setEditImagenIntegral(item.imagen_integral || null)
     setEditImagenSinGluten(item.imagen_sin_gluten || null)
@@ -314,6 +320,7 @@ export default function CategoriasManager() {
         body.imagen = editImagen || null
         body.imagen_integral = editImagenIntegral || null
         body.imagen_sin_gluten = editImagenSinGluten || null
+        body.seccion = editSeccion || null
       }
       const res = await fetch('/api/categorias', {
         method: 'PUT',
@@ -406,9 +413,22 @@ export default function CategoriasManager() {
                 </Button>
               </div>
 
-              {/* Image upload for productos-terminados */}
+              {/* Image upload + Seccion for productos-terminados */}
               {tab.value === 'productos-terminados' && (
                 <div className="flex items-center gap-3">
+                  {/* Seccion dropdown */}
+                  <div>
+                    <label className="text-sm font-medium text-marron mb-1 block">Sección</label>
+                    <select
+                      value={nuevaSeccion}
+                      onChange={(e) => setNuevaSeccion(e.target.value)}
+                      className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    >
+                      <option value="pastas">🍝 Pastas</option>
+                      <option value="horneados">🔥 Horneados</option>
+                      <option value="">Sin sección</option>
+                    </select>
+                  </div>
                   <input
                     ref={newInputRef}
                     type="file"
@@ -477,6 +497,9 @@ export default function CategoriasManager() {
                       <TableHead>Nombre</TableHead>
                       <TableHead className="hidden sm:table-cell">Descripción</TableHead>
                       {tab.value === 'productos-terminados' && (
+                        <TableHead className="hidden md:table-cell">Sección</TableHead>
+                      )}
+                      {tab.value === 'productos-terminados' && (
                         <>
                           <TableHead className="text-center hidden md:table-cell">Productos</TableHead>
                           <TableHead className="text-center hidden lg:table-cell">Variantes</TableHead>
@@ -516,6 +539,17 @@ export default function CategoriasManager() {
                           <TableCell className="hidden sm:table-cell text-muted-foreground">
                             {cat.descripcion || '-'}
                           </TableCell>
+                          {tab.value === 'productos-terminados' && (
+                            <TableCell className="hidden md:table-cell">
+                              {cat.seccion === 'pastas' ? (
+                                <span className="inline-flex items-center gap-0.5 bg-amber-50 text-amber-700 text-xs rounded-full px-2 py-0.5 font-medium">🍝 Pastas</span>
+                              ) : cat.seccion === 'horneados' ? (
+                                <span className="inline-flex items-center gap-0.5 bg-red-50 text-red-700 text-xs rounded-full px-2 py-0.5 font-medium">🔥 Horneados</span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">-</span>
+                              )}
+                            </TableCell>
+                          )}
                           {tab.value === 'productos-terminados' && (
                             <>
                               <TableCell className="text-center hidden md:table-cell">
@@ -605,6 +639,25 @@ export default function CategoriasManager() {
                 rows={3}
               />
             </div>
+
+            {/* Seccion dropdown for productos-terminados */}
+            {isProductosTab && (
+              <div>
+                <label className="text-sm font-medium text-marron mb-1 block">Sección</label>
+                <select
+                  value={editSeccion}
+                  onChange={(e) => setEditSeccion(e.target.value)}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <option value="pastas">🍝 Pastas</option>
+                  <option value="horneados">🔥 Horneados</option>
+                  <option value="">Sin sección</option>
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Define si esta categoría aparece en la sección de Pastas o Horneados en la landing page.
+                </p>
+              </div>
+            )}
 
             {/* Image uploads for productos-terminados */}
             {isProductosTab && (

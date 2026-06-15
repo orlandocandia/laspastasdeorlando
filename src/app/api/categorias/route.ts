@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     if (tipo === 'productos-terminados') {
       const productosTerminados = await db.categoriaProductoTerminado.findMany({
-        orderBy: { nombre: 'asc' },
+        orderBy: [{ seccion: 'asc' }, { nombre: 'asc' }],
         include: { _count: { select: { productosTerminados: true } } },
       })
       return NextResponse.json(productosTerminados)
@@ -76,6 +76,7 @@ export async function POST(request: NextRequest) {
         data: {
           nombre,
           descripcion: descripcion || null,
+          seccion: body.seccion || null,
           imagen: body.imagen || null,
           imagen_integral: body.imagen_integral || null,
           imagen_sin_gluten: body.imagen_sin_gluten || null,
@@ -129,9 +130,10 @@ export async function PUT(request: NextRequest) {
     }
 
     if (tipo === 'productos-terminados') {
-      const updateDataPT: { nombre?: string; descripcion?: string | null; imagen?: string | null; imagen_integral?: string | null; imagen_sin_gluten?: string | null } = {}
+      const updateDataPT: { nombre?: string; descripcion?: string | null; seccion?: string | null; imagen?: string | null; imagen_integral?: string | null; imagen_sin_gluten?: string | null } = {}
       if (nombre !== undefined) updateDataPT.nombre = nombre
       if (descripcion !== undefined) updateDataPT.descripcion = descripcion || null
+      if (body.seccion !== undefined) updateDataPT.seccion = body.seccion || null
       if (body.imagen !== undefined) updateDataPT.imagen = body.imagen || null
       if (body.imagen_integral !== undefined) updateDataPT.imagen_integral = body.imagen_integral || null
       if (body.imagen_sin_gluten !== undefined) updateDataPT.imagen_sin_gluten = body.imagen_sin_gluten || null

@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
               id: true,
               nombre: true,
               descripcion: true,
+              seccion: true,
               imagen: true,
               imagen_integral: true,
               imagen_sin_gluten: true,

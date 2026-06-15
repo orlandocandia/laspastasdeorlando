@@ -18,10 +18,13 @@ interface ProductoPublico {
   destacado: boolean
   tipo_harina: string | null
   modo_coccion: string | null
+  texto_frente: string | null
+  texto_reverso: string | null
   categoria: {
     id: number
     nombre: string
     descripcion: string | null
+    seccion: string | null
     imagen: string | null
     imagen_integral: string | null
     imagen_sin_gluten: string | null
@@ -29,9 +32,11 @@ interface ProductoPublico {
 }
 
 export type FiltroHarina = 'con_gluten' | 'integral' | 'sin_gluten'
+export type Seccion = 'pastas' | 'horneados'
 
 interface Familia {
   nombre: string
+  seccion: string | null
   imagen: string | null
   imagen_integral: string | null
   imagen_sin_gluten: string | null
@@ -55,6 +60,9 @@ const DESCRIPCIONES_DEFAULT: Record<string, string> = {
   'Salsas': 'Salsas para acompañar pastas',
   'Lasagnas y canelones': 'Platos armados listos para hornear',
   'Postres': 'Postres a base de pasta',
+  'Facturas': 'Medialunas, vigilantes y más',
+  'Chipás': 'De queso, tradicionales del litoral',
+  'Pizzas': 'Muzzarella, fugazzeta y más',
 }
 
 // Imagen por defecto para categorías sin imagen propia
@@ -68,6 +76,12 @@ const IMAGENES_DEFAULT: Record<string, string> = {
   'Empanadas': '/images/familias/empanadas.png',
   'Tartas': '/images/familias/tartas.png',
 }
+
+// Sección config
+const SECCIONES: { key: Seccion; label: string; emoji: string; description: string }[] = [
+  { key: 'pastas', label: 'Pastas', emoji: '🍝', description: 'Pastas artesanales elaboradas con ingredientes frescos y de calidad' },
+  { key: 'horneados', label: 'Horneados', emoji: '🔥', description: 'Empanadas, tartas y más, listos para cocinar y disfrutar' },
+]
 
 // Imagen dinámica según filtro para familias con variante integral/sin gluten
 function getFamiliaImagen(familia: Familia, filtro: FiltroHarina): string {
@@ -106,7 +120,6 @@ const FILTROS: { key: FiltroHarina; label: string; icon: React.ReactNode }[] = [
 const TODOS_FILTROS: FiltroHarina[] = ['con_gluten', 'integral', 'sin_gluten']
 
 // Products per page in the expanded family view
-// Show all products by default (no arbitrary limit)
 const PRODUCTS_PER_PAGE = 50
 
 interface ProductosProps {
@@ -124,6 +137,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filtro, setFiltro] = useState<FiltroHarina>(filtroActivo)
+  const [seccionActiva, setSeccionActiva] = useState<Seccion>('pastas')
   const [familiaActiva, setFamiliaActiva] = useState<string | null>(null)
   const [visibleCount, setVisibleCount] = useState(PRODUCTS_PER_PAGE)
   const fetchedRef = useRef(false)
@@ -160,11 +174,10 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     fetchAll()
   }, [])
 
-  // Reset visible count when family changes
-  // Show all products initially (PRODUCTS_PER_PAGE=50 covers all families)
+  // Reset visible count when family or section changes
   useEffect(() => {
     setVisibleCount(PRODUCTS_PER_PAGE)
-  }, [familiaActiva])
+  }, [familiaActiva, seccionActiva])
 
   // Sync with parent filtro state — instant, no refetch
   useEffect(() => {
@@ -180,17 +193,25 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     onFiltroChange?.(nuevoFiltro)
   }, [onFiltroChange])
 
+  const handleSeccionChange = useCallback((nuevaSeccion: Seccion) => {
+    setSeccionActiva(nuevaSeccion)
+    setFamiliaActiva(null)
+  }, [])
+
   // Current products from cache — instant swap, no network
   const productos = cache[filtro]
 
-  // Build families dynamically from product categories
-  const familias: Familia[] = useMemo(() => {
+  // Build families dynamically from product categories, grouped by seccion
+  const familiasBySeccion = useMemo(() => {
+    const result: Record<string, Familia[]> = { pastas: [], horneados: [], other: [] }
     const seen = new Map<string, Familia>()
+
     for (const p of productos) {
       const catNombre = p.categoria.nombre
       if (!seen.has(catNombre)) {
         seen.set(catNombre, {
           nombre: catNombre,
+          seccion: p.categoria.seccion,
           imagen: p.categoria.imagen || null,
           imagen_integral: p.categoria.imagen_integral || null,
           imagen_sin_gluten: p.categoria.imagen_sin_gluten || null,
@@ -200,8 +221,17 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
         })
       }
     }
-    const knownOrder = ['Sorrentinos', 'Ñoquis', 'Tallarines', 'Cintas Anchas', 'Ravioles', 'Tapas', 'Empanadas', 'Tartas', 'Pastas frescas', 'Pastas secas', 'Salsas', 'Lasagnas y canelones', 'Postres']
-    return Array.from(seen.values()).sort((a, b) => {
+
+    const knownOrder = ['Sorrentinos', 'Ñoquis', 'Tallarines', 'Cintas Anchas', 'Ravioles', 'Tapas', 'Empanadas', 'Tartas', 'Pastas frescas', 'Pastas secas', 'Salsas', 'Lasagnas y canelones', 'Postres', 'Facturas', 'Chipás', 'Pizzas']
+
+    const sorted = Array.from(seen.values()).sort((a, b) => {
+      // First sort by seccion: pastas first, then horneados, then null
+      const seccionOrder = { pastas: 0, horneados: 1 }
+      const sa = seccionOrder[a.seccion as keyof typeof seccionOrder] ?? 2
+      const sb = seccionOrder[b.seccion as keyof typeof seccionOrder] ?? 2
+      if (sa !== sb) return sa - sb
+
+      // Then by known order
       const ia = knownOrder.indexOf(a.nombre)
       const ib = knownOrder.indexOf(b.nombre)
       if (ia !== -1 && ib !== -1) return ia - ib
@@ -209,7 +239,32 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
       if (ib !== -1) return 1
       return a.nombre.localeCompare(b.nombre)
     })
+
+    for (const familia of sorted) {
+      const sec = familia.seccion === 'pastas' ? 'pastas' : familia.seccion === 'horneados' ? 'horneados' : 'other'
+      result[sec].push(familia)
+    }
+
+    return result
   }, [productos])
+
+  // Current section families
+  const familias = useMemo(() => {
+    const secFamilies = familiasBySeccion[seccionActiva] || []
+    // Also include families without section in the active section (for backwards compat)
+    const otherFamilies = familiasBySeccion.other || []
+    return [...secFamilies, ...otherFamilies]
+  }, [familiasBySeccion, seccionActiva])
+
+  // Check which sections have products for current filter
+  const seccionesConProductos = useMemo(() => {
+    const result: Seccion[] = []
+    for (const sec of SECCIONES) {
+      const families = familiasBySeccion[sec.key] || []
+      if (families.length > 0) result.push(sec.key)
+    }
+    return result
+  }, [familiasBySeccion])
 
   // Compute product counts per family
   const familiaData = useMemo(() => {
@@ -248,7 +303,6 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     if (!familiaActiva || !productosGridRef.current) return
     const yOffset = -100
     const y = productosGridRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset
-    // Solo hacer scroll si el contenedor no está visible en el viewport
     if (y < window.pageYOffset || y > window.pageYOffset + window.innerHeight - 200) {
       window.scrollTo({ top: y, behavior: 'smooth' })
     }
@@ -290,6 +344,8 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     }
   }, [])
 
+  const seccionConfig = SECCIONES.find((s) => s.key === seccionActiva)!
+
   return (
     <section id="productos" className="min-h-screen flex flex-col justify-center py-12 sm:py-16 md:py-20 bg-crema">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -300,11 +356,36 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
           </h2>
           <div className="h-1 w-20 bg-mostaza mx-auto mt-4 rounded-full" />
           <p className="text-muted-foreground mt-3 max-w-lg mx-auto text-sm sm:text-base">
-            Pastas artesanales elaboradas con ingredientes frescos y de calidad. Elegí el tipo de pasta que más te guste.
+            Elaborados con ingredientes frescos y de calidad. Elegí la sección y el tipo que más te guste.
           </p>
         </div>
 
-        {/* Filter Buttons */}
+        {/* Section Tabs — Pastas / Horneados */}
+        <div className="flex justify-center gap-3 sm:gap-4 mb-6">
+          {SECCIONES.map((sec) => {
+            const hasProducts = seccionesConProductos.includes(sec.key)
+            if (!hasProducts && !loading) return null
+            return (
+              <button
+                key={sec.key}
+                onClick={() => handleSeccionChange(sec.key)}
+                className={`
+                  inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold
+                  transition-all duration-200 border-2
+                  ${seccionActiva === sec.key
+                    ? 'bg-marron text-white border-marron shadow-lg scale-105'
+                    : 'bg-white text-marron/70 border-marron/10 hover:border-mostaza hover:text-marron hover:shadow-md'
+                  }
+                `}
+              >
+                <span className="text-lg">{sec.emoji}</span>
+                {sec.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Filter Buttons — Con Gluten / Integrales / Sin Gluten */}
         <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-8">
           {FILTROS.map((f) => (
             <button
@@ -324,6 +405,17 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
             </button>
           ))}
         </div>
+
+        {/* Section subtitle */}
+        {!loading && !error && familiasVisibles.length > 0 && (
+          <div className="text-center mb-6">
+            <h3 className="text-xl sm:text-2xl font-bold text-marron flex items-center justify-center gap-2">
+              <span className="text-2xl">{seccionConfig.emoji}</span>
+              {seccionConfig.label}
+            </h3>
+            <p className="text-muted-foreground text-sm mt-1">{seccionConfig.description}</p>
+          </div>
+        )}
 
         {/* Loading — only on initial mount */}
         {loading ? (
@@ -353,7 +445,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
           <div className="text-center py-12">
             <PackageOpen className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
             <p className="text-muted-foreground text-lg">
-              No hay productos disponibles para este filtro.
+              No hay productos disponibles para este filtro en {seccionConfig.label}.
             </p>
           </div>
         ) : (
