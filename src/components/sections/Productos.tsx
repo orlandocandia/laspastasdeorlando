@@ -380,12 +380,14 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
         {!seccionActiva && (
           <>
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-3xl mx-auto">
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-5 sm:gap-8">
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border border-marron/10 bg-white animate-pulse flex flex-col items-center justify-between p-6 sm:p-8 min-h-[240px]">
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 bg-muted rounded-full mb-4" />
-                    <div className="h-5 w-24 bg-muted rounded mb-2" />
-                    <div className="h-4 w-32 bg-muted rounded" />
+                  <div key={i} className="rounded-2xl border border-marron/10 bg-white overflow-hidden animate-pulse w-full sm:w-[320px] min-h-[420px] flex flex-col">
+                    <div className="w-full h-60 bg-muted" />
+                    <div className="p-5 flex flex-col items-center gap-3">
+                      <div className="h-6 w-28 bg-muted rounded" />
+                      <div className="h-9 w-32 bg-muted rounded-full" />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -402,7 +404,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-3xl mx-auto">
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-5 sm:gap-8">
                 {SECCIONES.map((sec) => {
                   const hasProducts = seccionesConProductos.includes(sec.key)
                   return (
@@ -410,43 +412,43 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                       key={sec.key}
                       onClick={() => handleSeccionChange(sec.key)}
                       className={`
-                        group relative rounded-2xl border bg-white p-6 sm:p-8
-                        flex flex-col items-center justify-between text-center min-h-[240px]
-                        transition-shadow duration-200 cursor-pointer
-                        border-marron/10 hover:shadow-lg
+                        group relative rounded-2xl border-2 bg-white overflow-hidden
+                        flex flex-col w-full sm:w-[320px]
+                        transition-all duration-300 cursor-pointer
+                        border-marron/10 hover:border-mostaza hover:shadow-xl hover:scale-[1.02]
+                        shadow-md
                       `}
                     >
-                      {/* Imagen representativa — mismo estilo que family cards */}
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-crema border-2 border-mostaza/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_8px_20px_rgba(0,0,0,0.15)]">
+                      {/* Imagen destacada — ocupa la mayor parte de la card */}
+                      <div className="relative w-full h-60 overflow-hidden">
                         <Image
                           src={sec.imagen}
                           alt={sec.label}
-                          width={96}
-                          height={96}
-                          loading="lazy"
-                          className="object-cover w-full h-full"
+                          width={320}
+                          height={240}
+                          className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
                         />
+                        {/* Gradient overlay */}
+                        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/20 to-transparent" />
                       </div>
 
-                      {/* Name — mismo estilo que family cards */}
-                      <h3 className="text-lg sm:text-xl font-bold text-marron line-clamp-1">
-                        {sec.label}
-                      </h3>
+                      {/* Contenido */}
+                      <div className="p-5 flex flex-col items-center text-center gap-3">
+                        {/* Título */}
+                        <h3 className="text-2xl font-bold text-marron">
+                          {sec.label}
+                        </h3>
 
-                      {/* Subtext — mismo estilo que family card description */}
-                      <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
-                        {sec.subtext}
-                      </p>
+                        {/* Botón CTA */}
+                        <span className="inline-flex items-center gap-1.5 bg-mostaza text-marron text-sm font-semibold rounded-full px-5 py-2 shadow-sm group-hover:shadow-md group-hover:gap-2.5 transition-all">
+                          Ver productos
+                          <ChevronRight className="h-4 w-4" />
+                        </span>
+                      </div>
 
-                      {/* CTA badge — mismo estilo que family card badge */}
-                      <span className="bg-mostaza/20 text-marron text-xs rounded-full px-2 py-0.5 font-semibold flex-shrink-0 flex items-center gap-1 group-hover:gap-1.5 transition-all">
-                        Ver productos
-                        <ChevronRight className="h-3 w-3" />
-                      </span>
-
-                      {/* "Próximamente" badge for sections without products */}
+                      {/* "Próximamente" badge */}
                       {!hasProducts && (
-                        <div className="absolute top-3 right-3 bg-mostaza/20 text-marron text-xs rounded-full px-2 py-0.5 font-semibold">
+                        <div className="absolute top-3 right-3 bg-mostaza/90 text-marron text-xs rounded-full px-3 py-1 font-bold shadow-sm">
                           Próximamente
                         </div>
                       )}
