@@ -78,11 +78,12 @@ const IMAGENES_DEFAULT: Record<string, string> = {
 }
 
 // Sección config — with rich data for the hero cards
-const SECCIONES: { key: Seccion; label: string; emoji: string; description: string; subtext: string }[] = [
+const SECCIONES: { key: Seccion; label: string; emoji: string; imagen: string; description: string; subtext: string }[] = [
   {
     key: 'pastas',
     label: 'Pastas',
     emoji: '🍝',
+    imagen: '/images/productos/pastas-card.png',
     description: 'Pastas artesanales elaboradas con ingredientes frescos y de calidad',
     subtext: 'Sorrentinos, ravioles, ñoquis, tallarines y más',
   },
@@ -90,6 +91,7 @@ const SECCIONES: { key: Seccion; label: string; emoji: string; description: stri
     key: 'horneados',
     label: 'Horneados',
     emoji: '🔥',
+    imagen: '/images/productos/horneados-card.png',
     description: 'Empanadas, tartas y más, listos para cocinar y disfrutar',
     subtext: 'Empanadas, tartas, facturas y más',
   },
@@ -380,11 +382,11 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
             {loading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border border-marron/10 bg-white p-8 animate-pulse flex flex-col items-center gap-4 min-h-[280px]">
-                    <div className="h-16 w-16 bg-muted rounded-full" />
-                    <div className="h-6 w-32 bg-muted rounded" />
+                  <div key={i} className="rounded-2xl border border-marron/10 bg-white p-8 sm:p-10 animate-pulse flex flex-col items-center gap-4 min-h-[340px]">
+                    <div className="w-32 h-32 sm:w-40 sm:h-40 bg-muted rounded-full" />
+                    <div className="h-7 w-32 bg-muted rounded" />
                     <div className="h-4 w-48 bg-muted rounded" />
-                    <div className="h-4 w-40 bg-muted rounded" />
+                    <div className="h-3 w-40 bg-muted rounded" />
                   </div>
                 ))}
               </div>
@@ -410,15 +412,21 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                       onClick={() => handleSeccionChange(sec.key)}
                       className={`
                         group relative rounded-2xl border-2 bg-white p-8 sm:p-10
-                        flex flex-col items-center text-center min-h-[280px]
+                        flex flex-col items-center text-center min-h-[340px]
                         transition-all duration-300 cursor-pointer
                         border-marron/10 hover:border-mostaza hover:shadow-xl hover:scale-[1.02]
                       `}
                     >
-                      {/* Emoji icon */}
-                      <span className="text-5xl sm:text-6xl mb-4 transition-transform duration-300 group-hover:scale-110">
-                        {sec.emoji}
-                      </span>
+                      {/* Product image */}
+                      <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-4 border-mostaza/20 mb-4 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)] flex-shrink-0">
+                        <Image
+                          src={sec.imagen}
+                          alt={sec.label}
+                          width={160}
+                          height={160}
+                          className="object-cover w-full h-full"
+                        />
+                      </div>
 
                       {/* Label */}
                       <h3 className="text-2xl sm:text-3xl font-bold text-marron mb-2">
@@ -473,7 +481,15 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
               </Button>
               <div className="h-6 w-px bg-marron/20" />
               <h3 className="text-xl sm:text-2xl font-bold text-marron flex items-center gap-2">
-                <span className="text-2xl">{seccionConfig.emoji}</span>
+                <span className="w-7 h-7 rounded-full overflow-hidden inline-block bg-crema border border-mostaza/20 flex-shrink-0">
+                  <Image
+                    src={seccionConfig.imagen}
+                    alt={seccionConfig.label}
+                    width={28}
+                    height={28}
+                    className="object-cover w-full h-full"
+                  />
+                </span>
                 {seccionConfig.label}
               </h3>
             </div>
@@ -532,7 +548,15 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
               </div>
             ) : familiasVisibles.length === 0 ? (
               <div className="text-center py-16">
-                <span className="text-6xl mb-4 block">{seccionConfig.emoji}</span>
+                <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-mostaza/20 mx-auto mb-4">
+                  <Image
+                    src={seccionConfig.imagen}
+                    alt={seccionConfig.label}
+                    width={96}
+                    height={96}
+                    className="object-cover w-full h-full"
+                  />
+                </div>
                 <h3 className="text-xl font-bold text-marron mb-2">
                   Próximamente {seccionConfig.label.toLowerCase()}
                 </h3>
