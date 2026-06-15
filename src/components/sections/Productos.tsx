@@ -380,13 +380,15 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
         {!seccionActiva && (
           <>
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border border-marron/10 bg-white p-8 sm:p-10 animate-pulse flex flex-col items-center gap-4 min-h-[340px]">
-                    <div className="w-32 h-32 sm:w-40 sm:h-40 bg-muted rounded-full" />
-                    <div className="h-7 w-32 bg-muted rounded" />
-                    <div className="h-4 w-48 bg-muted rounded" />
-                    <div className="h-3 w-40 bg-muted rounded" />
+                  <div key={i} className="rounded-2xl border border-marron/10 bg-white overflow-hidden animate-pulse flex flex-col min-h-[420px]">
+                    <div className="w-full aspect-square bg-muted" />
+                    <div className="p-6 flex flex-col items-center gap-3">
+                      <div className="h-7 w-32 bg-muted rounded" />
+                      <div className="h-4 w-48 bg-muted rounded" />
+                      <div className="h-3 w-40 bg-muted rounded" />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -403,7 +405,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
                 {SECCIONES.map((sec) => {
                   const hasProducts = seccionesConProductos.includes(sec.key)
                   return (
@@ -411,47 +413,53 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                       key={sec.key}
                       onClick={() => handleSeccionChange(sec.key)}
                       className={`
-                        group relative rounded-2xl border-2 bg-white p-8 sm:p-10
-                        flex flex-col items-center text-center min-h-[340px]
+                        group relative rounded-2xl border-2 bg-white overflow-hidden
+                        flex flex-col text-center
                         transition-all duration-300 cursor-pointer
-                        border-marron/10 hover:border-mostaza hover:shadow-xl hover:scale-[1.02]
+                        border-marron/10 hover:border-mostaza hover:shadow-2xl hover:scale-[1.02]
+                        shadow-md
                       `}
                     >
-                      {/* Product image */}
-                      <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-4 border-mostaza/20 mb-4 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)] flex-shrink-0">
+                      {/* Product image — full width, rounded top */}
+                      <div className="relative w-full aspect-square overflow-hidden">
                         <Image
                           src={sec.imagen}
                           alt={sec.label}
-                          width={160}
-                          height={160}
-                          className="object-cover w-full h-full"
+                          width={400}
+                          height={400}
+                          className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
                         />
+                        {/* Subtle gradient overlay at bottom for text readability */}
+                        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/30 to-transparent" />
                       </div>
 
-                      {/* Label */}
-                      <h3 className="text-2xl sm:text-3xl font-bold text-marron mb-2">
-                        {sec.label}
-                      </h3>
+                      {/* Card content */}
+                      <div className="p-6 sm:p-8 flex flex-col items-center">
+                        {/* Label */}
+                        <h3 className="text-2xl sm:text-3xl font-bold text-marron mb-2">
+                          {sec.label}
+                        </h3>
 
-                      {/* Description */}
-                      <p className="text-sm sm:text-base text-muted-foreground mb-3 max-w-xs">
-                        {sec.description}
-                      </p>
+                        {/* Description */}
+                        <p className="text-sm sm:text-base text-muted-foreground mb-2 max-w-xs">
+                          {sec.description}
+                        </p>
 
-                      {/* Subtext */}
-                      <p className="text-xs text-muted-foreground/70 mb-4">
-                        {sec.subtext}
-                      </p>
+                        {/* Subtext */}
+                        <p className="text-xs text-muted-foreground/70 mb-4">
+                          {sec.subtext}
+                        </p>
 
-                      {/* CTA arrow */}
-                      <div className="mt-auto flex items-center gap-1 text-mostaza font-semibold text-sm group-hover:gap-2 transition-all">
-                        Ver productos
-                        <ChevronRight className="h-4 w-4" />
+                        {/* CTA arrow */}
+                        <div className="mt-auto flex items-center gap-1.5 text-mostaza font-semibold text-sm group-hover:gap-2.5 transition-all">
+                          Ver productos
+                          <ChevronRight className="h-4 w-4" />
+                        </div>
                       </div>
 
                       {/* "Próximamente" badge for sections without products */}
                       {!hasProducts && (
-                        <div className="absolute top-4 right-4 bg-mostaza/20 text-marron text-xs rounded-full px-3 py-1 font-semibold">
+                        <div className="absolute top-4 right-4 bg-mostaza/90 text-marron text-xs rounded-full px-3 py-1 font-bold shadow-sm">
                           Próximamente
                         </div>
                       )}
