@@ -380,15 +380,12 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
         {!seccionActiva && (
           <>
             {loading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
+              <div className="flex flex-col sm:flex-row justify-center gap-5 sm:gap-6">
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border border-marron/10 bg-white overflow-hidden animate-pulse flex flex-col min-h-[420px]">
-                    <div className="w-full aspect-square bg-muted" />
-                    <div className="p-6 flex flex-col items-center gap-3">
-                      <div className="h-7 w-32 bg-muted rounded" />
-                      <div className="h-4 w-48 bg-muted rounded" />
-                      <div className="h-3 w-40 bg-muted rounded" />
-                    </div>
+                  <div key={i} className="rounded-2xl border border-marron/10 bg-white animate-pulse flex flex-col items-center p-5 w-full sm:w-[280px]">
+                    <div className="w-28 h-28 bg-muted rounded-2xl mb-3" />
+                    <div className="h-6 w-24 bg-muted rounded mb-2" />
+                    <div className="h-4 w-28 bg-muted rounded" />
                   </div>
                 ))}
               </div>
@@ -405,7 +402,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
+              <div className="flex flex-col sm:flex-row justify-center gap-5 sm:gap-6">
                 {SECCIONES.map((sec) => {
                   const hasProducts = seccionesConProductos.includes(sec.key)
                   return (
@@ -413,53 +410,44 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                       key={sec.key}
                       onClick={() => handleSeccionChange(sec.key)}
                       className={`
-                        group relative rounded-2xl border-2 bg-white overflow-hidden
-                        flex flex-col text-center
+                        group relative rounded-2xl border-2 bg-white
+                        flex flex-col items-center text-center p-5
+                        w-full sm:w-[280px]
                         transition-all duration-300 cursor-pointer
-                        border-marron/10 hover:border-mostaza hover:shadow-2xl hover:scale-[1.02]
-                        shadow-md
+                        border-marron/10 hover:border-mostaza hover:shadow-lg hover:scale-[1.02]
+                        shadow-sm
                       `}
                     >
-                      {/* Product image — full width, rounded top */}
-                      <div className="relative w-full aspect-square overflow-hidden">
+                      {/* Product image — compact rounded square */}
+                      <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-mostaza/15 mb-3 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-md">
                         <Image
                           src={sec.imagen}
                           alt={sec.label}
-                          width={400}
-                          height={400}
-                          className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+                          width={128}
+                          height={128}
+                          className="object-cover w-full h-full"
                         />
-                        {/* Subtle gradient overlay at bottom for text readability */}
-                        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/30 to-transparent" />
                       </div>
 
-                      {/* Card content */}
-                      <div className="p-6 sm:p-8 flex flex-col items-center">
-                        {/* Label */}
-                        <h3 className="text-2xl sm:text-3xl font-bold text-marron mb-2">
-                          {sec.label}
-                        </h3>
+                      {/* Label */}
+                      <h3 className="text-xl sm:text-2xl font-bold text-marron mb-1">
+                        {sec.label}
+                      </h3>
 
-                        {/* Description */}
-                        <p className="text-sm sm:text-base text-muted-foreground mb-2 max-w-xs">
-                          {sec.description}
-                        </p>
+                      {/* Short subtext */}
+                      <p className="text-xs text-muted-foreground/70 mb-3">
+                        {sec.subtext}
+                      </p>
 
-                        {/* Subtext */}
-                        <p className="text-xs text-muted-foreground/70 mb-4">
-                          {sec.subtext}
-                        </p>
-
-                        {/* CTA arrow */}
-                        <div className="mt-auto flex items-center gap-1.5 text-mostaza font-semibold text-sm group-hover:gap-2.5 transition-all">
-                          Ver productos
-                          <ChevronRight className="h-4 w-4" />
-                        </div>
+                      {/* CTA arrow */}
+                      <div className="flex items-center gap-1 text-mostaza font-semibold text-xs group-hover:gap-2 transition-all">
+                        Ver productos
+                        <ChevronRight className="h-3.5 w-3.5" />
                       </div>
 
                       {/* "Próximamente" badge for sections without products */}
                       {!hasProducts && (
-                        <div className="absolute top-4 right-4 bg-mostaza/90 text-marron text-xs rounded-full px-3 py-1 font-bold shadow-sm">
+                        <div className="absolute top-3 right-3 bg-mostaza/90 text-marron text-[10px] rounded-full px-2 py-0.5 font-bold shadow-sm">
                           Próximamente
                         </div>
                       )}
