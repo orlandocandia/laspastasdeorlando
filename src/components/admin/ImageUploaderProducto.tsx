@@ -46,14 +46,20 @@ export default function ImageUploaderProducto({ currentImage, onUpload, uploadUr
       })
 
       if (!res.ok) {
-        throw new Error('Error al subir imagen')
+        const errorData = await res.json().catch(() => ({}))
+        const serverError = errorData.error || 'Error al subir imagen'
+        throw new Error(serverError)
       }
 
       const data = await res.json()
       onUpload(data.url)
       toast.success('Imagen subida correctamente')
-    } catch {
-      toast.error('Error al subir la imagen')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error al subir la imagen'
+      toast.error('Error al subir la imagen', {
+        description: errorMessage,
+        duration: 6000,
+      })
       setPreview(currentImage || null)
     } finally {
       setUploading(false)

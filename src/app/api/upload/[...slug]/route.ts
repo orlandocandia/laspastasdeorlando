@@ -23,12 +23,27 @@ export async function POST(
       return NextResponse.json({ error: 'No se envió ningún archivo' }, { status: 400 })
     }
 
+    // Log upload attempt for debugging
+    console.log(`[Upload] Entity: ${entity}, File: ${file.name}, Size: ${(file.size / 1024).toFixed(1)}KB, Type: ${file.type}`)
+
     const result = await uploadImage(file, entity)
 
+    console.log(`[Upload] Success → ${result.url}`)
     return NextResponse.json(result)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Error al subir imagen'
     console.error('[Upload API Error]', message)
-    return NextResponse.json({ error: message }, { status: 500 })
+
+    // Determine appropriate status code
+    let status = 500
+    if (message.includes('no permitido') || message.includes('Tipo de archivo')) {
+      status = 400
+    } else if (message.includes('supera el límite') || message.includes('5MB')) {
+      status = 413
+    } else if (message.includes('BLOB_READ_WRITE_TOKEN')) {
+      status = 503 // Service Unavailable - config missing
+    }
+
+    return NextResponse.json({ error: message }, { status })
   }
 }

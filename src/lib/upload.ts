@@ -36,11 +36,18 @@ function generateFilename(originalName: string): string {
 }
 
 /**
+ * Detect if we're running on Vercel (production or preview).
+ */
+function isVercel(): boolean {
+  return process.env.VERCEL === '1'
+}
+
+/**
  * Upload a file using Vercel Blob Storage (production) or local filesystem (development).
  *
  * Strategy:
- * - If BLOB_READ_WRITE_TOKEN is set → use Vercel Blob (works on Vercel)
- * - Otherwise → save to public/images/uploads/{entity}/ (works locally)
+ * - On Vercel: ALWAYS use Vercel Blob Storage (requires BLOB_READ_WRITE_TOKEN)
+ * - Locally: save to public/images/uploads/{entity}/ (no token needed)
  */
 export async function uploadImage(
   file: File,
@@ -52,8 +59,16 @@ export async function uploadImage(
   const filename = generateFilename(file.name)
   const blobToken = process.env.BLOB_READ_WRITE_TOKEN
 
-  if (blobToken) {
-    // ─── Vercel Blob Storage (production) ───
+  // ─── Vercel Blob Storage (production) ───
+  if (isVercel() || blobToken) {
+    if (!blobToken) {
+      throw new Error(
+        'BLOB_READ_WRITE_TOKEN no está configurado. ' +
+        'Agregá esta variable de entorno en Vercel → Settings → Environment Variables. ' +
+        'Obtené tu token en: https://vercel.com/dashboard/stores'
+      )
+    }
+
     try {
       const { put } = await import('@vercel/blob')
       const blobPath = `uploads/${subdir}/${filename}`
@@ -67,10 +82,20 @@ export async function uploadImage(
         url: blob.url,
         size: file.size,
       }
-    } catch (blobError) {
-      console.error('[Vercel Blob Error]', blobError)
-      console.warn('[Upload] Falling back to local filesystem...')
-      // Fall through to local filesystem
+    } catch (blobError: unknown) {
+      const errorMessage = blobError instanceof Error ? blobError.message : String(blobError)
+      console.error('[Vercel Blob Error]', errorMessage)
+
+      // On Vercel, we can't fall back to filesystem (it's read-only)
+      if (isVercel()) {
+        throw new Error(
+          `Error al subir imagen a Vercel Blob: ${errorMessage}. ` +
+          'Verificá que el token BLOB_READ_WRITE_TOKEN sea válido y que el store esté activo.'
+        )
+      }
+
+      // Locally, fall through to filesystem
+      console.warn('[Upload] Blob upload failed locally, falling back to filesystem...')
     }
   }
 
