@@ -380,12 +380,12 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
         {!seccionActiva && (
           <>
             {loading ? (
-              <div className="flex flex-col sm:flex-row justify-center gap-5 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-3xl mx-auto">
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border border-marron/10 bg-white animate-pulse flex flex-col items-center p-5 w-full sm:w-[280px]">
-                    <div className="w-28 h-28 bg-muted rounded-2xl mb-3" />
-                    <div className="h-6 w-24 bg-muted rounded mb-2" />
-                    <div className="h-4 w-28 bg-muted rounded" />
+                  <div key={i} className="rounded-2xl border border-marron/10 bg-white animate-pulse flex flex-col items-center justify-between p-6 sm:p-8 min-h-[240px]">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 bg-muted rounded-full mb-4" />
+                    <div className="h-5 w-24 bg-muted rounded mb-2" />
+                    <div className="h-4 w-32 bg-muted rounded" />
                   </div>
                 ))}
               </div>
@@ -402,7 +402,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-col sm:flex-row justify-center gap-5 sm:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-3xl mx-auto">
                 {SECCIONES.map((sec) => {
                   const hasProducts = seccionesConProductos.includes(sec.key)
                   return (
@@ -410,44 +410,43 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                       key={sec.key}
                       onClick={() => handleSeccionChange(sec.key)}
                       className={`
-                        group relative rounded-2xl border-2 bg-white
-                        flex flex-col items-center text-center p-5
-                        w-full sm:w-[280px]
-                        transition-all duration-300 cursor-pointer
-                        border-marron/10 hover:border-mostaza hover:shadow-lg hover:scale-[1.02]
-                        shadow-sm
+                        group relative rounded-2xl border bg-white p-6 sm:p-8
+                        flex flex-col items-center justify-between text-center min-h-[240px]
+                        transition-shadow duration-200 cursor-pointer
+                        border-marron/10 hover:shadow-lg
                       `}
                     >
-                      {/* Product image — compact rounded square */}
-                      <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-mostaza/15 mb-3 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-md">
+                      {/* Imagen representativa — mismo estilo que family cards */}
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-crema border-2 border-mostaza/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_8px_20px_rgba(0,0,0,0.15)]">
                         <Image
                           src={sec.imagen}
                           alt={sec.label}
-                          width={128}
-                          height={128}
+                          width={96}
+                          height={96}
+                          loading="lazy"
                           className="object-cover w-full h-full"
                         />
                       </div>
 
-                      {/* Label */}
-                      <h3 className="text-xl sm:text-2xl font-bold text-marron mb-1">
+                      {/* Name — mismo estilo que family cards */}
+                      <h3 className="text-lg sm:text-xl font-bold text-marron line-clamp-1">
                         {sec.label}
                       </h3>
 
-                      {/* Short subtext */}
-                      <p className="text-xs text-muted-foreground/70 mb-3">
+                      {/* Subtext — mismo estilo que family card description */}
+                      <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
                         {sec.subtext}
                       </p>
 
-                      {/* CTA arrow */}
-                      <div className="flex items-center gap-1 text-mostaza font-semibold text-xs group-hover:gap-2 transition-all">
+                      {/* CTA badge — mismo estilo que family card badge */}
+                      <span className="bg-mostaza/20 text-marron text-xs rounded-full px-2 py-0.5 font-semibold flex-shrink-0 flex items-center gap-1 group-hover:gap-1.5 transition-all">
                         Ver productos
-                        <ChevronRight className="h-3.5 w-3.5" />
-                      </div>
+                        <ChevronRight className="h-3 w-3" />
+                      </span>
 
                       {/* "Próximamente" badge for sections without products */}
                       {!hasProducts && (
-                        <div className="absolute top-3 right-3 bg-mostaza/90 text-marron text-[10px] rounded-full px-2 py-0.5 font-bold shadow-sm">
+                        <div className="absolute top-3 right-3 bg-mostaza/20 text-marron text-xs rounded-full px-2 py-0.5 font-semibold">
                           Próximamente
                         </div>
                       )}
