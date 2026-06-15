@@ -382,12 +382,10 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
             {loading ? (
               <div className="flex flex-col sm:flex-row justify-center items-center gap-5 sm:gap-8">
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border border-marron/10 bg-white overflow-hidden animate-pulse w-full sm:w-[320px] min-h-[420px] flex flex-col">
-                    <div className="w-full h-60 bg-muted" />
-                    <div className="p-5 flex flex-col items-center gap-3">
-                      <div className="h-6 w-28 bg-muted rounded" />
-                      <div className="h-9 w-32 bg-muted rounded-full" />
-                    </div>
+                  <div key={i} className="rounded-2xl border border-marron/10 bg-white animate-pulse w-full sm:w-[320px] flex flex-col items-center p-6 sm:p-8 gap-4">
+                    <div className="w-32 h-32 md:w-40 md:h-40 bg-muted rounded-full" />
+                    <div className="h-6 w-28 bg-muted rounded" />
+                    <div className="h-9 w-32 bg-muted rounded-full" />
                   </div>
                 ))}
               </div>
@@ -412,39 +410,35 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                       key={sec.key}
                       onClick={() => handleSeccionChange(sec.key)}
                       className={`
-                        group relative rounded-2xl border-2 bg-white overflow-hidden
-                        flex flex-col w-full sm:w-[320px]
+                        group relative rounded-2xl border-2 bg-white
+                        flex flex-col items-center text-center w-full sm:w-[320px]
+                        p-6 sm:p-8 gap-4
                         transition-all duration-300 cursor-pointer
                         border-marron/10 hover:border-mostaza hover:shadow-xl hover:scale-[1.02]
                         shadow-md
                       `}
                     >
-                      {/* Imagen destacada — ocupa la mayor parte de la card */}
-                      <div className="relative w-full h-60 overflow-hidden">
+                      {/* Imagen circular — completa y proporcionada */}
+                      <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-mostaza/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)] group-hover:border-mostaza/40">
                         <Image
                           src={sec.imagen}
                           alt={sec.label}
-                          width={320}
-                          height={240}
-                          className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
+                          width={160}
+                          height={160}
+                          className="w-full h-full object-cover object-center"
                         />
-                        {/* Gradient overlay */}
-                        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/20 to-transparent" />
                       </div>
 
-                      {/* Contenido */}
-                      <div className="p-5 flex flex-col items-center text-center gap-3">
-                        {/* Título */}
-                        <h3 className="text-2xl font-bold text-marron">
-                          {sec.label}
-                        </h3>
+                      {/* Título */}
+                      <h3 className="text-2xl font-bold text-marron">
+                        {sec.label}
+                      </h3>
 
-                        {/* Botón CTA */}
-                        <span className="inline-flex items-center gap-1.5 bg-mostaza text-marron text-sm font-semibold rounded-full px-5 py-2 shadow-sm group-hover:shadow-md group-hover:gap-2.5 transition-all">
-                          Ver productos
-                          <ChevronRight className="h-4 w-4" />
-                        </span>
-                      </div>
+                      {/* Botón CTA */}
+                      <span className="inline-flex items-center gap-1.5 bg-mostaza text-marron text-sm font-semibold rounded-full px-5 py-2 shadow-sm group-hover:shadow-md group-hover:gap-2.5 transition-all">
+                        Ver productos
+                        <ChevronRight className="h-4 w-4" />
+                      </span>
 
                       {/* "Próximamente" badge */}
                       {!hasProducts && (
