@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import Image from 'next/image'
-import { PackageOpen, ArrowLeft, Wheat, Leaf, Sparkles, ChevronDown } from 'lucide-react'
+import { PackageOpen, ArrowLeft, Wheat, Leaf, Sparkles, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import ProductCard from '@/components/products/ProductCard'
 
@@ -77,19 +77,29 @@ const IMAGENES_DEFAULT: Record<string, string> = {
   'Tartas': '/images/familias/tartas.png',
 }
 
-// Sección config
-const SECCIONES: { key: Seccion; label: string; emoji: string; description: string }[] = [
-  { key: 'pastas', label: 'Pastas', emoji: '🍝', description: 'Pastas artesanales elaboradas con ingredientes frescos y de calidad' },
-  { key: 'horneados', label: 'Horneados', emoji: '🔥', description: 'Empanadas, tartas y más, listos para cocinar y disfrutar' },
+// Sección config — with rich data for the hero cards
+const SECCIONES: { key: Seccion; label: string; emoji: string; description: string; subtext: string }[] = [
+  {
+    key: 'pastas',
+    label: 'Pastas',
+    emoji: '🍝',
+    description: 'Pastas artesanales elaboradas con ingredientes frescos y de calidad',
+    subtext: 'Sorrentinos, ravioles, ñoquis, tallarines y más',
+  },
+  {
+    key: 'horneados',
+    label: 'Horneados',
+    emoji: '🔥',
+    description: 'Empanadas, tartas y más, listos para cocinar y disfrutar',
+    subtext: 'Empanadas, tartas, facturas y más',
+  },
 ]
 
 // Imagen dinámica según filtro para familias con variante integral/sin gluten
 function getFamiliaImagen(familia: Familia, filtro: FiltroHarina): string {
-  // 1) Si la categoría tiene imagen de variante en la BD, usarla (definitivo)
   if (filtro === 'integral' && familia.imagen_integral) return familia.imagen_integral
   if (filtro === 'sin_gluten' && familia.imagen_sin_gluten) return familia.imagen_sin_gluten
 
-  // 2) Fallback hardcodeado para familias con imágenes pre-existentes (hotfix)
   if (familia.nombre === 'Tallarines' && filtro === 'integral') {
     return '/images/familias/tallarinesintegrales.png'
   }
@@ -103,11 +113,7 @@ function getFamiliaImagen(familia: Familia, filtro: FiltroHarina): string {
     return '/images/familias/tapassingluten.png'
   }
 
-  // 3) Si la categoría tiene imagen propia (subida desde el dashboard), usarla
-  if (familia.imagen) {
-    return familia.imagen
-  }
-  // 4) Si no, usar la imagen por defecto hardcodeada
+  if (familia.imagen) return familia.imagen
   return IMAGENES_DEFAULT[familia.nombre] || '/images/placeholder-producto.jpg'
 }
 
@@ -119,7 +125,6 @@ const FILTROS: { key: FiltroHarina; label: string; icon: React.ReactNode }[] = [
 
 const TODOS_FILTROS: FiltroHarina[] = ['con_gluten', 'integral', 'sin_gluten']
 
-// Products per page in the expanded family view
 const PRODUCTS_PER_PAGE = 50
 
 interface ProductosProps {
@@ -137,7 +142,8 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filtro, setFiltro] = useState<FiltroHarina>(filtroActivo)
-  const [seccionActiva, setSeccionActiva] = useState<Seccion>('pastas')
+  // null = no section selected (step 1), 'pastas'|'horneados' = section selected (step 2)
+  const [seccionActiva, setSeccionActiva] = useState<Seccion | null>(null)
   const [familiaActiva, setFamiliaActiva] = useState<string | null>(null)
   const [visibleCount, setVisibleCount] = useState(PRODUCTS_PER_PAGE)
   const fetchedRef = useRef(false)
@@ -196,7 +202,16 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   const handleSeccionChange = useCallback((nuevaSeccion: Seccion) => {
     setSeccionActiva(nuevaSeccion)
     setFamiliaActiva(null)
-  }, [])
+    setFiltro('con_gluten') // Reset flour filter when changing section
+    onFiltroChange?.('con_gluten')
+  }, [onFiltroChange])
+
+  const handleVolverASecciones = useCallback(() => {
+    setSeccionActiva(null)
+    setFamiliaActiva(null)
+    setFiltro('con_gluten')
+    onFiltroChange?.('con_gluten')
+  }, [onFiltroChange])
 
   // Current products from cache — instant swap, no network
   const productos = cache[filtro]
@@ -225,13 +240,11 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     const knownOrder = ['Sorrentinos', 'Ñoquis', 'Tallarines', 'Cintas Anchas', 'Ravioles', 'Tapas', 'Empanadas', 'Tartas', 'Pastas frescas', 'Pastas secas', 'Salsas', 'Lasagnas y canelones', 'Postres', 'Facturas', 'Chipás', 'Pizzas']
 
     const sorted = Array.from(seen.values()).sort((a, b) => {
-      // First sort by seccion: pastas first, then horneados, then null
       const seccionOrder = { pastas: 0, horneados: 1 }
       const sa = seccionOrder[a.seccion as keyof typeof seccionOrder] ?? 2
       const sb = seccionOrder[b.seccion as keyof typeof seccionOrder] ?? 2
       if (sa !== sb) return sa - sb
 
-      // Then by known order
       const ia = knownOrder.indexOf(a.nombre)
       const ib = knownOrder.indexOf(b.nombre)
       if (ia !== -1 && ib !== -1) return ia - ib
@@ -250,8 +263,8 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
 
   // Current section families
   const familias = useMemo(() => {
+    if (!seccionActiva) return []
     const secFamilies = familiasBySeccion[seccionActiva] || []
-    // Also include families without section in the active section (for backwards compat)
     const otherFamilies = familiasBySeccion.other || []
     return [...secFamilies, ...otherFamilies]
   }, [familiasBySeccion, seccionActiva])
@@ -287,7 +300,6 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     return productos.filter((p) => p.categoria.nombre === familiaActiva)
   }, [productos, familiaActiva])
 
-  // Only show the first `visibleCount` products — avoids rendering all images at once
   const productosVisibles = useMemo(() => {
     return productosFamilia.slice(0, visibleCount)
   }, [productosFamilia, visibleCount])
@@ -344,7 +356,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     }
   }, [])
 
-  const seccionConfig = SECCIONES.find((s) => s.key === seccionActiva)!
+  const seccionConfig = seccionActiva ? SECCIONES.find((s) => s.key === seccionActiva)! : null
 
   return (
     <section id="productos" className="min-h-screen flex flex-col justify-center py-12 sm:py-16 md:py-20 bg-crema">
@@ -356,233 +368,315 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
           </h2>
           <div className="h-1 w-20 bg-mostaza mx-auto mt-4 rounded-full" />
           <p className="text-muted-foreground mt-3 max-w-lg mx-auto text-sm sm:text-base">
-            Elaborados con ingredientes frescos y de calidad. Elegí la sección y el tipo que más te guste.
+            Elaborados con ingredientes frescos y de calidad. Elegí la sección que más te guste.
           </p>
         </div>
 
-        {/* Section Tabs — Pastas / Horneados */}
-        <div className="flex justify-center gap-3 sm:gap-4 mb-6">
-          {SECCIONES.map((sec) => {
-            const hasProducts = seccionesConProductos.includes(sec.key)
-            if (!hasProducts && !loading) return null
-            return (
-              <button
-                key={sec.key}
-                onClick={() => handleSeccionChange(sec.key)}
-                className={`
-                  inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold
-                  transition-all duration-200 border-2
-                  ${seccionActiva === sec.key
-                    ? 'bg-marron text-white border-marron shadow-lg scale-105'
-                    : 'bg-white text-marron/70 border-marron/10 hover:border-mostaza hover:text-marron hover:shadow-md'
-                  }
-                `}
-              >
-                <span className="text-lg">{sec.emoji}</span>
-                {sec.label}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Filter Buttons — Con Gluten / Integrales / Sin Gluten */}
-        <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-8">
-          {FILTROS.map((f) => (
-            <button
-              key={f.key}
-              onClick={() => handleFiltroChange(f.key)}
-              className={`
-                inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold
-                transition-colors duration-150 border
-                ${filtro === f.key
-                  ? 'bg-mostaza text-marron border-mostaza shadow-md'
-                  : 'bg-white text-marron/70 border-marron/10 hover:border-mostaza/50 hover:text-marron'
-                }
-              `}
-            >
-              {f.icon}
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Section subtitle */}
-        {!loading && !error && familiasVisibles.length > 0 && (
-          <div className="text-center mb-6">
-            <h3 className="text-xl sm:text-2xl font-bold text-marron flex items-center justify-center gap-2">
-              <span className="text-2xl">{seccionConfig.emoji}</span>
-              {seccionConfig.label}
-            </h3>
-            <p className="text-muted-foreground text-sm mt-1">{seccionConfig.description}</p>
-          </div>
-        )}
-
-        {/* Loading — only on initial mount */}
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="rounded-2xl border border-marron/10 bg-white p-8 animate-pulse flex flex-col items-center gap-4">
-                <div className="h-20 w-20 bg-muted rounded-full" />
-                <div className="h-5 w-24 bg-muted rounded" />
-                <div className="h-4 w-40 bg-muted rounded" />
-                <div className="h-5 w-16 bg-muted rounded-full" />
-              </div>
-            ))}
-          </div>
-        ) : error ? (
-          <div className="text-center py-12">
-            <span className="text-5xl mb-4 block">⚠️</span>
-            <p className="text-muted-foreground mb-4">{error}</p>
-            <Button
-              variant="outline"
-              onClick={handleRetry}
-              className="border-mostaza text-marron hover:bg-mostaza hover:text-marron"
-            >
-              Reintentar
-            </Button>
-          </div>
-        ) : familiasVisibles.length === 0 ? (
-          <div className="text-center py-12">
-            <PackageOpen className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground text-lg">
-              No hay productos disponibles para este filtro en {seccionConfig.label}.
-            </p>
-          </div>
-        ) : (
+        {/* ═══════════════════════════════════════════════════════════
+            STATE 1: No section selected → Show section hero cards
+            ═══════════════════════════════════════════════════════════ */}
+        {!seccionActiva && (
           <>
-            {/* Family Cards Grid — instant swap, no stagger */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {familiasVisibles.map((familia) => {
-                const data = familiaData[familia.nombre]
-                const count = data?.count ?? 0
-                const isActive = familiaActiva === familia.nombre
-
-                return (
-                  <button
-                    key={familia.nombre}
-                    onClick={() => handleFamiliaClick(familia.nombre)}
-                    className={`
-                      w-full group relative rounded-2xl border bg-white p-6 sm:p-8
-                      flex flex-col items-center justify-between text-center min-h-[240px]
-                      transition-shadow duration-200
-                      border-marron/10 hover:shadow-lg cursor-pointer
-                      ${isActive ? 'ring-2 ring-mostaza shadow-lg' : ''}
-                    `}
-                  >
-                    {/* Imagen representativa */}
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-crema border-2 border-mostaza/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_8px_20px_rgba(0,0,0,0.15)]">
-                      <Image
-                        src={getFamiliaImagen(familia, filtro)}
-                        alt={familia.nombre}
-                        width={96}
-                        height={96}
-                        loading="lazy"
-                        className="object-cover w-full h-full"
-                      />
-                    </div>
-
-                    {/* Name */}
-                    <h3 className="text-lg sm:text-xl font-bold text-marron line-clamp-1">
-                      {familia.nombre}
-                    </h3>
-
-                    {/* Description */}
-                    <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
-                      {familia.descripcion}
-                    </p>
-
-                    {/* Badge */}
-                    <span className="bg-mostaza/20 text-marron text-xs rounded-full px-2 py-0.5 font-semibold flex-shrink-0">
-                      {count} {count === 1 ? 'variedad' : 'variedades'}
-                    </span>
-
-                    {/* Active indicator */}
-                    {isActive && (
-                      <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-mostaza" />
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Expanded Family Products — paginated with "Ver más" */}
-            {familiaActiva && (() => {
-              const familiaHeader = familias.find((f) => f.nombre === familiaActiva)
-              const imagenHeader = familiaHeader ? getFamiliaImagen(familiaHeader, filtro) : '/images/placeholder-producto.jpg'
-              return (
-                <div ref={productosGridRef} className="bg-crema/50 rounded-2xl p-6 mt-4">
-                  {/* Header */}
-                  <div className="flex items-center gap-3 mb-6">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setFamiliaActiva(null)
-                        const productosSection = document.getElementById('productos')
-                        if (productosSection) {
-                          const yOffset = -100
-                          const y = productosSection.getBoundingClientRect().top + window.pageYOffset + yOffset
-                          window.scrollTo({ top: y, behavior: 'smooth' })
-                        }
-                      }}
-                      className="text-marron hover:bg-mostaza/20 gap-1.5 -ml-2"
-                    >
-                      <ArrowLeft className="h-4 w-4" />
-                      Volver
-                    </Button>
-                    <div className="h-6 w-px bg-marron/20" />
-                    <h3 className="text-xl font-bold text-marron flex items-center gap-2">
-                      <span className="w-7 h-7 rounded-full overflow-hidden inline-block bg-crema border border-mostaza/20 flex-shrink-0">
-                        <Image
-                          src={imagenHeader}
-                          alt={familiaActiva}
-                          width={28}
-                          height={28}
-                          loading="lazy"
-                          className="object-cover w-full h-full"
-                        />
-                      </span>
-                      {familiaActiva}
-                    </h3>
-                    <span className="text-sm text-muted-foreground">
-                      — {productosFamilia.length} {productosFamilia.length === 1 ? 'variedad' : 'variedades'}
-                    </span>
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                {Array.from({ length: 2 }).map((_, i) => (
+                  <div key={i} className="rounded-2xl border border-marron/10 bg-white p-8 animate-pulse flex flex-col items-center gap-4 min-h-[280px]">
+                    <div className="h-16 w-16 bg-muted rounded-full" />
+                    <div className="h-6 w-32 bg-muted rounded" />
+                    <div className="h-4 w-48 bg-muted rounded" />
+                    <div className="h-4 w-40 bg-muted rounded" />
                   </div>
+                ))}
+              </div>
+            ) : error ? (
+              <div className="text-center py-12">
+                <span className="text-5xl mb-4 block">⚠️</span>
+                <p className="text-muted-foreground mb-4">{error}</p>
+                <Button
+                  variant="outline"
+                  onClick={handleRetry}
+                  className="border-mostaza text-marron hover:bg-mostaza hover:text-marron"
+                >
+                  Reintentar
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                {SECCIONES.map((sec) => {
+                  const hasProducts = seccionesConProductos.includes(sec.key)
+                  return (
+                    <button
+                      key={sec.key}
+                      onClick={() => handleSeccionChange(sec.key)}
+                      className={`
+                        group relative rounded-2xl border-2 bg-white p-8 sm:p-10
+                        flex flex-col items-center text-center min-h-[280px]
+                        transition-all duration-300 cursor-pointer
+                        border-marron/10 hover:border-mostaza hover:shadow-xl hover:scale-[1.02]
+                      `}
+                    >
+                      {/* Emoji icon */}
+                      <span className="text-5xl sm:text-6xl mb-4 transition-transform duration-300 group-hover:scale-110">
+                        {sec.emoji}
+                      </span>
 
-                  {/* Products Grid — paginated */}
-                  {productosFamilia.length === 0 ? (
-                    <div className="text-center py-8">
-                      <PackageOpen className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
-                      <p className="text-muted-foreground">
-                        No hay productos para este filtro en esta familia
+                      {/* Label */}
+                      <h3 className="text-2xl sm:text-3xl font-bold text-marron mb-2">
+                        {sec.label}
+                      </h3>
+
+                      {/* Description */}
+                      <p className="text-sm sm:text-base text-muted-foreground mb-3 max-w-xs">
+                        {sec.description}
                       </p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {productosVisibles.map((producto) => (
-                          <ProductCard key={producto.id} producto={producto} />
-                        ))}
+
+                      {/* Subtext */}
+                      <p className="text-xs text-muted-foreground/70 mb-4">
+                        {sec.subtext}
+                      </p>
+
+                      {/* CTA arrow */}
+                      <div className="mt-auto flex items-center gap-1 text-mostaza font-semibold text-sm group-hover:gap-2 transition-all">
+                        Ver productos
+                        <ChevronRight className="h-4 w-4" />
                       </div>
 
-                      {/* "Ver más" button — loads next batch without new images */}
-                      {hasMore && (
-                        <div className="flex justify-center mt-8">
-                          <Button
-                            variant="outline"
-                            onClick={handleLoadMore}
-                            className="border-mostaza text-marron hover:bg-mostaza hover:text-marron gap-2"
-                          >
-                            <ChevronDown className="h-4 w-4" />
-                            Ver más variedades ({productosFamilia.length - visibleCount} restantes)
-                          </Button>
+                      {/* "Próximamente" badge for sections without products */}
+                      {!hasProducts && (
+                        <div className="absolute top-4 right-4 bg-mostaza/20 text-marron text-xs rounded-full px-3 py-1 font-semibold">
+                          Próximamente
                         </div>
                       )}
-                    </>
-                  )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════
+            STATE 2: Section selected → Show filters + products
+            ═══════════════════════════════════════════════════════════ */}
+        {seccionActiva && seccionConfig && (
+          <>
+            {/* Breadcrumb: Volver a secciones + Section title */}
+            <div className="flex items-center gap-3 mb-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleVolverASecciones}
+                className="text-marron hover:bg-mostaza/20 gap-1.5 -ml-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Volver
+              </Button>
+              <div className="h-6 w-px bg-marron/20" />
+              <h3 className="text-xl sm:text-2xl font-bold text-marron flex items-center gap-2">
+                <span className="text-2xl">{seccionConfig.emoji}</span>
+                {seccionConfig.label}
+              </h3>
+            </div>
+
+            {/* Filter Buttons — Con Gluten / Integrales / Sin Gluten */}
+            <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-8">
+              {FILTROS.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => handleFiltroChange(f.key)}
+                  className={`
+                    inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold
+                    transition-colors duration-150 border
+                    ${filtro === f.key
+                      ? 'bg-mostaza text-marron border-mostaza shadow-md'
+                      : 'bg-white text-marron/70 border-marron/10 hover:border-mostaza/50 hover:text-marron'
+                    }
+                  `}
+                >
+                  {f.icon}
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Section description */}
+            {!loading && !error && familiasVisibles.length > 0 && (
+              <p className="text-center text-muted-foreground text-sm mb-6 max-w-md mx-auto">
+                {seccionConfig.description}
+              </p>
+            )}
+
+            {/* Loading */}
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="rounded-2xl border border-marron/10 bg-white p-8 animate-pulse flex flex-col items-center gap-4">
+                    <div className="h-20 w-20 bg-muted rounded-full" />
+                    <div className="h-5 w-24 bg-muted rounded" />
+                    <div className="h-4 w-40 bg-muted rounded" />
+                    <div className="h-5 w-16 bg-muted rounded-full" />
+                  </div>
+                ))}
+              </div>
+            ) : error ? (
+              <div className="text-center py-12">
+                <span className="text-5xl mb-4 block">⚠️</span>
+                <p className="text-muted-foreground mb-4">{error}</p>
+                <Button
+                  variant="outline"
+                  onClick={handleRetry}
+                  className="border-mostaza text-marron hover:bg-mostaza hover:text-marron"
+                >
+                  Reintentar
+                </Button>
+              </div>
+            ) : familiasVisibles.length === 0 ? (
+              <div className="text-center py-16">
+                <span className="text-6xl mb-4 block">{seccionConfig.emoji}</span>
+                <h3 className="text-xl font-bold text-marron mb-2">
+                  Próximamente {seccionConfig.label.toLowerCase()}
+                </h3>
+                <p className="text-muted-foreground max-w-sm mx-auto">
+                  Estamos trabajando para traerte los mejores {seccionConfig.label.toLowerCase()}. ¡Volvé pronto!
+                </p>
+              </div>
+            ) : (
+              <>
+                {/* Family Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {familiasVisibles.map((familia) => {
+                    const data = familiaData[familia.nombre]
+                    const count = data?.count ?? 0
+                    const isActive = familiaActiva === familia.nombre
+
+                    return (
+                      <button
+                        key={familia.nombre}
+                        onClick={() => handleFamiliaClick(familia.nombre)}
+                        className={`
+                          w-full group relative rounded-2xl border bg-white p-6 sm:p-8
+                          flex flex-col items-center justify-between text-center min-h-[240px]
+                          transition-shadow duration-200
+                          border-marron/10 hover:shadow-lg cursor-pointer
+                          ${isActive ? 'ring-2 ring-mostaza shadow-lg' : ''}
+                        `}
+                      >
+                        {/* Imagen representativa */}
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full overflow-hidden bg-crema border-2 border-mostaza/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_8px_20px_rgba(0,0,0,0.15)]">
+                          <Image
+                            src={getFamiliaImagen(familia, filtro)}
+                            alt={familia.nombre}
+                            width={96}
+                            height={96}
+                            loading="lazy"
+                            className="object-cover w-full h-full"
+                          />
+                        </div>
+
+                        {/* Name */}
+                        <h3 className="text-lg sm:text-xl font-bold text-marron line-clamp-1">
+                          {familia.nombre}
+                        </h3>
+
+                        {/* Description */}
+                        <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
+                          {familia.descripcion}
+                        </p>
+
+                        {/* Badge */}
+                        <span className="bg-mostaza/20 text-marron text-xs rounded-full px-2 py-0.5 font-semibold flex-shrink-0">
+                          {count} {count === 1 ? 'variedad' : 'variedades'}
+                        </span>
+
+                        {/* Active indicator */}
+                        {isActive && (
+                          <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-mostaza" />
+                        )}
+                      </button>
+                    )
+                  })}
                 </div>
-              )
-            })()}
+
+                {/* Expanded Family Products — paginated with "Ver más" */}
+                {familiaActiva && (() => {
+                  const familiaHeader = familias.find((f) => f.nombre === familiaActiva)
+                  const imagenHeader = familiaHeader ? getFamiliaImagen(familiaHeader, filtro) : '/images/placeholder-producto.jpg'
+                  return (
+                    <div ref={productosGridRef} className="bg-crema/50 rounded-2xl p-6 mt-4">
+                      {/* Header */}
+                      <div className="flex items-center gap-3 mb-6">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setFamiliaActiva(null)
+                            const productosSection = document.getElementById('productos')
+                            if (productosSection) {
+                              const yOffset = -100
+                              const y = productosSection.getBoundingClientRect().top + window.pageYOffset + yOffset
+                              window.scrollTo({ top: y, behavior: 'smooth' })
+                            }
+                          }}
+                          className="text-marron hover:bg-mostaza/20 gap-1.5 -ml-2"
+                        >
+                          <ArrowLeft className="h-4 w-4" />
+                          Volver
+                        </Button>
+                        <div className="h-6 w-px bg-marron/20" />
+                        <h3 className="text-xl font-bold text-marron flex items-center gap-2">
+                          <span className="w-7 h-7 rounded-full overflow-hidden inline-block bg-crema border border-mostaza/20 flex-shrink-0">
+                            <Image
+                              src={imagenHeader}
+                              alt={familiaActiva}
+                              width={28}
+                              height={28}
+                              loading="lazy"
+                              className="object-cover w-full h-full"
+                            />
+                          </span>
+                          {familiaActiva}
+                        </h3>
+                        <span className="text-sm text-muted-foreground">
+                          — {productosFamilia.length} {productosFamilia.length === 1 ? 'variedad' : 'variedades'}
+                        </span>
+                      </div>
+
+                      {/* Products Grid — paginated */}
+                      {productosFamilia.length === 0 ? (
+                        <div className="text-center py-8">
+                          <PackageOpen className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
+                          <p className="text-muted-foreground">
+                            No hay productos para este filtro en esta familia
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {productosVisibles.map((producto) => (
+                              <ProductCard key={producto.id} producto={producto} />
+                            ))}
+                          </div>
+
+                          {/* "Ver más" button */}
+                          {hasMore && (
+                            <div className="flex justify-center mt-8">
+                              <Button
+                                variant="outline"
+                                onClick={handleLoadMore}
+                                className="border-mostaza text-marron hover:bg-mostaza hover:text-marron gap-2"
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                                Ver más variedades ({productosFamilia.length - visibleCount} restantes)
+                              </Button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )
+                })()}
+              </>
+            )}
           </>
         )}
       </div>
