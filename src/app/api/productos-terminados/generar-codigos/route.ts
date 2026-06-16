@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db, ensureDbReady } from '@/lib/db'
 
 // Force dynamic rendering for Vercel serverless
 export const dynamic = 'force-dynamic'
@@ -67,6 +67,9 @@ async function obtenerUltimoContador(): Promise<number> {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Ensure Turso auto-migration has completed before querying
+    await ensureDbReady()
+
     const { searchParams } = new URL(request.url)
     const secret = searchParams.get('secret')
 

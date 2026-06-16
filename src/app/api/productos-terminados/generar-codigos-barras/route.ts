@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db, ensureDbReady } from '@/lib/db'
 import { requireAuth } from '@/lib/auth-helpers'
 
 // Force dynamic rendering for Vercel serverless
@@ -66,6 +66,9 @@ async function obtenerUltimoContador(): Promise<number> {
  */
 export async function GET() {
   try {
+    // Ensure Turso auto-migration has completed before querying
+    await ensureDbReady()
+
     const ultimoContador = await obtenerUltimoContador()
     const proximoContador = ultimoContador + 1
     const proximoCodigo = generarCodigoEAN13(proximoContador)
@@ -102,6 +105,9 @@ export async function POST(request: NextRequest) {
   if (!auth.authorized) return auth.response!
 
   try {
+    // Ensure Turso auto-migration has completed before querying
+    await ensureDbReady()
+
     const { searchParams } = new URL(request.url)
     const secret = searchParams.get('secret')
 

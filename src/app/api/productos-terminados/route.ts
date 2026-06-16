@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db, ensureDbReady } from '@/lib/db'
 import { requireAuth } from '@/lib/auth-helpers'
 
 /**
@@ -70,6 +70,9 @@ async function generarSiguienteEAN13(): Promise<string> {
 // GET /api/productos-terminados - Listar productos terminados con filtros y paginación
 export async function GET(request: NextRequest) {
   try {
+    // Ensure Turso auto-migration has completed before querying
+    await ensureDbReady()
+
     const { searchParams } = new URL(request.url)
     const buscar = searchParams.get('buscar')
     const id_categoria = searchParams.get('id_categoria')
@@ -124,6 +127,9 @@ export async function POST(request: NextRequest) {
   if (!auth.authorized) return auth.response!
 
   try {
+    // Ensure Turso auto-migration has completed before querying
+    await ensureDbReady()
+
     const body = await request.json()
     const {
       codigo,

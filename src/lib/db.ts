@@ -69,6 +69,7 @@ async function autoMigrateTurso(client: Client) {
     { sql: 'ALTER TABLE "ProductoTerminado" ADD COLUMN "texto_frente" TEXT', desc: 'ProductoTerminado.texto_frente' },
     { sql: 'ALTER TABLE "ProductoTerminado" ADD COLUMN "texto_reverso" TEXT', desc: 'ProductoTerminado.texto_reverso' },
     { sql: 'ALTER TABLE "CategoriaProductoTerminado" ADD COLUMN "seccion" TEXT', desc: 'CategoriaProductoTerminado.seccion' },
+    { sql: 'ALTER TABLE "ProductoTerminado" ADD COLUMN "seccion" TEXT', desc: 'ProductoTerminado.seccion' },
   ]
 
   // Data migrations: set seccion for known categories (idempotent — WHERE seccion IS NULL)

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db, ensureDbReady } from '@/lib/db'
 import { requireAuth } from '@/lib/auth-helpers'
 
 // GET /api/productos-terminados/[id] - Obtener producto terminado por ID
@@ -8,6 +8,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Ensure Turso auto-migration has completed before querying
+    await ensureDbReady()
+
     const { id } = await params
     const productoTerminado = await db.productoTerminado.findUnique({
       where: { id: parseInt(id) },
@@ -36,6 +39,9 @@ export async function PUT(
   if (!auth.authorized) return auth.response!
 
   try {
+    // Ensure Turso auto-migration has completed before querying
+    await ensureDbReady()
+
     const { id } = await params
     const body = await request.json()
     const {
@@ -154,6 +160,9 @@ export async function DELETE(
   if (!auth.authorized) return auth.response!
 
   try {
+    // Ensure Turso auto-migration has completed before querying
+    await ensureDbReady()
+
     const { id } = await params
 
     const productoTerminado = await db.productoTerminado.findUnique({

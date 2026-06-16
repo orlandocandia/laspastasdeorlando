@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db, ensureDbReady } from '@/lib/db'
 
 export async function GET(req: Request) {
   try {
+    // Ensure Turso auto-migration has completed before querying
+    await ensureDbReady()
+
     const { searchParams } = new URL(req.url)
     const codigo = searchParams.get('codigo')
 
