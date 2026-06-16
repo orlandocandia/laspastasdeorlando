@@ -380,10 +380,10 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
         {!seccionActiva && (
           <>
             {loading ? (
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-5 sm:gap-6">
+              <div className="flex flex-col md:flex-row justify-center items-stretch gap-6 md:gap-10 w-full max-w-5xl mx-auto">
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border border-marron/10 bg-white animate-pulse w-full sm:w-[340px] md:w-[360px] flex flex-col items-center p-6 sm:p-8 gap-4">
-                    <div className="w-32 h-32 md:w-48 md:h-48 bg-muted rounded-full" />
+                  <div key={i} className="rounded-2xl border border-marron/10 bg-white animate-pulse flex-1 max-w-sm md:max-w-md lg:max-w-lg flex flex-col items-center p-6 sm:p-8 md:p-10 gap-5">
+                    <div className="w-40 h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 bg-muted rounded-full" />
                     <div className="h-7 w-32 bg-muted rounded" />
                     <div className="h-10 w-36 bg-muted rounded-full" />
                   </div>
@@ -402,7 +402,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-5 sm:gap-6">
+              <div className="flex flex-col md:flex-row justify-center items-stretch gap-6 md:gap-10 w-full max-w-5xl mx-auto">
                 {SECCIONES.map((sec) => {
                   const hasProducts = seccionesConProductos.includes(sec.key)
                   return (
@@ -411,31 +411,32 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                       onClick={() => handleSeccionChange(sec.key)}
                       className={`
                         group relative rounded-2xl border-2 bg-white
-                        flex flex-col items-center text-center w-full sm:w-[340px] md:w-[360px]
-                        p-6 sm:p-8 gap-5
+                        flex flex-col items-center text-center
+                        flex-1 max-w-sm md:max-w-md lg:max-w-lg
+                        p-6 sm:p-8 md:p-10 gap-5
                         transition-all duration-300 cursor-pointer
                         border-marron/10 hover:border-mostaza hover:shadow-xl hover:scale-[1.02]
                         shadow-md
                       `}
                     >
-                      {/* Imagen circular — grande y proporcionada */}
-                      <div className="w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-mostaza/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)] group-hover:border-mostaza/40">
+                      {/* Imagen circular — responsive: 160 / 192 / 224 px */}
+                      <div className="w-40 h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 rounded-full overflow-hidden border-4 border-mostaza/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)] group-hover:border-mostaza/40">
                         <Image
                           src={sec.imagen}
                           alt={sec.label}
-                          width={192}
-                          height={192}
+                          width={224}
+                          height={224}
                           className="w-full h-full object-cover object-center"
                         />
                       </div>
 
                       {/* Título */}
-                      <h3 className="text-2xl md:text-3xl font-bold text-marron">
+                      <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-marron">
                         {sec.label}
                       </h3>
 
                       {/* Botón CTA */}
-                      <span className="inline-flex items-center gap-1.5 bg-mostaza text-marron text-sm font-semibold rounded-full px-6 py-2.5 shadow-sm group-hover:shadow-md group-hover:gap-2.5 transition-all">
+                      <span className="inline-flex items-center gap-1.5 bg-mostaza text-marron text-sm md:text-base font-semibold rounded-full px-6 py-2.5 shadow-sm group-hover:shadow-md group-hover:gap-2.5 transition-all">
                         Ver productos
                         <ChevronRight className="h-4 w-4" />
                       </span>
