@@ -361,10 +361,10 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   const seccionConfig = seccionActiva ? SECCIONES.find((s) => s.key === seccionActiva)! : null
 
   return (
-    <section id="productos" className="min-h-screen flex flex-col justify-center py-8 sm:py-12 md:py-16 bg-crema">
+    <section id="productos" className="min-h-screen flex flex-col justify-start py-12 sm:py-16 md:py-20 bg-crema">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         {/* Title */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-bold text-marron">
             Nuestros <span className="text-rojo">Productos</span>
           </h2>
