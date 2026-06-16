@@ -17,6 +17,7 @@ interface ProductoPublico {
   stock_actual: number
   destacado: boolean
   tipo_harina: string | null
+  seccion: string | null
   modo_coccion: string | null
   texto_frente: string | null
   texto_reverso: string | null
@@ -219,16 +220,26 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   const productos = cache[filtro]
 
   // Build families dynamically from product categories, grouped by seccion
+  // Effective section: producto.seccion ?? categoria.seccion
+  // Products with null effective section are hidden (requirement 7)
+  // A category can appear in BOTH sections if it has products of both types
   const familiasBySeccion = useMemo(() => {
     const result: Record<string, Familia[]> = { pastas: [], horneados: [], other: [] }
+    // Dedup by (categoria nombre + effective seccion) so the same category
+    // can appear once in pastas and once in horneados
     const seen = new Map<string, Familia>()
 
     for (const p of productos) {
       const catNombre = p.categoria.nombre
-      if (!seen.has(catNombre)) {
-        seen.set(catNombre, {
+      const effectiveSeccion = p.seccion ?? p.categoria.seccion
+      // Skip products without an effective section (requirement 7)
+      if (effectiveSeccion !== 'pastas' && effectiveSeccion !== 'horneados') continue
+
+      const dedupKey = `${catNombre}__${effectiveSeccion}`
+      if (!seen.has(dedupKey)) {
+        seen.set(dedupKey, {
           nombre: catNombre,
-          seccion: p.categoria.seccion,
+          seccion: effectiveSeccion,
           imagen: p.categoria.imagen || null,
           imagen_integral: p.categoria.imagen_integral || null,
           imagen_sin_gluten: p.categoria.imagen_sin_gluten || null,
@@ -263,12 +274,11 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     return result
   }, [productos])
 
-  // Current section families
+  // Current section families — only families with an explicit section
+  // (products with null effective section are hidden, requirement 7)
   const familias = useMemo(() => {
     if (!seccionActiva) return []
-    const secFamilies = familiasBySeccion[seccionActiva] || []
-    const otherFamilies = familiasBySeccion.other || []
-    return [...secFamilies, ...otherFamilies]
+    return familiasBySeccion[seccionActiva] || []
   }, [familiasBySeccion, seccionActiva])
 
   // Check which sections have products for current filter
@@ -281,13 +291,17 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     return result
   }, [familiasBySeccion])
 
-  // Compute product counts per family
+  // Compute product counts per family — must respect effective section
+  // so a category that appears in both sections only counts its
+  // products from the corresponding section
   const familiaData = useMemo(() => {
     const data: Record<string, { count: number; hasProducts: boolean }> = {}
     for (const familia of familias) {
-      const prods = productos.filter(
-        (p) => p.categoria.nombre === familia.nombre
-      )
+      const prods = productos.filter((p) => {
+        if (p.categoria.nombre !== familia.nombre) return false
+        const effSec = p.seccion ?? p.categoria.seccion
+        return effSec === familia.seccion
+      })
       data[familia.nombre] = {
         count: prods.length,
         hasProducts: prods.length > 0,
@@ -296,11 +310,15 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     return data
   }, [productos, familias])
 
-  // Products for the active family — paginated
+  // Products for the active family — filtered by both family name and effective section
   const productosFamilia = useMemo(() => {
-    if (!familiaActiva) return []
-    return productos.filter((p) => p.categoria.nombre === familiaActiva)
-  }, [productos, familiaActiva])
+    if (!familiaActiva || !seccionActiva) return []
+    return productos.filter((p) => {
+      if (p.categoria.nombre !== familiaActiva) return false
+      const effSec = p.seccion ?? p.categoria.seccion
+      return effSec === seccionActiva
+    })
+  }, [productos, familiaActiva, seccionActiva])
 
   const productosVisibles = useMemo(() => {
     return productosFamilia.slice(0, visibleCount)

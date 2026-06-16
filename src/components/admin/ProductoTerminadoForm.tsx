@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Form,
   FormControl,
@@ -37,6 +38,7 @@ const productoTerminadoSchema = z.object({
   descripcion: z.string().optional(),
   id_categoria: z.string().min(1, 'Seleccioná una categoría'),
   tipo_harina: z.string().optional(),
+  seccion: z.string().nullable().optional(),
   peso_unitario_aprox: z.coerce.number().min(0, 'El peso no puede ser negativo').default(0),
   unidades: z.coerce.number().min(1, 'Debe tener al menos 1 unidad').optional().nullable(),
   precio_venta: z.coerce.number().min(0, 'El precio no puede ser negativo').default(0),
@@ -84,6 +86,7 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
       descripcion: productoTerminado?.descripcion || '',
       id_categoria: productoTerminado?.id_categoria?.toString() || '',
       tipo_harina: productoTerminado?.tipo_harina || '',
+      seccion: productoTerminado?.seccion ?? null,
       peso_unitario_aprox: productoTerminado?.peso_unitario_aprox ?? 0,
       unidades: productoTerminado?.unidades ?? undefined,
       precio_venta: productoTerminado?.precio_venta ?? 0,
@@ -108,6 +111,7 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
       descripcion: productoTerminado?.descripcion || '',
       id_categoria: productoTerminado?.id_categoria?.toString() || '',
       tipo_harina: productoTerminado?.tipo_harina || '',
+      seccion: productoTerminado?.seccion ?? null,
       peso_unitario_aprox: productoTerminado?.peso_unitario_aprox ?? 0,
       unidades: productoTerminado?.unidades ?? undefined,
       precio_venta: productoTerminado?.precio_venta ?? 0,
@@ -171,6 +175,7 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
         codigo_barras: data.codigo_barras || null,
         id_categoria: parseInt(data.id_categoria),
         tipo_harina: data.tipo_harina || null,
+        seccion: data.seccion || null,
         unidades: data.unidades || null,
         modo_coccion: data.modo_coccion || null,
         texto_frente: data.texto_frente || null,
@@ -384,6 +389,91 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
             )}
           />
         </div>
+
+        {/* Selector de sección: Crudo / Horneado / Sin especificar */}
+        <FormField
+          control={form.control}
+          name="seccion"
+          render={({ field }) => {
+            const value = field.value ?? ''
+            return (
+              <FormItem className="space-y-2">
+                <FormLabel>Tipo de producto</FormLabel>
+                <FormControl>
+                  <RadioGroup
+                    value={value}
+                    onValueChange={(v) => field.onChange(v === '' ? null : v)}
+                    className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1"
+                  >
+                    {/* Sin especificar */}
+                    <label
+                      htmlFor="seccion-none"
+                      className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
+                        value === ''
+                          ? 'border-mostaza bg-mostaza/5 ring-1 ring-mostaza/30'
+                          : 'border-input hover:border-mostaza/50 hover:bg-muted/40'
+                      }`}
+                    >
+                      <RadioGroupItem value="" id="seccion-none" className="mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="block text-sm font-semibold text-marron">
+                          🤷 Sin especificar
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          Usa la sección de la categoría
+                        </span>
+                      </div>
+                    </label>
+
+                    {/* Crudo → pastas */}
+                    <label
+                      htmlFor="seccion-pastas"
+                      className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
+                        value === 'pastas'
+                          ? 'border-mostaza bg-mostaza/5 ring-1 ring-mostaza/30'
+                          : 'border-input hover:border-mostaza/50 hover:bg-muted/40'
+                      }`}
+                    >
+                      <RadioGroupItem value="pastas" id="seccion-pastas" className="mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="block text-sm font-semibold text-marron">
+                          🍝 Crudo
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          Para cocinar en casa · va a <b>Pastas</b>
+                        </span>
+                      </div>
+                    </label>
+
+                    {/* Horneado → horneados */}
+                    <label
+                      htmlFor="seccion-horneados"
+                      className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
+                        value === 'horneados'
+                          ? 'border-mostaza bg-mostaza/5 ring-1 ring-mostaza/30'
+                          : 'border-input hover:border-mostaza/50 hover:bg-muted/40'
+                      }`}
+                    >
+                      <RadioGroupItem value="horneados" id="seccion-horneados" className="mt-0.5" />
+                      <div className="space-y-0.5">
+                        <span className="block text-sm font-semibold text-marron">
+                          🔥 Horneado
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          Listo para comer · va a <b>Horneados</b>
+                        </span>
+                      </div>
+                    </label>
+                  </RadioGroup>
+                </FormControl>
+                <p className="text-xs text-muted-foreground">
+                  Si no elegís nada, se usa la sección de la categoría. Si el producto y su categoría no tienen sección, no se mostrará en la landing.
+                </p>
+                <FormMessage />
+              </FormItem>
+            )
+          }}
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormField

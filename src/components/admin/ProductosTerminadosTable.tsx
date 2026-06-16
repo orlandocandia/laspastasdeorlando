@@ -53,6 +53,7 @@ interface ProductoTerminado {
   codigo_barras?: string | null
   id_categoria: number
   tipo_harina?: string | null
+  seccion?: string | null
   peso_unitario_aprox: number
   unidades?: number | null
   precio_venta: number
@@ -63,7 +64,7 @@ interface ProductoTerminado {
   visible_en_landing: boolean
   imagen?: string | null
   estado: boolean
-  categoria: { id: number; nombre: string }
+  categoria: { id: number; nombre: string; seccion?: string | null }
 }
 
 interface Categoria {

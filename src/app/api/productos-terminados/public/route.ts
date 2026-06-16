@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
           stock_actual: true,
           destacado: true,
           tipo_harina: true,
+          seccion: true,
           modo_coccion: true,
           texto_frente: true,
           texto_reverso: true,

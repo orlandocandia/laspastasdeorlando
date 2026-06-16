@@ -132,6 +132,7 @@ export async function POST(request: NextRequest) {
       descripcion,
       id_categoria,
       tipo_harina,
+      seccion,
       peso_unitario_aprox,
       unidades,
       precio_venta,
@@ -180,6 +181,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Validar seccion: solo se permiten valores nulos o "pastas"/"horneados"
+    const seccionValidada =
+      seccion === 'pastas' || seccion === 'horneados' ? seccion : null
+
     const productoTerminado = await db.productoTerminado.create({
       data: {
         codigo: codigo || null,
@@ -188,6 +193,7 @@ export async function POST(request: NextRequest) {
         descripcion: descripcion || null,
         id_categoria: parseInt(id_categoria),
         tipo_harina: tipo_harina || null,
+        seccion: seccionValidada,
         peso_unitario_aprox: parseFloat(peso_unitario_aprox) || 0,
         unidades: unidades ? parseInt(unidades) : null,
         precio_venta: parseFloat(precio_venta) || 0,

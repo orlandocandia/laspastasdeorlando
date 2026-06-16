@@ -447,6 +447,7 @@ model ProductoTerminado {
   descripcion         String?
   id_categoria        Int
   tipo_harina         String?   // "con_gluten", "integral", "sin_gluten"
+  seccion             String?   @map("seccion")  // "pastas" | "horneados" | null — prioridad sobre categoria.seccion
   peso_unitario_aprox Float     @default(0)
   unidades            Int?      // Cantidad de unidades por paquete (ej: 12 empanadas, 24 pastelitos)
   precio_venta        Float     @default(0)

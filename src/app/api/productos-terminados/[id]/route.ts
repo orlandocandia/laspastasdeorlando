@@ -45,6 +45,7 @@ export async function PUT(
       descripcion,
       id_categoria,
       tipo_harina,
+      seccion,
       peso_unitario_aprox,
       unidades,
       precio_venta,
@@ -101,6 +102,14 @@ export async function PUT(
       }
     }
 
+    // Validar seccion: solo se permiten valores nulos o "pastas"/"horneados"
+    // Si seccion es undefined, no se actualiza. Si es null o inválido, se guarda como null.
+    let seccionParaGuardar: string | null | undefined = undefined
+    if (seccion !== undefined) {
+      seccionParaGuardar =
+        seccion === 'pastas' || seccion === 'horneados' ? seccion : null
+    }
+
     const productoTerminado = await db.productoTerminado.update({
       where: { id: parseInt(id) },
       data: {
@@ -110,6 +119,7 @@ export async function PUT(
         descripcion: descripcion !== undefined ? descripcion || null : undefined,
         id_categoria: id_categoria ? parseInt(id_categoria) : undefined,
         tipo_harina: tipo_harina !== undefined ? tipo_harina || null : undefined,
+        seccion: seccionParaGuardar,
         peso_unitario_aprox: peso_unitario_aprox !== undefined ? parseFloat(peso_unitario_aprox) : undefined,
         unidades: unidades !== undefined ? (unidades ? parseInt(unidades) : null) : undefined,
         precio_venta: precio_venta !== undefined ? parseFloat(precio_venta) : undefined,
