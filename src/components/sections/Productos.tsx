@@ -361,10 +361,10 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   const seccionConfig = seccionActiva ? SECCIONES.find((s) => s.key === seccionActiva)! : null
 
   return (
-    <section id="productos" className="min-h-screen flex flex-col justify-center py-12 sm:py-16 md:py-20 bg-crema">
+    <section id="productos" className="min-h-screen flex flex-col justify-center py-8 sm:py-12 md:py-16 bg-crema">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
         {/* Title */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-10">
           <h2 className="text-3xl sm:text-4xl font-bold text-marron">
             Nuestros <span className="text-rojo">Productos</span>
           </h2>
@@ -380,12 +380,12 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
         {!seccionActiva && (
           <>
             {loading ? (
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-5 sm:gap-8">
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-5 sm:gap-6">
                 {Array.from({ length: 2 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border border-marron/10 bg-white animate-pulse w-full sm:w-[320px] flex flex-col items-center p-6 sm:p-8 gap-4">
-                    <div className="w-32 h-32 md:w-40 md:h-40 bg-muted rounded-full" />
-                    <div className="h-6 w-28 bg-muted rounded" />
-                    <div className="h-9 w-32 bg-muted rounded-full" />
+                  <div key={i} className="rounded-2xl border border-marron/10 bg-white animate-pulse w-full sm:w-[340px] md:w-[360px] flex flex-col items-center p-6 sm:p-8 gap-4">
+                    <div className="w-32 h-32 md:w-48 md:h-48 bg-muted rounded-full" />
+                    <div className="h-7 w-32 bg-muted rounded" />
+                    <div className="h-10 w-36 bg-muted rounded-full" />
                   </div>
                 ))}
               </div>
@@ -402,7 +402,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-5 sm:gap-8">
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-5 sm:gap-6">
                 {SECCIONES.map((sec) => {
                   const hasProducts = seccionesConProductos.includes(sec.key)
                   return (
@@ -411,31 +411,31 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                       onClick={() => handleSeccionChange(sec.key)}
                       className={`
                         group relative rounded-2xl border-2 bg-white
-                        flex flex-col items-center text-center w-full sm:w-[320px]
-                        p-6 sm:p-8 gap-4
+                        flex flex-col items-center text-center w-full sm:w-[340px] md:w-[360px]
+                        p-6 sm:p-8 gap-5
                         transition-all duration-300 cursor-pointer
                         border-marron/10 hover:border-mostaza hover:shadow-xl hover:scale-[1.02]
                         shadow-md
                       `}
                     >
-                      {/* Imagen circular — completa y proporcionada */}
-                      <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-mostaza/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)] group-hover:border-mostaza/40">
+                      {/* Imagen circular — grande y proporcionada */}
+                      <div className="w-32 h-32 md:w-48 md:h-48 rounded-full overflow-hidden border-4 border-mostaza/20 flex-shrink-0 transition-all duration-300 group-hover:scale-105 group-hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)] group-hover:border-mostaza/40">
                         <Image
                           src={sec.imagen}
                           alt={sec.label}
-                          width={160}
-                          height={160}
+                          width={192}
+                          height={192}
                           className="w-full h-full object-cover object-center"
                         />
                       </div>
 
                       {/* Título */}
-                      <h3 className="text-2xl font-bold text-marron">
+                      <h3 className="text-2xl md:text-3xl font-bold text-marron">
                         {sec.label}
                       </h3>
 
                       {/* Botón CTA */}
-                      <span className="inline-flex items-center gap-1.5 bg-mostaza text-marron text-sm font-semibold rounded-full px-5 py-2 shadow-sm group-hover:shadow-md group-hover:gap-2.5 transition-all">
+                      <span className="inline-flex items-center gap-1.5 bg-mostaza text-marron text-sm font-semibold rounded-full px-6 py-2.5 shadow-sm group-hover:shadow-md group-hover:gap-2.5 transition-all">
                         Ver productos
                         <ChevronRight className="h-4 w-4" />
                       </span>
