@@ -435,10 +435,10 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                         {sec.label}
                       </h3>
 
-                      {/* Botón CTA */}
-                      <span className="inline-flex items-center gap-1.5 bg-mostaza text-marron text-sm md:text-base font-semibold rounded-full px-6 py-2.5 shadow-sm group-hover:shadow-md group-hover:gap-2.5 transition-all">
+                      {/* Botón CTA con efecto profesional al hover */}
+                      <span className="inline-flex items-center gap-1.5 bg-mostaza text-marron text-sm md:text-base font-semibold rounded-full px-6 py-2.5 shadow-sm transition-all duration-300 ease-out group-hover:-translate-y-0.5 group-hover:shadow-lg group-hover:brightness-105 group-hover:gap-2.5">
                         Ver productos
-                        <ChevronRight className="h-4 w-4" />
+                        <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" />
                       </span>
 
                       {/* "Próximamente" badge */}
