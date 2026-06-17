@@ -126,9 +126,9 @@ export default function ProductCard({ producto }: ProductCardProps) {
                 draggable={false}
               />
 
-              {/* Watermark overlay */}
+              {/* Watermark overlay — logo semi-transparente para identificación de marca */}
               <div
-                className="absolute inset-0 flex items-center justify-center pointer-events-none bg-[url('/images/logo.png')] bg-center bg-no-repeat bg-[length:60px_60px] opacity-15 select-none"
+                className="absolute inset-0 flex items-center justify-center pointer-events-none bg-[url('/images/logo.png')] bg-center bg-no-repeat bg-[length:60px_60px] sm:bg-[length:70px_70px] md:bg-[length:80px_80px] opacity-50 mix-blend-multiply select-none"
                 aria-hidden="true"
               />
 
