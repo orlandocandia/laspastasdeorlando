@@ -380,7 +380,7 @@ export default function PedidosClientesTable() {
           if (!open) setSelectedPedido(null)
         }}
       >
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto w-[95vw]">
+        <DialogContent className="sm:max-w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-marron">
               {selectedPedido ? 'Editar Pedido de Cliente' : 'Nuevo Pedido de Cliente'}
