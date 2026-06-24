@@ -472,9 +472,130 @@ export default function PedidoProveedorForm({ pedido, onSuccess, onCancel }: Ped
       {!isEditing && (
         <>
           <Separator />
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <Label className="text-sm font-semibold text-marron">Detalle del Pedido</Label>
+          <div className="space-y-4">
+            <Label className="text-sm font-semibold text-marron block">Detalle del Pedido</Label>
+
+            {/* Table container with horizontal scroll on small screens */}
+            <div className="w-full overflow-x-auto">
+              <div className="min-w-[720px] space-y-3">
+                {/* Column headers - aligned with data rows */}
+                <div className="grid grid-cols-[1.5fr_3fr_1.2fr_1fr_1.3fr_44px] gap-3 px-3">
+                  <div className="text-xs font-semibold text-muted-foreground">Tipo</div>
+                  <div className="text-xs font-semibold text-muted-foreground">Producto</div>
+                  <div className="text-xs font-semibold text-muted-foreground">Cantidad</div>
+                  <div className="text-xs font-semibold text-muted-foreground">Unidad</div>
+                  <div className="text-xs font-semibold text-muted-foreground">Precio Est.</div>
+                  <div></div>
+                </div>
+
+                {/* Detail rows */}
+                {detalles.map((detalle) => (
+                  <div
+                    key={detalle.key}
+                    className="p-3 rounded-lg border border-marron/10 bg-muted/20"
+                  >
+                    <div className="grid grid-cols-[1.5fr_3fr_1.2fr_1fr_1.3fr_44px] gap-3 items-center">
+                      {/* Tipo */}
+                      <div>
+                        <Label htmlFor={`tipo-${detalle.key}`} className="sr-only">Tipo</Label>
+                        <Select
+                          value={detalle.tipo}
+                          onValueChange={(v) => updateDetalle(detalle.key, 'tipo', v)}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="mp">Materia Prima</SelectItem>
+                            <SelectItem value="insumo">Insumo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Producto */}
+                      <div>
+                        <Label htmlFor={`prod-${detalle.key}`} className="sr-only">Producto</Label>
+                        <Select
+                          value={detalle.id_producto}
+                          onValueChange={(v) => updateDetalle(detalle.key, 'id_producto', v)}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Seleccionar..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getProductsForTipo(detalle.tipo).map((prod) => (
+                              <SelectItem key={prod.id} value={prod.id.toString()}>
+                                {prod.nombre}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Cantidad */}
+                      <div>
+                        <Label htmlFor={`cant-${detalle.key}`} className="sr-only">Cantidad</Label>
+                        <Input
+                          id={`cant-${detalle.key}`}
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0"
+                          className="h-9"
+                          value={detalle.cantidad}
+                          onChange={(e) => updateDetalle(detalle.key, 'cantidad', e.target.value)}
+                        />
+                      </div>
+
+                      {/* Unidad (auto-filled) */}
+                      <div>
+                        <Label htmlFor={`uni-${detalle.key}`} className="sr-only">Unidad</Label>
+                        <Input
+                          id={`uni-${detalle.key}`}
+                          className="h-9 bg-muted/50"
+                          value={detalle.unidadCodigo || '-'}
+                          disabled
+                        />
+                      </div>
+
+                      {/* Precio Estimado */}
+                      <div>
+                        <Label htmlFor={`precio-${detalle.key}`} className="sr-only">Precio Est.</Label>
+                        <Input
+                          id={`precio-${detalle.key}`}
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          className="h-9"
+                          value={detalle.precioEstimado}
+                          onChange={(e) => updateDetalle(detalle.key, 'precioEstimado', e.target.value)}
+                        />
+                      </div>
+
+                      {/* Delete */}
+                      <div className="flex justify-center">
+                        {detalles.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-9 w-9 hover:bg-rojo/10"
+                            onClick={() => removeDetailRow(detalle.key)}
+                            aria-label="Eliminar fila"
+                          >
+                            <Trash2 className="h-4 w-4 text-rojo" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Add row button - clearly separated from the table */}
+            <div className="pt-2">
               <Button
                 type="button"
                 variant="outline"
@@ -485,109 +606,6 @@ export default function PedidoProveedorForm({ pedido, onSuccess, onCancel }: Ped
                 <Plus className="mr-1 h-4 w-4" />
                 Agregar Fila
               </Button>
-            </div>
-
-            <div className="space-y-3">
-              {detalles.map((detalle, index) => (
-                <div
-                  key={detalle.key}
-                  className="p-3 rounded-lg border border-marron/10 bg-muted/20 space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Fila {index + 1}
-                    </span>
-                    {detalles.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 hover:bg-rojo/10"
-                        onClick={() => removeDetailRow(detalle.key)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5 text-rojo" />
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                    {/* Tipo */}
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Tipo</Label>
-                      <Select
-                        value={detalle.tipo}
-                        onValueChange={(v) => updateDetalle(detalle.key, 'tipo', v)}
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="mp">Materia Prima</SelectItem>
-                          <SelectItem value="insumo">Insumo</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Producto */}
-                    <div className="col-span-2">
-                      <Label className="text-xs text-muted-foreground">Producto</Label>
-                      <Select
-                        value={detalle.id_producto}
-                        onValueChange={(v) => updateDetalle(detalle.key, 'id_producto', v)}
-                      >
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Seleccionar..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getProductsForTipo(detalle.tipo).map((prod) => (
-                            <SelectItem key={prod.id} value={prod.id.toString()}>
-                              {prod.nombre}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Cantidad */}
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Cantidad</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0"
-                        className="h-9"
-                        value={detalle.cantidad}
-                        onChange={(e) => updateDetalle(detalle.key, 'cantidad', e.target.value)}
-                      />
-                    </div>
-
-                    {/* Unidad (auto-filled) */}
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Unidad</Label>
-                      <Input
-                        className="h-9 bg-muted/50"
-                        value={detalle.unidadCodigo || '-'}
-                        disabled
-                      />
-                    </div>
-
-                    {/* Precio Estimado */}
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Precio Est.</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        className="h-9"
-                        value={detalle.precioEstimado}
-                        onChange={(e) => updateDetalle(detalle.key, 'precioEstimado', e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
 
