@@ -373,7 +373,7 @@ export default function PedidosProveedoresTable() {
           if (!open) setSelectedPedido(null)
         }}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto w-[95vw]">
           <DialogHeader>
             <DialogTitle className="text-marron">
               {selectedPedido ? 'Editar Pedido a Proveedor' : 'Nuevo Pedido a Proveedor'}

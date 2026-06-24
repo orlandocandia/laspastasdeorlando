@@ -469,105 +469,103 @@ export default function PedidoClienteForm({ pedido, onSuccess, onCancel }: Pedid
           <div className="space-y-4">
             <Label className="text-sm font-semibold text-marron block">Detalle del Pedido</Label>
 
-            {/* Table container with horizontal scroll on small screens */}
-            <div className="w-full overflow-x-auto">
-              <div className="min-w-[680px] space-y-3">
-                {/* Column headers - aligned with data rows */}
-                <div className="grid grid-cols-[3fr_1fr_1.2fr_1.3fr_44px] gap-3 px-3">
-                  <div className="text-xs font-semibold text-muted-foreground">Producto Terminado</div>
-                  <div className="text-xs font-semibold text-muted-foreground">Cantidad</div>
-                  <div className="text-xs font-semibold text-muted-foreground">Precio Unit.</div>
-                  <div className="text-xs font-semibold text-muted-foreground">Subtotal</div>
-                  <div></div>
-                </div>
+            {/* Detail rows - fills 100% width, no horizontal scroll */}
+            <div className="space-y-3">
+              {/* Desktop column headers (aligned with rows) */}
+              <div className="hidden lg:grid lg:grid-cols-[3fr_1fr_1.2fr_1.3fr_44px] gap-3 px-3">
+                <div className="text-xs font-semibold text-muted-foreground">Producto Terminado</div>
+                <div className="text-xs font-semibold text-muted-foreground">Cantidad</div>
+                <div className="text-xs font-semibold text-muted-foreground">Precio Unit.</div>
+                <div className="text-xs font-semibold text-muted-foreground">Subtotal</div>
+                <div></div>
+              </div>
 
-                {/* Detail rows */}
-                {detalles.map((detalle) => (
-                  <div
-                    key={detalle.key}
-                    className="p-3 rounded-lg border border-marron/10 bg-muted/20"
-                  >
-                    <div className="grid grid-cols-[3fr_1fr_1.2fr_1.3fr_44px] gap-3 items-center">
-                      {/* Producto Terminado */}
-                      <div>
-                        <Label htmlFor={`prod-${detalle.key}`} className="sr-only">Producto Terminado</Label>
-                        <Select
-                          value={detalle.idProductoTerminado}
-                          onValueChange={(v) => updateDetalle(detalle.key, 'idProductoTerminado', v)}
+              {/* Detail rows */}
+              {detalles.map((detalle) => (
+                <div
+                  key={detalle.key}
+                  className="p-3 rounded-lg border border-marron/10 bg-muted/20"
+                >
+                  <div className="grid grid-cols-2 lg:grid-cols-[3fr_1fr_1.2fr_1.3fr_44px] gap-3 items-center">
+                    {/* Producto Terminado - full width on mobile */}
+                    <div className="col-span-2 lg:col-span-1">
+                      <Label htmlFor={`prod-${detalle.key}`} className="text-xs text-muted-foreground mb-1 block lg:sr-only">Producto Terminado</Label>
+                      <Select
+                        value={detalle.idProductoTerminado}
+                        onValueChange={(v) => updateDetalle(detalle.key, 'idProductoTerminado', v)}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Seleccionar..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {productosTerminados.map((pt) => (
+                            <SelectItem key={pt.id} value={pt.id.toString()}>
+                              {pt.nombre}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Cantidad */}
+                    <div>
+                      <Label htmlFor={`cant-${detalle.key}`} className="text-xs text-muted-foreground mb-1 block lg:sr-only">Cantidad</Label>
+                      <Input
+                        id={`cant-${detalle.key}`}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0"
+                        className="h-9"
+                        value={detalle.cantidad}
+                        onChange={(e) => updateDetalle(detalle.key, 'cantidad', e.target.value)}
+                      />
+                    </div>
+
+                    {/* Precio Unitario */}
+                    <div>
+                      <Label htmlFor={`precio-${detalle.key}`} className="text-xs text-muted-foreground mb-1 block lg:sr-only">Precio Unit.</Label>
+                      <Input
+                        id={`precio-${detalle.key}`}
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        className="h-9"
+                        value={detalle.precioUnitario}
+                        onChange={(e) => updateDetalle(detalle.key, 'precioUnitario', e.target.value)}
+                      />
+                    </div>
+
+                    {/* Subtotal (auto-calculated) */}
+                    <div>
+                      <Label htmlFor={`sub-${detalle.key}`} className="text-xs text-muted-foreground mb-1 block lg:sr-only">Subtotal</Label>
+                      <Input
+                        id={`sub-${detalle.key}`}
+                        className="h-9 bg-muted/50 font-semibold"
+                        value={detalle.subtotal ? formatCurrency(parseFloat(detalle.subtotal)) : ''}
+                        disabled
+                      />
+                    </div>
+
+                    {/* Delete */}
+                    <div className="flex justify-center">
+                      {detalles.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 hover:bg-rojo/10"
+                          onClick={() => removeDetailRow(detalle.key)}
+                          aria-label="Eliminar fila"
                         >
-                          <SelectTrigger className="h-9">
-                            <SelectValue placeholder="Seleccionar..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {productosTerminados.map((pt) => (
-                              <SelectItem key={pt.id} value={pt.id.toString()}>
-                                {pt.nombre}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Cantidad */}
-                      <div>
-                        <Label htmlFor={`cant-${detalle.key}`} className="sr-only">Cantidad</Label>
-                        <Input
-                          id={`cant-${detalle.key}`}
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0"
-                          className="h-9"
-                          value={detalle.cantidad}
-                          onChange={(e) => updateDetalle(detalle.key, 'cantidad', e.target.value)}
-                        />
-                      </div>
-
-                      {/* Precio Unitario */}
-                      <div>
-                        <Label htmlFor={`precio-${detalle.key}`} className="sr-only">Precio Unit.</Label>
-                        <Input
-                          id={`precio-${detalle.key}`}
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="0.00"
-                          className="h-9"
-                          value={detalle.precioUnitario}
-                          onChange={(e) => updateDetalle(detalle.key, 'precioUnitario', e.target.value)}
-                        />
-                      </div>
-
-                      {/* Subtotal (auto-calculated) */}
-                      <div>
-                        <Label htmlFor={`sub-${detalle.key}`} className="sr-only">Subtotal</Label>
-                        <Input
-                          id={`sub-${detalle.key}`}
-                          className="h-9 bg-muted/50 font-semibold"
-                          value={detalle.subtotal ? formatCurrency(parseFloat(detalle.subtotal)) : ''}
-                          disabled
-                        />
-                      </div>
-
-                      {/* Delete */}
-                      <div className="flex justify-center">
-                        {detalles.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9 hover:bg-rojo/10"
-                            onClick={() => removeDetailRow(detalle.key)}
-                            aria-label="Eliminar fila"
-                          >
-                            <Trash2 className="h-4 w-4 text-rojo" />
-                          </Button>
-                        )}
-                      </div>
+                          <Trash2 className="h-4 w-4 text-rojo" />
+                        </Button>
+                      )}
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
 
             {/* Add row button - clearly separated from the table */}
