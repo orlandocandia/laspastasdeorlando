@@ -13,6 +13,8 @@ import {
   Loader2,
   User,
   Package,
+  FileDown,
+  MessageCircle,
 } from 'lucide-react'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -54,6 +56,12 @@ interface Cliente {
   cuit?: string | null
   condicion_iva?: string | null
   tipo_persona: string
+  contactos?: Array<{
+    id: number
+    valor: string
+    es_principal: boolean
+    tipo: { id: number; nombre: string }
+  }>
 }
 
 interface Producto {
@@ -115,7 +123,9 @@ export default function NuevoPresupuestoPage() {
       const res = await fetch(`/api/personas?${params.toString()}`)
       if (!res.ok) throw new Error()
       const data = await res.json()
-      setClientes(Array.isArray(data) ? data : data.data || [])
+      // La API retorna { personas: [...] } — aceptar ambos formatos por compatibilidad
+      const lista = Array.isArray(data) ? data : (data.personas || data.data || [])
+      setClientes(lista)
     } catch {
       toast.error('Error al buscar clientes')
     } finally {
@@ -201,7 +211,8 @@ export default function NuevoPresupuestoPage() {
   const total = subtotal + ivaAmount
 
   // Guardar presupuesto
-  const guardarPresupuesto = async (eImprimir = false) => {
+  // accion: 'guardar' | 'imprimir' | 'pdf' | 'whatsapp'
+  const guardarPresupuesto = async (accion: 'guardar' | 'imprimir' | 'pdf' | 'whatsapp' = 'guardar') => {
     if (!clienteSeleccionado) {
       toast.error('Debe seleccionar un cliente')
       return
@@ -243,10 +254,13 @@ export default function NuevoPresupuestoPage() {
       const presupuesto = await res.json()
       toast.success('Presupuesto creado correctamente')
 
-      if (eImprimir) {
-        router.push(`/admin/presupuestos/${presupuesto.id}`)
-      } else {
+      if (accion === 'guardar') {
         router.push('/admin/presupuestos')
+      } else {
+        // Para imprimir, pdf o whatsapp, ir al detalle donde están los botones
+        // Pasamos un query param para que el detalle sepa qué hacer automáticamente
+        const query = accion !== 'imprimir' ? `?accion=${accion}` : ''
+        router.push(`/admin/presupuestos/${presupuesto.id}${query}`)
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al crear presupuesto')
@@ -459,7 +473,7 @@ export default function NuevoPresupuestoPage() {
             <Button
               className="w-full bg-mostaza hover:bg-mostaza/90 text-marron font-semibold"
               disabled={guardando}
-              onClick={() => guardarPresupuesto(false)}
+              onClick={() => guardarPresupuesto('guardar')}
             >
               {guardando ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
               Guardar
@@ -468,10 +482,28 @@ export default function NuevoPresupuestoPage() {
               variant="outline"
               className="w-full border-marron/30"
               disabled={guardando}
-              onClick={() => guardarPresupuesto(true)}
+              onClick={() => guardarPresupuesto('imprimir')}
             >
               {guardando ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Printer className="h-4 w-4 mr-2" />}
               Guardar e Imprimir
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full border-marron/30 text-marron hover:bg-marron/5"
+              disabled={guardando}
+              onClick={() => guardarPresupuesto('pdf')}
+            >
+              {guardando ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileDown className="h-4 w-4 mr-2" />}
+              Guardar y Exportar PDF
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full border-whatsapp/30 text-whatsapp hover:bg-whatsapp/10"
+              disabled={guardando}
+              onClick={() => guardarPresupuesto('whatsapp')}
+            >
+              {guardando ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <MessageCircle className="h-4 w-4 mr-2" />}
+              Guardar y Enviar WhatsApp
             </Button>
             <Button
               variant="ghost"

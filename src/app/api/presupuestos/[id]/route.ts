@@ -20,6 +20,11 @@ export async function GET(
             cuit: true,
             condicion_iva: true,
             tipo_persona: true,
+            contactos: {
+              include: {
+                tipo: true,
+              },
+            },
           },
         },
         detalle: {
