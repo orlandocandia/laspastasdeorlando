@@ -1,0 +1,705 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import { useState, useEffect, useMemo } from 'react'
+     4→     4→import { toast } from 'sonner'
+     5→     5→import { Loader2, Plus, Trash2, Check, ChevronsUpDown } from 'lucide-react'
+     6→     6→
+     7→     7→import { Button } from '@/components/ui/button'
+     8→     8→import { Input } from '@/components/ui/input'
+     9→     9→import { Textarea } from '@/components/ui/textarea'
+    10→    10→import { Label } from '@/components/ui/label'
+    11→    11→import { Badge } from '@/components/ui/badge'
+    12→    12→import { Separator } from '@/components/ui/separator'
+    13→    13→import {
+    14→    14→  Select,
+    15→    15→  SelectContent,
+    16→    16→  SelectItem,
+    17→    17→  SelectTrigger,
+    18→    18→  SelectValue,
+    19→    19→} from '@/components/ui/select'
+    20→    20→import {
+    21→    21→  Popover,
+    22→    22→  PopoverContent,
+    23→    23→  PopoverTrigger,
+    24→    24→} from '@/components/ui/popover'
+    25→    25→import {
+    26→    26→  Command,
+    27→    27→  CommandEmpty,
+    28→    28→  CommandGroup,
+    29→    29→  CommandInput,
+    30→    30→  CommandItem,
+    31→    31→  CommandList,
+    32→    32→} from '@/components/ui/command'
+    33→    33→import { cn } from '@/lib/utils'
+    34→    34→
+    35→    35→interface Proveedor {
+    36→    36→  id: number
+    37→    37→  nombre: string
+    38→    38→  apellido: string
+    39→    39→  razon_social: string | null
+    40→    40→}
+    41→    41→
+    42→    42→interface EstadoGeneral {
+    43→    43→  id: number
+    44→    44→  nombre_estado: string
+    45→    45→  entidad_aplicable: string | null
+    46→    46→}
+    47→    47→
+    48→    48→interface ProductoItem {
+    49→    49→  id: number
+    50→    50→  nombre: string
+    51→    51→  id_unidad_base: number
+    52→    52→  unidadBase: { id: number; codigo: string; nombre: string }
+    53→    53→  precio_compra_referencia: number
+    54→    54→  tipo: 'mp' | 'insumo'
+    55→    55→}
+    56→    56→
+    57→    57→interface DetalleRow {
+    58→    58→  key: string
+    59→    59→  tipo: 'mp' | 'insumo'
+    60→    60→  id_producto: string
+    61→    61→  cantidad: string
+    62→    62→  unidad: string
+    63→    63→  unidadCodigo: string
+    64→    64→  precioEstimado: string
+    65→    65→}
+    66→    66→
+    67→    67→interface PedidoProveedorFormProps {
+    68→    68→  pedido?: any | null
+    69→    69→  onSuccess: () => void
+    70→    70→  onCancel: () => void
+    71→    71→}
+    72→    72→
+    73→    73→export default function PedidoProveedorForm({ pedido, onSuccess, onCancel }: PedidoProveedorFormProps) {
+    74→    74→  const isEditing = !!pedido
+    75→    75→
+    76→    76→  // Form fields
+    77→    77→  const [idProveedor, setIdProveedor] = useState('')
+    78→    78→  const [fechaPedido, setFechaPedido] = useState('')
+    79→    79→  const [fechaEntregaEstimada, setFechaEntregaEstimada] = useState('')
+    80→    80→  const [idEstado, setIdEstado] = useState('')
+    81→    81→  const [observaciones, setObservaciones] = useState('')
+    82→    82→
+    83→    83→  // Detail rows
+    84→    84→  const [detalles, setDetalles] = useState<DetalleRow[]>([])
+    85→    85→
+    86→    86→  // Data
+    87→    87→  const [proveedores, setProveedores] = useState<Proveedor[]>([])
+    88→    88→  const [estados, setEstados] = useState<EstadoGeneral[]>([])
+    89→    89→  const [materiasPrimas, setMateriasPrimas] = useState<ProductoItem[]>([])
+    90→    90→  const [insumos, setInsumos] = useState<ProductoItem[]>([])
+    91→    91→  const [submitting, setSubmitting] = useState(false)
+    92→    92→  const [loadingData, setLoadingData] = useState(true)
+    93→    93→
+    94→    94→  // Combobox open states
+    95→    95→  const [proveedorOpen, setProveedorOpen] = useState(false)
+    96→    96→
+    97→    97→  // Load data
+    98→    98→  useEffect(() => {
+    99→    99→    async function loadData() {
+   100→   100→      try {
+   101→   101→        const [provRes, estRes, mpRes, insRes] = await Promise.all([
+   102→   102→          fetch('/api/personas?tipo=proveedor&limite=100'),
+   103→   103→          fetch('/api/estados-generales?entidad_aplicable=pedido_proveedor'),
+   104→   104→          fetch('/api/materias-primas?limite=200&estado=true'),
+   105→   105→          fetch('/api/insumos?limite=200&estado=true'),
+   106→   106→        ])
+   107→   107→
+   108→   108→        const provData = await provRes.json()
+   109→   109→        const estData = await estRes.json()
+   110→   110→        const mpData = await mpRes.json()
+   111→   111→        const insData = await insRes.json()
+   112→   112→
+   113→   113→        setProveedores(provData.personas || [])
+   114→   114→        setEstados(Array.isArray(estData) ? estData : [])
+   115→   115→        setMateriasPrimas(
+   116→   116→          (mpData.data || []).map((mp: any) => ({
+   117→   117→            id: mp.id,
+   118→   118→            nombre: mp.nombre,
+   119→   119→            id_unidad_base: mp.id_unidad_base,
+   120→   120→            unidadBase: mp.unidadBase,
+   121→   121→            precio_compra_referencia: mp.precio_compra_referencia,
+   122→   122→            tipo: 'mp' as const,
+   123→   123→          }))
+   124→   124→        )
+   125→   125→        setInsumos(
+   126→   126→          (insData.data || []).map((ins: any) => ({
+   127→   127→            id: ins.id,
+   128→   128→            nombre: ins.nombre,
+   129→   129→            id_unidad_base: ins.id_unidad_base,
+   130→   130→            unidadBase: ins.unidadBase,
+   131→   131→            precio_compra_referencia: ins.precio_compra_referencia,
+   132→   132→            tipo: 'insumo' as const,
+   133→   133→          }))
+   134→   134→        )
+   135→   135→      } catch {
+   136→   136→        toast.error('Error al cargar datos del formulario')
+   137→   137→      } finally {
+   138→   138→        setLoadingData(false)
+   139→   139→      }
+   140→   140→    }
+   141→   141→    loadData()
+   142→   142→  }, [])
+   143→   143→
+   144→   144→  // Populate form when editing
+   145→   145→  useEffect(() => {
+   146→   146→    if (pedido) {
+   147→   147→      setIdProveedor(pedido.id_proveedor?.toString() || '')
+   148→   148→      setFechaPedido(pedido.fecha_pedido ? pedido.fecha_pedido.split('T')[0] : '')
+   149→   149→      setFechaEntregaEstimada(
+   150→   150→        pedido.fecha_entrega_estimada ? pedido.fecha_entrega_estimada.split('T')[0] : ''
+   151→   151→      )
+   152→   152→      setIdEstado(pedido.id_estado?.toString() || '')
+   153→   153→      setObservaciones(pedido.observaciones || '')
+   154→   154→
+   155→   155→      if (pedido.detalle && Array.isArray(pedido.detalle)) {
+   156→   156→        setDetalles(
+   157→   157→          pedido.detalle.map((d: any) => ({
+   158→   158→            key: `row-${d.id}`,
+   159→   159→            tipo: d.id_materia_prima ? 'mp' : 'insumo',
+   160→   160→            id_producto: (d.id_materia_prima || d.id_insumo)?.toString() || '',
+   161→   161→            cantidad: d.cantidad_pedida?.toString() || '',
+   162→   162→            unidad: d.unidad?.id?.toString() || '',
+   163→   163→            unidadCodigo: d.unidad?.codigo || '',
+   164→   164→            precioEstimado: d.precio_estimado?.toString() || '',
+   165→   165→          }))
+   166→   166→        )
+   167→   167→      }
+   168→   168→    } else {
+   169→   169→      // Defaults for new
+   170→   170→      setFechaPedido(new Date().toISOString().split('T')[0])
+   171→   171→      addDetailRow()
+   172→   172→    }
+   173→   173→  }, [pedido])
+   174→   174→
+   175→   175→  // Products filtered by selected tipo for each row
+   176→   176→  const getProductsForTipo = (tipo: 'mp' | 'insumo') => {
+   177→   177→    return tipo === 'mp' ? materiasPrimas : insumos
+   178→   178→  }
+   179→   179→
+   180→   180→  // Find product by id
+   181→   181→  const findProduct = (tipo: 'mp' | 'insumo', id: string) => {
+   182→   182→    const products = getProductsForTipo(tipo)
+   183→   183→    return products.find((p) => p.id.toString() === id)
+   184→   184→  }
+   185→   185→
+   186→   186→  // Add detail row
+   187→   187→  const addDetailRow = () => {
+   188→   188→    setDetalles((prev) => [
+   189→   189→      ...prev,
+   190→   190→      {
+   191→   191→        key: `row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+   192→   192→        tipo: 'mp',
+   193→   193→        id_producto: '',
+   194→   194→        cantidad: '',
+   195→   195→        unidad: '',
+   196→   196→        unidadCodigo: '',
+   197→   197→        precioEstimado: '',
+   198→   198→      },
+   199→   199→    ])
+   200→   200→  }
+   201→   201→
+   202→   202→  // Remove detail row
+   203→   203→  const removeDetailRow = (key: string) => {
+   204→   204→    setDetalles((prev) => prev.filter((d) => d.key !== key))
+   205→   205→  }
+   206→   206→
+   207→   207→  // Update detail row
+   208→   208→  const updateDetalle = (key: string, field: keyof DetalleRow, value: string) => {
+   209→   209→    setDetalles((prev) =>
+   210→   210→      prev.map((d) => {
+   211→   211→        if (d.key !== key) return d
+   212→   212→
+   213→   213→        const updated = { ...d, [field]: value }
+   214→   214→
+   215→   215→        // When tipo changes, reset producto and unidad
+   216→   216→        if (field === 'tipo') {
+   217→   217→          updated.id_producto = ''
+   218→   218→          updated.unidad = ''
+   219→   219→          updated.unidadCodigo = ''
+   220→   220→          updated.precioEstimado = ''
+   221→   221→        }
+   222→   222→
+   223→   223→        // When product changes, auto-fill unidad and precio_referencia
+   224→   224→        if (field === 'id_producto' && value) {
+   225→   225→          const product = findProduct(updated.tipo, value)
+   226→   226→          if (product) {
+   227→   227→            updated.unidad = product.unidadBase?.id?.toString() || ''
+   228→   228→            updated.unidadCodigo = product.unidadBase?.codigo || ''
+   229→   229→            updated.precioEstimado = product.precio_compra_referencia?.toString() || ''
+   230→   230→          }
+   231→   231→        }
+   232→   232→
+   233→   233→        return updated
+   234→   234→      })
+   235→   235→    )
+   236→   236→  }
+   237→   237→
+   238→   238→  // Calculate total estimado
+   239→   239→  const totalEstimado = useMemo(() => {
+   240→   240→    return detalles.reduce((sum, d) => {
+   241→   241→      const cant = parseFloat(d.cantidad)
+   242→   242→      const precio = parseFloat(d.precioEstimado)
+   243→   243→      if (isNaN(cant) || isNaN(precio)) return sum
+   244→   244→      return sum + cant * precio
+   245→   245→    }, 0)
+   246→   246→  }, [detalles])
+   247→   247→
+   248→   248→  const formatCurrency = (value: number) => {
+   249→   249→    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value)
+   250→   250→  }
+   251→   251→
+   252→   252→  // Submit
+   253→   253→  const handleSubmit = async () => {
+   254→   254→    // Validation
+   255→   255→    if (!isEditing) {
+   256→   256→      if (!idProveedor) {
+   257→   257→        toast.error('Seleccioná un proveedor')
+   258→   258→        return
+   259→   259→      }
+   260→   260→      if (!fechaPedido) {
+   261→   261→        toast.error('Ingresá la fecha del pedido')
+   262→   262→        return
+   263→   263→      }
+   264→   264→      if (detalles.length === 0) {
+   265→   265→        toast.error('Agregá al menos un detalle al pedido')
+   266→   266→        return
+   267→   267→      }
+   268→   268→      for (let i = 0; i < detalles.length; i++) {
+   269→   269→        const d = detalles[i]
+   270→   270→        if (!d.id_producto) {
+   271→   271→          toast.error(`Fila ${i + 1}: Seleccioná un producto`)
+   272→   272→          return
+   273→   273→        }
+   274→   274→        if (!d.cantidad || parseFloat(d.cantidad) <= 0) {
+   275→   275→          toast.error(`Fila ${i + 1}: Ingresá una cantidad válida`)
+   276→   276→          return
+   277→   277→        }
+   278→   278→      }
+   279→   279→    }
+   280→   280→
+   281→   281→    setSubmitting(true)
+   282→   282→    try {
+   283→   283→      const payload = isEditing
+   284→   284→        ? {
+   285→   285→            id: pedido.id,
+   286→   286→            fecha_entrega_estimada: fechaEntregaEstimada || null,
+   287→   287→            id_estado: idEstado ? parseInt(idEstado) : undefined,
+   288→   288→            observaciones: observaciones.trim() || null,
+   289→   289→          }
+   290→   290→        : {
+   291→   291→            id_proveedor: parseInt(idProveedor),
+   292→   292→            fecha_pedido: fechaPedido,
+   293→   293→            fecha_entrega_estimada: fechaEntregaEstimada || null,
+   294→   294→            observaciones: observaciones.trim() || null,
+   295→   295→            total_estimado: totalEstimado,
+   296→   296→            detalle: detalles.map((d) => ({
+   297→   297→              tipo: d.tipo,
+   298→   298→              id_producto: parseInt(d.id_producto),
+   299→   299→              cantidad_pedida: parseFloat(d.cantidad),
+   300→   300→              id_unidad: parseInt(d.unidad),
+   301→   301→              precio_estimado: parseFloat(d.precioEstimado) || 0,
+   302→   302→            })),
+   303→   303→          }
+   304→   304→
+   305→   305→      const url = isEditing ? `/api/pedidos-proveedores/${pedido.id}` : '/api/pedidos-proveedores'
+   306→   306→      const method = isEditing ? 'PUT' : 'POST'
+   307→   307→
+   308→   308→      const res = await fetch(url, {
+   309→   309→        method,
+   310→   310→        headers: { 'Content-Type': 'application/json' },
+   311→   311→        body: JSON.stringify(payload),
+   312→   312→      })
+   313→   313→
+   314→   314→      if (!res.ok) {
+   315→   315→        const errorData = await res.json().catch(() => ({}))
+   316→   316→        throw new Error(errorData.error || 'Error al guardar pedido')
+   317→   317→      }
+   318→   318→
+   319→   319→      toast.success(isEditing ? 'Pedido actualizado' : 'Pedido registrado', {
+   320→   320→        description: isEditing
+   321→   321→          ? 'Los cambios se guardaron correctamente'
+   322→   322→          : 'El nuevo pedido se registró exitosamente',
+   323→   323→      })
+   324→   324→      onSuccess()
+   325→   325→    } catch (error: any) {
+   326→   326→      toast.error('Error al guardar', {
+   327→   327→        description: error.message || 'Intentá de nuevo más tarde',
+   328→   328→      })
+   329→   329→    } finally {
+   330→   330→      setSubmitting(false)
+   331→   331→    }
+   332→   332→  }
+   333→   333→
+   334→   334→  if (loadingData) {
+   335→   335→    return (
+   336→   336→      <div className="flex items-center justify-center py-8">
+   337→   337→        <Loader2 className="h-6 w-6 animate-spin text-mostaza" />
+   338→   338→        <span className="ml-2 text-muted-foreground">Cargando datos...</span>
+   339→   339→      </div>
+   340→   340→    )
+   341→   341→  }
+   342→   342→
+   343→   343→  return (
+   344→   344→    <div className="space-y-6">
+   345→   345→      {/* Header info */}
+   346→   346→      {isEditing && (
+   347→   347→        <div className="bg-muted/30 rounded-lg p-3 border border-marron/10">
+   348→   348→          <p className="text-sm text-muted-foreground">
+   349→   349→            Pedido #{pedido.id} — Proveedor: {pedido.proveedor?.razon_social || `${pedido.proveedor?.nombre} ${pedido.proveedor?.apellido}`}
+   350→   350→          </p>
+   351→   351→        </div>
+   352→   352→      )}
+   353→   353→
+   354→   354→      {/* Main fields */}
+   355→   355→      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   356→   356→        {/* Proveedor - searchable combobox */}
+   357→   357→        <div>
+   358→   358→          <Label className="text-sm font-medium text-marron mb-1 block">Proveedor *</Label>
+   359→   359→          {isEditing ? (
+   360→   360→            <Input
+   361→   361→              value={pedido.proveedor?.razon_social || `${pedido.proveedor?.nombre} ${pedido.proveedor?.apellido}`}
+   362→   362→              disabled
+   363→   363→              className="bg-muted/50"
+   364→   364→            />
+   365→   365→          ) : (
+   366→   366→            <Popover open={proveedorOpen} onOpenChange={setProveedorOpen}>
+   367→   367→              <PopoverTrigger asChild>
+   368→   368→                <Button
+   369→   369→                  variant="outline"
+   370→   370→                  role="combobox"
+   371→   371→                  aria-expanded={proveedorOpen}
+   372→   372→                  className={cn(
+   373→   373→                    'w-full justify-between',
+   374→   374→                    !idProveedor && 'text-muted-foreground'
+   375→   375→                  )}
+   376→   376→                >
+   377→   377→                  {idProveedor
+   378→   378→                    ? (() => {
+   379→   379→                        const prov = proveedores.find((p) => p.id.toString() === idProveedor)
+   380→   380→                        return prov?.razon_social || `${prov?.nombre} ${prov?.apellido}` || 'Seleccionar...'
+   381→   381→                      })()
+   382→   382→                    : 'Buscar proveedor...'}
+   383→   383→                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+   384→   384→                </Button>
+   385→   385→              </PopoverTrigger>
+   386→   386→              <PopoverContent className="w-full p-0" align="start">
+   387→   387→                <Command>
+   388→   388→                  <CommandInput placeholder="Buscar proveedor..." />
+   389→   389→                  <CommandList>
+   390→   390→                    <CommandEmpty>No se encontró proveedor</CommandEmpty>
+   391→   391→                    <CommandGroup>
+   392→   392→                      {proveedores.map((prov) => (
+   393→   393→                        <CommandItem
+   394→   394→                          key={prov.id}
+   395→   395→                          value={prov.razon_social || `${prov.nombre} ${prov.apellido}`}
+   396→   396→                          onSelect={() => {
+   397→   397→                            setIdProveedor(prov.id.toString())
+   398→   398→                            setProveedorOpen(false)
+   399→   399→                          }}
+   400→   400→                        >
+   401→   401→                          <Check
+   402→   402→                            className={cn(
+   403→   403→                              'mr-2 h-4 w-4',
+   404→   404→                              idProveedor === prov.id.toString() ? 'opacity-100' : 'opacity-0'
+   405→   405→                            )}
+   406→   406→                          />
+   407→   407→                          {prov.razon_social || `${prov.nombre} ${prov.apellido}`}
+   408→   408→                        </CommandItem>
+   409→   409→                      ))}
+   410→   410→                    </CommandGroup>
+   411→   411→                  </CommandList>
+   412→   412→                </Command>
+   413→   413→              </PopoverContent>
+   414→   414→            </Popover>
+   415→   415→          )}
+   416→   416→        </div>
+   417→   417→
+   418→   418→        {/* Fecha pedido */}
+   419→   419→        <div>
+   420→   420→          <Label className="text-sm font-medium text-marron mb-1 block">Fecha Pedido *</Label>
+   421→   421→          <Input
+   422→   422→            type="date"
+   423→   423→            value={fechaPedido}
+   424→   424→            onChange={(e) => setFechaPedido(e.target.value)}
+   425→   425→            disabled={isEditing}
+   426→   426→          />
+   427→   427→        </div>
+   428→   428→
+   429→   429→        {/* Fecha entrega estimada */}
+   430→   430→        <div>
+   431→   431→          <Label className="text-sm font-medium text-marron mb-1 block">Entrega Estimada</Label>
+   432→   432→          <Input
+   433→   433→            type="date"
+   434→   434→            value={fechaEntregaEstimada}
+   435→   435→            onChange={(e) => setFechaEntregaEstimada(e.target.value)}
+   436→   436→          />
+   437→   437→        </div>
+   438→   438→
+   439→   439→        {/* Estado (only in edit mode) */}
+   440→   440→        {isEditing && (
+   441→   441→          <div>
+   442→   442→            <Label className="text-sm font-medium text-marron mb-1 block">Estado</Label>
+   443→   443→            <Select value={idEstado} onValueChange={setIdEstado}>
+   444→   444→              <SelectTrigger>
+   445→   445→                <SelectValue placeholder="Seleccionar..." />
+   446→   446→              </SelectTrigger>
+   447→   447→              <SelectContent>
+   448→   448→                {estados.map((est) => (
+   449→   449→                  <SelectItem key={est.id} value={est.id.toString()}>
+   450→   450→                    {est.nombre_estado}
+   451→   451→                  </SelectItem>
+   452→   452→                ))}
+   453→   453→              </SelectContent>
+   454→   454→            </Select>
+   455→   455→          </div>
+   456→   456→        )}
+   457→   457→      </div>
+   458→   458→
+   459→   459→      {/* Observaciones */}
+   460→   460→      <div>
+   461→   461→        <Label className="text-sm font-medium text-marron mb-1 block">Observaciones</Label>
+   462→   462→        <Textarea
+   463→   463→          placeholder="Observaciones sobre el pedido..."
+   464→   464→          className="resize-none"
+   465→   465→          rows={2}
+   466→   466→          value={observaciones}
+   467→   467→          onChange={(e) => setObservaciones(e.target.value)}
+   468→   468→        />
+   469→   469→      </div>
+   470→   470→
+   471→   471→      {/* Detail rows - only in create mode, or show read-only in edit */}
+   472→   472→      {!isEditing && (
+   473→   473→        <>
+   474→   474→          <Separator />
+   475→   475→          <div className="space-y-4">
+   476→   476→            <Label className="text-sm font-semibold text-marron block">Detalle del Pedido</Label>
+   477→   477→
+   478→   478→            {/* Detail rows - fills 100% width, no horizontal scroll */}
+   479→   479→            <div className="space-y-3">
+   480→   480→              {/* Desktop column headers (aligned with rows) */}
+   481→   481→              <div className="hidden lg:grid lg:grid-cols-[1.4fr_3fr_1fr_1fr_1.2fr_44px] gap-3 px-3">
+   482→   482→                <div className="text-xs font-semibold text-muted-foreground">Tipo</div>
+   483→   483→                <div className="text-xs font-semibold text-muted-foreground">Producto</div>
+   484→   484→                <div className="text-xs font-semibold text-muted-foreground">Cantidad</div>
+   485→   485→                <div className="text-xs font-semibold text-muted-foreground">Unidad</div>
+   486→   486→                <div className="text-xs font-semibold text-muted-foreground">Precio Est.</div>
+   487→   487→                <div></div>
+   488→   488→              </div>
+   489→   489→
+   490→   490→              {/* Detail rows */}
+   491→   491→              {detalles.map((detalle) => (
+   492→   492→                <div
+   493→   493→                  key={detalle.key}
+   494→   494→                  className="p-3 rounded-lg border border-marron/10 bg-muted/20"
+   495→   495→                >
+   496→   496→                  <div className="grid grid-cols-2 lg:grid-cols-[1.4fr_3fr_1fr_1fr_1.2fr_44px] gap-3 items-center">
+   497→   497→                    {/* Tipo - full width on mobile */}
+   498→   498→                    <div className="col-span-2 lg:col-span-1">
+   499→   499→                      <Label htmlFor={`tipo-${detalle.key}`} className="text-xs text-muted-foreground mb-1 block lg:sr-only">Tipo</Label>
+   500→   500→                      <Select
+   501→   501→                        value={detalle.tipo}
+   502→   502→                        onValueChange={(v) => updateDetalle(detalle.key, 'tipo', v)}
+   503→   503→                      >
+   504→   504→                        <SelectTrigger className="h-9">
+   505→   505→                          <SelectValue />
+   506→   506→                        </SelectTrigger>
+   507→   507→                        <SelectContent>
+   508→   508→                          <SelectItem value="mp">Materia Prima</SelectItem>
+   509→   509→                          <SelectItem value="insumo">Insumo</SelectItem>
+   510→   510→                        </SelectContent>
+   511→   511→                      </Select>
+   512→   512→                    </div>
+   513→   513→
+   514→   514→                    {/* Producto - full width on mobile */}
+   515→   515→                    <div className="col-span-2 lg:col-span-1">
+   516→   516→                      <Label htmlFor={`prod-${detalle.key}`} className="text-xs text-muted-foreground mb-1 block lg:sr-only">Producto</Label>
+   517→   517→                      <Select
+   518→   518→                        value={detalle.id_producto}
+   519→   519→                        onValueChange={(v) => updateDetalle(detalle.key, 'id_producto', v)}
+   520→   520→                      >
+   521→   521→                        <SelectTrigger className="h-9">
+   522→   522→                          <SelectValue placeholder="Seleccionar..." />
+   523→   523→                        </SelectTrigger>
+   524→   524→                        <SelectContent>
+   525→   525→                          {getProductsForTipo(detalle.tipo).map((prod) => (
+   526→   526→                            <SelectItem key={prod.id} value={prod.id.toString()}>
+   527→   527→                              {prod.nombre}
+   528→   528→                            </SelectItem>
+   529→   529→                          ))}
+   530→   530→                        </SelectContent>
+   531→   531→                      </Select>
+   532→   532→                    </div>
+   533→   533→
+   534→   534→                    {/* Cantidad */}
+   535→   535→                    <div>
+   536→   536→                      <Label htmlFor={`cant-${detalle.key}`} className="text-xs text-muted-foreground mb-1 block lg:sr-only">Cantidad</Label>
+   537→   537→                      <Input
+   538→   538→                        id={`cant-${detalle.key}`}
+   539→   539→                        type="number"
+   540→   540→                        step="0.01"
+   541→   541→                        min="0"
+   542→   542→                        placeholder="0"
+   543→   543→                        className="h-9"
+   544→   544→                        value={detalle.cantidad}
+   545→   545→                        onChange={(e) => updateDetalle(detalle.key, 'cantidad', e.target.value)}
+   546→   546→                      />
+   547→   547→                    </div>
+   548→   548→
+   549→   549→                    {/* Unidad (auto-filled) */}
+   550→   550→                    <div>
+   551→   551→                      <Label htmlFor={`uni-${detalle.key}`} className="text-xs text-muted-foreground mb-1 block lg:sr-only">Unidad</Label>
+   552→   552→                      <Input
+   553→   553→                        id={`uni-${detalle.key}`}
+   554→   554→                        className="h-9 bg-muted/50"
+   555→   555→                        value={detalle.unidadCodigo || '-'}
+   556→   556→                        disabled
+   557→   557→                      />
+   558→   558→                    </div>
+   559→   559→
+   560→   560→                    {/* Precio Estimado */}
+   561→   561→                    <div>
+   562→   562→                      <Label htmlFor={`precio-${detalle.key}`} className="text-xs text-muted-foreground mb-1 block lg:sr-only">Precio Est.</Label>
+   563→   563→                      <Input
+   564→   564→                        id={`precio-${detalle.key}`}
+   565→   565→                        type="number"
+   566→   566→                        step="0.01"
+   567→   567→                        min="0"
+   568→   568→                        placeholder="0.00"
+   569→   569→                        className="h-9"
+   570→   570→                        value={detalle.precioEstimado}
+   571→   571→                        onChange={(e) => updateDetalle(detalle.key, 'precioEstimado', e.target.value)}
+   572→   572→                      />
+   573→   573→                    </div>
+   574→   574→
+   575→   575→                    {/* Delete */}
+   576→   576→                    <div className="flex justify-center">
+   577→   577→                      {detalles.length > 1 && (
+   578→   578→                        <Button
+   579→   579→                          type="button"
+   580→   580→                          variant="ghost"
+   581→   581→                          size="icon"
+   582→   582→                          className="h-9 w-9 hover:bg-rojo/10"
+   583→   583→                          onClick={() => removeDetailRow(detalle.key)}
+   584→   584→                          aria-label="Eliminar fila"
+   585→   585→                        >
+   586→   586→                          <Trash2 className="h-4 w-4 text-rojo" />
+   587→   587→                        </Button>
+   588→   588→                      )}
+   589→   589→                    </div>
+   590→   590→                  </div>
+   591→   591→                </div>
+   592→   592→              ))}
+   593→   593→            </div>
+   594→   594→
+   595→   595→            {/* Add row button - clearly separated from the table */}
+   596→   596→            <div className="pt-2">
+   597→   597→              <Button
+   598→   598→                type="button"
+   599→   599→                variant="outline"
+   600→   600→                size="sm"
+   601→   601→                onClick={addDetailRow}
+   602→   602→                className="border-mostaza/30 text-mostaza hover:bg-mostaza/10"
+   603→   603→              >
+   604→   604→                <Plus className="mr-1 h-4 w-4" />
+   605→   605→                Agregar Fila
+   606→   606→              </Button>
+   607→   607→            </div>
+   608→   608→          </div>
+   609→   609→
+   610→   610→          {/* Total */}
+   611→   611→          <Separator />
+   612→   612→          <div className="flex justify-end">
+   613→   613→            <div className="w-full sm:w-64">
+   614→   614→              <div className="flex justify-between text-base font-bold">
+   615→   615→                <span className="text-marron">Total Estimado</span>
+   616→   616→                <span className="text-marron">{formatCurrency(totalEstimado)}</span>
+   617→   617→              </div>
+   618→   618→            </div>
+   619→   619→          </div>
+   620→   620→        </>
+   621→   621→      )}
+   622→   622→
+   623→   623→      {/* Edit mode: show read-only detail summary */}
+   624→   624→      {isEditing && pedido.detalle && pedido.detalle.length > 0 && (
+   625→   625→        <>
+   626→   626→          <Separator />
+   627→   627→          <div>
+   628→   628→            <Label className="text-sm font-semibold text-marron mb-2 block">
+   629→   629→              Detalle del Pedido (solo lectura)
+   630→   630→            </Label>
+   631→   631→            <div className="rounded-lg border border-marron/10 overflow-hidden">
+   632→   632→              <div className="overflow-x-auto">
+   633→   633→              <table className="w-full min-w-[500px] text-sm">
+   634→   634→                <thead className="bg-muted/50">
+   635→   635→                  <tr>
+   636→   636→                    <th className="text-left p-2 text-muted-foreground font-medium">Producto</th>
+   637→   637→                    <th className="text-right p-2 text-muted-foreground font-medium">Cantidad</th>
+   638→   638→                    <th className="p-2 text-muted-foreground font-medium">Unidad</th>
+   639→   639→                    <th className="text-right p-2 text-muted-foreground font-medium">Precio Est.</th>
+   640→   640→                    <th className="text-right p-2 text-muted-foreground font-medium">Subtotal</th>
+   641→   641→                  </tr>
+   642→   642→                </thead>
+   643→   643→                <tbody>
+   644→   644→                  {pedido.detalle.map((d: any) => (
+   645→   645→                    <tr key={d.id} className="border-t border-marron/5">
+   646→   646→                      <td className="p-2 text-marron">
+   647→   647→                        {d.materiaPrima?.nombre || d.insumo?.nombre || '-'}
+   648→   648→                      </td>
+   649→   649→                      <td className="p-2 text-right">{d.cantidad_pedida}</td>
+   650→   650→                      <td className="p-2 text-center text-muted-foreground">
+   651→   651→                        {d.unidad?.codigo || '-'}
+   652→   652→                      </td>
+   653→   653→                      <td className="p-2 text-right">{formatCurrency(d.precio_estimado)}</td>
+   654→   654→                      <td className="p-2 text-right font-medium text-marron">
+   655→   655→                        {formatCurrency(d.cantidad_pedida * d.precio_estimado)}
+   656→   656→                      </td>
+   657→   657→                    </tr>
+   658→   658→                  ))}
+   659→   659→                </tbody>
+   660→   660→              </table>
+   661→   661→              </div>
+   662→   662→            </div>
+   663→   663→            <div className="flex justify-end mt-3">
+   664→   664→              <div className="w-full sm:w-64">
+   665→   665→                <div className="flex justify-between font-bold text-marron">
+   666→   666→                  <span>Total Estimado</span>
+   667→   667→                  <span>{formatCurrency(pedido.total_estimado)}</span>
+   668→   668→                </div>
+   669→   669→              </div>
+   670→   670→            </div>
+   671→   671→          </div>
+   672→   672→        </>
+   673→   673→      )}
+   674→   674→
+   675→   675→      {/* Actions */}
+   676→   676→      <div className="flex justify-end gap-2 pt-2">
+   677→   677→        <Button
+   678→   678→          type="button"
+   679→   679→          variant="outline"
+   680→   680→          onClick={onCancel}
+   681→   681→        >
+   682→   682→          Cancelar
+   683→   683→        </Button>
+   684→   684→        <Button
+   685→   685→          type="button"
+   686→   686→          className="bg-mostaza hover:bg-mostaza/90 text-marron font-semibold"
+   687→   687→          disabled={submitting}
+   688→   688→          onClick={handleSubmit}
+   689→   689→        >
+   690→   690→          {submitting ? (
+   691→   691→            <>
+   692→   692→              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+   693→   693→              Guardando...
+   694→   694→            </>
+   695→   695→          ) : isEditing ? (
+   696→   696→            'Guardar Cambios'
+   697→   697→          ) : (
+   698→   698→            'Registrar Pedido'
+   699→   699→          )}
+   700→   700→        </Button>
+   701→   701→      </div>
+   702→   702→    </div>
+   703→   703→  )
+   704→   704→}
+   705→   705→
