@@ -130,7 +130,7 @@ export default function ChatAssistant() {
             exit={{ scale: 0, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 260, damping: 20 }}
             onClick={toggleChat}
-            className="fixed bottom-20 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-mostaza text-marron shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
+            className="fixed bottom-20 right-6 z-[9999] flex h-14 w-14 items-center justify-center rounded-full bg-mostaza text-marron shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
             aria-label="Abrir asistente virtual"
           >
             <motion.div
@@ -162,7 +162,7 @@ export default function ChatAssistant() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 100, scale: 0.9 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="fixed bottom-0 right-0 left-0 z-50 flex flex-col bg-white shadow-2xl sm:bottom-20 sm:right-6 sm:left-auto sm:h-[520px] sm:w-[380px] sm:rounded-2xl h-[100dvh] sm:max-h-[520px]"
+            className="fixed bottom-0 right-0 left-0 z-[9999] flex flex-col bg-white shadow-2xl sm:bottom-20 sm:right-6 sm:left-auto sm:h-[520px] sm:w-[380px] sm:rounded-2xl h-[100dvh] sm:max-h-[520px]"
           >
             {/* Header */}
             <div className="flex items-center justify-between bg-marron px-4 py-3 sm:rounded-t-2xl">
