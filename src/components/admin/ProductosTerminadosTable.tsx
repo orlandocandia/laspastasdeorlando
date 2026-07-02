@@ -42,6 +42,7 @@ import {
 import ProductoTerminadoForm from './ProductoTerminadoForm'
 import { EtiquetaProducto } from '@/components/admin/EtiquetaProducto'
 import { StockAdjustDialog } from './StockAdjustDialog'
+import { StockInitialLoadDialog } from './StockInitialLoadDialog'
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(price)
@@ -91,6 +92,7 @@ export default function ProductosTerminadosTable() {
   const [filtroStock, setFiltroStock] = useState<string>('')
   const [stockAdjustItem, setStockAdjustItem] = useState<ProductoTerminado | null>(null)
   const [stockAdjustOpen, setStockAdjustOpen] = useState(false)
+  const [stockInitialOpen, setStockInitialOpen] = useState(false)
 
   const fetchProductos = useCallback(async () => {
     setLoading(true)
@@ -230,13 +232,23 @@ export default function ProductosTerminadosTable() {
             </SelectContent>
           </Select>
         </div>
-        <Button
-          onClick={openNew}
-          className="bg-mostaza hover:bg-mostaza/90 text-marron font-semibold"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Producto
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setStockInitialOpen(true)}
+            variant="outline"
+            className="border-oliva text-oliva hover:bg-oliva/10 font-semibold"
+          >
+            <PackagePlus className="mr-2 h-4 w-4" />
+            Cargar Stock
+          </Button>
+          <Button
+            onClick={openNew}
+            className="bg-mostaza hover:bg-mostaza/90 text-marron font-semibold"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Nuevo Producto
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-lg border border-marron/10 bg-card overflow-hidden">
@@ -511,6 +523,13 @@ export default function ProductosTerminadosTable() {
         item_nombre={stockAdjustItem?.nombre ?? ''}
         stock_actual={stockAdjustItem?.stock_actual ?? 0}
         stock_minimo={stockAdjustItem?.stock_minimo ?? 0}
+        onSuccess={fetchProductos}
+      />
+
+      {/* Stock Initial Load Dialog */}
+      <StockInitialLoadDialog
+        open={stockInitialOpen}
+        onClose={() => setStockInitialOpen(false)}
         onSuccess={fetchProductos}
       />
     </div>

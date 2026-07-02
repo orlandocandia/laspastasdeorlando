@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useState, useEffect } from 'react'
-import { Loader2, Barcode } from 'lucide-react'
+import { Loader2, Barcode, PackagePlus } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import ImageUploaderProducto from './ImageUploaderProducto'
+import { StockInitialLoadDialog } from './StockInitialLoadDialog'
 
 const productoTerminadoSchema = z.object({
   codigo: z.string().optional(),
@@ -74,6 +75,8 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [loadingCategorias, setLoadingCategorias] = useState(true)
   const [proximoCodigoBarras, setProximoCodigoBarras] = useState<string | null>(null)
+  const [stockInitialOpen, setStockInitialOpen] = useState(false)
+  const [stockActualLocal, setStockActualLocal] = useState(productoTerminado?.stock_actual ?? 0)
 
   const isEditing = !!productoTerminado
 
@@ -505,19 +508,56 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
           />
         </div>
 
-        {/* Stock actual - solo lectura */}
+        {/* Stock actual - solo lectura + botón Cargar Stock */}
         {isEditing && (
           <div className="bg-muted/50 rounded-lg p-3 border">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Stock Actual</span>
-              <span className="text-lg font-bold text-marron">
-                {productoTerminado?.stock_actual ?? 0} u.
-              </span>
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">Stock Actual</span>
+                <p className="text-lg font-bold text-marron">
+                  {stockActualLocal} u.
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setStockInitialOpen(true)}
+                className="bg-oliva hover:bg-oliva/90 text-white font-semibold"
+              >
+                <PackagePlus className="mr-1.5 h-4 w-4" />
+                Cargar Stock
+              </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Se actualiza automáticamente con producciones y ventas
+              Se actualiza con producciones, ventas o cargas manuales
             </p>
           </div>
+        )}
+
+        {/* Stock Initial Load Dialog — solo visible al editar */}
+        {isEditing && productoTerminado && (
+          <StockInitialLoadDialog
+            open={stockInitialOpen}
+            onClose={() => setStockInitialOpen(false)}
+            preselectedProduct={{
+              id: productoTerminado.id,
+              nombre: productoTerminado.nombre,
+              stock_actual: stockActualLocal,
+              stock_minimo: productoTerminado.stock_minimo ?? 0,
+            }}
+            onSuccess={async () => {
+              // Refresh stock_actual from server
+              try {
+                const res = await fetch(`/api/productos-terminados/${productoTerminado.id}`)
+                if (res.ok) {
+                  const data = await res.json()
+                  setStockActualLocal(data.stock_actual ?? 0)
+                }
+              } catch {
+                // silent fail
+              }
+            }}
+          />
         )}
 
         {/* Modo de cocción / uso — etiqueta dinámica según categoría */}
