@@ -27,6 +27,109 @@ const SUGGESTED_QUESTIONS = [
   '¿Cómo registro una producción?',
 ]
 
+// ─── Simple Markdown Renderer ────────────────────────────────────────────────
+
+function renderMarkdown(text: string) {
+  // Split by lines to handle line-by-line formatting
+  const lines = text.split('\n')
+  const elements: React.ReactNode[] = []
+
+  lines.forEach((line, i) => {
+    const key = `line-${i}`
+
+    // Empty line → spacing
+    if (line.trim() === '') {
+      elements.push(<div key={key} className="h-2" />)
+      return
+    }
+
+    // Numbered list: "1. text" or "   1. text"
+    const numberedMatch = line.match(/^(\s*)(\d+)\.\s+(.*)$/)
+    if (numberedMatch) {
+      const indent = numberedMatch[1].length > 0 ? 'ml-4' : ''
+      const content = formatInlineMarkdown(numberedMatch[3])
+      elements.push(
+        <div key={key} className={`flex gap-1.5 ${indent}`}>
+          <span className="font-semibold text-oliva shrink-0">{numberedMatch[2]}.</span>
+          <span>{content}</span>
+        </div>
+      )
+      return
+    }
+
+    // Bullet list: "- text" or "   - text" or "* text"
+    const bulletMatch = line.match(/^(\s*)[-*]\s+(.*)$/)
+    if (bulletMatch) {
+      const indent = bulletMatch[1].length > 0 ? 'ml-4' : ''
+      const content = formatInlineMarkdown(bulletMatch[2])
+      elements.push(
+        <div key={key} className={`flex gap-1.5 ${indent}`}>
+          <span className="text-mostaza shrink-0">•</span>
+          <span>{content}</span>
+        </div>
+      )
+      return
+    }
+
+    // Regular line with inline formatting
+    elements.push(<div key={key}>{formatInlineMarkdown(line)}</div>)
+  })
+
+  return <>{elements}</>
+}
+
+function formatInlineMarkdown(text: string): React.ReactNode {
+  // Process bold (**text**) and inline code (`text`)
+  const parts: React.ReactNode[] = []
+  let remaining = text
+  let partKey = 0
+
+  while (remaining.length > 0) {
+    // Match bold
+    const boldMatch = remaining.match(/\*\*(.+?)\*\*/)
+    // Match inline code
+    const codeMatch = remaining.match(/`(.+?)`/)
+
+    let firstMatch: { type: 'bold' | 'code'; index: number; length: number; content: string } | null = null
+
+    if (boldMatch && boldMatch.index !== undefined) {
+      firstMatch = { type: 'bold', index: boldMatch.index, length: boldMatch[0].length, content: boldMatch[1] }
+    }
+
+    if (codeMatch && codeMatch.index !== undefined) {
+      if (!firstMatch || codeMatch.index < firstMatch.index) {
+        firstMatch = { type: 'code', index: codeMatch.index, length: codeMatch[0].length, content: codeMatch[1] }
+      }
+    }
+
+    if (firstMatch) {
+      // Add text before the match
+      if (firstMatch.index > 0) {
+        parts.push(<span key={partKey++}>{remaining.slice(0, firstMatch.index)}</span>)
+      }
+      // Add the formatted match
+      if (firstMatch.type === 'bold') {
+        parts.push(<strong key={partKey++} className="font-semibold">{firstMatch.content}</strong>)
+      } else {
+        parts.push(
+          <code key={partKey++} className="bg-marron/10 px-1 py-0.5 rounded text-xs font-mono">
+            {firstMatch.content}
+          </code>
+        )
+      }
+      remaining = remaining.slice(firstMatch.index + firstMatch.length)
+    } else {
+      // No more matches, add remaining text
+      parts.push(<span key={partKey++}>{remaining}</span>)
+      break
+    }
+  }
+
+  return <>{parts}</>
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export default function ChatAssistant() {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
@@ -224,7 +327,7 @@ export default function ChatAssistant() {
                           : 'bg-crema border border-border text-marron rounded-bl-md shadow-sm'
                       }`}
                     >
-                      {msg.content}
+                      {msg.role === 'user' ? msg.content : renderMarkdown(msg.content)}
                     </div>
                   </motion.div>
                 ))}
