@@ -1,0 +1,1865 @@
+'use client'
+
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  LayoutDashboard,
+  Package,
+  Boxes,
+  BookOpen,
+  Factory,
+  Receipt,
+  ShoppingCart,
+  Users,
+  Settings,
+  FileBarChart,
+  Search,
+  X,
+  ChevronDown,
+  ChevronRight,
+  BookMarked,
+  AlertTriangle,
+  Info,
+  Lightbulb,
+  ArrowRight,
+  CheckCircle2,
+  CircleDot,
+  Layers,
+  TrendingUp,
+  ShieldCheck,
+  Bell,
+  Truck,
+  MapPin,
+  ClipboardList,
+  FileSpreadsheet,
+  FileText,
+  BarChart3,
+  Tag,
+  Ruler,
+  Lock,
+  Eye,
+} from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { Badge } from '@/components/ui/badge'
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface HelpSection {
+  id: string
+  title: string
+  iconComponent: React.ComponentType<{ className?: string }>
+  summary: string
+  content: React.ReactNode
+}
+
+interface StaticHelpProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+// ─── Step Circle Helper ───────────────────────────────────────────────────────
+
+function StepCircle({ n }: { n: number }) {
+  return (
+    <span className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-oliva/15 text-oliva text-xs font-bold">
+      {n}
+    </span>
+  )
+}
+
+function InfoBox({ type, children }: { type: 'tip' | 'warning' | 'info'; children: React.ReactNode }) {
+  const styles = {
+    tip: 'bg-mostaza/10 border border-mostaza/20',
+    warning: 'bg-rojo/10 border border-rojo/20',
+    info: 'bg-oliva/10 border border-oliva/20',
+  }
+  const icons = {
+    tip: <Lightbulb className="h-4 w-4 text-mostaza shrink-0" />,
+    warning: <AlertTriangle className="h-4 w-4 text-rojo shrink-0" />,
+    info: <Info className="h-4 w-4 text-oliva shrink-0" />,
+  }
+  const titles = {
+    tip: 'Consejo',
+    warning: 'Atención',
+    info: 'Información',
+  }
+  return (
+    <div className={`${styles[type]} rounded-lg p-3 my-3`}>
+      <div className="flex items-center gap-2 font-semibold text-sm mb-1">
+        {icons[type]}
+        <span>{titles[type]}</span>
+      </div>
+      <div className="text-sm text-muted-foreground pl-6">{children}</div>
+    </div>
+  )
+}
+
+function ModuleRef({ name }: { name: string }) {
+  return <span className="text-oliva font-medium">Módulo {name} →</span>
+}
+
+// ─── Help Sections Data ───────────────────────────────────────────────────────
+
+const helpSections: HelpSection[] = [
+  // ─── 1. Introducción ──────────────────────────────────────────────────
+  {
+    id: 'introduccion',
+    title: 'Introducción',
+    iconComponent: LayoutDashboard,
+    summary: 'Bienvenida al sistema ERP de Las Pastas de Orlando y flujo de trabajo recomendado.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          Bienvenido al sistema de gestión <strong className="text-marron">Las Pastas de Orlando</strong>,
+          una plataforma integral diseñada específicamente para fábricas de pastas artesanales.
+          Este ERP te permite centralizar y controlar todos los aspectos operativos de tu negocio
+          de manera sencilla y eficiente.
+        </p>
+
+        <div className="bg-crema/60 rounded-lg p-4 border border-mostaza/10">
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-mostaza" />
+            Beneficios principales
+          </h4>
+          <ul className="space-y-2 text-sm text-muted-foreground">
+            <li className="flex gap-2">
+              <CheckCircle2 className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <span><strong>Control de stock</strong> en tiempo real de productos terminados, materias primas e insumos</span>
+            </li>
+            <li className="flex gap-2">
+              <CheckCircle2 className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <span><strong>Seguimiento de producción</strong> desde la receta hasta el producto terminado</span>
+            </li>
+            <li className="flex gap-2">
+              <CheckCircle2 className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <span><strong>Gestión de ventas</strong> con registro automático, presupuestos y pedidos</span>
+            </li>
+            <li className="flex gap-2">
+              <CheckCircle2 className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <span><strong>Reportes completos</strong> exportables a Excel y PDF</span>
+            </li>
+            <li className="flex gap-2">
+              <CheckCircle2 className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <span><strong>Alertas automáticas</strong> de stock bajo y crítico</span>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
+            <ArrowRight className="h-4 w-4 text-mostaza" />
+            Flujo de trabajo recomendado
+          </h4>
+          <p className="text-sm text-muted-foreground mb-3">
+            Para comenzar a usar el sistema de manera óptima, te recomendamos seguir estos pasos en orden:
+          </p>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <StepCircle n={1} />
+              <div>
+                <p className="font-medium text-sm">Configurar el sistema</p>
+                <p className="text-xs text-muted-foreground">
+                  Definí categorías, marcas, unidades de medida y formas de pago en{' '}
+                  <ModuleRef name="Configuración" />
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={2} />
+              <div>
+                <p className="font-medium text-sm">Cargar materias primas e insumos</p>
+                <p className="text-xs text-muted-foreground">
+                  Registrá todas las materias primas e insumos con sus datos y stock inicial en{' '}
+                  <ModuleRef name="Stock" />
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={3} />
+              <div>
+                <p className="font-medium text-sm">Crear productos terminados y recetas</p>
+                <p className="text-xs text-muted-foreground">
+                  Dá de alta tus productos y vinculá cada uno con su receta en{' '}
+                  <ModuleRef name="Productos" /> y <ModuleRef name="Recetas" />
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={4} />
+              <div>
+                <p className="font-medium text-sm">Registrar producción</p>
+                <p className="text-xs text-muted-foreground">
+                  Producí tus productos usando las recetas; el stock se actualizará automáticamente en{' '}
+                  <ModuleRef name="Producción" />
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={5} />
+              <div>
+                <p className="font-medium text-sm">Vender y analizar</p>
+                <p className="text-xs text-muted-foreground">
+                  Registrá ventas, consultá reportes y gestioná pedidos en{' '}
+                  <ModuleRef name="Ventas" /> y <ModuleRef name="Reportes" />
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <InfoBox type="info">
+          Este manual cubre cada módulo del sistema en detalle. Usá la tabla de contenidos
+          o el buscador para encontrar rápidamente la información que necesitás.
+        </InfoBox>
+      </div>
+    ),
+  },
+
+  // ─── 2. Productos ─────────────────────────────────────────────────────
+  {
+    id: 'productos',
+    title: 'Productos',
+    iconComponent: Package,
+    summary: 'Gestión de productos terminados, stock mínimo, alertas visuales y filtros rápidos.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El módulo de <strong className="text-marron">Productos</strong> es el corazón del sistema.
+          Aquí gestionás todos los productos terminados que fabricás y vendés, junto con su información
+          de stock, precios y categorías.
+        </p>
+
+        {/* Productos Terminados */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Package className="h-4 w-4 text-mostaza" />
+            Productos Terminados
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Los productos terminados son los artículos que producís y vendés. Cada producto tiene la siguiente información:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Nombre:</strong> denominación del producto (ej: "Sorrentinos de Jamón y Queso")</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Descripción:</strong> detalle adicional, ingredientes destacados, presentación</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Precio:</strong> precio de venta al público</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Categoría:</strong> agrupación lógica (ej: "Pasta Rellena", "Pasta Seca")</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Código de barras:</strong> identificación única para lectura rápida</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Stock actual y stock mínimo:</strong> cantidades disponibles y umbral de alerta</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Imagen:</strong> foto del producto para catálogo y panel</span>
+            </li>
+          </ul>
+          <div className="mt-3 space-y-2">
+            <div className="flex items-start gap-3">
+              <StepCircle n={1} />
+              <p className="text-sm text-muted-foreground">Hacé clic en <strong>"Nuevo Producto"</strong> para crear uno</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={2} />
+              <p className="text-sm text-muted-foreground">Completá los datos requeridos en el formulario</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={3} />
+              <p className="text-sm text-muted-foreground">Seleccioná la categoría y la marca correspondiente</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={4} />
+              <p className="text-sm text-muted-foreground">Definí el stock mínimo para recibir alertas</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={5} />
+              <p className="text-sm text-muted-foreground">Guardá el producto y ya estará disponible para producción y ventas</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Stock mínimo */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-mostaza" />
+            Stock mínimo
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            El <strong>stock mínimo</strong> es la cantidad límite debajo de la cual el sistema te alertará
+            que necesitás reponer ese producto. Se configura individualmente para cada producto y es clave
+            para evitar quedarte sin mercadería.
+          </p>
+          <InfoBox type="tip">
+            Configurá el stock mínimo con un valor realista según tu rotación. Un valor muy alto generará
+            alertas innecesarias; uno muy bajo podría dejarte sin stock.
+          </InfoBox>
+        </div>
+
+        {/* Alertas visuales */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Bell className="h-4 w-4 text-rojo" />
+            Alertas visuales
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            El sistema utiliza un código de colores para indicar el estado del stock:
+          </p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 bg-rojo/10 border border-rojo/20 rounded-lg p-2.5">
+              <div className="h-3 w-3 rounded-full bg-rojo shrink-0" />
+              <span className="text-sm"><strong className="text-rojo">Rojo — Stock crítico:</strong> el producto tiene stock en 0. No hay unidades disponibles para vender.</span>
+            </div>
+            <div className="flex items-center gap-3 bg-mostaza/10 border border-mostaza/20 rounded-lg p-2.5">
+              <div className="h-3 w-3 rounded-full bg-mostaza shrink-0" />
+              <span className="text-sm"><strong className="text-mostaza">Naranja — Stock bajo:</strong> el stock actual está por debajo del stock mínimo definido. Necesitás producir más.</span>
+            </div>
+            <div className="flex items-center gap-3 bg-oliva/10 border border-oliva/20 rounded-lg p-2.5">
+              <div className="h-3 w-3 rounded-full bg-oliva shrink-0" />
+              <span className="text-sm"><strong className="text-oliva">Verde — Stock normal:</strong> el stock está por encima del mínimo. Todo bien.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Cargar Stock */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Layers className="h-4 w-4 text-mostaza" />
+            Cargar Stock
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            El botón <strong>"Cargar Stock"</strong> permite realizar ajustes manuales al stock de un producto.
+            Se utiliza para:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4 mt-2">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Carga inicial:</strong> cuando das de alta un producto y querés indicar el stock que ya tenés</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Ajuste:</strong> para corregir diferencias entre el stock del sistema y el stock físico (inventario)</span>
+            </li>
+          </ul>
+          <InfoBox type="warning">
+            El stock de productos terminados se actualiza automáticamente al completar producciones o confirmar ventas.
+            Usá "Cargar Stock" solo para cargas iniciales o ajustes manuales.
+          </InfoBox>
+        </div>
+
+        {/* Filtros rápidos */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CircleDot className="h-4 w-4 text-mostaza" />
+            Filtros rápidos
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            En la vista de productos encontrarás filtros rápidos que te permiten identificar problemas al instante:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4 mt-2">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Stock = 0:</strong> muestra solo los productos sin stock disponible (crítico)</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Stock bajo:</strong> muestra los productos con stock por debajo del mínimo</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Catálogo */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <BookMarked className="h-4 w-4 text-mostaza" />
+            Productos Catálogo (landing)
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            El <strong>Catálogo</strong> es la vista pública de tus productos, visible en la página principal
+            de tu sitio web. A diferencia de <strong>Productos Terminados</strong> (que es el panel de gestión interna),
+            el Catálogo muestra solo los productos que querés que tus clientes vean, con fotos, descripciones y precios.
+          </p>
+          <InfoBox type="info">
+            Para que un producto aparezca en el catálogo público, debés marcarlo como visible y tener una imagen cargada.
+            La gestión interna de stock y producción se hace desde Productos Terminados.
+          </InfoBox>
+        </div>
+      </div>
+    ),
+  },
+
+  // ─── 3. Stock ─────────────────────────────────────────────────────────
+  {
+    id: 'stock',
+    title: 'Stock',
+    iconComponent: Boxes,
+    summary: 'Control de stock actual y mínimo, movimientos automáticos y manuales, alertas de stock.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El módulo de <strong className="text-marron">Stock</strong> te permite conocer en todo momento
+          la cantidad disponible de cada producto, materia prima e insumo. El sistema actualiza el stock
+          automáticamente según las operaciones que realices.
+        </p>
+
+        {/* Stock actual vs mínimo */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Boxes className="h-4 w-4 text-mostaza" />
+            Stock actual vs Stock mínimo
+          </h4>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Stock actual:</strong> la cantidad real disponible en este momento. Se modifica automáticamente con producciones, ventas y compras.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Stock mínimo:</strong> el umbral de alerta definido por vos. Si el stock actual cae por debajo, el sistema te avisa.</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Actualización automática */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-oliva" />
+            Cómo se actualiza el stock automáticamente
+          </h4>
+          <p className="text-sm text-muted-foreground mb-3">
+            El sistema maneja el stock de forma automática según las siguientes operaciones:
+          </p>
+          <div className="space-y-2">
+            <div className="flex items-start gap-3 bg-oliva/5 border border-oliva/15 rounded-lg p-3">
+              <ArrowRight className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium">Producción completada → <span className="text-oliva">SUMA</span> stock de producto terminado</p>
+                <p className="text-muted-foreground text-xs">Al completar una producción, se agrega la cantidad producida al stock del producto terminado y se descuentan las materias primas e insumos utilizados.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-rojo/5 border border-rojo/15 rounded-lg p-3">
+              <ArrowRight className="h-4 w-4 text-rojo shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium">Venta confirmada → <span className="text-rojo">DESCUENTA</span> stock de producto terminado</p>
+                <p className="text-muted-foreground text-xs">Al confirmar una venta, se descuentan las cantidades vendidas del stock de cada producto terminado.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-oliva/5 border border-oliva/15 rounded-lg p-3">
+              <ArrowRight className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium">Compra confirmada → <span className="text-oliva">SUMA</span> stock de materia prima/insumo</p>
+                <p className="text-muted-foreground text-xs">Al confirmar una compra, se agrega la cantidad comprada al stock de cada materia prima o insumo.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Cargar Stock manual */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Layers className="h-4 w-4 text-mostaza" />
+            Cargar Stock (ajuste manual)
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Cuando necesitás ajustar el stock manualmente, usá la función <strong>"Cargar Stock"</strong>.
+            Los tipos de movimiento manual son:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Carga inicial:</strong> para ingresar el stock que ya tenés al momento de empezar a usar el sistema</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Ajuste:</strong> para corregir diferencias tras un conteo físico de inventario</span>
+            </li>
+          </ul>
+          <InfoBox type="tip">
+            Hacé inventarios periódicos y usá "Ajuste" para mantener el stock del sistema sincronizado con la realidad.
+          </InfoBox>
+        </div>
+
+        {/* Movimientos */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <ClipboardList className="h-4 w-4 text-mostaza" />
+            Movimientos de Stock
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Cada vez que el stock cambia, el sistema registra un <strong>movimiento</strong> con toda la información
+            de la operación. Podés consultar el historial completo de movimientos con estos tipos:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+            <div className="flex items-center gap-2 bg-crema/60 border border-mostaza/10 rounded-md p-2 text-sm">
+              <Badge variant="outline" className="text-oliva border-oliva/30 text-xs">Carga inicial</Badge>
+              <span className="text-muted-foreground">Stock inicial al configurar</span>
+            </div>
+            <div className="flex items-center gap-2 bg-crema/60 border border-mostaza/10 rounded-md p-2 text-sm">
+              <Badge variant="outline" className="text-oliva border-oliva/30 text-xs">Producción</Badge>
+              <span className="text-muted-foreground">Stock generado al producir</span>
+            </div>
+            <div className="flex items-center gap-2 bg-crema/60 border border-mostaza/10 rounded-md p-2 text-sm">
+              <Badge variant="outline" className="text-rojo border-rojo/30 text-xs">Venta</Badge>
+              <span className="text-muted-foreground">Stock descontado al vender</span>
+            </div>
+            <div className="flex items-center gap-2 bg-crema/60 border border-mostaza/10 rounded-md p-2 text-sm">
+              <Badge variant="outline" className="text-oliva border-oliva/30 text-xs">Compra</Badge>
+              <span className="text-muted-foreground">Stock sumado al comprar</span>
+            </div>
+            <div className="flex items-center gap-2 bg-crema/60 border border-mostaza/10 rounded-md p-2 text-sm">
+              <Badge variant="outline" className="text-mostaza border-mostaza/30 text-xs">Ajuste</Badge>
+              <span className="text-muted-foreground">Corrección manual de stock</span>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            Cada movimiento registra: fecha, tipo, producto, cantidad, descripción y usuario responsable.
+          </p>
+        </div>
+
+        {/* Alertas de stock */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-rojo" />
+            Alertas de Stock
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            En el panel principal (Dashboard) verás banners de alerta cuando haya productos con stock bajo o crítico.
+            Estos banners te permiten ir directamente al producto para tomar acción. El código de colores es:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4 mt-2">
+            <li className="flex gap-2">
+              <div className="h-3 w-3 rounded-full bg-rojo shrink-0 mt-1" />
+              <span><strong>Rojo:</strong> Stock en 0 — Sin unidades disponibles</span>
+            </li>
+            <li className="flex gap-2">
+              <div className="h-3 w-3 rounded-full bg-mostaza shrink-0 mt-1" />
+              <span><strong>Naranja:</strong> Stock bajo — Por debajo del mínimo configurado</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    ),
+  },
+
+  // ─── 4. Recetas ───────────────────────────────────────────────────────
+  {
+    id: 'recetas',
+    title: 'Recetas',
+    iconComponent: BookOpen,
+    summary: 'Creación y gestión de recetas que vinculan productos terminados con materias primas e insumos.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          Las <strong className="text-marron">Recetas</strong> son la conexión entre los productos terminados
+          y las materias primas e insumos necesarios para fabricarlos. Sin una receta, no es posible registrar
+          la producción de un producto.
+        </p>
+
+        {/* Qué es una receta */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <BookOpen className="h-4 w-4 text-mostaza" />
+            ¿Qué es una receta?
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Una receta define los ingredientes y cantidades exactas que se necesitan para producir una unidad
+            de un producto terminado. Es la fórmula que el sistema usa para calcular cuánta materia prima
+            e insumos consumir al producir.
+          </p>
+        </div>
+
+        {/* Estructura */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Layers className="h-4 w-4 text-mostaza" />
+            Estructura de una receta
+          </h4>
+          <div className="bg-crema/60 rounded-lg p-4 border border-mostaza/10">
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-marron" />
+                <span className="font-medium">Producto Terminado</span>
+                <span className="text-muted-foreground">— El producto que se fabrica (ej: Sorrentinos JyQ x12)</span>
+              </div>
+              <div className="ml-6 space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-mostaza">+</span>
+                  <span className="font-medium">DetalleReceta (MP)</span>
+                  <span className="text-muted-foreground">— Materias primas con cantidades (ej: 500g harina, 300g jamón)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-mostaza">+</span>
+                  <span className="font-medium">DetalleReceta (Insumos)</span>
+                  <span className="text-muted-foreground">— Insumos con cantidades (ej: 1 bolsa, 2 etiquetas)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Cómo crear */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-oliva" />
+            Cómo crear una receta
+          </h4>
+          <div className="space-y-2">
+            <div className="flex items-start gap-3">
+              <StepCircle n={1} />
+              <p className="text-sm text-muted-foreground">Hacé clic en <strong>"Nueva Receta"</strong></p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={2} />
+              <p className="text-sm text-muted-foreground">Seleccioná el <strong>producto terminado</strong> para el cual querés crear la receta</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={3} />
+              <p className="text-sm text-muted-foreground">Agregá las <strong>materias primas</strong> con sus cantidades (ej: 500 gr de harina)</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={4} />
+              <p className="text-sm text-muted-foreground">Agregá los <strong>insumos</strong> necesarios (ej: 1 bolsa de empaque)</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={5} />
+              <p className="text-sm text-muted-foreground">Revisá los datos y <strong>guardá</strong> la receta</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Uso en producción */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Factory className="h-4 w-4 text-mostaza" />
+            Cómo se usan las recetas en Producción
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Cuando creás una producción, seleccionás la receta y la cantidad a producir. El sistema
+            automáticamente:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4 mt-2">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Calcula las cantidades totales de MP e insumos necesarias (cantidad receta × cantidad a producir)</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Verifica que haya stock suficiente antes de iniciar la producción</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Al completar la producción, descuenta los insumos y MP usados</span>
+            </li>
+          </ul>
+        </div>
+
+        <InfoBox type="tip">
+          Siempre creá la receta <strong>antes</strong> de intentar producir un producto. Sin receta, el sistema
+          no podrá calcular los materiales necesarios ni registrar la producción correctamente.
+        </InfoBox>
+
+        <InfoBox type="warning">
+          Si modificás una receta que ya fue usada en producciones anteriores, las producciones ya registradas
+          no se alteran. La nueva receta solo aplicará a futuras producciones.
+        </InfoBox>
+      </div>
+    ),
+  },
+
+  // ─── 5. Producción ────────────────────────────────────────────────────
+  {
+    id: 'produccion',
+    title: 'Producción',
+    iconComponent: Factory,
+    summary: 'Flujo completo de producción: desde la receta hasta el stock final, estados y verificaciones.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El módulo de <strong className="text-marron">Producción</strong> es el proceso central del sistema.
+          Es la forma principal de agregar stock a los productos terminados, transformando materias primas
+          e insumos en productos listos para vender.
+        </p>
+
+        {/* Flujo completo */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Factory className="h-4 w-4 text-mostaza" />
+            Flujo de producción completo
+          </h4>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <StepCircle n={1} />
+              <div>
+                <p className="font-medium text-sm">Seleccionar receta</p>
+                <p className="text-xs text-muted-foreground">
+                  Elegí la receta del producto que querés fabricar. Cada receta define los ingredientes necesarios.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={2} />
+              <div>
+                <p className="font-medium text-sm">Definir cantidad a producir</p>
+                <p className="text-xs text-muted-foreground">
+                  Indicá cuántas unidades del producto terminado vas a fabricar. El sistema calculará automáticamente
+                  los materiales necesarios.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={3} />
+              <div>
+                <p className="font-medium text-sm">Iniciar producción</p>
+                <p className="text-xs text-muted-foreground">
+                  Al iniciar, el sistema verifica que haya stock suficiente de todas las materias primas e insumos.
+                  Si falta algo, te informará qué materiales no alcanzan.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={4} />
+              <div>
+                <p className="font-medium text-sm">Completar producción</p>
+                <p className="text-xs text-muted-foreground">
+                  Al completar, el sistema descuenta automáticamente las MP e insumos del stock y suma las unidades
+                  producidas al stock del producto terminado. Se registran todos los movimientos de stock.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Verificación de stock */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-oliva" />
+            Verificación de stock al iniciar
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Antes de permitir que una producción comience, el sistema verifica que exista stock suficiente
+            de <strong>todas</strong> las materias primas e insumos requeridos por la receta. Si algún material
+            no alcanza, se mostrará un aviso con el detalle de qué falta y cuánto.
+          </p>
+          <InfoBox type="warning">
+            No es posible iniciar una producción si no hay stock suficiente de los materiales. Primero debés
+            comprar o cargar las materias primas/insumos necesarios.
+          </InfoBox>
+        </div>
+
+        {/* Descuento al completar */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-oliva" />
+            Qué pasa al completar la producción
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Al marcar una producción como completada, el sistema ejecuta automáticamente:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <span className="text-rojo shrink-0 font-bold">−</span>
+              <span>Descuenta del stock las <strong>materias primas</strong> utilizadas</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-rojo shrink-0 font-bold">−</span>
+              <span>Descuenta del stock los <strong>insumos</strong> utilizados</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-oliva shrink-0 font-bold">+</span>
+              <span>Suma al stock la cantidad producida del <strong>producto terminado</strong></span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Registra los <strong>movimientos de stock</strong> correspondientes</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Estados */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CircleDot className="h-4 w-4 text-mostaza" />
+            Estados de producción
+          </h4>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 bg-mostaza/5 border border-mostaza/15 rounded-lg p-2.5">
+              <Badge className="bg-mostaza/20 text-mostaza border-mostaza/30 text-xs">Pendiente</Badge>
+              <span className="text-sm text-muted-foreground">Producción creada pero aún no iniciada</span>
+            </div>
+            <div className="flex items-center gap-3 bg-oliva/5 border border-oliva/15 rounded-lg p-2.5">
+              <Badge className="bg-oliva/20 text-oliva border-oliva/30 text-xs">En proceso</Badge>
+              <span className="text-sm text-muted-foreground">Producción iniciada, en curso de fabricación</span>
+            </div>
+            <div className="flex items-center gap-3 bg-oliva/10 border border-oliva/20 rounded-lg p-2.5">
+              <Badge className="bg-oliva/30 text-oliva border-oliva/30 text-xs">Completada</Badge>
+              <span className="text-sm text-muted-foreground">Producción finalizada, stock actualizado</span>
+            </div>
+            <div className="flex items-center gap-3 bg-rojo/5 border border-rojo/15 rounded-lg p-2.5">
+              <Badge className="bg-rojo/20 text-rojo border-rojo/30 text-xs">Cancelada</Badge>
+              <span className="text-sm text-muted-foreground">Producción anulada, no se modifica el stock</span>
+            </div>
+          </div>
+        </div>
+
+        <InfoBox type="info">
+          La producción es el <strong>único mecanismo automático</strong> para agregar stock a los productos
+          terminados. Las ventas y los ajustes manuales son las otras formas de modificar el stock.
+        </InfoBox>
+      </div>
+    ),
+  },
+
+  // ─── 6. Ventas ────────────────────────────────────────────────────────
+  {
+    id: 'ventas',
+    title: 'Ventas',
+    iconComponent: Receipt,
+    summary: 'Registro de ventas, métodos de pago, presupuestos, pedidos de clientes y reservas.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El módulo de <strong className="text-marron">Ventas</strong> te permite registrar todas las operaciones
+          de venta, gestionar presupuestos, pedidos de clientes y reservas. El stock se actualiza automáticamente
+          al confirmar una venta.
+        </p>
+
+        {/* Registrar venta */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Receipt className="h-4 w-4 text-mostaza" />
+            Registrar una venta
+          </h4>
+          <div className="space-y-2">
+            <div className="flex items-start gap-3">
+              <StepCircle n={1} />
+              <p className="text-sm text-muted-foreground">Hacé clic en <strong>"Nueva Venta"</strong></p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={2} />
+              <p className="text-sm text-muted-foreground">Seleccioná los <strong>productos terminados</strong> que vas a vender</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={3} />
+              <p className="text-sm text-muted-foreground">Indicá las <strong>cantidades</strong> de cada producto</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={4} />
+              <p className="text-sm text-muted-foreground">Seleccioná el <strong>método de pago</strong> (efectivo, transferencia, etc.)</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={5} />
+              <p className="text-sm text-muted-foreground">Opcionalmente seleccioná el <strong>cliente</strong></p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={6} />
+              <p className="text-sm text-muted-foreground"><strong>Confirmá</strong> la venta — el stock se descuenta automáticamente</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Stock automático */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-oliva" />
+            Descuento automático de stock
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Al confirmar la venta, el sistema descuenta automáticamente las cantidades vendidas del stock de
+            cada producto terminado. Si algún producto no tiene stock suficiente, el sistema te avisará antes
+            de confirmar.
+          </p>
+          <InfoBox type="warning">
+            Verificá siempre que haya stock suficiente antes de confirmar una venta. El sistema validará
+            las cantidades, pero es buena práctica revisar el stock previamente.
+          </InfoBox>
+        </div>
+
+        {/* Métodos de pago */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Tag className="h-4 w-4 text-mostaza" />
+            Métodos de pago
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Los métodos de pago se configuran en <ModuleRef name="Configuración" /> (Formas de Pago).
+            Los más comunes son:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4 mt-2">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Efectivo</strong> — Pago en efectivo al momento de la venta</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Transferencia bancaria</strong> — Transferencia a la cuenta del negocio</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>MercadoPago</strong> — Pago a través de la plataforma</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Personalizado</strong> — Podés crear los métodos que necesites</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Historial */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <ClipboardList className="h-4 w-4 text-mostaza" />
+            Historial de ventas
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Todas las ventas quedan registradas con: fecha, productos, cantidades, precios, método de pago,
+            cliente y total. Podés filtrar por fecha, cliente o producto para análisis específicos.
+          </p>
+        </div>
+
+        {/* Presupuestos */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <FileText className="h-4 w-4 text-mostaza" />
+            Presupuestos
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Los presupuestos permiten generar cotizaciones para clientes sin afectar el stock. Podés:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4 mt-2">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Crear presupuestos con productos, cantidades y precios</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Enviar el presupuesto al cliente para su aprobación</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Convertir un presupuesto aprobado en una venta con un solo clic</span>
+            </li>
+          </ul>
+          <InfoBox type="info">
+            Mientras un presupuesto esté pendiente, el stock no se reserva ni se descuenta. Solo al convertirlo
+            en venta confirmada se afecta el stock.
+          </InfoBox>
+        </div>
+
+        {/* Pedidos de Clientes */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <ClipboardList className="h-4 w-4 text-mostaza" />
+            Pedidos de Clientes
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Los pedidos de clientes permiten gestionar órdenes con seguimiento de estado:
+          </p>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3 bg-mostaza/5 border border-mostaza/15 rounded-lg p-2.5">
+              <Badge className="bg-mostaza/20 text-mostaza border-mostaza/30 text-xs">Pendiente</Badge>
+              <span className="text-sm text-muted-foreground">Pedido recibido, sin iniciar preparación</span>
+            </div>
+            <div className="flex items-center gap-3 bg-oliva/5 border border-oliva/15 rounded-lg p-2.5">
+              <Badge className="bg-oliva/20 text-oliva border-oliva/30 text-xs">En proceso</Badge>
+              <span className="text-sm text-muted-foreground">Pedido en preparación</span>
+            </div>
+            <div className="flex items-center gap-3 bg-oliva/10 border border-oliva/20 rounded-lg p-2.5">
+              <Badge className="bg-oliva/30 text-oliva border-oliva/30 text-xs">Listo</Badge>
+              <span className="text-sm text-muted-foreground">Pedido listo para entregar</span>
+            </div>
+            <div className="flex items-center gap-3 bg-crema/60 border border-mostaza/10 rounded-lg p-2.5">
+              <Badge className="bg-marron/10 text-marron border-marron/20 text-xs">Entregado</Badge>
+              <span className="text-sm text-muted-foreground">Pedido entregado al cliente</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Reservas */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <BookMarked className="h-4 w-4 text-mostaza" />
+            Reservas
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Las reservas permiten a los clientes apartar productos con anticipación, generalmente con un seña
+            o depósito. El sistema registra la reserva con los datos del cliente, los productos reservados
+            y el monto del depósito. Al confirmar la entrega, se convierte en una venta.
+          </p>
+        </div>
+      </div>
+    ),
+  },
+
+  // ─── 7. Compras ───────────────────────────────────────────────────────
+  {
+    id: 'compras',
+    title: 'Compras',
+    iconComponent: ShoppingCart,
+    summary: 'Registro de compras a proveedores, actualización automática de stock y pedidos a proveedores.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El módulo de <strong className="text-marron">Compras</strong> te permite registrar las compras
+          de materias primas e insumos a proveedores. Al confirmar una compra, el stock se actualiza
+          automáticamente.
+        </p>
+
+        {/* Registrar compra */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4 text-mostaza" />
+            Registrar una compra
+          </h4>
+          <div className="space-y-2">
+            <div className="flex items-start gap-3">
+              <StepCircle n={1} />
+              <p className="text-sm text-muted-foreground">Hacé clic en <strong>"Nueva Compra"</strong></p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={2} />
+              <p className="text-sm text-muted-foreground">Seleccioná el <strong>proveedor</strong> (ver <ModuleRef name="Clientes y Proveedores" />)</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={3} />
+              <p className="text-sm text-muted-foreground">Agregá los <strong>items</strong> (materias primas e insumos) con sus cantidades y precios</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={4} />
+              <p className="text-sm text-muted-foreground">Revisá el total y los datos</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={5} />
+              <p className="text-sm text-muted-foreground"><strong>Confirmá</strong> la compra — el stock se actualiza automáticamente</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Stock automático */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-oliva" />
+            Actualización automática de stock
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Al confirmar una compra, el sistema suma automáticamente las cantidades compradas al stock
+            de cada materia prima e insumo. Se registran los movimientos de stock correspondientes con tipo "Compra".
+          </p>
+        </div>
+
+        {/* Proveedores */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Users className="h-4 w-4 text-mostaza" />
+            Vinculación con Proveedores
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Cada compra se asocia a un proveedor registrado en el módulo de{' '}
+            <ModuleRef name="Clientes y Proveedores" />. Esto permite:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4 mt-2">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Llevar un historial de compras por proveedor</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Consultar datos de contacto del proveedor rápidamente</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Generar reportes de compras agrupados por proveedor</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Pedidos a Proveedores */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Truck className="h-4 w-4 text-mostaza" />
+            Pedidos a Proveedores
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Podés registrar pedidos a proveedores para hacer seguimiento de las órdenes de compra pendientes.
+            Los pedidos a proveedores tienen los siguientes estados:
+          </p>
+          <div className="space-y-2 mt-2">
+            <div className="flex items-center gap-3 bg-mostaza/5 border border-mostaza/15 rounded-lg p-2.5">
+              <Badge className="bg-mostaza/20 text-mostaza border-mostaza/30 text-xs">Pendiente</Badge>
+              <span className="text-sm text-muted-foreground">Pedido enviado al proveedor, sin recibir</span>
+            </div>
+            <div className="flex items-center gap-3 bg-oliva/5 border border-oliva/15 rounded-lg p-2.5">
+              <Badge className="bg-oliva/20 text-oliva border-oliva/30 text-xs">Recibido</Badge>
+              <span className="text-sm text-muted-foreground">Mercadería recibida, se puede confirmar la compra</span>
+            </div>
+          </div>
+          <InfoBox type="tip">
+            Usá los Pedidos a Proveedores para planificar tus compras. Cuando la mercadería llegue, confirmá
+            la compra y el stock se actualizará automáticamente.
+          </InfoBox>
+        </div>
+      </div>
+    ),
+  },
+
+  // ─── 8. Clientes y Proveedores ────────────────────────────────────────
+  {
+    id: 'clientes-proveedores',
+    title: 'Clientes y Proveedores',
+    iconComponent: Users,
+    summary: 'Gestión de personas: clientes para ventas y proveedores para compras, con contactos y dirección.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El módulo de <strong className="text-marron">Personas</strong> te permite gestionar tanto clientes
+          como proveedores en un solo lugar. Cada persona puede ser cliente, proveedor o ambos.
+        </p>
+
+        {/* Personas */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Users className="h-4 w-4 text-mostaza" />
+            Gestión de Personas
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Cada persona registrada en el sistema puede tener los siguientes datos:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Nombre/Razón social:</strong> nombre completo del contacto o empresa</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Tipo:</strong> Cliente, Proveedor o ambos</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Documento:</strong> DNI o CUIT para facturación</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Teléfono:</strong> número de contacto</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Email:</strong> correo electrónico para notificaciones y presupuestos</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Dirección:</strong> domicilio para entregas y correspondencia</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Notas:</strong> observaciones o comentarios adicionales</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Clientes */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Receipt className="h-4 w-4 text-mostaza" />
+            Clientes
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Los clientes se vinculan con las ventas. Al registrar una venta, podés seleccionar el cliente
+            para asociarla a su historial. Esto permite:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4 mt-2">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Consultar el historial de compras de cada cliente</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Generar presupuestos personalizados</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Gestionar pedidos y reservas</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Enviar notificaciones por email o WhatsApp</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Proveedores */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Truck className="h-4 w-4 text-mostaza" />
+            Proveedores
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Los proveedores se vinculan con las compras. Al registrar una compra, podés seleccionar el proveedor
+            para asociarla a su historial. Esto permite:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4 mt-2">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Consultar el historial de compras a cada proveedor</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Comparar precios entre proveedores</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Registrar pedidos a proveedores con seguimiento</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Acceder rápidamente a datos de contacto</span>
+            </li>
+          </ul>
+        </div>
+
+        <InfoBox type="tip">
+          Mantené los datos de contacto actualizados para poder usar las funciones de notificaciones
+          por email y WhatsApp desde el sistema.
+        </InfoBox>
+      </div>
+    ),
+  },
+
+  // ─── 9. Configuración ─────────────────────────────────────────────────
+  {
+    id: 'configuracion',
+    title: 'Configuración',
+    iconComponent: Settings,
+    summary: 'Categorías, marcas, unidades de medida, notificaciones y seguridad del sistema.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El módulo de <strong className="text-marron">Configuración</strong> te permite personalizar
+          el sistema según las necesidades de tu negocio. Desde aquí gestionás las tablas maestras,
+          las notificaciones y la seguridad.
+        </p>
+
+        {/* Categorías */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Tag className="h-4 w-4 text-mostaza" />
+            Categorías
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Las categorías te permiten agrupar productos y materias primas de forma lógica. Ejemplos:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4 mt-2">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Para productos terminados:</strong> "Pasta Rellena", "Pasta Seca", "Salsas", "Postres"</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Para materias primas:</strong> "Harinas", "Lácteos", "Cárnicos", "Condimentos"</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Para insumos:</strong> "Envases", "Etiquetado", "Material de empaque"</span>
+            </li>
+          </ul>
+          <InfoBox type="tip">
+            Definí las categorías <strong>antes</strong> de cargar productos. Una buena estructura de categorías
+            facilita la búsqueda, el filtrado y los reportes.
+          </InfoBox>
+        </div>
+
+        {/* Marcas */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <BookMarked className="h-4 w-4 text-mostaza" />
+            Marcas
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Las marcas identifican la procedencia o línea de cada producto. Por ejemplo, si fabricás
+            productos bajo diferentes líneas (clásica, premium, orgánica), cada una puede ser una marca.
+            También se usan para materias primas (ej: marca del proveedor).
+          </p>
+        </div>
+
+        {/* Unidades de Medida */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Ruler className="h-4 w-4 text-mostaza" />
+            Unidades de Medida
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Las unidades de medida definen cómo se cuantifican los productos, materias primas e insumos.
+            Las más comunes son:
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+            <div className="bg-crema/60 border border-mostaza/10 rounded-md p-2 text-center text-sm">
+              <strong>kg</strong> — Kilogramos
+            </div>
+            <div className="bg-crema/60 border border-mostaza/10 rounded-md p-2 text-center text-sm">
+              <strong>gr</strong> — Gramos
+            </div>
+            <div className="bg-crema/60 border border-mostaza/10 rounded-md p-2 text-center text-sm">
+              <strong>u</strong> — Unidades
+            </div>
+            <div className="bg-crema/60 border border-mostaza/10 rounded-md p-2 text-center text-sm">
+              <strong>lt</strong> — Litros
+            </div>
+            <div className="bg-crema/60 border border-mostaza/10 rounded-md p-2 text-center text-sm">
+              <strong>ml</strong> — Mililitros
+            </div>
+            <div className="bg-crema/60 border border-mostaza/10 rounded-md p-2 text-center text-sm">
+              <strong>pack</strong> — Paquetes
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground mt-2">
+            Podés crear tantas unidades como necesites. Cada producto, materia prima e insumo tiene una unidad
+            de medida asignada.
+          </p>
+        </div>
+
+        {/* Notificaciones */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Bell className="h-4 w-4 text-mostaza" />
+            Notificaciones
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            El sistema cuenta con un módulo de notificaciones que incluye:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Plantillas:</strong> mensajes predefinidos para situaciones comunes (stock bajo, pedido listo, etc.)</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Historial:</strong> registro de todas las notificaciones enviadas</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Alertas de stock:</strong> notificaciones automáticas cuando un producto llega al mínimo</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Envío manual:</strong> enviá notificaciones por email o WhatsApp a clientes y proveedores</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Seguridad */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Lock className="h-4 w-4 text-mostaza" />
+            Seguridad
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            El sistema incluye funcionalidades de seguridad para proteger la información:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <ShieldCheck className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <span><strong>Roles y permisos:</strong> definí qué puede hacer cada usuario (admin, vendedor, operador)</span>
+            </li>
+            <li className="flex gap-2">
+              <ShieldCheck className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <span><strong>Autenticación de dos factores (2FA):</strong> capa extra de seguridad para accesos sensibles</span>
+            </li>
+            <li className="flex gap-2">
+              <Eye className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <span><strong>Registro de accesos:</strong> historial de inicios de sesión por usuario</span>
+            </li>
+            <li className="flex gap-2">
+              <Eye className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <span><strong>Sesiones activas:</strong> visualizá y gestioná las sesiones abiertas</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    ),
+  },
+
+  // ─── 10. Reportes ─────────────────────────────────────────────────────
+  {
+    id: 'reportes',
+    title: 'Reportes',
+    iconComponent: FileBarChart,
+    summary: 'Reportes de producción, ventas, finanzas, stock, compras, logística y exportaciones.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El módulo de <strong className="text-marron">Reportes</strong> te brinda información clave
+          para tomar decisiones. Desde reportes de producción y ventas hasta logística y finanzas,
+          todo es exportable a Excel y PDF.
+        </p>
+
+        {/* Reportes disponibles */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-mostaza" />
+            Reportes disponibles
+          </h4>
+          <div className="space-y-2">
+            <div className="flex items-start gap-3 bg-crema/60 border border-mostaza/10 rounded-lg p-3">
+              <Factory className="h-4 w-4 text-marron shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Reporte de Producción</p>
+                <p className="text-xs text-muted-foreground">Detalle de producciones por período, producto y estado. Incluye cantidades producidas y materiales consumidos.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-crema/60 border border-mostaza/10 rounded-lg p-3">
+              <Receipt className="h-4 w-4 text-marron shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Reporte de Ventas</p>
+                <p className="text-xs text-muted-foreground">Ventas por período, producto, cliente y método de pago. Incluye totales y desgloses.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-crema/60 border border-mostaza/10 rounded-lg p-3">
+              <TrendingUp className="h-4 w-4 text-marron shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Reporte Financiero</p>
+                <p className="text-xs text-muted-foreground">Resumen de ingresos (ventas) y egresos (compras) con balance por período.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-crema/60 border border-mostaza/10 rounded-lg p-3">
+              <Boxes className="h-4 w-4 text-marron shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Reporte de Stock</p>
+                <p className="text-xs text-muted-foreground">Estado actual de stock de todos los productos, materias primas e insumos con alertas.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-crema/60 border border-mostaza/10 rounded-lg p-3">
+              <ShoppingCart className="h-4 w-4 text-marron shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Reporte de Compras</p>
+                <p className="text-xs text-muted-foreground">Compras por período, proveedor y producto. Incluye totales y evolución.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Exportación */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <FileSpreadsheet className="h-4 w-4 text-mostaza" />
+            Exportación a Excel y PDF
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Todos los reportes pueden exportarse en los siguientes formatos:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4 mt-2">
+            <li className="flex gap-2">
+              <FileSpreadsheet className="h-4 w-4 text-oliva shrink-0" />
+              <span><strong>Excel (.xlsx):</strong> para análisis de datos, cálculos adicionales y manipulación</span>
+            </li>
+            <li className="flex gap-2">
+              <FileText className="h-4 w-4 text-rojo shrink-0" />
+              <span><strong>PDF:</strong> para presentar, imprimir o compartir con clientes y proveedores</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* Reportes especiales */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <ClipboardList className="h-4 w-4 text-mostaza" />
+            Reportes especiales
+          </h4>
+          <div className="space-y-2">
+            <div className="flex items-start gap-3 bg-oliva/5 border border-oliva/15 rounded-lg p-3">
+              <ShoppingCart className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Compras Pendientes</p>
+                <p className="text-xs text-muted-foreground">Listado de pedidos a proveedores que aún no fueron recibidos.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-oliva/5 border border-oliva/15 rounded-lg p-3">
+              <Truck className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Hoja de Ruta</p>
+                <p className="text-xs text-muted-foreground">Planificación de entregas con orden de visitas y direcciones optimizadas.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-oliva/5 border border-oliva/15 rounded-lg p-3">
+              <ClipboardList className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-sm">Pedidos del Día</p>
+                <p className="text-xs text-muted-foreground">Todos los pedidos de clientes programados para la fecha actual.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Logística */}
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-mostaza" />
+            Logística
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            El sistema incluye herramientas de logística para planificar y visualizar entregas y proveedores:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <Truck className="h-4 w-4 text-mostaza shrink-0 mt-0.5" />
+              <span><strong>Entregas:</strong> gestión de entregas con estados y seguimiento</span>
+            </li>
+            <li className="flex gap-2">
+              <MapPin className="h-4 w-4 text-mostaza shrink-0 mt-0.5" />
+              <span><strong>Puntos de encuentro:</strong> lugares predefinidos para entregas grupales</span>
+            </li>
+            <li className="flex gap-2">
+              <MapPin className="h-4 w-4 text-mostaza shrink-0 mt-0.5" />
+              <span><strong>Mapa de entregas:</strong> visualización geográfica de las entregas del día</span>
+            </li>
+            <li className="flex gap-2">
+              <MapPin className="h-4 w-4 text-mostaza shrink-0 mt-0.5" />
+              <span><strong>Mapa de proveedores:</strong> ubicación de proveedores en el mapa para planificar compras</span>
+            </li>
+          </ul>
+          <InfoBox type="info">
+            Las funciones de logística con mapas requieren que las direcciones de clientes y proveedores
+            estén correctamente cargadas con coordenadas válidas.
+          </InfoBox>
+        </div>
+      </div>
+    ),
+  },
+]
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+export default function StaticHelp({ open, onOpenChange }: StaticHelpProps) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeSection, setActiveSection] = useState(helpSections[0]?.id ?? '')
+  const [tocOpen, setTocOpen] = useState(false)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({})
+
+  // Filter sections based on search
+  const filteredSections = useMemo(() => {
+    if (!searchQuery.trim()) return helpSections
+    const q = searchQuery.toLowerCase()
+    return helpSections.filter(
+      (s) =>
+        s.title.toLowerCase().includes(q) || s.summary.toLowerCase().includes(q)
+    )
+  }, [searchQuery])
+
+  // IntersectionObserver to track active section
+  useEffect(() => {
+    if (!open) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // Find the section closest to the top that is visible
+        const visibleEntries = entries.filter((e) => e.isIntersecting)
+        if (visibleEntries.length > 0) {
+          // Pick the one with the smallest top (closest to viewport top)
+          const topEntry = visibleEntries.reduce((prev, curr) =>
+            prev.boundingClientRect.top < curr.boundingClientRect.top ? prev : curr
+          )
+          setActiveSection(topEntry.target.id)
+        }
+      },
+      {
+        root: contentRef.current?.querySelector('[data-radix-scroll-area-viewport]') ?? null,
+        rootMargin: '-10% 0px -70% 0px',
+        threshold: 0,
+      }
+    )
+
+    // Small delay to let the DOM render
+    const timer = setTimeout(() => {
+      Object.values(sectionRefs.current).forEach((el) => {
+        if (el) observer.observe(el)
+      })
+    }, 100)
+
+    return () => {
+      clearTimeout(timer)
+      observer.disconnect()
+    }
+  }, [open, filteredSections])
+
+  // Handle close with state reset
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
+    if (!nextOpen) {
+      setSearchQuery('')
+      setTocOpen(false)
+    }
+    onOpenChange(nextOpen)
+  }, [onOpenChange])
+
+  const scrollToSection = useCallback((id: string) => {
+    const el = sectionRefs.current[id]
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      setActiveSection(id)
+      setTocOpen(false) // Close mobile TOC
+    }
+  }, [])
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent
+        className="w-full h-full max-w-none sm:max-w-none p-0 gap-0 overflow-hidden border-0 rounded-none"
+        showCloseButton={false}
+      >
+        <DialogTitle className="sr-only">Manual de Ayuda - Las Pastas de Orlando</DialogTitle>
+
+        {/* Close Button */}
+        <button
+          onClick={() => onOpenChange(false)}
+          className="absolute top-3 right-3 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-marron/10 hover:bg-marron/20 text-marron transition-colors"
+          aria-label="Cerrar ayuda"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="flex h-full w-full">
+          {/* ─── Desktop Sidebar TOC ─────────────────────────────────── */}
+          <aside className="hidden md:flex flex-col w-[280px] shrink-0 bg-crema/70 border-r border-mostaza/15">
+            {/* Header */}
+            <div className="p-4 border-b border-mostaza/15">
+              <div className="flex items-center gap-2 mb-3">
+                <BookMarked className="h-5 w-5 text-marron" />
+                <h2 className="font-bold text-marron text-lg">Manual de Ayuda</h2>
+              </div>
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar en el manual..."
+                  className="pl-8 pr-8 h-8 text-sm bg-white/80 border-mostaza/20 focus:border-mostaza"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-marron"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* TOC Items */}
+            <ScrollArea className="flex-1">
+              <nav className="p-2">
+                {filteredSections.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">
+                    No se encontraron secciones.
+                  </p>
+                ) : (
+                  <div className="space-y-0.5">
+                    {filteredSections.map((section) => {
+                      const Icon = section.iconComponent
+                      const isActive = activeSection === section.id
+                      return (
+                        <button
+                          key={section.id}
+                          onClick={() => scrollToSection(section.id)}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left text-sm transition-colors ${
+                            isActive
+                              ? 'bg-mostaza/15 text-marron font-semibold'
+                              : 'text-muted-foreground hover:bg-mostaza/8 hover:text-marron'
+                          }`}
+                        >
+                          <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-mostaza' : 'text-muted-foreground/60'}`} />
+                          <span className="truncate">{section.title}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </nav>
+            </ScrollArea>
+
+            {/* Footer */}
+            <div className="p-3 border-t border-mostaza/15">
+              <p className="text-xs text-muted-foreground text-center">
+                Las Pastas de Orlando — ERP v1.0
+              </p>
+            </div>
+          </aside>
+
+          {/* ─── Main Content Area ────────────────────────────────────── */}
+          <div className="flex-1 flex flex-col min-w-0 h-full">
+            {/* Mobile Header + TOC */}
+            <div className="md:hidden">
+              {/* Mobile Header */}
+              <div className="p-3 border-b border-mostaza/15 bg-crema/70">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <BookMarked className="h-5 w-5 text-marron" />
+                    <h2 className="font-bold text-marron">Manual de Ayuda</h2>
+                  </div>
+                  {/* Close button for mobile is at top-right */}
+                </div>
+                {/* Mobile Search */}
+                <div className="relative mb-2">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar en el manual..."
+                    className="pl-8 pr-8 h-8 text-sm bg-white/80 border-mostaza/20"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-marron"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+                {/* Mobile TOC Toggle */}
+                <button
+                  onClick={() => setTocOpen(!tocOpen)}
+                  className="w-full flex items-center justify-between px-3 py-2 rounded-md bg-white/60 border border-mostaza/15 text-sm text-marron hover:bg-mostaza/8 transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    <ChevronRight className={`h-3.5 w-3.5 transition-transform ${tocOpen ? 'rotate-90' : ''}`} />
+                    <span>Tabla de contenidos</span>
+                  </span>
+                  <Badge variant="outline" className="text-xs text-muted-foreground border-mostaza/20">
+                    {filteredSections.length} secciones
+                  </Badge>
+                </button>
+              </div>
+
+              {/* Mobile TOC Dropdown */}
+              <AnimatePresence>
+                {tocOpen && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden bg-crema/50 border-b border-mostaza/15"
+                  >
+                    <nav className="p-2 max-h-64 overflow-y-auto custom-scrollbar">
+                      {filteredSections.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          No se encontraron secciones.
+                        </p>
+                      ) : (
+                        <div className="space-y-0.5">
+                          {filteredSections.map((section) => {
+                            const Icon = section.iconComponent
+                            const isActive = activeSection === section.id
+                            return (
+                              <button
+                                key={section.id}
+                                onClick={() => scrollToSection(section.id)}
+                                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left text-sm transition-colors ${
+                                  isActive
+                                    ? 'bg-mostaza/15 text-marron font-semibold'
+                                    : 'text-muted-foreground hover:bg-mostaza/8 hover:text-marron'
+                                }`}
+                              >
+                                <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-mostaza' : 'text-muted-foreground/60'}`} />
+                                <span className="truncate">{section.title}</span>
+                              </button>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </nav>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Scrollable Content */}
+            <ScrollArea className="flex-1" ref={contentRef}>
+              <div className="max-w-3xl mx-auto px-4 sm:px-6 md:px-8 py-6 pb-16">
+                {filteredSections.length === 0 ? (
+                  <div className="text-center py-16">
+                    <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                    <p className="text-muted-foreground">
+                      No se encontraron secciones para &quot;{searchQuery}&quot;
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 border-mostaza/30 text-marron"
+                      onClick={() => setSearchQuery('')}
+                    >
+                      Limpiar búsqueda
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {filteredSections.map((section, index) => {
+                      const Icon = section.iconComponent
+                      return (
+                        <motion.div
+                          key={section.id}
+                          id={section.id}
+                          ref={(el) => { sectionRefs.current[section.id] = el }}
+                          className={`scroll-mt-4 ${index < filteredSections.length - 1 ? 'mb-12' : ''}`}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                        >
+                          {/* Section Header */}
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-mostaza/15">
+                              <Icon className="h-5 w-5 text-mostaza" />
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold text-marron">{section.title}</h3>
+                              <p className="text-xs text-muted-foreground">{section.summary}</p>
+                            </div>
+                          </div>
+                          <Separator className="mb-4 bg-mostaza/20" />
+
+                          {/* Section Content */}
+                          <div>{section.content}</div>
+                        </motion.div>
+                      )
+                    })}
+
+                    {/* Footer */}
+                    <div className="mt-12 pt-6 border-t border-mostaza/15 text-center">
+                      <p className="text-sm text-muted-foreground">
+                        Fin del manual — Las Pastas de Orlando ERP
+                      </p>
+                      <p className="text-xs text-muted-foreground/60 mt-1">
+                        Si necesitás más ayuda, usá el asistente virtual
+                        <span className="text-mostaza"> 💬</span>
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}

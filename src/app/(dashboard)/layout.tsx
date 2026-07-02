@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Loader2, LogOut, LayoutDashboard, Package, MessageSquare, BarChart3, Users, UserCircle, Leaf, PackageOpen, UtensilsCrossed, FolderTree, Tag, Ruler, ChevronDown, ChevronRight, ShoppingCart, ClipboardList, ArrowLeftRight, Settings, Receipt, CalendarCheck, BookOpen, Factory, Shield, FileBarChart, KeyRound, FileSearch, MonitorSmartphone, Truck, MapPin, Map, Bell, History, AlertTriangle, Send, FileText, AlertCircle, Mail, Printer } from 'lucide-react'
+import { Loader2, LogOut, LayoutDashboard, Package, MessageSquare, BarChart3, Users, UserCircle, Leaf, PackageOpen, UtensilsCrossed, FolderTree, Tag, Ruler, ChevronDown, ChevronRight, ShoppingCart, ClipboardList, ArrowLeftRight, Settings, Receipt, CalendarCheck, BookOpen, Factory, Shield, FileBarChart, KeyRound, FileSearch, MonitorSmartphone, Truck, MapPin, Map, Bell, History, AlertTriangle, Send, FileText, AlertCircle, Mail, Printer, HelpCircle } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -26,6 +26,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import ChatAssistant from '@/components/admin/ChatAssistant'
+import StaticHelp from '@/components/admin/StaticHelp'
 
 const navItems = [
   {
@@ -283,6 +284,7 @@ export default function DashboardLayout({
   const [configOpen, setConfigOpen] = useState(false)
   const [auditoriaOpen, setAuditoriaOpen] = useState(false)
   const [seguridadOpen, setSeguridadOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   const isStockActive = stockItems.some(item => pathname === item.href || pathname.startsWith(item.href + '/'))
   const isComprasActive = comprasItems.some(item => pathname === item.href || pathname.startsWith(item.href + '/'))
@@ -604,6 +606,16 @@ export default function DashboardLayout({
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="h-5" />
           <div className="flex-1" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setHelpOpen(true)}
+            className="gap-1.5 text-muted-foreground hover:text-marron hover:bg-mostaza/10"
+          >
+            <HelpCircle className="h-4 w-4" />
+            <span className="hidden sm:inline text-xs">Ayuda</span>
+          </Button>
+          <Separator orientation="vertical" className="h-5" />
           <span className="text-sm text-muted-foreground hidden sm:block">
             {session.user?.name}
           </span>
@@ -613,6 +625,7 @@ export default function DashboardLayout({
         </div>
       </SidebarInset>
       <ChatAssistant />
+      <StaticHelp open={helpOpen} onOpenChange={setHelpOpen} />
     </SidebarProvider>
   )
 }
