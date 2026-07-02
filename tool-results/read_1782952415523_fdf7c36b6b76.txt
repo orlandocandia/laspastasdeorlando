@@ -1,0 +1,1481 @@
+     1→import { NextRequest, NextResponse } from 'next/server'
+     2→import { createClient, type Client } from '@libsql/client'
+     3→import bcrypt from 'bcryptjs'
+     4→
+     5→// Helper: detect if running on Turso (libsql:// URL or TURSO_DATABASE_URL env var)
+     6→function isTurso(): boolean {
+     7→  const url = process.env.DATABASE_URL || ''
+     8→  return url.startsWith('libsql://') || url.startsWith('http') || !!process.env.TURSO_DATABASE_URL
+     9→}
+    10→
+    11→// Helper: create a libsql client for Turso
+    12→function getTursoClient(): Client {
+    13→  const url = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL || ''
+    14→  const authToken = process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN || ''
+    15→  return createClient({ url, authToken: authToken || undefined })
+    16→}
+    17→
+    18→// ============================================
+    19→// TURSO-BASED SEED (using @libsql/client directly)
+    20→// ============================================
+    21→async function seedTurso(client: Client): Promise<string[]> {
+    22→  const results: string[] = []
+    23→
+    24→  // Wrapper that tracks progress and provides error context
+    25→  const exec = async (sql: string, args?: any[]) => {
+    26→    try {
+    27→      return await client.execute({ sql, args })
+    28→    } catch (e: any) {
+    29→      throw new Error(`SQL error: ${e.message} | SQL: ${sql.slice(0, 120)}${args ? ` | Args: ${JSON.stringify(args).slice(0, 100)}` : ''}`)
+    30→    }
+    31→  }
+    32→
+    33→  // 1. PAÍS
+    34→  await exec("INSERT OR IGNORE INTO Pais (nombre) VALUES ('Argentina')")
+    35→  const paisId = Number((await exec("SELECT id FROM Pais WHERE nombre = 'Argentina'")).rows[0]?.id)
+    36→  results.push('País: Argentina')
+    37→
+    38→  // 2. PROVINCIAS
+    39→  const provinciasData = [
+    40→    'Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Ciudad Autónoma de Buenos Aires',
+    41→    'Córdoba', 'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy',
+    42→    'La Pampa', 'La Rioja', 'Mendoza', 'Misiones', 'Neuquén',
+    43→    'Río Negro', 'Salta', 'San Juan', 'San Luis', 'Santa Cruz',
+    44→    'Santa Fe', 'Santiago del Estero', 'Tierra del Fuego', 'Tucumán',
+    45→  ]
+    46→  const provIds: Record<string, number> = {}
+    47→  for (const n of provinciasData) {
+    48→    await exec('INSERT OR IGNORE INTO Provincia (id_pais,nombre) VALUES (?,?)', [paisId, n])
+    49→    provIds[n] = Number((await exec("SELECT id FROM Provincia WHERE nombre=? AND id_pais=?", [n, paisId])).rows[0]?.id)
+    50→  }
+    51→  results.push(`${provinciasData.length} provincias`)
+    52→
+    53→  // 3. DEPARTAMENTOS
+    54→  const deptosData: { n: string; p: string }[] = [
+    55→    { n: 'Capital', p: 'Corrientes' }, { n: 'General Paz', p: 'Corrientes' },
+    56→    { n: 'San Cosme', p: 'Corrientes' }, { n: 'Itatí', p: 'Corrientes' },
+    57→    { n: 'Bella Vista', p: 'Corrientes' }, { n: 'Empedrado', p: 'Corrientes' },
+    58→    { n: 'Saladas', p: 'Corrientes' }, { n: 'Esquina', p: 'Corrientes' },
+    59→    { n: 'Goya', p: 'Corrientes' }, { n: 'Lavalle', p: 'Corrientes' },
+    60→    { n: 'Santo Tomé', p: 'Corrientes' }, { n: 'Paso de los Libres', p: 'Corrientes' },
+    61→    { n: 'Monte Caseros', p: 'Corrientes' }, { n: 'Curuzú Cuatiá', p: 'Corrientes' },
+    62→    { n: 'Mercedes', p: 'Corrientes' },
+    63→    { n: 'Comuna 1', p: 'Ciudad Autónoma de Buenos Aires' },
+    64→    { n: 'Comuna 2', p: 'Ciudad Autónoma de Buenos Aires' },
+    65→    { n: 'Comuna 3', p: 'Ciudad Autónoma de Buenos Aires' },
+    66→    { n: 'Comuna 4', p: 'Ciudad Autónoma de Buenos Aires' },
+    67→    { n: 'Comuna 5', p: 'Ciudad Autónoma de Buenos Aires' },
+    68→    { n: 'General San Martín', p: 'Buenos Aires' }, { n: 'La Matanza', p: 'Buenos Aires' },
+    69→    { n: 'Lomas de Zamora', p: 'Buenos Aires' }, { n: 'Quilmes', p: 'Buenos Aires' },
+    70→    { n: 'Almirante Brown', p: 'Buenos Aires' }, { n: 'Avellaneda', p: 'Buenos Aires' },
+    71→    { n: 'Morón', p: 'Buenos Aires' }, { n: 'Tres de Febrero', p: 'Buenos Aires' },
+    72→    { n: 'San Isidro', p: 'Buenos Aires' }, { n: 'Vicente López', p: 'Buenos Aires' },
+    73→    { n: 'Capital', p: 'Córdoba' }, { n: 'Colón', p: 'Córdoba' }, { n: 'San Justo', p: 'Córdoba' },
+    74→    { n: 'La Capital', p: 'Santa Fe' }, { n: 'Rosario', p: 'Santa Fe' },
+    75→    { n: 'Capital', p: 'Mendoza' }, { n: 'Godoy Cruz', p: 'Mendoza' },
+    76→    { n: 'Capital', p: 'Tucumán' }, { n: 'Cruz Alta', p: 'Tucumán' },
+    77→    { n: 'Capital', p: 'Salta' },
+    78→    { n: 'Paraná', p: 'Entre Ríos' }, { n: 'Concordia', p: 'Entre Ríos' },
+    79→  ]
+    80→  const depIds: Record<string, number> = {}
+    81→  for (const d of deptosData) {
+    82→    const idP = provIds[d.p]
+    83→    if (!idP) continue
+    84→    await exec('INSERT OR IGNORE INTO Departamento (id_provincia,nombre) VALUES (?,?)', [idP, d.n])
+    85→    depIds[`${d.p}-${d.n}`] = Number((await exec("SELECT id FROM Departamento WHERE nombre=? AND id_provincia=?", [d.n, idP])).rows[0]?.id)
+    86→  }
+    87→  results.push(`${Object.keys(depIds).length} departamentos`)
+    88→
+    89→  // 4. MUNICIPIOS
+    90→  const munisData: { n: string; dk: string }[] = [
+    91→    { n: 'Corrientes', dk: 'Corrientes-Capital' }, { n: 'Barrio Esperanza', dk: 'Corrientes-Capital' },
+    92→    { n: 'Nuestra Señora del Rosario de Caa Catí', dk: 'Corrientes-General Paz' },
+    93→    { n: 'San Cosme', dk: 'Corrientes-San Cosme' }, { n: 'Itatí', dk: 'Corrientes-Itatí' },
+    94→    { n: 'Bella Vista', dk: 'Corrientes-Bella Vista' },
+    95→    { n: 'Pedro Y. Cañete (Empedrado)', dk: 'Corrientes-Empedrado' },
+    96→    { n: 'Goya', dk: 'Corrientes-Goya' }, { n: 'Esquina', dk: 'Corrientes-Esquina' },
+    97→    { n: 'Mercedes', dk: 'Corrientes-Mercedes' },
+    98→    { n: 'Paso de los Libres', dk: 'Corrientes-Paso de los Libres' },
+    99→    { n: 'Monte Caseros', dk: 'Corrientes-Monte Caseros' },
+   100→    { n: 'Curuzú Cuatiá', dk: 'Corrientes-Curuzú Cuatiá' },
+   101→    { n: 'Santo Tomé', dk: 'Corrientes-Santo Tomé' },
+   102→    { n: 'Retiro', dk: 'Ciudad Autónoma de Buenos Aires-Comuna 1' },
+   103→    { n: 'San Nicolás', dk: 'Ciudad Autónoma de Buenos Aires-Comuna 1' },
+   104→    { n: 'Puerto Madero', dk: 'Ciudad Autónoma de Buenos Aires-Comuna 1' },
+   105→    { n: 'Recoleta', dk: 'Ciudad Autónoma de Buenos Aires-Comuna 2' },
+   106→    { n: 'Palermo', dk: 'Ciudad Autónoma de Buenos Aires-Comuna 2' },
+   107→    { n: 'Balvanera', dk: 'Ciudad Autónoma de Buenos Aires-Comuna 3' },
+   108→    { n: 'San Martín', dk: 'Buenos Aires-General San Martín' },
+   109→    { n: 'Ramos Mejía', dk: 'Buenos Aires-La Matanza' },
+   110→    { n: 'Banfield', dk: 'Buenos Aires-Lomas de Zamora' },
+   111→    { n: 'Quilmes', dk: 'Buenos Aires-Quilmes' },
+   112→    { n: 'Adrogué', dk: 'Buenos Aires-Almirante Brown' },
+   113→    { n: 'Avellaneda', dk: 'Buenos Aires-Avellaneda' },
+   114→    { n: 'Morón', dk: 'Buenos Aires-Morón' },
+   115→    { n: 'Caseros', dk: 'Buenos Aires-Tres de Febrero' },
+   116→    { n: 'San Isidro', dk: 'Buenos Aires-San Isidro' },
+   117→    { n: 'Olivos', dk: 'Buenos Aires-Vicente López' },
+   118→    { n: 'Córdoba', dk: 'Córdoba-Capital' },
+   119→    { n: 'Santa Fe', dk: 'Santa Fe-La Capital' }, { n: 'Rosario', dk: 'Santa Fe-Rosario' },
+   120→    { n: 'Mendoza', dk: 'Mendoza-Capital' }, { n: 'Godoy Cruz', dk: 'Mendoza-Godoy Cruz' },
+   121→    { n: 'San Miguel de Tucumán', dk: 'Tucumán-Capital' },
+   122→    { n: 'Salta', dk: 'Salta-Capital' },
+   123→    { n: 'Paraná', dk: 'Entre Ríos-Paraná' }, { n: 'Concordia', dk: 'Entre Ríos-Concordia' },
+   124→  ]
+   125→  for (const m of munisData) {
+   126→    const idD = depIds[m.dk]
+   127→    if (!idD) continue
+   128→    await exec('INSERT OR IGNORE INTO Municipio (id_departamento,nombre) VALUES (?,?)', [idD, m.n])
+   129→  }
+   130→  results.push(`${munisData.length} municipios`)
+   131→
+   132→  // 5-6. TIPOS DE DIRECCIÓN y CONTACTO
+   133→  for (const v of ['particular', 'comercial', 'entrega']) await exec('INSERT OR IGNORE INTO TipoDireccion (nombre) VALUES (?)', [v])
+   134→  for (const v of ['email', 'teléfono', 'WhatsApp']) await exec('INSERT OR IGNORE INTO TipoContacto (nombre) VALUES (?)', [v])
+   135→  results.push('Tipos de dirección y contacto')
+   136→
+   137→  // 7. EMPRESAS TELEFÓNICAS
+   138→  for (const e of [{ n: 'Personal', c: 'PER' }, { n: 'Claro', c: 'CLA' }, { n: 'Movistar', c: 'MOV' }, { n: 'Tuenti', c: 'TUE' }]) {
+   139→    await exec('INSERT OR IGNORE INTO EmpresaTelefonica (nombre,codigo) VALUES (?,?)', [e.n, e.c])
+   140→  }
+   141→  results.push('4 empresas telefónicas')
+   142→
+   143→  // 8. SERVICIOS DE CORREO ELECTRÓNICO
+   144→  for (const s of [{ n: 'Gmail', d: 'gmail.com' }, { n: 'Outlook/Hotmail', d: 'outlook.com' }, { n: 'Yahoo', d: 'yahoo.com' }, { n: 'ICloud', d: 'icloud.com' }]) {
+   145→    await exec('INSERT OR IGNORE INTO ServicioCorreoElectronico (nombre,dominio) VALUES (?,?)', [s.n, s.d])
+   146→  }
+   147→  results.push('4 servicios de correo electrónico')
+   148→
+   149→  // 9. TIPOS DE PLATAFORMA
+   150→  for (const t of [{ n: 'Web', d: 'Aplicación web' }, { n: 'Android', d: 'Aplicación móvil Android' }, { n: 'iOS', d: 'Aplicación móvil iOS' }, { n: 'API', d: 'Servicio API REST' }]) {
+   151→    await exec('INSERT OR IGNORE INTO TipoPlataforma (nombre,descripcion) VALUES (?,?)', [t.n, t.d])
+   152→  }
+   153→  results.push('4 tipos de plataforma')
+   154→
+   155→  // 10. TIPOS DE ENTIDAD
+   156→  for (const t of [{ n: 'física', d: 'Persona física' }, { n: 'jurídica', d: 'Persona jurídica / Empresa' }]) {
+   157→    await exec('INSERT OR IGNORE INTO TipoEntidad (nombre,descripcion) VALUES (?,?)', [t.n, t.d])
+   158→  }
+   159→  results.push('2 tipos de entidad')
+   160→
+   161→  // 11. ESTADOS DE SESIÓN
+   162→  for (const e of [{ n: 'activa', d: 'Sesión activa del usuario' }, { n: 'expirada', d: 'Sesión expirada por inactividad' }, { n: 'cerrada', d: 'Sesión cerrada por el usuario' }, { n: 'revocada', d: 'Sesión revocada por seguridad' }]) {
+   163→    await exec('INSERT OR IGNORE INTO EstadoSesion (nombre,descripcion) VALUES (?,?)', [e.n, e.d])
+   164→  }
+   165→  results.push('4 estados de sesión')
+   166→
+   167→  // 12. TIPOS DE PERSONA
+   168→  for (const n of ['cliente', 'proveedor', 'empleado']) await exec('INSERT OR IGNORE INTO TipoPersona (nombre) VALUES (?)', [n])
+   169→  results.push('3 tipos de persona')
+   170→
+   171→  // 13. CATEGORÍAS DE MATERIAS PRIMAS
+   172→  for (const c of [
+   173→    { n: 'Harinas', d: 'Harinas de trigo, sémola y otros cereales' },
+   174→    { n: 'Huevos y derivados', d: 'Huevos frescos, líquidos y derivados' },
+   175→    { n: 'Lácteos', d: 'Quesos, cremas, manteca y leches' },
+   176→    { n: 'Aceites y grasas', d: 'Aceites vegetales y grasas' },
+   177→    { n: 'Condimentos y especias', d: 'Especias, sal, pimienta y hierbas' },
+   178→    { n: 'Carnes', d: 'Carnes para rellenos (res, cerdo, pollo)' },
+   179→    { n: 'Verduras', d: 'Verduras frescas para salsas y rellenos' },
+   180→    { n: 'Salsas y conservas', d: 'Tomates, salsa de tomate, conservas' },
+   181→    { n: 'Aditivos y suplementos', d: 'Colorantes, conservantes, mejoradores' },
+   182→  ]) {
+   183→    await exec('INSERT OR IGNORE INTO CategoriaMateriaPrima (nombre,descripcion) VALUES (?,?)', [c.n, c.d])
+   184→  }
+   185→  results.push('9 categorías de materias primas')
+   186→
+   187→  // 14. TIPOS DE INSUMOS
+   188→  for (const t of [
+   189→    { n: 'Envases primarios', d: 'Bolsas, bandejas, film para contacto directo' },
+   190→    { n: 'Envases secundarios', d: 'Cajas, cartones, etiquetas' },
+   191→    { n: 'Materiales de limpieza', d: 'Productos de limpieza y sanitización' },
+   192→    { n: 'Combustibles', d: 'Gas, leña, energía para producción' },
+   193→    { n: 'Utensilios descartables', d: 'Guantes, cofias, delantales descartables' },
+   194→    { n: 'Insumos de oficina', d: 'Papel, cartuchos, útiles' },
+   195→  ]) {
+   196→    await exec('INSERT OR IGNORE INTO TipoInsumo (nombre,descripcion) VALUES (?,?)', [t.n, t.d])
+   197→  }
+   198→  results.push('6 tipos de insumos')
+   199→
+   200→  // Migración: renombrar "Cinta Ancha" / "Cinta ancha" → "Cintas Anchas" ANTES de insertar
+   201→  // Paso 1: Mover productos del duplicado "Cintas Anchas" a la categoría original
+   202→  const cintaAnchaOld = await exec("SELECT id FROM CategoriaProductoTerminado WHERE nombre IN ('Cinta Ancha', 'Cinta ancha', 'cinta ancha') LIMIT 1")
+   203→  const cintaAnchaNew = await exec("SELECT id FROM CategoriaProductoTerminado WHERE nombre = 'Cintas Anchas' LIMIT 1")
+   204→  const oldId = cintaAnchaOld.rows[0]?.id
+   205→  const newId = cintaAnchaNew.rows[0]?.id
+   206→  if (newId && oldId && Number(newId) !== Number(oldId)) {
+   207→    await exec('UPDATE ProductoTerminado SET id_categoria = ? WHERE id_categoria = ?', [Number(oldId), Number(newId)])
+   208→    await exec('DELETE FROM CategoriaProductoTerminado WHERE id = ?', [Number(newId)])
+   209→  }
+   210→  // Paso 2: Renombrar la categoría original
+   211→  await exec("UPDATE CategoriaProductoTerminado SET nombre = 'Cintas Anchas' WHERE nombre IN ('Cinta Ancha', 'Cinta ancha', 'cinta ancha')")
+   212→  for (const c of [
+   213→    { n: 'Sorrentinos', d: 'Sorrentinos rellenos artesanales' },
+   214→    { n: 'Ñoquis', d: 'Ñoquis de papa, mandioca, calabaza y más' },
+   215→    { n: 'Tallarines', d: 'Tallarines al huevo, al morrón, espinaca y más' },
+   216→    { n: 'Cintas Anchas', d: 'Cintas anchas al huevo y más' },
+   217→    { n: 'Ravioles', d: 'Ravioles rellenos de ricota, carne, jamón y más' },
+   218→    { n: 'Tapas', d: 'Tapas para empanadas, pascualinas, pastelitos y copetín' },
+   219→    { n: 'Empanadas', d: 'Empanadas crudas y al horno' },
+   220→    { n: 'Tartas', d: 'Tartas saladas de verdura, jamón, pollo y choclo' },
+   221→    { n: 'Pastas frescas', d: 'Pastas frescas rellenas y al huevo' },
+   222→    { n: 'Pastas secas', d: 'Pastas secas tipo fideos' },
+   223→    { n: 'Salsas', d: 'Salsas para acompañar pastas' },
+   224→    { n: 'Lasagnas y canelones', d: 'Platos armados listos para hornear' },
+   225→    { n: 'Postres', d: 'Postres a base de pasta' },
+   226→  ]) {
+   227→    await exec('INSERT OR IGNORE INTO CategoriaProductoTerminado (nombre,descripcion) VALUES (?,?)', [c.n, c.d])
+   228→  }
+   229→  results.push('13 categorías de productos terminados (+ migración Cintas Anchas)')
+   230→
+   231→  // 16. MARCAS
+   232→  for (const m of [
+   233→    { n: 'Pastas Orlando', d: 'Marca propia' },
+   234→    { n: 'Molinos Río de la Plata', d: 'Harinas y cereales' },
+   235→    { n: 'Arcor', d: 'Alimentos generales' },
+   236→    { n: 'Mastellone', d: 'Lácteos' },
+   237→    { n: 'La Serenísima', d: 'Lácteos' },
+   238→    { n: 'Molto', d: 'Harinas especiales' },
+   239→    { n: 'Blancaflor', d: 'Harinas' },
+   240→    { n: 'Canale', d: 'Alimentos' },
+   241→    { n: 'Fargo', d: 'Alimentos' },
+   242→    { n: 'Sin marca', d: 'Genérico / sin marca' },
+   243→  ]) {
+   244→    await exec('INSERT OR IGNORE INTO Marca (nombre,descripcion) VALUES (?,?)', [m.n, m.d])
+   245→  }
+   246→  results.push('10 marcas')
+   247→
+   248→  // 17. UNIDADES DE MEDIDA
+   249→  for (const u of [
+   250→    { c: 'kg', n: 'Kilogramo', cb: 1, tm: 'peso' },
+   251→    { c: 'g', n: 'Gramo', cb: 0.001, tm: 'peso' },
+   252→    { c: 'mg', n: 'Miligramo', cb: 0.000001, tm: 'peso' },
+   253→    { c: 'l', n: 'Litro', cb: 1, tm: 'volumen' },
+   254→    { c: 'ml', n: 'Mililitro', cb: 0.001, tm: 'volumen' },
+   255→    { c: 'cc', n: 'Centímetro cúbico', cb: 0.001, tm: 'volumen' },
+   256→    { c: 'm', n: 'Metro', cb: 1, tm: 'longitud' },
+   257→    { c: 'cm', n: 'Centímetro', cb: 0.01, tm: 'longitud' },
+   258→    { c: 'mm', n: 'Milímetro', cb: 0.001, tm: 'longitud' },
+   259→    { c: 'u', n: 'Unidad', cb: 1, tm: 'unidad' },
+   260→    { c: 'doc', n: 'Docena', cb: 12, tm: 'unidad' },
+   261→    { c: 'rollo', n: 'Rollo', cb: 1, tm: 'unidad' },
+   262→    { c: 'paq', n: 'Paquete', cb: 1, tm: 'unidad' },
+   263→    { c: 'bolsa', n: 'Bolsa', cb: 1, tm: 'unidad' },
+   264→    { c: 'caja', n: 'Caja', cb: 1, tm: 'unidad' },
+   265→  ]) {
+   266→    await exec('INSERT OR IGNORE INTO UnidadMedida (codigo,nombre,conversion_a_base,tipo_medida) VALUES (?,?,?,?)', [u.c, u.n, u.cb, u.tm])
+   267→  }
+   268→  results.push('15 unidades de medida')
+   269→
+   270→  // 18. FORMAS DE PAGO
+   271→  for (const f of [
+   272→    { n: 'Efectivo', ri: 0, rc: 0 },
+   273→    { n: 'Mercado Pago', ri: 0, rc: 1 },
+   274→    { n: 'Transferencia bancaria', ri: 1, rc: 1 },
+   275→  ]) {
+   276→    await exec('INSERT OR IGNORE INTO FormaPago (nombre_forma,requiere_identificacion,requiere_cuenta) VALUES (?,?,?)', [f.n, f.ri, f.rc])
+   277→  }
+   278→  results.push('3 formas de pago')
+   279→
+   280→  // 19. ESTADOS GENERALES
+   281→  for (const e of [
+   282→    { n: 'pendiente', ea: 'general', ef: 0 },
+   283→    { n: 'en_proceso', ea: 'general', ef: 0 },
+   284→    { n: 'completado', ea: 'general', ef: 1 },
+   285→    { n: 'cancelado', ea: 'general', ef: 1 },
+   286→    { n: 'entregado', ea: 'pedidos', ef: 1 },
+   287→    { n: 'en_camino', ea: 'entregas', ef: 0 },
+   288→    { n: 'programado', ea: 'entregas', ef: 0 },
+   289→    { n: 'pagado', ea: 'ventas', ef: 1 },
+   290→    { n: 'activo', ea: 'produccion', ef: 0 },
+   291→    { n: 'aprobado', ea: 'presupuestos', ef: 0 },
+   292→    { n: 'rechazado', ea: 'presupuestos', ef: 1 },
+   293→    { n: 'expirado', ea: 'presupuestos', ef: 1 },
+   294→    { n: 'convertido', ea: 'presupuestos', ef: 1 },
+   295→  ]) {
+   296→    await exec('INSERT OR IGNORE INTO EstadoGeneral (nombre_estado,entidad_aplicable,es_final) VALUES (?,?,?)', [e.n, e.ea, e.ef])
+   297→  }
+   298→  results.push('13 estados generales')
+   299→
+   300→  // 20-21. PERSONA + USUARIO ADMIN
+   301→  await exec("INSERT OR IGNORE INTO Persona (nombre,apellido,numero_documento,tipo_persona,observaciones) VALUES ('Orlando','Candia','00000000','empleado','Administrador del sistema')")
+   302→  const personaId = Number((await exec("SELECT id FROM Persona WHERE numero_documento='00000000'")).rows[0]?.id)
+   303→  const hashedPassword = await bcrypt.hash('Pastas2026!', 10)
+   304→  // INSERT OR IGNORE won't update password if user already exists, so we also UPDATE
+   305→  await exec('INSERT OR IGNORE INTO Usuario (id_persona,email,password,estado) VALUES (?,?,?,?)', [personaId, 'orlando.candia@gmail.com', hashedPassword, 1])
+   306→  await exec('UPDATE Usuario SET password = ?, estado = 1 WHERE email = ?', [hashedPassword, 'orlando.candia@gmail.com'])
+   307→  const usuarioId = Number((await exec("SELECT id FROM Usuario WHERE email='orlando.candia@gmail.com'")).rows[0]?.id)
+   308→  results.push(`Admin: Orlando Candia (usuario_id=${usuarioId}, password updated)`)
+   309→
+   310→  // Contacto email
+   311→  const tipoEmailId = Number((await exec("SELECT id FROM TipoContacto WHERE nombre='email'")).rows[0]?.id)
+   312→  if (tipoEmailId && personaId) {
+   313→    await exec('INSERT OR IGNORE INTO Contacto (id_persona,id_tipo_contacto,valor,es_principal,verificado) VALUES (?,?,?,?,?)', [personaId, tipoEmailId, 'orlando.candia@gmail.com', 1, 1])
+   314→  }
+   315→  results.push('Contacto email admin')
+   316→
+   317→  // 22. ROLES
+   318→  for (const r of [
+   319→    { n: 'admin', d: 'Administrador total del sistema', ed: 0 },
+   320→    { n: 'produccion', d: 'Acceso a producción y stock', ed: 0 },
+   321→    { n: 'ventas', d: 'Acceso a ventas y pedidos', ed: 0 },
+   322→    { n: 'lectura', d: 'Solo lectura de datos', ed: 1 },
+   323→  ]) {
+   324→    await exec('INSERT OR IGNORE INTO Rol (nombre,descripcion,es_default) VALUES (?,?,?)', [r.n, r.d, r.ed])
+   325→  }
+   326→  const rolAdminId = Number((await exec("SELECT id FROM Rol WHERE nombre='admin'")).rows[0]?.id)
+   327→  if (usuarioId && rolAdminId) {
+   328→    await exec('INSERT OR IGNORE INTO UsuarioRol (id_usuario,id_rol) VALUES (?,?)', [usuarioId, rolAdminId])
+   329→  }
+   330→  results.push('4 roles + admin asignado')
+   331→
+   332→  // 23. PERMISOS
+   333→  const mods = ['productos', 'compras', 'ventas', 'produccion', 'usuarios', 'auditoria', 'reportes', 'seguridad', 'logistica', 'presupuestos']
+   334→  const accs = ['ver', 'crear', 'editar', 'eliminar']
+   335→  for (const mod of mods) {
+   336→    for (const acc of accs) {
+   337→      await exec('INSERT OR IGNORE INTO Permiso (nombre,modulo,descripcion) VALUES (?,?,?)', [`${mod}.${acc}`, mod, `${acc} en ${mod}`])
+   338→    }
+   339→  }
+   340→  for (const n of ['dashboard.ver', 'configuracion.ver', 'configuracion.editar', 'opiniones.ver', 'opiniones.editar']) {
+   341→    await exec('INSERT OR IGNORE INTO Permiso (nombre,modulo,descripcion) VALUES (?,?,?)', [n, n.split('.')[0], n])
+   342→  }
+   343→
+   344→  // Assign all permissions to admin role
+   345→  const allPerms = await exec('SELECT id FROM Permiso')
+   346→  for (const row of allPerms.rows) {
+   347→    const pid = Number(row.id)
+   348→    if (rolAdminId && pid) {
+   349→      await exec('INSERT OR IGNORE INTO RolPermiso (id_rol,id_permiso) VALUES (?,?)', [rolAdminId, pid])
+   350→    }
+   351→  }
+   352→  results.push(`${allPerms.rows.length} permisos + asignados al rol admin`)
+   353→
+   354→  // Helper to get category/unit IDs by name/code
+   355→  const catId = async (table: string, nombre: string) =>
+   356→    Number((await exec(`SELECT id FROM ${table} WHERE nombre=?`, [nombre])).rows[0]?.id) || 0
+   357→  const umId = async (codigo: string) =>
+   358→    Number((await exec('SELECT id FROM UnidadMedida WHERE codigo=?', [codigo])).rows[0]?.id) || 0
+   359→  const tiId = async (nombre: string) =>
+   360→    Number((await exec('SELECT id FROM TipoInsumo WHERE nombre=?', [nombre])).rows[0]?.id) || 0
+   361→
+   362→  // 23.7 LIMPIEZA PERMANENTE: ELIMINAR productos SIN imagen (hard delete)
+   363→  // REGLA DE NEGOCIO: Solo deben existir productos con foto cargada manualmente.
+   364→  // Esta regla es PERMANENTE y no se puede revertir.
+   365→  try {
+   366→    // Paso 1: Contar productos sin imagen válida
+   367→    const countSinImagen = await exec(
+   368→      "SELECT COUNT(*) as total FROM ProductoTerminado WHERE imagen IS NULL OR imagen = '' OR LOWER(imagen) = 'n/a'"
+   369→    )
+   370→    const totalSinImagen = Number(countSinImagen.rows[0]?.total || 0)
+   371→
+   372→    // Paso 2: ELIMINAR PERMANENTEMENTE todos los productos sin imagen
+   373→    const hardDeleteResult = await exec(
+   374→      "DELETE FROM ProductoTerminado WHERE imagen IS NULL OR imagen = '' OR LOWER(imagen) = 'n/a'"
+   375→    )
+   376→    if (hardDeleteResult.rowsAffected > 0) {
+   377→      results.push(`🧹 LIMPIEZA PERMANENTE: ${hardDeleteResult.rowsAffected} productos eliminados definitivamente (sin imagen válida)`)
+   378→    } else if (totalSinImagen === 0) {
+   379→      results.push('Limpieza: no hay productos sin imagen — base de datos limpia ✓')
+   380→    }
+   381→  } catch (e: any) {
+   382→    results.push(`Limpieza: error al eliminar productos sin imagen (${e.message})`)
+   383→  }
+   384→
+   385→  // REGLA PERMANENTE: No se insertan productos de prueba por seed.
+   386→  // Solo el usuario debe crear productos manualmente desde el admin con su respectiva foto.
+   387→  // La API de creación RECHAZA productos sin imagen.
+   388→  results.push('🔒 REGLA PERMANENTE: No se permiten productos sin imagen válida')
+   389→
+   390→  // 25. MATERIAS PRIMAS
+   391→  const mps = [
+   392→    { c: 'MP-001', n: 'Harina 000', cat: 'Harinas', um: 'kg', s: 50, sm: 20, pr: 1200 },
+   393→    { c: 'MP-002', n: 'Harina 0000', cat: 'Harinas', um: 'kg', s: 30, sm: 15, pr: 1400 },
+   394→    { c: 'MP-003', n: 'Sémola de trigo', cat: 'Harinas', um: 'kg', s: 20, sm: 10, pr: 1600 },
+   395→    { c: 'MP-004', n: 'Huevos frescos', cat: 'Huevos y derivados', um: 'u', s: 120, sm: 60, pr: 250 },
+   396→    { c: 'MP-005', n: 'Queso Ricota', cat: 'Lácteos', um: 'kg', s: 10, sm: 5, pr: 5000 },
+   397→    { c: 'MP-006', n: 'Queso Mozzarella', cat: 'Lácteos', um: 'kg', s: 8, sm: 4, pr: 6000 },
+   398→    { c: 'MP-007', n: 'Queso Parmesano', cat: 'Lácteos', um: 'kg', s: 5, sm: 2, pr: 12000 },
+   399→    { c: 'MP-008', n: 'Manteca', cat: 'Lácteos', um: 'kg', s: 5, sm: 3, pr: 8000 },
+   400→    { c: 'MP-009', n: 'Crema de leche', cat: 'Lácteos', um: 'l', s: 10, sm: 5, pr: 3000 },
+   401→    { c: 'MP-010', n: 'Aceite de girasol', cat: 'Aceites y grasas', um: 'l', s: 10, sm: 5, pr: 2500 },
+   402→    { c: 'MP-011', n: 'Aceite de oliva', cat: 'Aceites y grasas', um: 'l', s: 3, sm: 2, pr: 8000 },
+   403→    { c: 'MP-012', n: 'Sal fina', cat: 'Condimentos y especias', um: 'kg', s: 10, sm: 5, pr: 800 },
+   404→    { c: 'MP-013', n: 'Pimienta negra', cat: 'Condimentos y especias', um: 'kg', s: 1, sm: 0.5, pr: 15000 },
+   405→    { c: 'MP-014', n: 'Nuez moscada', cat: 'Condimentos y especias', um: 'kg', s: 0.5, sm: 0.2, pr: 25000 },
+   406→    { c: 'MP-015', n: 'Carne picada de res', cat: 'Carnes', um: 'kg', s: 15, sm: 8, pr: 7000 },
+   407→    { c: 'MP-016', n: 'Jamón cocido', cat: 'Carnes', um: 'kg', s: 8, sm: 4, pr: 8000 },
+   408→    { c: 'MP-017', n: 'Pollo desmenuzado', cat: 'Carnes', um: 'kg', s: 5, sm: 3, pr: 6500 },
+   409→    { c: 'MP-018', n: 'Espinaca fresca', cat: 'Verduras', um: 'kg', s: 5, sm: 3, pr: 3500 },
+   410→    { c: 'MP-019', n: 'Cebolla', cat: 'Verduras', um: 'kg', s: 10, sm: 5, pr: 1500 },
+   411→    { c: 'MP-020', n: 'Ajo', cat: 'Verduras', um: 'kg', s: 2, sm: 1, pr: 5000 },
+   412→    { c: 'MP-021', n: 'Calabaza', cat: 'Verduras', um: 'kg', s: 8, sm: 4, pr: 2000 },
+   413→    { c: 'MP-022', n: 'Papa', cat: 'Verduras', um: 'kg', s: 20, sm: 10, pr: 1200 },
+   414→    { c: 'MP-023', n: 'Tomate perita en lata', cat: 'Salsas y conservas', um: 'kg', s: 15, sm: 8, pr: 2500 },
+   415→    { c: 'MP-024', n: 'Puré de tomate', cat: 'Salsas y conservas', um: 'kg', s: 10, sm: 5, pr: 2000 },
+   416→    { c: 'MP-025', n: 'Albahaca fresca', cat: 'Verduras', um: 'kg', s: 1, sm: 0.5, pr: 8000 },
+   417→    { c: 'MP-026', n: 'Colorante alimentario', cat: 'Aditivos y suplementos', um: 'kg', s: 0.5, sm: 0.2, pr: 12000 },
+   418→    { c: 'MP-027', n: 'Agua', cat: 'Aditivos y suplementos', um: 'l', s: 100, sm: 50, pr: 100 },
+   419→  ]
+   420→  for (const mp of mps) {
+   421→    const idCat = await catId('CategoriaMateriaPrima', mp.cat)
+   422→    const idUm = await umId(mp.um)
+   423→    if (!idCat || !idUm) continue
+   424→    await exec('INSERT OR IGNORE INTO MateriaPrima (codigo,nombre,id_categoria,id_unidad_base,stock_actual,stock_minimo,precio_compra_referencia,estado) VALUES (?,?,?,?,?,?,?,1)', [mp.c, mp.n, idCat, idUm, mp.s, mp.sm, mp.pr])
+   425→  }
+   426→  results.push(`${mps.length} materias primas`)
+   427→
+   428→  // 26. INSUMOS
+   429→  const insumos = [
+   430→    { c: 'IN-001', n: 'Bolsa de polietileno 500g', ti: 'Envases primarios', um: 'paq', s: 200, sm: 100, pr: 150 },
+   431→    { c: 'IN-002', n: 'Bandeja de poliestireno', ti: 'Envases primarios', um: 'u', s: 150, sm: 80, pr: 200 },
+   432→    { c: 'IN-003', n: 'Film plástico', ti: 'Envases primarios', um: 'rollo', s: 10, sm: 5, pr: 3500 },
+   433→    { c: 'IN-004', n: 'Caja de cartón para pastas', ti: 'Envases secundarios', um: 'u', s: 100, sm: 50, pr: 500 },
+   434→    { c: 'IN-005', n: 'Etiqueta adhesiva', ti: 'Envases secundarios', um: 'u', s: 500, sm: 200, pr: 50 },
+   435→    { c: 'IN-006', n: 'Lavandina', ti: 'Materiales de limpieza', um: 'l', s: 10, sm: 5, pr: 800 },
+   436→    { c: 'IN-007', n: 'Detergente', ti: 'Materiales de limpieza', um: 'l', s: 5, sm: 3, pr: 1500 },
+   437→    { c: 'IN-008', n: 'Desengrasante', ti: 'Materiales de limpieza', um: 'l', s: 3, sm: 2, pr: 2500 },
+   438→    { c: 'IN-009', n: 'Gas envaso', ti: 'Combustibles', um: 'kg', s: 30, sm: 15, pr: 3000 },
+   439→    { c: 'IN-010', n: 'Guantes de latex', ti: 'Utensilios descartables', um: 'paq', s: 20, sm: 10, pr: 2500 },
+   440→    { c: 'IN-011', n: 'Cofias descartables', ti: 'Utensilios descartables', um: 'paq', s: 15, sm: 8, pr: 1800 },
+   441→    { c: 'IN-012', n: 'Delantal descartable', ti: 'Utensilios descartables', um: 'u', s: 50, sm: 25, pr: 300 },
+   442→  ]
+   443→  for (const ins of insumos) {
+   444→    const idTi = await tiId(ins.ti)
+   445→    const idUm = await umId(ins.um)
+   446→    if (!idTi || !idUm) continue
+   447→    await exec('INSERT OR IGNORE INTO Insumo (codigo,nombre,id_tipo_insumo,id_unidad_base,stock_actual,stock_minimo,precio_compra_referencia,estado) VALUES (?,?,?,?,?,?,?,1)', [ins.c, ins.n, idTi, idUm, ins.s, ins.sm, ins.pr])
+   448→  }
+   449→  results.push(`${insumos.length} insumos`)
+   450→
+   451→  // 27. PRODUCTOS LANDING
+   452→  // Safety: ensure Producto table exists (may be missed by db-push-turso parser)
+   453→  try {
+   454→    await exec(`CREATE TABLE IF NOT EXISTS "Producto" (
+   455→      "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+   456→      "nombre" TEXT NOT NULL,
+   457→      "descripcion" TEXT,
+   458→      "categoria" TEXT NOT NULL,
+   459→      "precio" REAL NOT NULL,
+   460→      "peso" TEXT NOT NULL DEFAULT '500g',
+   461→      "imagen" TEXT,
+   462→      "stock" BOOLEAN NOT NULL DEFAULT true,
+   463→      "destacado" BOOLEAN NOT NULL DEFAULT false,
+   464→      "orden" INTEGER NOT NULL DEFAULT 0,
+   465→      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   466→      "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+   467→    )`)
+   468→  } catch { /* table already exists, skip */ }
+   469→
+   470→  const productosLanding = [
+   471→    { id: 1, n: 'Sorrentinos de Jamón y Queso', d: 'Clásicos sorrentinos rellenos de jamón cocido y queso mozzarella, hechos con masa al huevo.', cat: 'Pastas rellenas', pr: 4500, pe: '500g', de: 1, o: 1 },
+   472→    { id: 2, n: 'Ravioles de Ricota y Espinaca', d: 'Ravioles suaves con relleno de ricota fresca y espinaca, ideal con salsa filetto.', cat: 'Pastas rellenas', pr: 4000, pe: '500g', de: 1, o: 2 },
+   473→    { id: 3, n: 'Ravioles de Carne', d: 'Ravioles con relleno de carne especiada, tradición familiar en cada bocado.', cat: 'Pastas rellenas', pr: 4200, pe: '500g', de: 1, o: 3 },
+   474→    { id: 4, n: 'Ñoquis de Papa', d: 'Ñoquis suaves y esponjosos, hechos con papas naturales. ¡Tradición del 29!', cat: 'Ñoquis', pr: 3500, pe: '500g', de: 1, o: 4 },
+   475→    { id: 5, n: 'Fettuccine al Huevo', d: 'Fettuccine de masa al huevo, ideales para salsas cremosas.', cat: 'Pastas largas', pr: 3200, pe: '400g', de: 1, o: 5 },
+   476→    { id: 6, n: 'Spaghetti', d: 'Spaghetti secos de sémola de trigo, cocción perfecta al dente.', cat: 'Pastas secas', pr: 2500, pe: '500g', de: 0, o: 6 },
+   477→    { id: 7, n: 'Salsa Filetto', d: 'Salsa de tomates frescos con albahaca, el clásico acompañamiento.', cat: 'Salsas', pr: 3000, pe: '500g', de: 1, o: 7 },
+   478→    { id: 8, n: 'Salsa Bolognesa', d: 'Salsa con carne picada, tomate y vegetales, receta casera.', cat: 'Salsas', pr: 3500, pe: '500g', de: 0, o: 8 },
+   479→    { id: 9, n: 'Lasagna de Carne', d: 'Lasagna armada con capas de pasta, carne, salsa bechamel y queso.', cat: 'Platos armados', pr: 8000, pe: '1kg', de: 1, o: 9 },
+   480→    { id: 10, n: 'Canelones de Jamón y Queso', d: 'Canelones rellenos de jamón y queso, gratinados con salsa blanca.', cat: 'Platos armados', pr: 6500, pe: '800g', de: 0, o: 10 },
+   481→  ]
+   482→  for (const prod of productosLanding) {
+   483→    await exec('INSERT OR IGNORE INTO Producto (id,nombre,descripcion,categoria,precio,peso,destacado,orden,imagen,stock,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?,?,NULL,1,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)', [prod.id, prod.n, prod.d, prod.cat, prod.pr, prod.pe, prod.de, prod.o])
+   484→  }
+   485→  results.push(`${productosLanding.length} productos landing`)
+   486→
+   487→  // 28. PUNTOS DE ENCUENTRO
+   488→  const puntosEncuentro = [
+   489→    { id: 1, n: 'Centro - Corrientes', d: 'Av. 9 de Julio 1200, Corrientes', la: -27.4756, lo: -58.8314, h: '{"lunes_viernes": "8:00-18:00", "sabados": "8:00-13:00"}' },
+   490→    { id: 2, n: 'Barrio Esperanza', d: 'Av. Sargento Cabral 500, Corrientes', la: -27.4600, lo: -58.8100, h: '{"lunes_viernes": "9:00-17:00", "sabados": "9:00-12:00"}' },
+   491→    { id: 3, n: 'Plaza Italia', d: 'Plaza Italia, Corrientes', la: -27.4690, lo: -58.8350, h: '{"sabados": "8:00-12:00"}' },
+   492→  ]
+   493→  for (const pe of puntosEncuentro) {
+   494→    await exec('INSERT OR IGNORE INTO PuntoEncuentro (id,nombre,direccion,latitud,longitud,horarios,activo) VALUES (?,?,?,?,?,?,1)', [pe.id, pe.n, pe.d, pe.la, pe.lo, pe.h])
+   495→  }
+   496→  results.push(`${puntosEncuentro.length} puntos de encuentro`)
+   497→
+   498→  return results
+   499→}
+   500→
+   501→// POST /api/seed - Initialize database with ALL default data
+   502→// This endpoint should be called once to set up the initial data
+   503→export async function POST(request: NextRequest) {
+   504→  try {
+   505→    // Security: require a secret key to prevent unauthorized seeding
+   506→    const { searchParams } = new URL(request.url)
+   507→    const secret = searchParams.get('secret')
+   508→    if (secret !== process.env.SEED_SECRET && secret !== 'laspastasdeorlando-seed-2026') {
+   509→      return NextResponse.json({ error: 'Unauthorized', version: 'v3-turso-fix' }, { status: 401 })
+   510→    }
+   511→
+   512→    // Detect Turso and use @libsql/client directly
+   513→    if (isTurso()) {
+   514→      const client = getTursoClient()
+   515→      let results: string[] = []
+   516→      try {
+   517→        results = await seedTurso(client)
+   518→      } catch (seedError: any) {
+   519→        console.error('[Seed Turso Error]', seedError)
+   520→        return NextResponse.json({
+   521→          error: 'Error al ejecutar seed',
+   522→          details: seedError.message || String(seedError),
+   523→          version: 'v3-turso-fix',
+   524→          completedSteps: results,
+   525→        }, { status: 500 })
+   526→      }
+   527→      return NextResponse.json({
+   528→        success: true,
+   529→        version: 'v3-turso-fix',
+   530→        message: 'Seed COMPLETO exitoso (Turso/libsql) - Todas las tablas pobladas',
+   531→        backend: 'libsql',
+   532→        results,
+   533→        credentials: {
+   534→          email: 'orlando.candia@gmail.com',
+   535→          password: 'Pastas2026!',
+   536→          login_url: '/admin/login',
+   537→        },
+   538→      })
+   539→    }
+   540→
+   541→    // ============================================
+   542→    // LOCAL SQLite PATH (Prisma-based)
+   543→    // ============================================
+   544→    const { db } = await import('@/lib/db')
+   545→    const results: string[] = []
+   546→
+   547→    // ============================================
+   548→    // 1. PAÍSES
+   549→    // ============================================
+   550→    const argentina = await db.pais.upsert({
+   551→      where: { nombre: 'Argentina' },
+   552→      update: {},
+   553→      create: { nombre: 'Argentina' },
+   554→    })
+   555→    results.push(`País: ${argentina.nombre}`)
+   556→
+   557→    // ============================================
+   558→    // 2. PROVINCIAS
+   559→    // ============================================
+   560→    const provinciasData = [
+   561→      'Buenos Aires', 'Catamarca', 'Chaco', 'Chubut', 'Ciudad Autónoma de Buenos Aires',
+   562→      'Córdoba', 'Corrientes', 'Entre Ríos', 'Formosa', 'Jujuy',
+   563→      'La Pampa', 'La Rioja', 'Mendoza', 'Misiones', 'Neuquén',
+   564→      'Río Negro', 'Salta', 'San Juan', 'San Luis', 'Santa Cruz',
+   565→      'Santa Fe', 'Santiago del Estero', 'Tierra del Fuego', 'Tucumán',
+   566→    ]
+   567→
+   568→    const provincias: Record<string, number> = {}
+   569→    for (const nombre of provinciasData) {
+   570→      const p = await db.provincia.upsert({
+   571→        where: { id_pais_nombre: { id_pais: argentina.id, nombre } },
+   572→        update: {},
+   573→        create: { id_pais: argentina.id, nombre },
+   574→      })
+   575→      provincias[nombre] = p.id
+   576→    }
+   577→    results.push(`${provinciasData.length} provincias creadas`)
+   578→
+   579→    // ============================================
+   580→    // 3. DEPARTAMENTOS
+   581→    // ============================================
+   582→    const departamentosData: { nombre: string; provincia: string }[] = [
+   583→      // ── Misiones (17 departamentos) ──
+   584→      { nombre: 'Apóstoles', provincia: 'Misiones' },
+   585→      { nombre: 'Cainguás', provincia: 'Misiones' },
+   586→      { nombre: 'Candelaria', provincia: 'Misiones' },
+   587→      { nombre: 'Capital', provincia: 'Misiones' },
+   588→      { nombre: 'Concepción', provincia: 'Misiones' },
+   589→      { nombre: 'Eldorado', provincia: 'Misiones' },
+   590→      { nombre: 'General Manuel Belgrano', provincia: 'Misiones' },
+   591→      { nombre: 'Guaraní', provincia: 'Misiones' },
+   592→      { nombre: 'Iguazú', provincia: 'Misiones' },
+   593→      { nombre: 'Leandro N. Alem', provincia: 'Misiones' },
+   594→      { nombre: 'Libertador General San Martín', provincia: 'Misiones' },
+   595→      { nombre: 'Montecarlo', provincia: 'Misiones' },
+   596→      { nombre: 'Oberá', provincia: 'Misiones' },
+   597→      { nombre: 'San Ignacio', provincia: 'Misiones' },
+   598→      { nombre: 'San Javier', provincia: 'Misiones' },
+   599→      { nombre: 'San Pedro', provincia: 'Misiones' },
+   600→      { nombre: 'Veinticinco de Mayo', provincia: 'Misiones' },
+   601→      // ── Corrientes ──
+   602→      { nombre: 'Capital', provincia: 'Corrientes' },
+   603→      { nombre: 'General Paz', provincia: 'Corrientes' },
+   604→      { nombre: 'San Cosme', provincia: 'Corrientes' },
+   605→      { nombre: 'Itatí', provincia: 'Corrientes' },
+   606→      { nombre: 'Bella Vista', provincia: 'Corrientes' },
+   607→      { nombre: 'Empedrado', provincia: 'Corrientes' },
+   608→      { nombre: 'Saladas', provincia: 'Corrientes' },
+   609→      { nombre: 'Esquina', provincia: 'Corrientes' },
+   610→      { nombre: 'Goya', provincia: 'Corrientes' },
+   611→      { nombre: 'Lavalle', provincia: 'Corrientes' },
+   612→      { nombre: 'Santo Tomé', provincia: 'Corrientes' },
+   613→      { nombre: 'Paso de los Libres', provincia: 'Corrientes' },
+   614→      { nombre: 'Monte Caseros', provincia: 'Corrientes' },
+   615→      { nombre: 'Curuzú Cuatiá', provincia: 'Corrientes' },
+   616→      { nombre: 'Mercedes', provincia: 'Corrientes' },
+   617→      // ── Ciudad Autónoma de Buenos Aires ──
+   618→      { nombre: 'Comuna 1', provincia: 'Ciudad Autónoma de Buenos Aires' },
+   619→      { nombre: 'Comuna 2', provincia: 'Ciudad Autónoma de Buenos Aires' },
+   620→      { nombre: 'Comuna 3', provincia: 'Ciudad Autónoma de Buenos Aires' },
+   621→      { nombre: 'Comuna 4', provincia: 'Ciudad Autónoma de Buenos Aires' },
+   622→      { nombre: 'Comuna 5', provincia: 'Ciudad Autónoma de Buenos Aires' },
+   623→      // ── Buenos Aires ──
+   624→      { nombre: 'General San Martín', provincia: 'Buenos Aires' },
+   625→      { nombre: 'La Matanza', provincia: 'Buenos Aires' },
+   626→      { nombre: 'Lomas de Zamora', provincia: 'Buenos Aires' },
+   627→      { nombre: 'Quilmes', provincia: 'Buenos Aires' },
+   628→      { nombre: 'Almirante Brown', provincia: 'Buenos Aires' },
+   629→      { nombre: 'Avellaneda', provincia: 'Buenos Aires' },
+   630→      { nombre: 'Morón', provincia: 'Buenos Aires' },
+   631→      { nombre: 'Tres de Febrero', provincia: 'Buenos Aires' },
+   632→      { nombre: 'San Isidro', provincia: 'Buenos Aires' },
+   633→      { nombre: 'Vicente López', provincia: 'Buenos Aires' },
+   634→      // ── Córdoba ──
+   635→      { nombre: 'Capital', provincia: 'Córdoba' },
+   636→      { nombre: 'Colón', provincia: 'Córdoba' },
+   637→      { nombre: 'San Justo', provincia: 'Córdoba' },
+   638→      // ── Santa Fe ──
+   639→      { nombre: 'La Capital', provincia: 'Santa Fe' },
+   640→      { nombre: 'Rosario', provincia: 'Santa Fe' },
+   641→      // ── Mendoza ──
+   642→      { nombre: 'Capital', provincia: 'Mendoza' },
+   643→      { nombre: 'Godoy Cruz', provincia: 'Mendoza' },
+   644→      // ── Tucumán ──
+   645→      { nombre: 'Capital', provincia: 'Tucumán' },
+   646→      { nombre: 'Cruz Alta', provincia: 'Tucumán' },
+   647→      // ── Salta ──
+   648→      { nombre: 'Capital', provincia: 'Salta' },
+   649→      // ── Entre Ríos ──
+   650→      { nombre: 'Paraná', provincia: 'Entre Ríos' },
+   651→      { nombre: 'Concordia', provincia: 'Entre Ríos' },
+   652→      // ── Chaco ──
+   653→      { nombre: 'Comandante Fernández', provincia: 'Chaco' },
+   654→      { nombre: 'San Fernando', provincia: 'Chaco' },
+   655→      { nombre: '1° de Mayo', provincia: 'Chaco' },
+   656→      // ── Formosa ──
+   657→      { nombre: 'Formosa', provincia: 'Formosa' },
+   658→      { nombre: 'Pilcomayo', provincia: 'Formosa' },
+   659→      // ── Jujuy ──
+   660→      { nombre: 'Capital', provincia: 'Jujuy' },
+   661→      { nombre: 'El Carmen', provincia: 'Jujuy' },
+   662→      // ── Catamarca ──
+   663→      { nombre: 'Capital', provincia: 'Catamarca' },
+   664→      { nombre: 'Valle Viejo', provincia: 'Catamarca' },
+   665→      // ── Chubut ──
+   666→      { nombre: 'Rawson', provincia: 'Chubut' },
+   667→      { nombre: 'Gaiman', provincia: 'Chubut' },
+   668→      // ── La Pampa ──
+   669→      { nombre: 'Capital', provincia: 'La Pampa' },
+   670→      // ── La Rioja ──
+   671→      { nombre: 'Capital', provincia: 'La Rioja' },
+   672→      // ── Neuquén ──
+   673→      { nombre: 'Confluencia', provincia: 'Neuquén' },
+   674→      // ── Río Negro ──
+   675→      { nombre: 'General Roca', provincia: 'Río Negro' },
+   676→      // ── San Juan ──
+   677→      { nombre: 'Capital', provincia: 'San Juan' },
+   678→      // ── San Luis ──
+   679→      { nombre: 'Capital', provincia: 'San Luis' },
+   680→      // ── Santa Cruz ──
+   681→      { nombre: 'Güer Aike', provincia: 'Santa Cruz' },
+   682→      // ── Santiago del Estero ──
+   683→      { nombre: 'Capital', provincia: 'Santiago del Estero' },
+   684→      // ── Tierra del Fuego ──
+   685→      { nombre: 'Ushuaia', provincia: 'Tierra del Fuego' },
+   686→    ]
+   687→
+   688→    const departamentos: Record<string, number> = {}
+   689→    for (const depto of departamentosData) {
+   690→      const idProv = provincias[depto.provincia]
+   691→      if (!idProv) continue
+   692→      const d = await db.departamento.upsert({
+   693→        where: { id_provincia_nombre: { id_provincia: idProv, nombre: depto.nombre } },
+   694→        update: {},
+   695→        create: { id_provincia: idProv, nombre: depto.nombre },
+   696→      })
+   697→      departamentos[`${depto.provincia}-${depto.nombre}`] = d.id
+   698→    }
+   699→    results.push(`${Object.keys(departamentos).length} departamentos creados`)
+   700→
+   701→    // ============================================
+   702→    // 4. MUNICIPIOS
+   703→    // ============================================
+   704→    const municipiosData: { nombre: string; deptoKey: string }[] = [
+   705→      // ── Misiones ──
+   706→      { nombre: 'Posadas', deptoKey: 'Misiones-Capital' },
+   707→      { nombre: 'Garupá', deptoKey: 'Misiones-Capital' },
+   708→      { nombre: 'Apóstoles', deptoKey: 'Misiones-Apóstoles' },
+   709→      { nombre: 'San José', deptoKey: 'Misiones-Apóstoles' },
+   710→      { nombre: 'Campo Grande', deptoKey: 'Misiones-Cainguás' },
+   711→      { nombre: 'Aristóbulo del Valle', deptoKey: 'Misiones-Cainguás' },
+   712→      { nombre: 'Candelaria', deptoKey: 'Misiones-Candelaria' },
+   713→      { nombre: 'Santa Ana', deptoKey: 'Misiones-Candelaria' },
+   714→      { nombre: 'Mártires', deptoKey: 'Misiones-Candelaria' },
+   715→      { nombre: 'Concepción de la Sierra', deptoKey: 'Misiones-Concepción' },
+   716→      { nombre: 'Santa María', deptoKey: 'Misiones-Concepción' },
+   717→      { nombre: 'Eldorado', deptoKey: 'Misiones-Eldorado' },
+   718→      { nombre: '9 de Julio', deptoKey: 'Misiones-Eldorado' },
+   719→      { nombre: 'Colonia Wanda', deptoKey: 'Misiones-Eldorado' },
+   720→      { nombre: 'Bernardo de Irigoyen', deptoKey: 'Misiones-General Manuel Belgrano' },
+   721→      { nombre: 'Comandante Andrés Guacurarí', deptoKey: 'Misiones-General Manuel Belgrano' },
+   722→      { nombre: 'El Soberbio', deptoKey: 'Misiones-Guaraní' },
+   723→      { nombre: 'Oberá', deptoKey: 'Misiones-Oberá' },
+   724→      { nombre: 'Campo Viera', deptoKey: 'Misiones-Oberá' },
+   725→      { nombre: 'Puerto Rico', deptoKey: 'Misiones-Guaraní' },
+   726→      { nombre: 'Puerto Iguazú', deptoKey: 'Misiones-Iguazú' },
+   727→      { nombre: 'Wanda', deptoKey: 'Misiones-Iguazú' },
+   728→      { nombre: 'Leandro N. Alem', deptoKey: 'Misiones-Leandro N. Alem' },
+   729→      { nombre: 'Caá Yarí', deptoKey: 'Misiones-Leandro N. Alem' },
+   730→      { nombre: 'Puerto Libertad', deptoKey: 'Misiones-Libertador General San Martín' },
+   731→      { nombre: 'Capioví', deptoKey: 'Misiones-Libertador General San Martín' },
+   732→      { nombre: 'Ruiz de Montoya', deptoKey: 'Misiones-Libertador General San Martín' },
+   733→      { nombre: 'Montecarlo', deptoKey: 'Misiones-Montecarlo' },
+   734→      { nombre: 'Caraguatay', deptoKey: 'Misiones-Montecarlo' },
+   735→      { nombre: 'San Ignacio', deptoKey: 'Misiones-San Ignacio' },
+   736→      { nombre: 'Jardín América', deptoKey: 'Misiones-San Ignacio' },
+   737→      { nombre: 'Hipólito Yrigoyen', deptoKey: 'Misiones-San Ignacio' },
+   738→      { nombre: 'San Javier', deptoKey: 'Misiones-San Javier' },
+   739→      { nombre: 'Itacaruaré', deptoKey: 'Misiones-San Javier' },
+   740→      { nombre: 'San Pedro', deptoKey: 'Misiones-San Pedro' },
+   741→      { nombre: 'General Urquiza', deptoKey: 'Misiones-San Pedro' },
+   742→      { nombre: 'Alba Posse', deptoKey: 'Misiones-Veinticinco de Mayo' },
+   743→      { nombre: 'Colonia Aurora', deptoKey: 'Misiones-Veinticinco de Mayo' },
+   744→      // ── Corrientes ──
+   745→      { nombre: 'Corrientes', deptoKey: 'Corrientes-Capital' },
+   746→      { nombre: 'Barrio Esperanza', deptoKey: 'Corrientes-Capital' },
+   747→      { nombre: 'Nuestra Señora del Rosario de Caa Catí', deptoKey: 'Corrientes-General Paz' },
+   748→      { nombre: 'San Cosme', deptoKey: 'Corrientes-San Cosme' },
+   749→      { nombre: 'Itatí', deptoKey: 'Corrientes-Itatí' },
+   750→      { nombre: 'Bella Vista', deptoKey: 'Corrientes-Bella Vista' },
+   751→      { nombre: 'Pedro Y. Cañete (Empedrado)', deptoKey: 'Corrientes-Empedrado' },
+   752→      { nombre: 'Goya', deptoKey: 'Corrientes-Goya' },
+   753→      { nombre: 'Esquina', deptoKey: 'Corrientes-Esquina' },
+   754→      { nombre: 'Mercedes', deptoKey: 'Corrientes-Mercedes' },
+   755→      { nombre: 'Paso de los Libres', deptoKey: 'Corrientes-Paso de los Libres' },
+   756→      { nombre: 'Monte Caseros', deptoKey: 'Corrientes-Monte Caseros' },
+   757→      { nombre: 'Curuzú Cuatiá', deptoKey: 'Corrientes-Curuzú Cuatiá' },
+   758→      { nombre: 'Santo Tomé', deptoKey: 'Corrientes-Santo Tomé' },
+   759→      // ── Ciudad Autónoma de Buenos Aires ──
+   760→      { nombre: 'Retiro', deptoKey: 'Ciudad Autónoma de Buenos Aires-Comuna 1' },
+   761→      { nombre: 'San Nicolás', deptoKey: 'Ciudad Autónoma de Buenos Aires-Comuna 1' },
+   762→      { nombre: 'Puerto Madero', deptoKey: 'Ciudad Autónoma de Buenos Aires-Comuna 1' },
+   763→      { nombre: 'Recoleta', deptoKey: 'Ciudad Autónoma de Buenos Aires-Comuna 2' },
+   764→      { nombre: 'Palermo', deptoKey: 'Ciudad Autónoma de Buenos Aires-Comuna 2' },
+   765→      { nombre: 'Balvanera', deptoKey: 'Ciudad Autónoma de Buenos Aires-Comuna 3' },
+   766→      // ── Buenos Aires ──
+   767→      { nombre: 'San Martín', deptoKey: 'Buenos Aires-General San Martín' },
+   768→      { nombre: 'Ramos Mejía', deptoKey: 'Buenos Aires-La Matanza' },
+   769→      { nombre: 'Banfield', deptoKey: 'Buenos Aires-Lomas de Zamora' },
+   770→      { nombre: 'Quilmes', deptoKey: 'Buenos Aires-Quilmes' },
+   771→      { nombre: 'Adrogué', deptoKey: 'Buenos Aires-Almirante Brown' },
+   772→      { nombre: 'Avellaneda', deptoKey: 'Buenos Aires-Avellaneda' },
+   773→      { nombre: 'Morón', deptoKey: 'Buenos Aires-Morón' },
+   774→      { nombre: 'Caseros', deptoKey: 'Buenos Aires-Tres de Febrero' },
+   775→      { nombre: 'San Isidro', deptoKey: 'Buenos Aires-San Isidro' },
+   776→      { nombre: 'Olivos', deptoKey: 'Buenos Aires-Vicente López' },
+   777→      // ── Córdoba ──
+   778→      { nombre: 'Córdoba', deptoKey: 'Córdoba-Capital' },
+   779→      // ── Santa Fe ──
+   780→      { nombre: 'Santa Fe', deptoKey: 'Santa Fe-La Capital' },
+   781→      { nombre: 'Rosario', deptoKey: 'Santa Fe-Rosario' },
+   782→      // ── Mendoza ──
+   783→      { nombre: 'Mendoza', deptoKey: 'Mendoza-Capital' },
+   784→      { nombre: 'Godoy Cruz', deptoKey: 'Mendoza-Godoy Cruz' },
+   785→      // ── Tucumán ──
+   786→      { nombre: 'San Miguel de Tucumán', deptoKey: 'Tucumán-Capital' },
+   787→      // ── Salta ──
+   788→      { nombre: 'Salta', deptoKey: 'Salta-Capital' },
+   789→      // ── Entre Ríos ──
+   790→      { nombre: 'Paraná', deptoKey: 'Entre Ríos-Paraná' },
+   791→      { nombre: 'Concordia', deptoKey: 'Entre Ríos-Concordia' },
+   792→      // ── Chaco ──
+   793→      { nombre: 'Presidencia Roque Sáenz Peña', deptoKey: 'Chaco-Comandante Fernández' },
+   794→      { nombre: 'Resistencia', deptoKey: 'Chaco-San Fernando' },
+   795→      { nombre: 'Barranqueras', deptoKey: 'Chaco-1° de Mayo' },
+   796→      // ── Formosa ──
+   797→      { nombre: 'Formosa', deptoKey: 'Formosa-Formosa' },
+   798→      { nombre: 'Clorinda', deptoKey: 'Formosa-Pilcomayo' },
+   799→      // ── Jujuy ──
+   800→      { nombre: 'San Salvador de Jujuy', deptoKey: 'Jujuy-Capital' },
+   801→      { nombre: 'El Carmen', deptoKey: 'Jujuy-El Carmen' },
+   802→      // ── Catamarca ──
+   803→      { nombre: 'San Fernando del Valle de Catamarca', deptoKey: 'Catamarca-Capital' },
+   804→      { nombre: 'San Isidro', deptoKey: 'Catamarca-Valle Viejo' },
+   805→      // ── Chubut ──
+   806→      { nombre: 'Rawson', deptoKey: 'Chubut-Rawson' },
+   807→      { nombre: 'Gaiman', deptoKey: 'Chubut-Gaiman' },
+   808→      // ── La Pampa ──
+   809→      { nombre: 'Santa Rosa', deptoKey: 'La Pampa-Capital' },
+   810→      // ── La Rioja ──
+   811→      { nombre: 'La Rioja', deptoKey: 'La Rioja-Capital' },
+   812→      // ── Neuquén ──
+   813→      { nombre: 'Neuquén', deptoKey: 'Neuquén-Confluencia' },
+   814→      { nombre: 'Plottier', deptoKey: 'Neuquén-Confluencia' },
+   815→      // ── Río Negro ──
+   816→      { nombre: 'General Roca', deptoKey: 'Río Negro-General Roca' },
+   817→      // ── San Juan ──
+   818→      { nombre: 'San Juan', deptoKey: 'San Juan-Capital' },
+   819→      // ── San Luis ──
+   820→      { nombre: 'San Luis', deptoKey: 'San Luis-Capital' },
+   821→      // ── Santa Cruz ──
+   822→      { nombre: 'Río Gallegos', deptoKey: 'Santa Cruz-Güer Aike' },
+   823→      // ── Santiago del Estero ──
+   824→      { nombre: 'Santiago del Estero', deptoKey: 'Santiago del Estero-Capital' },
+   825→      // ── Tierra del Fuego ──
+   826→      { nombre: 'Ushuaia', deptoKey: 'Tierra del Fuego-Ushuaia' },
+   827→    ]
+   828→
+   829→    for (const muni of municipiosData) {
+   830→      const idDepto = departamentos[muni.deptoKey]
+   831→      if (!idDepto) continue
+   832→      await db.municipio.upsert({
+   833→        where: { id_departamento_nombre: { id_departamento: idDepto, nombre: muni.nombre } },
+   834→        update: {},
+   835→        create: { id_departamento: idDepto, nombre: muni.nombre },
+   836→      })
+   837→    }
+   838→    results.push(`${municipiosData.length} municipios creados`)
+   839→
+   840→    // ============================================
+   841→    // 5. TIPOS DE DIRECCIÓN
+   842→    // ============================================
+   843→    for (const nombre of ['particular', 'comercial', 'entrega']) {
+   844→      await db.tipoDireccion.upsert({ where: { nombre }, update: {}, create: { nombre } })
+   845→    }
+   846→    results.push('Tipos de dirección creados')
+   847→
+   848→    // ============================================
+   849→    // 6. TIPOS DE CONTACTO
+   850→    // ============================================
+   851→    for (const nombre of ['email', 'teléfono', 'WhatsApp']) {
+   852→      await db.tipoContacto.upsert({ where: { nombre }, update: {}, create: { nombre } })
+   853→    }
+   854→    results.push('Tipos de contacto creados')
+   855→
+   856→    // ============================================
+   857→    // 7. EMPRESAS TELEFÓNICAS
+   858→    // ============================================
+   859→    const empresasTelefonicas = [
+   860→      { nombre: 'Personal', codigo: 'PER' },
+   861→      { nombre: 'Claro', codigo: 'CLA' },
+   862→      { nombre: 'Movistar', codigo: 'MOV' },
+   863→      { nombre: 'Tuenti', codigo: 'TUE' },
+   864→    ]
+   865→    for (const et of empresasTelefonicas) {
+   866→      await db.empresaTelefonica.upsert({ where: { nombre: et.nombre }, update: {}, create: et })
+   867→    }
+   868→    results.push(`${empresasTelefonicas.length} empresas telefónicas creadas`)
+   869→
+   870→    // ============================================
+   871→    // 8. SERVICIOS DE CORREO ELECTRÓNICO
+   872→    // ============================================
+   873→    const serviciosCorreo = [
+   874→      { nombre: 'Gmail', dominio: 'gmail.com' },
+   875→      { nombre: 'Outlook/Hotmail', dominio: 'outlook.com' },
+   876→      { nombre: 'Yahoo', dominio: 'yahoo.com' },
+   877→      { nombre: 'ICloud', dominio: 'icloud.com' },
+   878→    ]
+   879→    for (const sc of serviciosCorreo) {
+   880→      await db.servicioCorreoElectronico.upsert({ where: { nombre: sc.nombre }, update: {}, create: sc })
+   881→    }
+   882→    results.push(`${serviciosCorreo.length} servicios de correo electrónico creados`)
+   883→
+   884→    // ============================================
+   885→    // 9. TIPOS DE PLATAFORMA
+   886→    // ============================================
+   887→    const tiposPlataforma = [
+   888→      { nombre: 'Web', descripcion: 'Aplicación web' },
+   889→      { nombre: 'Android', descripcion: 'Aplicación móvil Android' },
+   890→      { nombre: 'iOS', descripcion: 'Aplicación móvil iOS' },
+   891→      { nombre: 'API', descripcion: 'Servicio API REST' },
+   892→    ]
+   893→    for (const tp of tiposPlataforma) {
+   894→      await db.tipoPlataforma.upsert({ where: { nombre: tp.nombre }, update: {}, create: tp })
+   895→    }
+   896→    results.push(`${tiposPlataforma.length} tipos de plataforma creados`)
+   897→
+   898→    // ============================================
+   899→    // 10. TIPOS DE ENTIDAD
+   900→    // ============================================
+   901→    const tiposEntidad = [
+   902→      { nombre: 'física', descripcion: 'Persona física' },
+   903→      { nombre: 'jurídica', descripcion: 'Persona jurídica / Empresa' },
+   904→    ]
+   905→    for (const te of tiposEntidad) {
+   906→      await db.tipoEntidad.upsert({ where: { nombre: te.nombre }, update: {}, create: te })
+   907→    }
+   908→    results.push(`${tiposEntidad.length} tipos de entidad creados`)
+   909→
+   910→    // ============================================
+   911→    // 11. ESTADOS DE SESIÓN
+   912→    // ============================================
+   913→    const estadosSesion = [
+   914→      { nombre: 'activa', descripcion: 'Sesión activa del usuario' },
+   915→      { nombre: 'expirada', descripcion: 'Sesión expirada por inactividad' },
+   916→      { nombre: 'cerrada', descripcion: 'Sesión cerrada por el usuario' },
+   917→      { nombre: 'revocada', descripcion: 'Sesión revocada por seguridad' },
+   918→    ]
+   919→    for (const es of estadosSesion) {
+   920→      await db.estadoSesion.upsert({ where: { nombre: es.nombre }, update: {}, create: es })
+   921→    }
+   922→    results.push(`${estadosSesion.length} estados de sesión creados`)
+   923→
+   924→    // ============================================
+   925→    // 12. TIPOS DE PERSONA
+   926→    // ============================================
+   927→    for (const nombre of ['cliente', 'proveedor', 'empleado']) {
+   928→      await db.tipoPersona.upsert({ where: { nombre }, update: {}, create: { nombre } })
+   929→    }
+   930→    results.push('Tipos de persona creados')
+   931→
+   932→    // ============================================
+   933→    // 13. CATEGORÍAS DE MATERIAS PRIMAS
+   934→    // ============================================
+   935→    const categoriasMP = [
+   936→      { nombre: 'Harinas', descripcion: 'Harinas de trigo, sémola y otros cereales' },
+   937→      { nombre: 'Huevos y derivados', descripcion: 'Huevos frescos, líquidos y derivados' },
+   938→      { nombre: 'Lácteos', descripcion: 'Quesos, cremas, manteca y leches' },
+   939→      { nombre: 'Aceites y grasas', descripcion: 'Aceites vegetales y grasas' },
+   940→      { nombre: 'Condimentos y especias', descripcion: 'Especias, sal, pimienta y hierbas' },
+   941→      { nombre: 'Carnes', descripcion: 'Carnes para rellenos (res, cerdo, pollo)' },
+   942→      { nombre: 'Verduras', descripcion: 'Verduras frescas para salsas y rellenos' },
+   943→      { nombre: 'Salsas y conservas', descripcion: 'Tomates, salsa de tomate, conservas' },
+   944→      { nombre: 'Aditivos y suplementos', descripcion: 'Colorantes, conservantes, mejoradores' },
+   945→    ]
+   946→    for (const cat of categoriasMP) {
+   947→      await db.categoriaMateriaPrima.upsert({ where: { nombre: cat.nombre }, update: {}, create: cat })
+   948→    }
+   949→    results.push(`${categoriasMP.length} categorías de materias primas creadas`)
+   950→
+   951→    // ============================================
+   952→    // 14. TIPOS DE INSUMOS
+   953→    // ============================================
+   954→    const tiposInsumo = [
+   955→      { nombre: 'Envases primarios', descripcion: 'Bolsas, bandejas, film para contacto directo' },
+   956→      { nombre: 'Envases secundarios', descripcion: 'Cajas, cartones, etiquetas' },
+   957→      { nombre: 'Materiales de limpieza', descripcion: 'Productos de limpieza y sanitización' },
+   958→      { nombre: 'Combustibles', descripcion: 'Gas, leña, energía para producción' },
+   959→      { nombre: 'Utensilios descartables', descripcion: 'Guantes, cofias, delantales descartables' },
+   960→      { nombre: 'Insumos de oficina', descripcion: 'Papel, cartuchos, útiles' },
+   961→    ]
+   962→    for (const ti of tiposInsumo) {
+   963→      await db.tipoInsumo.upsert({ where: { nombre: ti.nombre }, update: {}, create: ti })
+   964→    }
+   965→    results.push(`${tiposInsumo.length} tipos de insumos creados`)
+   966→
+   967→    // ============================================
+   968→    // 15. CATEGORÍAS DE PRODUCTOS TERMINADOS
+   969→    // ============================================
+   970→    const categoriasPT = [
+   971→      { nombre: 'Pastas frescas', descripcion: 'Pastas frescas rellenas y al huevo' },
+   972→      { nombre: 'Pastas secas', descripcion: 'Pastas secas tipo fideos' },
+   973→      { nombre: 'Salsas', descripcion: 'Salsas para acompañar pastas' },
+   974→      { nombre: 'Ñoquis', descripcion: 'Ñoquis de papa, espinaca, etc.' },
+   975→      { nombre: 'Lasagnas y canelones', descripcion: 'Platos armados listos para hornear' },
+   976→      { nombre: 'Postres', descripcion: 'Postres a base de pasta' },
+   977→    ]
+   978→    for (const cat of categoriasPT) {
+   979→      await db.categoriaProductoTerminado.upsert({ where: { nombre: cat.nombre }, update: {}, create: cat })
+   980→    }
+   981→    results.push(`${categoriasPT.length} categorías de productos terminados creados`)
+   982→
+   983→    // ============================================
+   984→    // 16. MARCAS
+   985→    // ============================================
+   986→    const marcas = [
+   987→      { nombre: 'Pastas Orlando', descripcion: 'Marca propia' },
+   988→      { nombre: 'Molinos Río de la Plata', descripcion: 'Harinas y cereales' },
+   989→      { nombre: 'Arcor', descripcion: 'Alimentos generales' },
+   990→      { nombre: 'Mastellone', descripcion: 'Lácteos' },
+   991→      { nombre: 'La Serenísima', descripcion: 'Lácteos' },
+   992→      { nombre: 'Molto', descripcion: 'Harinas especiales' },
+   993→      { nombre: 'Blancaflor', descripcion: 'Harinas' },
+   994→      { nombre: 'Canale', descripcion: 'Alimentos' },
+   995→      { nombre: 'Fargo', descripcion: 'Alimentos' },
+   996→      { nombre: 'Sin marca', descripcion: 'Genérico / sin marca' },
+   997→    ]
+   998→    for (const marca of marcas) {
+   999→      await db.marca.upsert({ where: { nombre: marca.nombre }, update: {}, create: marca })
+  1000→    }
+  1001→    results.push(`${marcas.length} marcas creadas`)
+  1002→
+  1003→    // ============================================
+  1004→    // 17. UNIDADES DE MEDIDA
+  1005→    // ============================================
+  1006→    const unidadesMedida = [
+  1007→      { codigo: 'kg', nombre: 'Kilogramo', conversion_a_base: 1.0, tipo_medida: 'peso' },
+  1008→      { codigo: 'g', nombre: 'Gramo', conversion_a_base: 0.001, tipo_medida: 'peso' },
+  1009→      { codigo: 'mg', nombre: 'Miligramo', conversion_a_base: 0.000001, tipo_medida: 'peso' },
+  1010→      { codigo: 'l', nombre: 'Litro', conversion_a_base: 1.0, tipo_medida: 'volumen' },
+  1011→      { codigo: 'ml', nombre: 'Mililitro', conversion_a_base: 0.001, tipo_medida: 'volumen' },
+  1012→      { codigo: 'cc', nombre: 'Centímetro cúbico', conversion_a_base: 0.001, tipo_medida: 'volumen' },
+  1013→      { codigo: 'm', nombre: 'Metro', conversion_a_base: 1.0, tipo_medida: 'longitud' },
+  1014→      { codigo: 'cm', nombre: 'Centímetro', conversion_a_base: 0.01, tipo_medida: 'longitud' },
+  1015→      { codigo: 'mm', nombre: 'Milímetro', conversion_a_base: 0.001, tipo_medida: 'longitud' },
+  1016→      { codigo: 'u', nombre: 'Unidad', conversion_a_base: 1.0, tipo_medida: 'unidad' },
+  1017→      { codigo: 'doc', nombre: 'Docena', conversion_a_base: 12.0, tipo_medida: 'unidad' },
+  1018→      { codigo: 'rollo', nombre: 'Rollo', conversion_a_base: 1.0, tipo_medida: 'unidad' },
+  1019→      { codigo: 'paq', nombre: 'Paquete', conversion_a_base: 1.0, tipo_medida: 'unidad' },
+  1020→      { codigo: 'bolsa', nombre: 'Bolsa', conversion_a_base: 1.0, tipo_medida: 'unidad' },
+  1021→      { codigo: 'caja', nombre: 'Caja', conversion_a_base: 1.0, tipo_medida: 'unidad' },
+  1022→    ]
+  1023→    for (const um of unidadesMedida) {
+  1024→      await db.unidadMedida.upsert({ where: { codigo: um.codigo }, update: {}, create: um })
+  1025→    }
+  1026→    results.push(`${unidadesMedida.length} unidades de medida creadas`)
+  1027→
+  1028→    // ============================================
+  1029→    // 18. FORMAS DE PAGO
+  1030→    // ============================================
+  1031→    const formasPago = [
+  1032→      { nombre_forma: 'Efectivo', requiere_identificacion: false, requiere_cuenta: false },
+  1033→      { nombre_forma: 'Mercado Pago', requiere_identificacion: false, requiere_cuenta: true },
+  1034→      { nombre_forma: 'Transferencia bancaria', requiere_identificacion: true, requiere_cuenta: true },
+  1035→    ]
+  1036→    for (const fp of formasPago) {
+  1037→      await db.formaPago.upsert({ where: { nombre_forma: fp.nombre_forma }, update: {}, create: fp })
+  1038→    }
+  1039→    results.push(`${formasPago.length} formas de pago creadas`)
+  1040→
+  1041→    // ============================================
+  1042→    // 19. ESTADOS GENERALES
+  1043→    // ============================================
+  1044→    const estados = [
+  1045→      { nombre_estado: 'pendiente', entidad_aplicable: 'general', es_final: false },
+  1046→      { nombre_estado: 'en_proceso', entidad_aplicable: 'general', es_final: false },
+  1047→      { nombre_estado: 'completado', entidad_aplicable: 'general', es_final: true },
+  1048→      { nombre_estado: 'cancelado', entidad_aplicable: 'general', es_final: true },
+  1049→      { nombre_estado: 'entregado', entidad_aplicable: 'pedidos', es_final: true },
+  1050→      { nombre_estado: 'en_camino', entidad_aplicable: 'entregas', es_final: false },
+  1051→      { nombre_estado: 'programado', entidad_aplicable: 'entregas', es_final: false },
+  1052→      { nombre_estado: 'pagado', entidad_aplicable: 'ventas', es_final: true },
+  1053→      { nombre_estado: 'activo', entidad_aplicable: 'produccion', es_final: false },
+  1054→      { nombre_estado: 'aprobado', entidad_aplicable: 'presupuestos', es_final: false },
+  1055→      { nombre_estado: 'rechazado', entidad_aplicable: 'presupuestos', es_final: true },
+  1056→      { nombre_estado: 'expirado', entidad_aplicable: 'presupuestos', es_final: true },
+  1057→      { nombre_estado: 'convertido', entidad_aplicable: 'presupuestos', es_final: true },
+  1058→    ]
+  1059→    for (const estado of estados) {
+  1060→      await db.estadoGeneral.upsert({ where: { nombre_estado: estado.nombre_estado }, update: {}, create: estado })
+  1061→    }
+  1062→    results.push(`${estados.length} estados generales creados`)
+  1063→
+  1064→    // ============================================
+  1065→    // 20. PERSONA ADMIN
+  1066→    // ============================================
+  1067→    const personaAdmin = await db.persona.upsert({
+  1068→      where: { numero_documento: '00000000' },
+  1069→      update: {},
+  1070→      create: {
+  1071→        nombre: 'Orlando',
+  1072→        apellido: 'Candia',
+  1073→        numero_documento: '00000000',
+  1074→        tipo_persona: 'empleado',
+  1075→        observaciones: 'Administrador del sistema',
+  1076→      },
+  1077→    })
+  1078→    results.push(`Persona admin: ${personaAdmin.nombre} ${personaAdmin.apellido}`)
+  1079→
+  1080→    // ============================================
+  1081→    // 21. USUARIO ADMIN
+  1082→    // ============================================
+  1083→    const hashedPassword = await bcrypt.hash('Pastas2026!', 10)
+  1084→    const usuarioAdmin = await db.usuario.upsert({
+  1085→      where: { email: 'orlando.candia@gmail.com' },
+  1086→      update: {
+  1087→        password: hashedPassword,
+  1088→        estado: true,
+  1089→      },
+  1090→      create: {
+  1091→        id_persona: personaAdmin.id,
+  1092→        email: 'orlando.candia@gmail.com',
+  1093→        password: hashedPassword,
+  1094→        estado: true,
+  1095→      },
+  1096→    })
+  1097→    results.push(`Usuario admin: ${usuarioAdmin.email} (password updated)`)
+  1098→
+  1099→    // Contacto email
+  1100→    const tipoEmail = await db.tipoContacto.findUniqueOrThrow({ where: { nombre: 'email' } })
+  1101→    const existingContact = await db.contacto.findFirst({ where: { id_persona: personaAdmin.id, id_tipo_contacto: tipoEmail.id } })
+  1102→    if (!existingContact) {
+  1103→      await db.contacto.create({
+  1104→        data: {
+  1105→          id_persona: personaAdmin.id,
+  1106→          id_tipo_contacto: tipoEmail.id,
+  1107→          valor: 'orlando.candia@gmail.com',
+  1108→          es_principal: true,
+  1109→          verificado: true,
+  1110→        },
+  1111→      })
+  1112→    }
+  1113→    results.push('Contacto email del admin')
+  1114→
+  1115→    // ============================================
+  1116→    // 22. ROLES
+  1117→    // ============================================
+  1118→    const rolesData = [
+  1119→      { nombre: 'admin', descripcion: 'Administrador total del sistema', es_default: false },
+  1120→      { nombre: 'produccion', descripcion: 'Acceso a producción y stock', es_default: false },
+  1121→      { nombre: 'ventas', descripcion: 'Acceso a ventas y pedidos', es_default: false },
+  1122→      { nombre: 'lectura', descripcion: 'Solo lectura de datos', es_default: true },
+  1123→    ]
+  1124→    for (const rol of rolesData) {
+  1125→      await db.rol.upsert({ where: { nombre: rol.nombre }, update: {}, create: rol })
+  1126→    }
+  1127→    results.push('Roles creados')
+  1128→
+  1129→    // Assign admin role
+  1130→    const rolAdmin = await db.rol.findUniqueOrThrow({ where: { nombre: 'admin' } })
+  1131→    await db.usuarioRol.upsert({
+  1132→      where: { id_usuario_id_rol: { id_usuario: usuarioAdmin.id, id_rol: rolAdmin.id } },
+  1133→      update: {},
+  1134→      create: { id_usuario: usuarioAdmin.id, id_rol: rolAdmin.id },
+  1135→    })
+  1136→    results.push('Rol admin asignado')
+  1137→
+  1138→    // ============================================
+  1139→    // 23. PERMISOS
+  1140→    // ============================================
+  1141→    const modulos = [
+  1142→      'productos', 'compras', 'ventas', 'produccion', 'usuarios',
+  1143→      'auditoria', 'reportes', 'seguridad', 'logistica', 'presupuestos',
+  1144→    ]
+  1145→    const acciones = ['ver', 'crear', 'editar', 'eliminar']
+  1146→    let permisosCount = 0
+  1147→
+  1148→    for (const modulo of modulos) {
+  1149→      for (const accion of acciones) {
+  1150→        const nombre = `${modulo}.${accion}`
+  1151→        await db.permiso.upsert({
+  1152→          where: { nombre },
+  1153→          update: {},
+  1154→          create: { nombre, modulo, descripcion: `${accion} en ${modulo}` },
+  1155→        })
+  1156→        permisosCount++
+  1157→      }
+  1158→    }
+  1159→    const extraPermisos = ['dashboard.ver', 'configuracion.ver', 'configuracion.editar', 'opiniones.ver', 'opiniones.editar']
+  1160→    for (const nombre of extraPermisos) {
+  1161→      const modulo = nombre.split('.')[0]
+  1162→      await db.permiso.upsert({ where: { nombre }, update: {}, create: { nombre, modulo, descripcion: nombre } })
+  1163→      permisosCount++
+  1164→    }
+  1165→    results.push(`${permisosCount} permisos creados`)
+  1166→
+  1167→    // Assign all permissions to admin role
+  1168→    const allPermisos = await db.permiso.findMany()
+  1169→    for (const permiso of allPermisos) {
+  1170→      await db.rolPermiso.upsert({
+  1171→        where: { id_rol_id_permiso: { id_rol: rolAdmin.id, id_permiso: permiso.id } },
+  1172→        update: {},
+  1173→        create: { id_rol: rolAdmin.id, id_permiso: permiso.id },
+  1174→      })
+  1175→    }
+  1176→    results.push(`${allPermisos.length} permisos asignados al rol admin`)
+  1177→
+  1178→    // ============================================
+  1179→    // 24. PRODUCTOS TERMINADOS
+  1180→    // ============================================
+  1181→    const catFrescas = await db.categoriaProductoTerminado.findUniqueOrThrow({ where: { nombre: 'Pastas frescas' } })
+  1182→    const catSecas = await db.categoriaProductoTerminado.findUniqueOrThrow({ where: { nombre: 'Pastas secas' } })
+  1183→    const catSalsas = await db.categoriaProductoTerminado.findUniqueOrThrow({ where: { nombre: 'Salsas' } })
+  1184→    const catNoquis = await db.categoriaProductoTerminado.findUniqueOrThrow({ where: { nombre: 'Ñoquis' } })
+  1185→    const catLasagnas = await db.categoriaProductoTerminado.findUniqueOrThrow({ where: { nombre: 'Lasagnas y canelones' } })
+  1186→
+  1187→    const productosTerminados = [
+  1188→      { codigo: 'PF-001', nombre: 'Sorrentinos de Jamón y Queso', id_categoria: catFrescas.id, peso_unitario_aprox: 0.5, precio_venta: 4500, stock_minimo: 10, destacado: true, orden: 1 },
+  1189→      { codigo: 'PF-002', nombre: 'Ravioles de Ricota y Espinaca', id_categoria: catFrescas.id, peso_unitario_aprox: 0.5, precio_venta: 4000, stock_minimo: 10, destacado: true, orden: 2 },
+  1190→      { codigo: 'PF-003', nombre: 'Ravioles de Carne', id_categoria: catFrescas.id, peso_unitario_aprox: 0.5, precio_venta: 4200, stock_minimo: 10, destacado: true, orden: 3 },
+  1191→      { codigo: 'PF-004', nombre: 'Cappelletti de Pollo', id_categoria: catFrescas.id, peso_unitario_aprox: 0.5, precio_venta: 4600, stock_minimo: 10, destacado: false, orden: 4 },
+  1192→      { codigo: 'PF-005', nombre: 'Tortellini de Queso', id_categoria: catFrescas.id, peso_unitario_aprox: 0.4, precio_venta: 4300, stock_minimo: 8, destacado: false, orden: 5 },
+  1193→      { codigo: 'PF-006', nombre: 'Agnolottis de Verdura', id_categoria: catFrescas.id, peso_unitario_aprox: 0.5, precio_venta: 3900, stock_minimo: 8, destacado: false, orden: 6 },
+  1194→      { codigo: 'PF-007', nombre: 'Fettuccine al Huevo', id_categoria: catFrescas.id, peso_unitario_aprox: 0.4, precio_venta: 3200, stock_minimo: 15, destacado: true, orden: 7 },
+  1195→      { codigo: 'PF-008', nombre: 'Tagliatelle al Huevo', id_categoria: catFrescas.id, peso_unitario_aprox: 0.4, precio_venta: 3200, stock_minimo: 15, destacado: false, orden: 8 },
+  1196→      { codigo: 'PF-009', nombre: 'Pappardelle', id_categoria: catFrescas.id, peso_unitario_aprox: 0.4, precio_venta: 3300, stock_minimo: 10, destacado: false, orden: 9 },
+  1197→      { codigo: 'PF-010', nombre: 'Masa para Empanadas', id_categoria: catFrescas.id, peso_unitario_aprox: 0.5, precio_venta: 2800, stock_minimo: 20, destacado: false, orden: 10 },
+  1198→      { codigo: 'PS-001', nombre: 'Fideos Spaghetti', id_categoria: catSecas.id, peso_unitario_aprox: 0.5, precio_venta: 2500, stock_minimo: 20, destacado: true, orden: 1 },
+  1199→      { codigo: 'PS-002', nombre: 'Fideos Penne Rigate', id_categoria: catSecas.id, peso_unitario_aprox: 0.5, precio_venta: 2500, stock_minimo: 20, destacado: false, orden: 2 },
+  1200→      { codigo: 'PS-003', nombre: 'Fideos Tirabuzón', id_categoria: catSecas.id, peso_unitario_aprox: 0.5, precio_venta: 2500, stock_minimo: 15, destacado: false, orden: 3 },
+  1201→      { codigo: 'PS-004', nombre: 'Mostacholes', id_categoria: catSecas.id, peso_unitario_aprox: 0.5, precio_venta: 2500, stock_minimo: 15, destacado: false, orden: 4 },
+  1202→      { codigo: 'PS-005', nombre: 'Cintas', id_categoria: catSecas.id, peso_unitario_aprox: 0.5, precio_venta: 2600, stock_minimo: 10, destacado: false, orden: 5 },
+  1203→      { codigo: 'SA-001', nombre: 'Salsa Filetto', id_categoria: catSalsas.id, peso_unitario_aprox: 0.5, precio_venta: 3000, stock_minimo: 10, destacado: true, orden: 1 },
+  1204→      { codigo: 'SA-002', nombre: 'Salsa Bolognesa', id_categoria: catSalsas.id, peso_unitario_aprox: 0.5, precio_venta: 3500, stock_minimo: 10, destacado: true, orden: 2 },
+  1205→      { codigo: 'SA-003', nombre: 'Salsa Crema', id_categoria: catSalsas.id, peso_unitario_aprox: 0.5, precio_venta: 3200, stock_minimo: 8, destacado: false, orden: 3 },
+  1206→      { codigo: 'SA-004', nombre: 'Salsa Pesto', id_categoria: catSalsas.id, peso_unitario_aprox: 0.3, precio_venta: 3800, stock_minimo: 8, destacado: false, orden: 4 },
+  1207→      { codigo: 'NQ-001', nombre: 'Ñoquis de Papa', id_categoria: catNoquis.id, peso_unitario_aprox: 0.5, precio_venta: 3500, stock_minimo: 15, destacado: true, orden: 1 },
+  1208→      { codigo: 'NQ-002', nombre: 'Ñoquis de Espinaca', id_categoria: catNoquis.id, peso_unitario_aprox: 0.5, precio_venta: 3700, stock_minimo: 10, destacado: false, orden: 2 },
+  1209→      { codigo: 'NQ-003', nombre: 'Ñoquis de Calabaza', id_categoria: catNoquis.id, peso_unitario_aprox: 0.5, precio_venta: 3700, stock_minimo: 10, destacado: false, orden: 3 },
+  1210→      { codigo: 'NQ-004', nombre: 'Ñoquis de Ricota', id_categoria: catNoquis.id, peso_unitario_aprox: 0.5, precio_venta: 3800, stock_minimo: 8, destacado: false, orden: 4 },
+  1211→      { codigo: 'LC-001', nombre: 'Lasagna de Carne', id_categoria: catLasagnas.id, peso_unitario_aprox: 1.0, precio_venta: 8000, stock_minimo: 5, destacado: true, orden: 1 },
+  1212→      { codigo: 'LC-002', nombre: 'Lasagna de Verdura', id_categoria: catLasagnas.id, peso_unitario_aprox: 1.0, precio_venta: 7500, stock_minimo: 5, destacado: false, orden: 2 },
+  1213→      { codigo: 'LC-003', nombre: 'Canelones de Jamón y Queso', id_categoria: catLasagnas.id, peso_unitario_aprox: 0.8, precio_venta: 6500, stock_minimo: 5, destacado: true, orden: 3 },
+  1214→      { codigo: 'LC-004', nombre: 'Canelones de Ricota', id_categoria: catLasagnas.id, peso_unitario_aprox: 0.8, precio_venta: 6000, stock_minimo: 5, destacado: false, orden: 4 },
+  1215→    ]
+  1216→    for (const pt of productosTerminados) {
+  1217→      await db.productoTerminado.upsert({
+  1218→        where: { codigo: pt.codigo },
+  1219→        update: {},
+  1220→        create: { ...pt, descripcion: null, visible_en_landing: true, imagen: null, estado: true, stock_actual: 0 },
+  1221→      })
+  1222→    }
+  1223→    results.push(`${productosTerminados.length} productos terminados creados`)
+  1224→
+  1225→    // ============================================
+  1226→    // 25. MATERIAS PRIMAS
+  1227→    // ============================================
+  1228→    const catHarinas = await db.categoriaMateriaPrima.findUniqueOrThrow({ where: { nombre: 'Harinas' } })
+  1229→    const catHuevos = await db.categoriaMateriaPrima.findUniqueOrThrow({ where: { nombre: 'Huevos y derivados' } })
+  1230→    const catLacteos = await db.categoriaMateriaPrima.findUniqueOrThrow({ where: { nombre: 'Lácteos' } })
+  1231→    const catAceites = await db.categoriaMateriaPrima.findUniqueOrThrow({ where: { nombre: 'Aceites y grasas' } })
+  1232→    const catCond = await db.categoriaMateriaPrima.findUniqueOrThrow({ where: { nombre: 'Condimentos y especias' } })
+  1233→    const catCarnes = await db.categoriaMateriaPrima.findUniqueOrThrow({ where: { nombre: 'Carnes' } })
+  1234→    const catVerduras = await db.categoriaMateriaPrima.findUniqueOrThrow({ where: { nombre: 'Verduras' } })
+  1235→    const catSalsasCon = await db.categoriaMateriaPrima.findUniqueOrThrow({ where: { nombre: 'Salsas y conservas' } })
+  1236→    const catAditivos = await db.categoriaMateriaPrima.findUniqueOrThrow({ where: { nombre: 'Aditivos y suplementos' } })
+  1237→    const umKg = await db.unidadMedida.findUniqueOrThrow({ where: { codigo: 'kg' } })
+  1238→    const umL = await db.unidadMedida.findUniqueOrThrow({ where: { codigo: 'l' } })
+  1239→    const umU = await db.unidadMedida.findUniqueOrThrow({ where: { codigo: 'u' } })
+  1240→
+  1241→    const materiasPrimas = [
+  1242→      { codigo: 'MP-001', nombre: 'Harina 000', id_categoria: catHarinas.id, id_unidad_base: umKg.id, stock_actual: 50, stock_minimo: 20, precio_compra_referencia: 1200 },
+  1243→      { codigo: 'MP-002', nombre: 'Harina 0000', id_categoria: catHarinas.id, id_unidad_base: umKg.id, stock_actual: 30, stock_minimo: 15, precio_compra_referencia: 1400 },
+  1244→      { codigo: 'MP-003', nombre: 'Sémola de trigo', id_categoria: catHarinas.id, id_unidad_base: umKg.id, stock_actual: 20, stock_minimo: 10, precio_compra_referencia: 1600 },
+  1245→      { codigo: 'MP-004', nombre: 'Huevos frescos', id_categoria: catHuevos.id, id_unidad_base: umU.id, stock_actual: 120, stock_minimo: 60, precio_compra_referencia: 250 },
+  1246→      { codigo: 'MP-005', nombre: 'Queso Ricota', id_categoria: catLacteos.id, id_unidad_base: umKg.id, stock_actual: 10, stock_minimo: 5, precio_compra_referencia: 5000 },
+  1247→      { codigo: 'MP-006', nombre: 'Queso Mozzarella', id_categoria: catLacteos.id, id_unidad_base: umKg.id, stock_actual: 8, stock_minimo: 4, precio_compra_referencia: 6000 },
+  1248→      { codigo: 'MP-007', nombre: 'Queso Parmesano', id_categoria: catLacteos.id, id_unidad_base: umKg.id, stock_actual: 5, stock_minimo: 2, precio_compra_referencia: 12000 },
+  1249→      { codigo: 'MP-008', nombre: 'Manteca', id_categoria: catLacteos.id, id_unidad_base: umKg.id, stock_actual: 5, stock_minimo: 3, precio_compra_referencia: 8000 },
+  1250→      { codigo: 'MP-009', nombre: 'Crema de leche', id_categoria: catLacteos.id, id_unidad_base: umL.id, stock_actual: 10, stock_minimo: 5, precio_compra_referencia: 3000 },
+  1251→      { codigo: 'MP-010', nombre: 'Aceite de girasol', id_categoria: catAceites.id, id_unidad_base: umL.id, stock_actual: 10, stock_minimo: 5, precio_compra_referencia: 2500 },
+  1252→      { codigo: 'MP-011', nombre: 'Aceite de oliva', id_categoria: catAceites.id, id_unidad_base: umL.id, stock_actual: 3, stock_minimo: 2, precio_compra_referencia: 8000 },
+  1253→      { codigo: 'MP-012', nombre: 'Sal fina', id_categoria: catCond.id, id_unidad_base: umKg.id, stock_actual: 10, stock_minimo: 5, precio_compra_referencia: 800 },
+  1254→      { codigo: 'MP-013', nombre: 'Pimienta negra', id_categoria: catCond.id, id_unidad_base: umKg.id, stock_actual: 1, stock_minimo: 0.5, precio_compra_referencia: 15000 },
+  1255→      { codigo: 'MP-014', nombre: 'Nuez moscada', id_categoria: catCond.id, id_unidad_base: umKg.id, stock_actual: 0.5, stock_minimo: 0.2, precio_compra_referencia: 25000 },
+  1256→      { codigo: 'MP-015', nombre: 'Carne picada de res', id_categoria: catCarnes.id, id_unidad_base: umKg.id, stock_actual: 15, stock_minimo: 8, precio_compra_referencia: 7000 },
+  1257→      { codigo: 'MP-016', nombre: 'Jamón cocido', id_categoria: catCarnes.id, id_unidad_base: umKg.id, stock_actual: 8, stock_minimo: 4, precio_compra_referencia: 8000 },
+  1258→      { codigo: 'MP-017', nombre: 'Pollo desmenuzado', id_categoria: catCarnes.id, id_unidad_base: umKg.id, stock_actual: 5, stock_minimo: 3, precio_compra_referencia: 6500 },
+  1259→      { codigo: 'MP-018', nombre: 'Espinaca fresca', id_categoria: catVerduras.id, id_unidad_base: umKg.id, stock_actual: 5, stock_minimo: 3, precio_compra_referencia: 3500 },
+  1260→      { codigo: 'MP-019', nombre: 'Cebolla', id_categoria: catVerduras.id, id_unidad_base: umKg.id, stock_actual: 10, stock_minimo: 5, precio_compra_referencia: 1500 },
+  1261→      { codigo: 'MP-020', nombre: 'Ajo', id_categoria: catVerduras.id, id_unidad_base: umKg.id, stock_actual: 2, stock_minimo: 1, precio_compra_referencia: 5000 },
+  1262→      { codigo: 'MP-021', nombre: 'Calabaza', id_categoria: catVerduras.id, id_unidad_base: umKg.id, stock_actual: 8, stock_minimo: 4, precio_compra_referencia: 2000 },
+  1263→      { codigo: 'MP-022', nombre: 'Papa', id_categoria: catVerduras.id, id_unidad_base: umKg.id, stock_actual: 20, stock_minimo: 10, precio_compra_referencia: 1200 },
+  1264→      { codigo: 'MP-023', nombre: 'Tomate perita en lata', id_categoria: catSalsasCon.id, id_unidad_base: umKg.id, stock_actual: 15, stock_minimo: 8, precio_compra_referencia: 2500 },
+  1265→      { codigo: 'MP-024', nombre: 'Puré de tomate', id_categoria: catSalsasCon.id, id_unidad_base: umKg.id, stock_actual: 10, stock_minimo: 5, precio_compra_referencia: 2000 },
+  1266→      { codigo: 'MP-025', nombre: 'Albahaca fresca', id_categoria: catVerduras.id, id_unidad_base: umKg.id, stock_actual: 1, stock_minimo: 0.5, precio_compra_referencia: 8000 },
+  1267→      { codigo: 'MP-026', nombre: 'Colorante alimentario', id_categoria: catAditivos.id, id_unidad_base: umKg.id, stock_actual: 0.5, stock_minimo: 0.2, precio_compra_referencia: 12000 },
+  1268→      { codigo: 'MP-027', nombre: 'Agua', id_categoria: catAditivos.id, id_unidad_base: umL.id, stock_actual: 100, stock_minimo: 50, precio_compra_referencia: 100 },
+  1269→    ]
+  1270→    for (const mp of materiasPrimas) {
+  1271→      await db.materiaPrima.upsert({
+  1272→        where: { codigo: mp.codigo },
+  1273→        update: {},
+  1274→        create: { ...mp, descripcion: null, imagen: null, estado: true },
+  1275→      })
+  1276→    }
+  1277→    results.push(`${materiasPrimas.length} materias primas creadas`)
+  1278→
+  1279→    // ============================================
+  1280→    // 26. INSUMOS
+  1281→    // ============================================
+  1282→    const tiEnvPrim = await db.tipoInsumo.findUniqueOrThrow({ where: { nombre: 'Envases primarios' } })
+  1283→    const tiEnvSec = await db.tipoInsumo.findUniqueOrThrow({ where: { nombre: 'Envases secundarios' } })
+  1284→    const tiLimpieza = await db.tipoInsumo.findUniqueOrThrow({ where: { nombre: 'Materiales de limpieza' } })
+  1285→    const tiCombust = await db.tipoInsumo.findUniqueOrThrow({ where: { nombre: 'Combustibles' } })
+  1286→    const tiDescart = await db.tipoInsumo.findUniqueOrThrow({ where: { nombre: 'Utensilios descartables' } })
+  1287→    const umPaq = await db.unidadMedida.findUniqueOrThrow({ where: { codigo: 'paq' } })
+  1288→    const umRollo = await db.unidadMedida.findUniqueOrThrow({ where: { codigo: 'rollo' } })
+  1289→
+  1290→    const insumos = [
+  1291→      { codigo: 'IN-001', nombre: 'Bolsa de polietileno 500g', id_tipo_insumo: tiEnvPrim.id, id_unidad_base: umPaq.id, stock_actual: 200, stock_minimo: 100, precio_compra_referencia: 150 },
+  1292→      { codigo: 'IN-002', nombre: 'Bandeja de poliestireno', id_tipo_insumo: tiEnvPrim.id, id_unidad_base: umU.id, stock_actual: 150, stock_minimo: 80, precio_compra_referencia: 200 },
+  1293→      { codigo: 'IN-003', nombre: 'Film plástico', id_tipo_insumo: tiEnvPrim.id, id_unidad_base: umRollo.id, stock_actual: 10, stock_minimo: 5, precio_compra_referencia: 3500 },
+  1294→      { codigo: 'IN-004', nombre: 'Caja de cartón para pastas', id_tipo_insumo: tiEnvSec.id, id_unidad_base: umU.id, stock_actual: 100, stock_minimo: 50, precio_compra_referencia: 500 },
+  1295→      { codigo: 'IN-005', nombre: 'Etiqueta adhesiva', id_tipo_insumo: tiEnvSec.id, id_unidad_base: umU.id, stock_actual: 500, stock_minimo: 200, precio_compra_referencia: 50 },
+  1296→      { codigo: 'IN-006', nombre: 'Lavandina', id_tipo_insumo: tiLimpieza.id, id_unidad_base: umL.id, stock_actual: 10, stock_minimo: 5, precio_compra_referencia: 800 },
+  1297→      { codigo: 'IN-007', nombre: 'Detergente', id_tipo_insumo: tiLimpieza.id, id_unidad_base: umL.id, stock_actual: 5, stock_minimo: 3, precio_compra_referencia: 1500 },
+  1298→      { codigo: 'IN-008', nombre: 'Desengrasante', id_tipo_insumo: tiLimpieza.id, id_unidad_base: umL.id, stock_actual: 3, stock_minimo: 2, precio_compra_referencia: 2500 },
+  1299→      { codigo: 'IN-009', nombre: 'Gas envaso', id_tipo_insumo: tiCombust.id, id_unidad_base: umKg.id, stock_actual: 30, stock_minimo: 15, precio_compra_referencia: 3000 },
+  1300→      { codigo: 'IN-010', nombre: 'Guantes de latex', id_tipo_insumo: tiDescart.id, id_unidad_base: umPaq.id, stock_actual: 20, stock_minimo: 10, precio_compra_referencia: 2500 },
+  1301→      { codigo: 'IN-011', nombre: 'Cofias descartables', id_tipo_insumo: tiDescart.id, id_unidad_base: umPaq.id, stock_actual: 15, stock_minimo: 8, precio_compra_referencia: 1800 },
+  1302→      { codigo: 'IN-012', nombre: 'Delantal descartable', id_tipo_insumo: tiDescart.id, id_unidad_base: umU.id, stock_actual: 50, stock_minimo: 25, precio_compra_referencia: 300 },
+  1303→    ]
+  1304→    for (const ins of insumos) {
+  1305→      await db.insumo.upsert({
+  1306→        where: { codigo: ins.codigo },
+  1307→        update: {},
+  1308→        create: { ...ins, descripcion: null, imagen: null, estado: true },
+  1309→      })
+  1310→    }
+  1311→    results.push(`${insumos.length} insumos creados`)
+  1312→
+  1313→    // ============================================
+  1314→    // 27. PRODUCTOS LANDING
+  1315→    // ============================================
+  1316→    const productosLanding = [
+  1317→      { nombre: 'Sorrentinos de Jamón y Queso', descripcion: 'Clásicos sorrentinos rellenos de jamón cocido y queso mozzarella, hechos con masa al huevo.', categoria: 'Pastas rellenas', precio: 4500, peso: '500g', destacado: true, orden: 1 },
+  1318→      { nombre: 'Ravioles de Ricota y Espinaca', descripcion: 'Ravioles suaves con relleno de ricota fresca y espinaca, ideal con salsa filetto.', categoria: 'Pastas rellenas', precio: 4000, peso: '500g', destacado: true, orden: 2 },
+  1319→      { nombre: 'Ravioles de Carne', descripcion: 'Ravioles con relleno de carne especiada, tradición familiar en cada bocado.', categoria: 'Pastas rellenas', precio: 4200, peso: '500g', destacado: true, orden: 3 },
+  1320→      { nombre: 'Ñoquis de Papa', descripcion: 'Ñoquis suaves y esponjosos, hechos con papas naturales. ¡Tradición del 29!', categoria: 'Ñoquis', precio: 3500, peso: '500g', destacado: true, orden: 4 },
+  1321→      { nombre: 'Fettuccine al Huevo', descripcion: 'Fettuccine de masa al huevo, ideales para salsas cremosas.', categoria: 'Pastas largas', precio: 3200, peso: '400g', destacado: true, orden: 5 },
+  1322→      { nombre: 'Spaghetti', descripcion: 'Spaghetti secos de sémola de trigo, cocción perfecta al dente.', categoria: 'Pastas secas', precio: 2500, peso: '500g', destacado: false, orden: 6 },
+  1323→      { nombre: 'Salsa Filetto', descripcion: 'Salsa de tomates frescos con albahaca, el clásico acompañamiento.', categoria: 'Salsas', precio: 3000, peso: '500g', destacado: true, orden: 7 },
+  1324→      { nombre: 'Salsa Bolognesa', descripcion: 'Salsa con carne picada, tomate y vegetales, receta casera.', categoria: 'Salsas', precio: 3500, peso: '500g', destacado: false, orden: 8 },
+  1325→      { nombre: 'Lasagna de Carne', descripcion: 'Lasagna armada con capas de pasta, carne, salsa bechamel y queso.', categoria: 'Platos armados', precio: 8000, peso: '1kg', destacado: true, orden: 9 },
+  1326→      { nombre: 'Canelones de Jamón y Queso', descripcion: 'Canelones rellenos de jamón y queso, gratinados con salsa blanca.', categoria: 'Platos armados', precio: 6500, peso: '800g', destacado: false, orden: 10 },
+  1327→    ]
+  1328→    for (const prod of productosLanding) {
+  1329→      await db.producto.upsert({
+  1330→        where: { id: prod.orden },
+  1331→        update: {},
+  1332→        create: { ...prod, imagen: null, stock: true },
+  1333→      })
+  1334→    }
+  1335→    results.push(`${productosLanding.length} productos landing creados`)
+  1336→
+  1337→    // ============================================
+  1338→    // 28. PUNTOS DE ENCUENTRO
+  1339→    // ============================================
+  1340→    const puntosEncuentro = [
+  1341→      { nombre: 'Centro - Corrientes', direccion: 'Av. 9 de Julio 1200, Corrientes', latitud: -27.4756, longitud: -58.8314, horarios: '{"lunes_viernes": "8:00-18:00", "sabados": "8:00-13:00"}' },
+  1342→      { nombre: 'Barrio Esperanza', direccion: 'Av. Sargento Cabral 500, Corrientes', latitud: -27.4600, longitud: -58.8100, horarios: '{"lunes_viernes": "9:00-17:00", "sabados": "9:00-12:00"}' },
+  1343→      { nombre: 'Plaza Italia', direccion: 'Plaza Italia, Corrientes', latitud: -27.4690, longitud: -58.8350, horarios: '{"sabados": "8:00-12:00"}' },
+  1344→    ]
+  1345→    for (let i = 0; i < puntosEncuentro.length; i++) {
+  1346→      const pe = puntosEncuentro[i]
+  1347→      await db.puntoEncuentro.upsert({
+  1348→        where: { id: i + 1 },
+  1349→        update: {},
+  1350→        create: { ...pe, activo: true },
+  1351→      })
+  1352→    }
+  1353→    results.push(`${puntosEncuentro.length} puntos de encuentro creados`)
+  1354→
+  1355→    return NextResponse.json({
+  1356→      success: true,
+  1357→      version: 'v3-turso-fix',
+  1358→      message: 'Seed COMPLETO exitoso - Todas las tablas pobladas',
+  1359→      backend: 'prisma',
+  1360→      results,
+  1361→      credentials: {
+  1362→        email: 'orlando.candia@gmail.com',
+  1363→        password: 'Pastas2026!',
+  1364→        login_url: '/admin/login',
+  1365→      },
+  1366→    })
+  1367→  } catch (error) {
+  1368→    console.error('Seed error:', error)
+  1369→    return NextResponse.json(
+  1370→      { error: 'Error al ejecutar seed', details: String(error), version: 'v3-turso-fix' },
+  1371→      { status: 500 }
+  1372→    )
+  1373→  }
+  1374→}
+  1375→
+  1376→// GET /api/seed - Verify database tables have data
+  1377→export async function GET() {
+  1378→  try {
+  1379→    const tables = [
+  1380→      'Pais', 'Provincia', 'Departamento', 'Municipio', 'TipoDireccion',
+  1381→      'TipoContacto', 'TipoPersona', 'EmpresaTelefonica', 'ServicioCorreoElectronico',
+  1382→      'TipoPlataforma', 'TipoEntidad', 'EstadoSesion', 'CategoriaMateriaPrima',
+  1383→      'TipoInsumo', 'CategoriaProductoTerminado', 'Marca', 'UnidadMedida',
+  1384→      'FormaPago', 'EstadoGeneral', 'Rol', 'Permiso', 'Usuario', 'Persona',
+  1385→      'ProductoTerminado', 'MateriaPrima', 'Insumo', 'Producto', 'PuntoEncuentro',
+  1386→    ]
+  1387→
+  1388→    // Use @libsql/client directly when on Turso
+  1389→    if (isTurso()) {
+  1390→      const client = getTursoClient()
+  1391→      const results: Record<string, number> = {}
+  1392→      let emptyTables = 0
+  1393→
+  1394→      for (const table of tables) {
+  1395→        try {
+  1396→          const res = await client.execute(`SELECT COUNT(*) as c FROM ${table}`)
+  1397→          results[table] = Number(res.rows[0]?.c || 0)
+  1398→          if (results[table] === 0) emptyTables++
+  1399→        } catch {
+  1400→          results[table] = -1
+  1401→          emptyTables++
+  1402→        }
+  1403→      }
+  1404→
+  1405→      return NextResponse.json({
+  1406→        version: 'v3-turso-fix',
+  1407→        backend: 'libsql',
+  1408→        totalTables: tables.length,
+  1409→        populatedTables: tables.length - emptyTables,
+  1410→        emptyTables,
+  1411→        results,
+  1412→        status: emptyTables === 0 ? 'ALL_OK' : 'NEEDS_SEED',
+  1413→        seedCommand: 'POST /api/seed?secret=laspastasdeorlando-seed-2026',
+  1414→      })
+  1415→    }
+  1416→
+  1417→    // Local SQLite path (Prisma-based)
+  1418→    const { db } = await import('@/lib/db')
+  1419→    const prismaTables = [
+  1420→      { name: 'pais', model: 'pais' },
+  1421→      { name: 'provincia', model: 'provincia' },
+  1422→      { name: 'departamento', model: 'departamento' },
+  1423→      { name: 'municipio', model: 'municipio' },
+  1424→      { name: 'tipoDireccion', model: 'tipoDireccion' },
+  1425→      { name: 'tipoContacto', model: 'tipoContacto' },
+  1426→      { name: 'tipoPersona', model: 'tipoPersona' },
+  1427→      { name: 'empresaTelefonica', model: 'empresaTelefonica' },
+  1428→      { name: 'servicioCorreoElectronico', model: 'servicioCorreoElectronico' },
+  1429→      { name: 'tipoPlataforma', model: 'tipoPlataforma' },
+  1430→      { name: 'tipoEntidad', model: 'tipoEntidad' },
+  1431→      { name: 'estadoSesion', model: 'estadoSesion' },
+  1432→      { name: 'categoriaMateriaPrima', model: 'categoriaMateriaPrima' },
+  1433→      { name: 'tipoInsumo', model: 'tipoInsumo' },
+  1434→      { name: 'categoriaProductoTerminado', model: 'categoriaProductoTerminado' },
+  1435→      { name: 'marca', model: 'marca' },
+  1436→      { name: 'unidadMedida', model: 'unidadMedida' },
+  1437→      { name: 'formaPago', model: 'formaPago' },
+  1438→      { name: 'estadoGeneral', model: 'estadoGeneral' },
+  1439→      { name: 'rol', model: 'rol' },
+  1440→      { name: 'permiso', model: 'permiso' },
+  1441→      { name: 'usuario', model: 'usuario' },
+  1442→      { name: 'persona', model: 'persona' },
+  1443→      { name: 'productoTerminado', model: 'productoTerminado' },
+  1444→      { name: 'materiaPrima', model: 'materiaPrima' },
+  1445→      { name: 'insumo', model: 'insumo' },
+  1446→      { name: 'producto', model: 'producto' },
+  1447→      { name: 'puntoEncuentro', model: 'puntoEncuentro' },
+  1448→    ]
+  1449→
+  1450→    const results: Record<string, number> = {}
+  1451→    let emptyTables = 0
+  1452→
+  1453→    for (const table of prismaTables) {
+  1454→      try {
+  1455→        const count = await (db as any)[table.model].count()
+  1456→        results[table.name] = count
+  1457→        if (count === 0) emptyTables++
+  1458→      } catch (e: any) {
+  1459→        results[table.name] = -1
+  1460→        emptyTables++
+  1461→      }
+  1462→    }
+  1463→
+  1464→    return NextResponse.json({
+  1465→      version: 'v3-turso-fix',
+  1466→      backend: 'prisma',
+  1467→      totalTables: prismaTables.length,
+  1468→      populatedTables: prismaTables.length - emptyTables,
+  1469→      emptyTables,
+  1470→      results,
+  1471→      status: emptyTables === 0 ? 'ALL_OK' : 'NEEDS_SEED',
+  1472→      seedCommand: 'POST /api/seed?secret=laspastasdeorlando-seed-2026',
+  1473→    })
+  1474→  } catch (error) {
+  1475→    return NextResponse.json(
+  1476→      { error: 'Error al verificar', details: String(error), version: 'v3-turso-fix' },
+  1477→      { status: 500 }
+  1478→    )
+  1479→  }
+  1480→}
+  1481→

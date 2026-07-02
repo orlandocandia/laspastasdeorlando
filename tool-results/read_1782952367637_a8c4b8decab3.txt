@@ -1,0 +1,858 @@
+     1→'use client'
+     2→
+     3→import { useState, useEffect, useMemo } from 'react'
+     4→import { toast } from 'sonner'
+     5→import { Loader2, Plus, Trash2, Check, ChevronsUpDown } from 'lucide-react'
+     6→
+     7→import { Button } from '@/components/ui/button'
+     8→import { Input } from '@/components/ui/input'
+     9→import { Textarea } from '@/components/ui/textarea'
+    10→import { Label } from '@/components/ui/label'
+    11→import { Badge } from '@/components/ui/badge'
+    12→import { Checkbox } from '@/components/ui/checkbox'
+    13→import { Separator } from '@/components/ui/separator'
+    14→import {
+    15→  Select,
+    16→  SelectContent,
+    17→  SelectItem,
+    18→  SelectTrigger,
+    19→  SelectValue,
+    20→} from '@/components/ui/select'
+    21→import {
+    22→  Popover,
+    23→  PopoverContent,
+    24→  PopoverTrigger,
+    25→} from '@/components/ui/popover'
+    26→import {
+    27→  Command,
+    28→  CommandEmpty,
+    29→  CommandGroup,
+    30→  CommandInput,
+    31→  CommandItem,
+    32→  CommandList,
+    33→} from '@/components/ui/command'
+    34→import { cn } from '@/lib/utils'
+    35→
+    36→interface Proveedor {
+    37→  id: number
+    38→  nombre: string
+    39→  apellido: string
+    40→  razon_social: string | null
+    41→}
+    42→
+    43→interface FormaPago {
+    44→  id: number
+    45→  nombre_forma: string
+    46→}
+    47→
+    48→interface EstadoGeneral {
+    49→  id: number
+    50→  nombre_estado: string
+    51→  entidad_aplicable: string | null
+    52→}
+    53→
+    54→interface ProductoItem {
+    55→  id: number
+    56→  nombre: string
+    57→  id_unidad_base: number
+    58→  unidadBase: { id: number; codigo: string; nombre: string }
+    59→  precio_compra_referencia: number
+    60→  tipo: 'mp' | 'insumo'
+    61→}
+    62→
+    63→interface Marca {
+    64→  id: number
+    65→  nombre: string
+    66→}
+    67→
+    68→interface DetalleRow {
+    69→  key: string
+    70→  tipo: 'mp' | 'insumo'
+    71→  id_producto: string
+    72→  id_marca: string
+    73→  cantidad: string
+    74→  unidad: string
+    75→  unidadCodigo: string
+    76→  precioUnitario: string
+    77→  precioTotal: string
+    78→  fechaVencimiento: string
+    79→  lote: string
+    80→}
+    81→
+    82→interface CompraFormProps {
+    83→  compra?: any | null
+    84→  onSuccess: () => void
+    85→  onCancel: () => void
+    86→}
+    87→
+    88→const IVA_RATE = 0.21
+    89→
+    90→export default function CompraForm({ compra, onSuccess, onCancel }: CompraFormProps) {
+    91→  const isEditing = !!compra
+    92→
+    93→  // Form fields
+    94→  const [idProveedor, setIdProveedor] = useState('')
+    95→  const [fechaCompra, setFechaCompra] = useState('')
+    96→  const [numeroFactura, setNumeroFactura] = useState('')
+    97→  const [idFormaPago, setIdFormaPago] = useState('')
+    98→  const [idEstado, setIdEstado] = useState('')
+    99→  const [observaciones, setObservaciones] = useState('')
+   100→
+   101→  // Detail rows
+   102→  const [detalles, setDetalles] = useState<DetalleRow[]>([])
+   103→
+   104→  // Data
+   105→  const [proveedores, setProveedores] = useState<Proveedor[]>([])
+   106→  const [formasPago, setFormasPago] = useState<FormaPago[]>([])
+   107→  const [estados, setEstados] = useState<EstadoGeneral[]>([])
+   108→  const [materiasPrimas, setMateriasPrimas] = useState<ProductoItem[]>([])
+   109→  const [insumos, setInsumos] = useState<ProductoItem[]>([])
+   110→  const [marcas, setMarcas] = useState<Marca[]>([])
+   111→  const [submitting, setSubmitting] = useState(false)
+   112→  const [loadingData, setLoadingData] = useState(true)
+   113→
+   114→  // Combobox open states
+   115→  const [proveedorOpen, setProveedorOpen] = useState(false)
+   116→
+   117→  // Load data
+   118→  useEffect(() => {
+   119→    async function loadData() {
+   120→      try {
+   121→        const [provRes, fpRes, estRes, mpRes, insRes, marRes] = await Promise.all([
+   122→          fetch('/api/personas?tipo=proveedor&limite=100'),
+   123→          fetch('/api/formas-pago'),
+   124→          fetch('/api/estados-generales?entidad_aplicable=compra'),
+   125→          fetch('/api/materias-primas?limite=200&estado=true'),
+   126→          fetch('/api/insumos?limite=200&estado=true'),
+   127→          fetch('/api/marcas'),
+   128→        ])
+   129→
+   130→        const provData = await provRes.json()
+   131→        const fpData = await fpRes.json()
+   132→        const estData = await estRes.json()
+   133→        const mpData = await mpRes.json()
+   134→        const insData = await insRes.json()
+   135→        const marData = await marRes.json()
+   136→
+   137→        setProveedores(provData.personas || [])
+   138→        setFormasPago(Array.isArray(fpData) ? fpData : [])
+   139→        setEstados(Array.isArray(estData) ? estData : [])
+   140→        setMateriasPrimas(
+   141→          (mpData.data || []).map((mp: any) => ({
+   142→            id: mp.id,
+   143→            nombre: mp.nombre,
+   144→            id_unidad_base: mp.id_unidad_base,
+   145→            unidadBase: mp.unidadBase,
+   146→            precio_compra_referencia: mp.precio_compra_referencia,
+   147→            tipo: 'mp' as const,
+   148→          }))
+   149→        )
+   150→        setInsumos(
+   151→          (insData.data || []).map((ins: any) => ({
+   152→            id: ins.id,
+   153→            nombre: ins.nombre,
+   154→            id_unidad_base: ins.id_unidad_base,
+   155→            unidadBase: ins.unidadBase,
+   156→            precio_compra_referencia: ins.precio_compra_referencia,
+   157→            tipo: 'insumo' as const,
+   158→          }))
+   159→        )
+   160→        setMarcas(Array.isArray(marData) ? marData : [])
+   161→      } catch {
+   162→        toast.error('Error al cargar datos del formulario')
+   163→      } finally {
+   164→        setLoadingData(false)
+   165→      }
+   166→    }
+   167→    loadData()
+   168→  }, [])
+   169→
+   170→  // Populate form when editing
+   171→  useEffect(() => {
+   172→    if (compra) {
+   173→      setIdProveedor(compra.id_proveedor?.toString() || '')
+   174→      setFechaCompra(compra.fecha_compra ? compra.fecha_compra.split('T')[0] : '')
+   175→      setNumeroFactura(compra.numero_factura || '')
+   176→      setIdFormaPago(compra.id_forma_pago?.toString() || '')
+   177→      setIdEstado(compra.id_estado?.toString() || '')
+   178→      setObservaciones(compra.observaciones || '')
+   179→
+   180→      if (compra.detalle && Array.isArray(compra.detalle)) {
+   181→        setDetalles(
+   182→          compra.detalle.map((d: any) => ({
+   183→            key: `row-${d.id}`,
+   184→            tipo: d.id_materia_prima ? 'mp' : 'insumo',
+   185→            id_producto: (d.id_materia_prima || d.id_insumo)?.toString() || '',
+   186→            id_marca: d.id_marca?.toString() || '',
+   187→            cantidad: d.cantidad_comprada?.toString() || '',
+   188→            unidad: d.unidadCompra?.id?.toString() || '',
+   189→            unidadCodigo: d.unidadCompra?.codigo || '',
+   190→            precioUnitario: d.precio_unitario?.toString() || '',
+   191→            precioTotal: d.precio_total?.toString() || '',
+   192→            fechaVencimiento: d.fecha_vencimiento ? d.fecha_vencimiento.split('T')[0] : '',
+   193→            lote: d.lote || '',
+   194→          }))
+   195→        )
+   196→      }
+   197→    } else {
+   198→      // Defaults for new
+   199→      setFechaCompra(new Date().toISOString().split('T')[0])
+   200→      addDetailRow()
+   201→    }
+   202→  }, [compra])
+   203→
+   204→  // Products filtered by selected tipo for each row
+   205→  const getProductsForTipo = (tipo: 'mp' | 'insumo') => {
+   206→    return tipo === 'mp' ? materiasPrimas : insumos
+   207→  }
+   208→
+   209→  // Find product by id
+   210→  const findProduct = (tipo: 'mp' | 'insumo', id: string) => {
+   211→    const products = getProductsForTipo(tipo)
+   212→    return products.find((p) => p.id.toString() === id)
+   213→  }
+   214→
+   215→  // Add detail row
+   216→  const addDetailRow = () => {
+   217→    setDetalles((prev) => [
+   218→      ...prev,
+   219→      {
+   220→        key: `row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+   221→        tipo: 'mp',
+   222→        id_producto: '',
+   223→        id_marca: '',
+   224→        cantidad: '',
+   225→        unidad: '',
+   226→        unidadCodigo: '',
+   227→        precioUnitario: '',
+   228→        precioTotal: '',
+   229→        fechaVencimiento: '',
+   230→        lote: '',
+   231→      },
+   232→    ])
+   233→  }
+   234→
+   235→  // Remove detail row
+   236→  const removeDetailRow = (key: string) => {
+   237→    setDetalles((prev) => prev.filter((d) => d.key !== key))
+   238→  }
+   239→
+   240→  // Update detail row
+   241→  const updateDetalle = (key: string, field: keyof DetalleRow, value: string) => {
+   242→    setDetalles((prev) =>
+   243→      prev.map((d) => {
+   244→        if (d.key !== key) return d
+   245→
+   246→        const updated = { ...d, [field]: value }
+   247→
+   248→        // When tipo changes, reset producto and unidad
+   249→        if (field === 'tipo') {
+   250→          updated.id_producto = ''
+   251→          updated.unidad = ''
+   252→          updated.unidadCodigo = ''
+   253→          updated.precioUnitario = ''
+   254→          updated.precioTotal = ''
+   255→        }
+   256→
+   257→        // When product changes, auto-fill unidad and precio_referencia
+   258→        if (field === 'id_producto' && value) {
+   259→          const product = findProduct(updated.tipo, value)
+   260→          if (product) {
+   261→            updated.unidad = product.unidadBase?.id?.toString() || ''
+   262→            updated.unidadCodigo = product.unidadBase?.codigo || ''
+   263→            updated.precioUnitario = product.precio_compra_referencia?.toString() || ''
+   264→          }
+   265→        }
+   266→
+   267→        // Auto-calculate precio_total when cantidad or precio_unitario changes
+   268→        if (field === 'cantidad' || field === 'precioUnitario') {
+   269→          const cant = parseFloat(field === 'cantidad' ? value : updated.cantidad)
+   270→          const precio = parseFloat(field === 'precioUnitario' ? value : updated.precioUnitario)
+   271→          if (!isNaN(cant) && !isNaN(precio)) {
+   272→            updated.precioTotal = (cant * precio).toFixed(2)
+   273→          } else {
+   274→            updated.precioTotal = ''
+   275→          }
+   276→        }
+   277→
+   278→        return updated
+   279→      })
+   280→    )
+   281→  }
+   282→
+   283→  // Calculate totals
+   284→  const { subtotal, iva, total } = useMemo(() => {
+   285→    const sub = detalles.reduce((sum, d) => {
+   286→      const pt = parseFloat(d.precioTotal)
+   287→      return sum + (isNaN(pt) ? 0 : pt)
+   288→    }, 0)
+   289→    const ivaCalc = sub * IVA_RATE
+   290→    return {
+   291→      subtotal: sub,
+   292→      iva: ivaCalc,
+   293→      total: sub + ivaCalc,
+   294→    }
+   295→  }, [detalles])
+   296→
+   297→  const formatCurrency = (value: number) => {
+   298→    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value)
+   299→  }
+   300→
+   301→  // Submit
+   302→  const handleSubmit = async () => {
+   303→    // Validation
+   304→    if (!isEditing) {
+   305→      if (!idProveedor) {
+   306→        toast.error('Seleccioná un proveedor')
+   307→        return
+   308→      }
+   309→      if (!fechaCompra) {
+   310→        toast.error('Ingresá la fecha de compra')
+   311→        return
+   312→      }
+   313→      if (!idFormaPago) {
+   314→        toast.error('Seleccioná una forma de pago')
+   315→        return
+   316→      }
+   317→      if (detalles.length === 0) {
+   318→        toast.error('Agregá al menos un detalle de compra')
+   319→        return
+   320→      }
+   321→      for (let i = 0; i < detalles.length; i++) {
+   322→        const d = detalles[i]
+   323→        if (!d.id_producto) {
+   324→          toast.error(`Fila ${i + 1}: Seleccioná un producto`)
+   325→          return
+   326→        }
+   327→        if (!d.cantidad || parseFloat(d.cantidad) <= 0) {
+   328→          toast.error(`Fila ${i + 1}: Ingresá una cantidad válida`)
+   329→          return
+   330→        }
+   331→        if (!d.precioUnitario || parseFloat(d.precioUnitario) <= 0) {
+   332→          toast.error(`Fila ${i + 1}: Ingresá un precio unitario válido`)
+   333→          return
+   334→        }
+   335→      }
+   336→    }
+   337→
+   338→    setSubmitting(true)
+   339→    try {
+   340→      const payload = isEditing
+   341→        ? {
+   342→            id: compra.id,
+   343→            numero_factura: numeroFactura.trim() || null,
+   344→            observaciones: observaciones.trim() || null,
+   345→            id_estado: idEstado ? parseInt(idEstado) : undefined,
+   346→          }
+   347→        : {
+   348→            id_proveedor: parseInt(idProveedor),
+   349→            fecha_compra: fechaCompra,
+   350→            numero_factura: numeroFactura.trim() || null,
+   351→            id_forma_pago: parseInt(idFormaPago),
+   352→            observaciones: observaciones.trim() || null,
+   353→            subtotal,
+   354→            iva,
+   355→            total,
+   356→            detalles: detalles.map((d) => ({
+   357→              tipo: d.tipo === 'mp' ? 'materia_prima' : 'insumo',
+   358→              id_materia_prima: d.tipo === 'mp' ? parseInt(d.id_producto) : null,
+   359→              id_insumo: d.tipo === 'insumo' ? parseInt(d.id_producto) : null,
+   360→              id_marca: d.id_marca ? parseInt(d.id_marca) : null,
+   361→              cantidad_comprada: parseFloat(d.cantidad),
+   362→              id_unidad_compra: parseInt(d.unidad),
+   363→              precio_unitario: parseFloat(d.precioUnitario),
+   364→              fecha_vencimiento: d.fechaVencimiento || null,
+   365→              lote: d.lote.trim() || null,
+   366→            })),
+   367→          }
+   368→
+   369→      const url = isEditing ? `/api/compras/${compra.id}` : '/api/compras'
+   370→      const method = isEditing ? 'PUT' : 'POST'
+   371→
+   372→      const res = await fetch(url, {
+   373→        method,
+   374→        headers: { 'Content-Type': 'application/json' },
+   375→        body: JSON.stringify(payload),
+   376→      })
+   377→
+   378→      if (!res.ok) {
+   379→        const errorData = await res.json().catch(() => ({}))
+   380→        throw new Error(errorData.error || 'Error al guardar compra')
+   381→      }
+   382→
+   383→      toast.success(isEditing ? 'Compra actualizada' : 'Compra registrada', {
+   384→        description: isEditing
+   385→          ? 'Los cambios se guardaron correctamente'
+   386→          : 'La nueva compra se registró exitosamente',
+   387→      })
+   388→      onSuccess()
+   389→    } catch (error: any) {
+   390→      toast.error('Error al guardar', {
+   391→        description: error.message || 'Intentá de nuevo más tarde',
+   392→      })
+   393→    } finally {
+   394→      setSubmitting(false)
+   395→    }
+   396→  }
+   397→
+   398→  if (loadingData) {
+   399→    return (
+   400→      <div className="flex items-center justify-center py-8">
+   401→        <Loader2 className="h-6 w-6 animate-spin text-mostaza" />
+   402→        <span className="ml-2 text-muted-foreground">Cargando datos...</span>
+   403→      </div>
+   404→    )
+   405→  }
+   406→
+   407→  return (
+   408→    <div className="space-y-6">
+   409→      {/* Header info */}
+   410→      {isEditing && (
+   411→        <div className="bg-muted/30 rounded-lg p-3 border border-marron/10">
+   412→          <p className="text-sm text-muted-foreground">
+   413→            Compra #{compra.id} — Proveedor: {compra.proveedor?.razon_social || `${compra.proveedor?.nombre} ${compra.proveedor?.apellido}`}
+   414→          </p>
+   415→        </div>
+   416→      )}
+   417→
+   418→      {/* Main fields */}
+   419→      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   420→        {/* Proveedor - searchable combobox (only in create mode) */}
+   421→        <div>
+   422→          <Label className="text-sm font-medium text-marron mb-1 block">Proveedor *</Label>
+   423→          {isEditing ? (
+   424→            <Input
+   425→              value={compra.proveedor?.razon_social || `${compra.proveedor?.nombre} ${compra.proveedor?.apellido}`}
+   426→              disabled
+   427→              className="bg-muted/50"
+   428→            />
+   429→          ) : (
+   430→            <Popover open={proveedorOpen} onOpenChange={setProveedorOpen}>
+   431→              <PopoverTrigger asChild>
+   432→                <Button
+   433→                  variant="outline"
+   434→                  role="combobox"
+   435→                  aria-expanded={proveedorOpen}
+   436→                  className={cn(
+   437→                    'w-full justify-between',
+   438→                    !idProveedor && 'text-muted-foreground'
+   439→                  )}
+   440→                >
+   441→                  {idProveedor
+   442→                    ? (() => {
+   443→                        const prov = proveedores.find((p) => p.id.toString() === idProveedor)
+   444→                        return prov?.razon_social || `${prov?.nombre} ${prov?.apellido}` || 'Seleccionar...'
+   445→                      })()
+   446→                    : 'Buscar proveedor...'}
+   447→                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+   448→                </Button>
+   449→              </PopoverTrigger>
+   450→              <PopoverContent className="w-full p-0" align="start">
+   451→                <Command>
+   452→                  <CommandInput placeholder="Buscar proveedor..." />
+   453→                  <CommandList>
+   454→                    <CommandEmpty>No se encontró proveedor</CommandEmpty>
+   455→                    <CommandGroup>
+   456→                      {proveedores.map((prov) => (
+   457→                        <CommandItem
+   458→                          key={prov.id}
+   459→                          value={prov.razon_social || `${prov.nombre} ${prov.apellido}`}
+   460→                          onSelect={() => {
+   461→                            setIdProveedor(prov.id.toString())
+   462→                            setProveedorOpen(false)
+   463→                          }}
+   464→                        >
+   465→                          <Check
+   466→                            className={cn(
+   467→                              'mr-2 h-4 w-4',
+   468→                              idProveedor === prov.id.toString() ? 'opacity-100' : 'opacity-0'
+   469→                            )}
+   470→                          />
+   471→                          {prov.razon_social || `${prov.nombre} ${prov.apellido}`}
+   472→                        </CommandItem>
+   473→                      ))}
+   474→                    </CommandGroup>
+   475→                  </CommandList>
+   476→                </Command>
+   477→              </PopoverContent>
+   478→            </Popover>
+   479→          )}
+   480→        </div>
+   481→
+   482→        {/* Fecha compra */}
+   483→        <div>
+   484→          <Label className="text-sm font-medium text-marron mb-1 block">Fecha Compra *</Label>
+   485→          <Input
+   486→            type="date"
+   487→            value={fechaCompra}
+   488→            onChange={(e) => setFechaCompra(e.target.value)}
+   489→            disabled={isEditing}
+   490→          />
+   491→        </div>
+   492→
+   493→        {/* Numero factura */}
+   494→        <div>
+   495→          <Label className="text-sm font-medium text-marron mb-1 block">Nº Factura</Label>
+   496→          <Input
+   497→            placeholder="Ej: 0001-12345678"
+   498→            value={numeroFactura}
+   499→            onChange={(e) => setNumeroFactura(e.target.value)}
+   500→          />
+   501→        </div>
+   502→
+   503→        {/* Forma pago */}
+   504→        <div>
+   505→          <Label className="text-sm font-medium text-marron mb-1 block">Forma de Pago *</Label>
+   506→          {isEditing ? (
+   507→            <Input
+   508→              value={compra.formaPago?.nombre_forma || ''}
+   509→              disabled
+   510→              className="bg-muted/50"
+   511→            />
+   512→          ) : (
+   513→            <Select value={idFormaPago} onValueChange={setIdFormaPago}>
+   514→              <SelectTrigger>
+   515→                <SelectValue placeholder="Seleccionar..." />
+   516→              </SelectTrigger>
+   517→              <SelectContent>
+   518→                {formasPago.map((fp) => (
+   519→                  <SelectItem key={fp.id} value={fp.id.toString()}>
+   520→                    {fp.nombre_forma}
+   521→                  </SelectItem>
+   522→                ))}
+   523→              </SelectContent>
+   524→            </Select>
+   525→          )}
+   526→        </div>
+   527→
+   528→        {/* Estado (only in edit mode) */}
+   529→        {isEditing && (
+   530→          <div>
+   531→            <Label className="text-sm font-medium text-marron mb-1 block">Estado</Label>
+   532→            <Select value={idEstado} onValueChange={setIdEstado}>
+   533→              <SelectTrigger>
+   534→                <SelectValue placeholder="Seleccionar..." />
+   535→              </SelectTrigger>
+   536→              <SelectContent>
+   537→                {estados.map((est) => (
+   538→                  <SelectItem key={est.id} value={est.id.toString()}>
+   539→                    {est.nombre_estado}
+   540→                  </SelectItem>
+   541→                ))}
+   542→              </SelectContent>
+   543→            </Select>
+   544→          </div>
+   545→        )}
+   546→      </div>
+   547→
+   548→      {/* Observaciones */}
+   549→      <div>
+   550→        <Label className="text-sm font-medium text-marron mb-1 block">Observaciones</Label>
+   551→        <Textarea
+   552→          placeholder="Observaciones sobre la compra..."
+   553→          className="resize-none"
+   554→          rows={2}
+   555→          value={observaciones}
+   556→          onChange={(e) => setObservaciones(e.target.value)}
+   557→        />
+   558→      </div>
+   559→
+   560→      {/* Detail rows - only in create mode, or show read-only in edit */}
+   561→      {!isEditing && (
+   562→        <>
+   563→          <Separator />
+   564→          <div>
+   565→            <div className="flex items-center justify-between mb-3">
+   566→              <Label className="text-sm font-semibold text-marron">Detalle de Compra</Label>
+   567→              <Button
+   568→                type="button"
+   569→                variant="outline"
+   570→                size="sm"
+   571→                onClick={addDetailRow}
+   572→                className="border-mostaza/30 text-mostaza hover:bg-mostaza/10"
+   573→              >
+   574→                <Plus className="mr-1 h-4 w-4" />
+   575→                Agregar Fila
+   576→              </Button>
+   577→            </div>
+   578→
+   579→            {/* Professional table layout */}
+   580→            <div className="rounded-lg border border-marron/10 overflow-hidden">
+   581→              <div className="overflow-x-auto">
+   582→                <table className="w-full min-w-[900px] text-sm">
+   583→                  <thead className="bg-muted/50 border-b border-marron/10">
+   584→                    <tr>
+   585→                      <th className="text-left p-2 text-xs font-medium text-muted-foreground w-[120px]">Tipo</th>
+   586→                      <th className="text-left p-2 text-xs font-medium text-muted-foreground">Producto</th>
+   587→                      <th className="text-left p-2 text-xs font-medium text-muted-foreground w-[130px]">Marca</th>
+   588→                      <th className="text-left p-2 text-xs font-medium text-muted-foreground w-[100px]">Cantidad</th>
+   589→                      <th className="text-left p-2 text-xs font-medium text-muted-foreground w-[80px]">Unidad</th>
+   590→                      <th className="text-left p-2 text-xs font-medium text-muted-foreground w-[120px]">Precio Unit.</th>
+   591→                      <th className="text-left p-2 text-xs font-medium text-muted-foreground w-[120px]">Precio Total</th>
+   592→                      <th className="text-left p-2 text-xs font-medium text-muted-foreground w-[140px]">F. Vencimiento</th>
+   593→                      <th className="text-left p-2 text-xs font-medium text-muted-foreground w-[100px]">Lote</th>
+   594→                      <th className="w-[44px]"></th>
+   595→                    </tr>
+   596→                  </thead>
+   597→                  <tbody>
+   598→                    {detalles.map((detalle, index) => (
+   599→                      <tr key={detalle.key} className="border-b border-marron/5 hover:bg-muted/10">
+   600→                        {/* Tipo */}
+   601→                        <td className="p-2">
+   602→                          <Select
+   603→                            value={detalle.tipo}
+   604→                            onValueChange={(v) => updateDetalle(detalle.key, 'tipo', v)}
+   605→                          >
+   606→                            <SelectTrigger className="h-8 text-xs">
+   607→                              <SelectValue />
+   608→                            </SelectTrigger>
+   609→                            <SelectContent>
+   610→                              <SelectItem value="mp">Materia Prima</SelectItem>
+   611→                              <SelectItem value="insumo">Insumo</SelectItem>
+   612→                            </SelectContent>
+   613→                          </Select>
+   614→                        </td>
+   615→
+   616→                        {/* Producto */}
+   617→                        <td className="p-2">
+   618→                          <Select
+   619→                            value={detalle.id_producto}
+   620→                            onValueChange={(v) => updateDetalle(detalle.key, 'id_producto', v)}
+   621→                          >
+   622→                            <SelectTrigger className="h-8 text-xs">
+   623→                              <SelectValue placeholder="Seleccionar..." />
+   624→                            </SelectTrigger>
+   625→                            <SelectContent>
+   626→                              {getProductsForTipo(detalle.tipo).map((prod) => (
+   627→                                <SelectItem key={prod.id} value={prod.id.toString()}>
+   628→                                  {prod.nombre}
+   629→                                </SelectItem>
+   630→                              ))}
+   631→                            </SelectContent>
+   632→                          </Select>
+   633→                        </td>
+   634→
+   635→                        {/* Marca */}
+   636→                        <td className="p-2">
+   637→                          <Select
+   638→                            value={detalle.id_marca}
+   639→                            onValueChange={(v) => updateDetalle(detalle.key, 'id_marca', v)}
+   640→                          >
+   641→                            <SelectTrigger className="h-8 text-xs">
+   642→                              <SelectValue placeholder="Opcional" />
+   643→                            </SelectTrigger>
+   644→                            <SelectContent>
+   645→                              <SelectItem value="none">Sin marca</SelectItem>
+   646→                              {marcas.map((m) => (
+   647→                                <SelectItem key={m.id} value={m.id.toString()}>
+   648→                                  {m.nombre}
+   649→                                </SelectItem>
+   650→                              ))}
+   651→                            </SelectContent>
+   652→                          </Select>
+   653→                        </td>
+   654→
+   655→                        {/* Cantidad */}
+   656→                        <td className="p-2">
+   657→                          <Input
+   658→                            type="number"
+   659→                            step="0.01"
+   660→                            min="0"
+   661→                            placeholder="0"
+   662→                            className="h-8 text-xs"
+   663→                            value={detalle.cantidad}
+   664→                            onChange={(e) => updateDetalle(detalle.key, 'cantidad', e.target.value)}
+   665→                          />
+   666→                        </td>
+   667→
+   668→                        {/* Unidad */}
+   669→                        <td className="p-2">
+   670→                          <Input
+   671→                            className="h-8 text-xs bg-muted/50"
+   672→                            value={detalle.unidadCodigo || '-'}
+   673→                            disabled
+   674→                          />
+   675→                        </td>
+   676→
+   677→                        {/* Precio Unitario */}
+   678→                        <td className="p-2">
+   679→                          <Input
+   680→                            type="number"
+   681→                            step="0.01"
+   682→                            min="0"
+   683→                            placeholder="0.00"
+   684→                            className="h-8 text-xs"
+   685→                            value={detalle.precioUnitario}
+   686→                            onChange={(e) => updateDetalle(detalle.key, 'precioUnitario', e.target.value)}
+   687→                          />
+   688→                        </td>
+   689→
+   690→                        {/* Precio Total */}
+   691→                        <td className="p-2">
+   692→                          <Input
+   693→                            className="h-8 text-xs bg-muted/50 font-semibold"
+   694→                            value={detalle.precioTotal ? formatCurrency(parseFloat(detalle.precioTotal)) : ''}
+   695→                            disabled
+   696→                          />
+   697→                        </td>
+   698→
+   699→                        {/* Fecha Vencimiento */}
+   700→                        <td className="p-2">
+   701→                          <Input
+   702→                            type="date"
+   703→                            className="h-8 text-xs"
+   704→                            value={detalle.fechaVencimiento}
+   705→                            onChange={(e) => updateDetalle(detalle.key, 'fechaVencimiento', e.target.value)}
+   706→                          />
+   707→                        </td>
+   708→
+   709→                        {/* Lote */}
+   710→                        <td className="p-2">
+   711→                          <Input
+   712→                            placeholder="Opcional"
+   713→                            className="h-8 text-xs"
+   714→                            value={detalle.lote}
+   715→                            onChange={(e) => updateDetalle(detalle.key, 'lote', e.target.value)}
+   716→                          />
+   717→                        </td>
+   718→
+   719→                        {/* Delete */}
+   720→                        <td className="p-2">
+   721→                          {detalles.length > 1 && (
+   722→                            <Button
+   723→                              type="button"
+   724→                              variant="ghost"
+   725→                              size="icon"
+   726→                              className="h-7 w-7 hover:bg-rojo/10"
+   727→                              onClick={() => removeDetailRow(detalle.key)}
+   728→                            >
+   729→                              <Trash2 className="h-3.5 w-3.5 text-rojo" />
+   730→                            </Button>
+   731→                          )}
+   732→                        </td>
+   733→                      </tr>
+   734→                    ))}
+   735→                  </tbody>
+   736→                </table>
+   737→              </div>
+   738→            </div>
+   739→          </div>
+   740→
+   741→          {/* Totals */}
+   742→          <Separator />
+   743→          <div className="flex justify-end">
+   744→            <div className="w-full sm:w-72 space-y-2">
+   745→              <div className="flex justify-between text-sm">
+   746→                <span className="text-muted-foreground">Subtotal</span>
+   747→                <span className="font-medium text-marron">{formatCurrency(subtotal)}</span>
+   748→              </div>
+   749→              <div className="flex justify-between text-sm">
+   750→                <span className="text-muted-foreground">IVA (21%)</span>
+   751→                <span className="font-medium text-marron">{formatCurrency(iva)}</span>
+   752→              </div>
+   753→              <Separator />
+   754→              <div className="flex justify-between text-base font-bold">
+   755→                <span className="text-marron">Total</span>
+   756→                <span className="text-marron">{formatCurrency(total)}</span>
+   757→              </div>
+   758→            </div>
+   759→          </div>
+   760→        </>
+   761→      )}
+   762→
+   763→      {/* Edit mode: show read-only detail summary */}
+   764→      {isEditing && compra.detalle && compra.detalle.length > 0 && (
+   765→        <>
+   766→          <Separator />
+   767→          <div>
+   768→            <Label className="text-sm font-semibold text-marron mb-2 block">
+   769→              Detalle de la Compra (solo lectura)
+   770→            </Label>
+   771→            <div className="rounded-lg border border-marron/10 overflow-hidden">
+   772→              <div className="overflow-x-auto">
+   773→              <table className="w-full min-w-[500px] text-sm">
+   774→                <thead className="bg-muted/50">
+   775→                  <tr>
+   776→                    <th className="text-left p-2 text-muted-foreground font-medium">Producto</th>
+   777→                    <th className="text-right p-2 text-muted-foreground font-medium">Cantidad</th>
+   778→                    <th className="p-2 text-muted-foreground font-medium">Unidad</th>
+   779→                    <th className="text-right p-2 text-muted-foreground font-medium">P. Unit.</th>
+   780→                    <th className="text-right p-2 text-muted-foreground font-medium">P. Total</th>
+   781→                  </tr>
+   782→                </thead>
+   783→                <tbody>
+   784→                  {compra.detalle.map((d: any) => (
+   785→                    <tr key={d.id} className="border-t border-marron/5">
+   786→                      <td className="p-2 text-marron">
+   787→                        {d.materiaPrima?.nombre || d.insumo?.nombre || '-'}
+   788→                        {d.marca && (
+   789→                          <Badge variant="outline" className="ml-2 text-xs border-marron/20 text-marron">
+   790→                            {d.marca.nombre}
+   791→                          </Badge>
+   792→                        )}
+   793→                      </td>
+   794→                      <td className="p-2 text-right">{d.cantidad_comprada}</td>
+   795→                      <td className="p-2 text-center text-muted-foreground">
+   796→                        {d.unidadCompra?.codigo || '-'}
+   797→                      </td>
+   798→                      <td className="p-2 text-right">{formatCurrency(d.precio_unitario)}</td>
+   799→                      <td className="p-2 text-right font-medium text-marron">
+   800→                        {formatCurrency(d.precio_total)}
+   801→                      </td>
+   802→                    </tr>
+   803→                  ))}
+   804→                </tbody>
+   805→              </table>
+   806→              </div>
+   807→            </div>
+   808→            <div className="flex justify-end mt-3">
+   809→              <div className="w-64 space-y-1">
+   810→                <div className="flex justify-between text-sm">
+   811→                  <span className="text-muted-foreground">Subtotal</span>
+   812→                  <span>{formatCurrency(compra.subtotal)}</span>
+   813→                </div>
+   814→                <div className="flex justify-between text-sm">
+   815→                  <span className="text-muted-foreground">IVA</span>
+   816→                  <span>{formatCurrency(compra.iva)}</span>
+   817→                </div>
+   818→                <div className="flex justify-between font-bold text-marron">
+   819→                  <span>Total</span>
+   820→                  <span>{formatCurrency(compra.total)}</span>
+   821→                </div>
+   822→              </div>
+   823→            </div>
+   824→          </div>
+   825→        </>
+   826→      )}
+   827→
+   828→      {/* Actions */}
+   829→      <div className="flex justify-end gap-2 pt-2">
+   830→        <Button
+   831→          type="button"
+   832→          variant="outline"
+   833→          onClick={onCancel}
+   834→        >
+   835→          Cancelar
+   836→        </Button>
+   837→        <Button
+   838→          type="button"
+   839→          className="bg-mostaza hover:bg-mostaza/90 text-marron font-semibold"
+   840→          disabled={submitting}
+   841→          onClick={handleSubmit}
+   842→        >
+   843→          {submitting ? (
+   844→            <>
+   845→              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+   846→              Guardando...
+   847→            </>
+   848→          ) : isEditing ? (
+   849→            'Guardar Cambios'
+   850→          ) : (
+   851→            'Registrar Compra'
+   852→          )}
+   853→        </Button>
+   854→      </div>
+   855→    </div>
+   856→  )
+   857→}
+   858→

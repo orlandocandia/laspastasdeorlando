@@ -1,0 +1,928 @@
+     1→'use client'
+     2→
+     3→import { useState, useEffect, useMemo, useRef } from 'react'
+     4→import { toast } from 'sonner'
+     5→import { Loader2, Plus, Trash2, Check, ChevronsUpDown, ScanBarcode } from 'lucide-react'
+     6→
+     7→import { Button } from '@/components/ui/button'
+     8→import { Input } from '@/components/ui/input'
+     9→import { Textarea } from '@/components/ui/textarea'
+    10→import { Label } from '@/components/ui/label'
+    11→import { Separator } from '@/components/ui/separator'
+    12→import {
+    13→  Select,
+    14→  SelectContent,
+    15→  SelectItem,
+    16→  SelectTrigger,
+    17→  SelectValue,
+    18→} from '@/components/ui/select'
+    19→import {
+    20→  Popover,
+    21→  PopoverContent,
+    22→  PopoverTrigger,
+    23→} from '@/components/ui/popover'
+    24→import {
+    25→  Command,
+    26→  CommandEmpty,
+    27→  CommandGroup,
+    28→  CommandInput,
+    29→  CommandItem,
+    30→  CommandList,
+    31→} from '@/components/ui/command'
+    32→import { cn } from '@/lib/utils'
+    33→
+    34→interface Cliente {
+    35→  id: number
+    36→  nombre: string
+    37→  apellido: string
+    38→  razon_social: string | null
+    39→}
+    40→
+    41→interface FormaPago {
+    42→  id: number
+    43→  nombre_forma: string
+    44→}
+    45→
+    46→interface EstadoGeneral {
+    47→  id: number
+    48→  nombre_estado: string
+    49→  entidad_aplicable: string | null
+    50→}
+    51→
+    52→interface ProductoTerminado {
+    53→  id: number
+    54→  nombre: string
+    55→  precio_venta: number
+    56→}
+    57→
+    58→interface Vendedor {
+    59→  id: number
+    60→  persona: { nombre: string; apellido: string }
+    61→}
+    62→
+    63→interface PedidoPendiente {
+    64→  id: number
+    65→  fecha_pedido: string
+    66→  cliente: { id: number; nombre: string; apellido: string; razon_social: string | null }
+    67→  detalle: { id: number; id_producto_terminado: number; cantidad: number; precio_unitario: number; productoTerminado: { id: number; nombre: string; precio_venta: number } }[]
+    68→  total: number
+    69→}
+    70→
+    71→interface DetalleRow {
+    72→  key: string
+    73→  idProductoTerminado: string
+    74→  cantidad: string
+    75→  precioUnitario: string
+    76→  subtotal: string
+    77→}
+    78→
+    79→interface VentaFormProps {
+    80→  venta?: any | null
+    81→  fromPedido?: boolean
+    82→  onSuccess: () => void
+    83→  onCancel: () => void
+    84→}
+    85→
+    86→const IVA_RATE = 0.21
+    87→
+    88→export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: VentaFormProps) {
+    89→  const isEditing = !!venta
+    90→
+    91→  // Form fields
+    92→  const [idCliente, setIdCliente] = useState('')
+    93→  const [fechaVenta, setFechaVenta] = useState('')
+    94→  const [idFormaPago, setIdFormaPago] = useState('')
+    95→  const [idVendedor, setIdVendedor] = useState('')
+    96→  const [numeroComprobante, setNumeroComprobante] = useState('')
+    97→  const [idEstado, setIdEstado] = useState('')
+    98→  const [observaciones, setObservaciones] = useState('')
+    99→  const [idPedido, setIdPedido] = useState('')
+   100→
+   101→  // Detail rows
+   102→  const [detalles, setDetalles] = useState<DetalleRow[]>([])
+   103→
+   104→  // Data
+   105→  const [clientes, setClientes] = useState<Cliente[]>([])
+   106→  const [formasPago, setFormasPago] = useState<FormaPago[]>([])
+   107→  const [estados, setEstados] = useState<EstadoGeneral[]>([])
+   108→  const [productosTerminados, setProductosTerminados] = useState<ProductoTerminado[]>([])
+   109→  const [vendedores, setVendedores] = useState<Vendedor[]>([])
+   110→  const [pedidosPendientes, setPedidosPendientes] = useState<PedidoPendiente[]>([])
+   111→  const [submitting, setSubmitting] = useState(false)
+   112→  const [loadingData, setLoadingData] = useState(true)
+   113→
+   114→  // Barcode scanner ref
+   115→  const codigoBarrasRef = useRef<HTMLInputElement>(null)
+   116→
+   117→  // Combobox open states
+   118→  const [clienteOpen, setClienteOpen] = useState(false)
+   119→  const [pedidoOpen, setPedidoOpen] = useState(false)
+   120→
+   121→  // Load data
+   122→  useEffect(() => {
+   123→    async function loadData() {
+   124→      try {
+   125→        const [cliRes, fpRes, estRes, ptRes, venRes, pedRes] = await Promise.all([
+   126→          fetch('/api/personas?tipo=cliente&limite=100'),
+   127→          fetch('/api/formas-pago'),
+   128→          fetch('/api/estados-generales?entidad_aplicable=venta'),
+   129→          fetch('/api/productos-terminados?limite=200&estado=true'),
+   130→          fetch('/api/usuarios'),
+   131→          fromPedido
+   132→            ? fetch('/api/pedidos-clientes?limite=100&id_estado=pendiente')
+   133→            : Promise.resolve(new Response('[]', { status: 200 })),
+   134→        ])
+   135→
+   136→        const cliData = await cliRes.json()
+   137→        const fpData = await fpRes.json()
+   138→        const estData = await estRes.json()
+   139→        const ptData = await ptRes.json()
+   140→        const venData = await venRes.json()
+   141→        const pedData = await pedRes.json()
+   142→
+   143→        setClientes(cliData.personas || [])
+   144→        setFormasPago(Array.isArray(fpData) ? fpData : [])
+   145→        setEstados(Array.isArray(estData) ? estData : [])
+   146→        setProductosTerminados(
+   147→          (ptData.data || []).map((pt: any) => ({
+   148→            id: pt.id,
+   149→            nombre: pt.nombre,
+   150→            precio_venta: pt.precio_venta,
+   151→          }))
+   152→        )
+   153→        setVendedores(venData.usuarios || venData || [])
+   154→        if (fromPedido) {
+   155→          setPedidosPendientes(pedData.data || [])
+   156→        }
+   157→      } catch {
+   158→        toast.error('Error al cargar datos del formulario')
+   159→      } finally {
+   160→        setLoadingData(false)
+   161→      }
+   162→    }
+   163→    loadData()
+   164→  }, [fromPedido])
+   165→
+   166→  // Populate form when editing
+   167→  useEffect(() => {
+   168→    if (venta) {
+   169→      setIdCliente(venta.id_cliente?.toString() || '')
+   170→      setFechaVenta(venta.fecha_venta ? venta.fecha_venta.split('T')[0] : '')
+   171→      setIdFormaPago(venta.id_forma_pago?.toString() || '')
+   172→      setIdVendedor(venta.id_vendedor?.toString() || '')
+   173→      setNumeroComprobante(venta.numero_comprobante || '')
+   174→      setIdEstado(venta.id_estado?.toString() || '')
+   175→      setObservaciones(venta.observaciones || '')
+   176→      setIdPedido(venta.id_pedido?.toString() || '')
+   177→
+   178→      if (venta.detalle && Array.isArray(venta.detalle)) {
+   179→        setDetalles(
+   180→          venta.detalle.map((d: any) => ({
+   181→            key: `row-${d.id}`,
+   182→            idProductoTerminado: d.id_producto_terminado?.toString() || '',
+   183→            cantidad: d.cantidad?.toString() || '',
+   184→            precioUnitario: d.precio_unitario?.toString() || '',
+   185→            subtotal: d.subtotal?.toString() || '',
+   186→          }))
+   187→        )
+   188→      }
+   189→    } else {
+   190→      // Defaults for new
+   191→      setFechaVenta(new Date().toISOString().split('T')[0])
+   192→      addDetailRow()
+   193→    }
+   194→  }, [venta])
+   195→
+   196→  // Handle pedido selection (fromPedido mode)
+   197→  const handlePedidoSelect = (pedidoId: string) => {
+   198→    setIdPedido(pedidoId)
+   199→    const pedido = pedidosPendientes.find((p) => p.id.toString() === pedidoId)
+   200→    if (pedido) {
+   201→      setIdCliente(pedido.cliente?.id?.toString() || '')
+   202→      setDetalles(
+   203→        pedido.detalle.map((d: any) => ({
+   204→          key: `row-${d.id || Date.now() + Math.random()}`,
+   205→          idProductoTerminado: d.id_producto_terminado?.toString() || '',
+   206→          cantidad: d.cantidad?.toString() || '',
+   207→          precioUnitario: d.precio_unitario?.toString() || d.productoTerminado?.precio_venta?.toString() || '',
+   208→          subtotal: (d.cantidad * (d.precio_unitario || d.productoTerminado?.precio_venta || 0)).toFixed(2),
+   209→        }))
+   210→      )
+   211→    }
+   212→  }
+   213→
+   214→  // Find product by id
+   215→  const findProducto = (id: string) => {
+   216→    return productosTerminados.find((p) => p.id.toString() === id)
+   217→  }
+   218→
+   219→  // Search product by barcode
+   220→  const buscarProductoPorCodigo = async (codigo: string) => {
+   221→    if (!codigo.trim()) return
+   222→    try {
+   223→      const res = await fetch(`/api/productos-terminados/buscar-por-codigo?codigo=${encodeURIComponent(codigo.trim())}`)
+   224→      const data = await res.json()
+   225→
+   226→      if (!res.ok || data.error) {
+   227→        toast.error('Producto no encontrado')
+   228→        return
+   229→      }
+   230→
+   231→      if (data.multiples) {
+   232→        toast.error('Múltiples productos coinciden, use búsqueda manual')
+   233→        return
+   234→      }
+   235→
+   236→      // Check if product already in detail rows
+   237→      const existingIndex = detalles.findIndex(d => d.idProductoTerminado === data.id.toString())
+   238→      if (existingIndex >= 0) {
+   239→        // Increment quantity
+   240→        const newDetalles = [...detalles]
+   241→        const existing = newDetalles[existingIndex]
+   242→        const newCantidad = (parseFloat(existing.cantidad) || 0) + 1
+   243→        newDetalles[existingIndex] = {
+   244→          ...existing,
+   245→          cantidad: newCantidad.toString(),
+   246→        }
+   247→        newDetalles[existingIndex].subtotal = (newCantidad * parseFloat(existing.precioUnitario)).toFixed(2)
+   248→        setDetalles(newDetalles)
+   249→        toast.success(`${data.nombre} - cantidad actualizada`)
+   250→      } else {
+   251→        // Add new row
+   252→        const newKey = `row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+   253→        setDetalles(prev => [...prev, {
+   254→          key: newKey,
+   255→          idProductoTerminado: data.id.toString(),
+   256→          cantidad: '1',
+   257→          precioUnitario: data.precio_venta?.toString() || '',
+   258→          subtotal: data.precio_venta?.toString() || '',
+   259→        }])
+   260→        toast.success(`${data.nombre} agregado`)
+   261→      }
+   262→
+   263→      // Clear and refocus
+   264→      if (codigoBarrasRef.current) {
+   265→        codigoBarrasRef.current.value = ''
+   266→        codigoBarrasRef.current.focus()
+   267→      }
+   268→    } catch {
+   269→      toast.error('Error al buscar producto')
+   270→    }
+   271→  }
+   272→
+   273→  // Add detail row
+   274→  const addDetailRow = () => {
+   275→    setDetalles((prev) => [
+   276→      ...prev,
+   277→      {
+   278→        key: `row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+   279→        idProductoTerminado: '',
+   280→        cantidad: '',
+   281→        precioUnitario: '',
+   282→        subtotal: '',
+   283→      },
+   284→    ])
+   285→  }
+   286→
+   287→  // Remove detail row
+   288→  const removeDetailRow = (key: string) => {
+   289→    setDetalles((prev) => prev.filter((d) => d.key !== key))
+   290→  }
+   291→
+   292→  // Update detail row
+   293→  const updateDetalle = (key: string, field: keyof DetalleRow, value: string) => {
+   294→    setDetalles((prev) =>
+   295→      prev.map((d) => {
+   296→        if (d.key !== key) return d
+   297→
+   298→        const updated = { ...d, [field]: value }
+   299→
+   300→        // When product changes, auto-fill precio_venta
+   301→        if (field === 'idProductoTerminado' && value) {
+   302→          const product = findProducto(value)
+   303→          if (product) {
+   304→            updated.precioUnitario = product.precio_venta?.toString() || ''
+   305→          }
+   306→        }
+   307→
+   308→        // Auto-calculate subtotal when cantidad or precio_unitario changes
+   309→        if (field === 'cantidad' || field === 'precioUnitario') {
+   310→          const cant = parseFloat(field === 'cantidad' ? value : updated.cantidad)
+   311→          const precio = parseFloat(field === 'precioUnitario' ? value : updated.precioUnitario)
+   312→          if (!isNaN(cant) && !isNaN(precio)) {
+   313→            updated.subtotal = (cant * precio).toFixed(2)
+   314→          } else {
+   315→            updated.subtotal = ''
+   316→          }
+   317→        }
+   318→
+   319→        return updated
+   320→      })
+   321→    )
+   322→  }
+   323→
+   324→  // Calculate totals
+   325→  const { subtotal, iva, total } = useMemo(() => {
+   326→    const sub = detalles.reduce((sum, d) => {
+   327→      const st = parseFloat(d.subtotal)
+   328→      return sum + (isNaN(st) ? 0 : st)
+   329→    }, 0)
+   330→    const ivaCalc = sub * IVA_RATE
+   331→    return {
+   332→      subtotal: sub,
+   333→      iva: ivaCalc,
+   334→      total: sub + ivaCalc,
+   335→    }
+   336→  }, [detalles])
+   337→
+   338→  const formatCurrency = (value: number) => {
+   339→    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value)
+   340→  }
+   341→
+   342→  // Submit
+   343→  const handleSubmit = async () => {
+   344→    // Validation
+   345→    if (!isEditing) {
+   346→      if (!idCliente) {
+   347→        toast.error('Seleccioná un cliente')
+   348→        return
+   349→      }
+   350→      if (!fechaVenta) {
+   351→        toast.error('Ingresá la fecha de venta')
+   352→        return
+   353→      }
+   354→      if (!idFormaPago) {
+   355→        toast.error('Seleccioná una forma de pago')
+   356→        return
+   357→      }
+   358→      if (!idVendedor) {
+   359→        toast.error('Seleccioná un vendedor')
+   360→        return
+   361→      }
+   362→      if (detalles.length === 0) {
+   363→        toast.error('Agregá al menos un detalle a la venta')
+   364→        return
+   365→      }
+   366→      for (let i = 0; i < detalles.length; i++) {
+   367→        const d = detalles[i]
+   368→        if (!d.idProductoTerminado) {
+   369→          toast.error(`Fila ${i + 1}: Seleccioná un producto terminado`)
+   370→          return
+   371→        }
+   372→        if (!d.cantidad || parseFloat(d.cantidad) <= 0) {
+   373→          toast.error(`Fila ${i + 1}: Ingresá una cantidad válida`)
+   374→          return
+   375→        }
+   376→        if (!d.precioUnitario || parseFloat(d.precioUnitario) <= 0) {
+   377→          toast.error(`Fila ${i + 1}: Ingresá un precio unitario válido`)
+   378→          return
+   379→        }
+   380→      }
+   381→    }
+   382→
+   383→    setSubmitting(true)
+   384→    try {
+   385→      const payload = isEditing
+   386→        ? {
+   387→            id: venta.id,
+   388→            numero_comprobante: numeroComprobante.trim() || null,
+   389→            id_estado: idEstado ? parseInt(idEstado) : undefined,
+   390→            observaciones: observaciones.trim() || null,
+   391→          }
+   392→        : {
+   393→            id_cliente: parseInt(idCliente),
+   394→            id_vendedor: parseInt(idVendedor),
+   395→            id_forma_pago: parseInt(idFormaPago),
+   396→            id_pedido: idPedido ? parseInt(idPedido) : null,
+   397→            numero_comprobante: numeroComprobante.trim() || null,
+   398→            fecha_venta: fechaVenta,
+   399→            subtotal,
+   400→            iva,
+   401→            total,
+   402→            observaciones: observaciones.trim() || null,
+   403→            detalle: detalles.map((d) => ({
+   404→              id_producto_terminado: parseInt(d.idProductoTerminado),
+   405→              cantidad: parseFloat(d.cantidad),
+   406→              precio_unitario: parseFloat(d.precioUnitario),
+   407→              subtotal: parseFloat(d.subtotal),
+   408→            })),
+   409→          }
+   410→
+   411→      const url = isEditing ? `/api/ventas/${venta.id}` : '/api/ventas'
+   412→      const method = isEditing ? 'PUT' : 'POST'
+   413→
+   414→      const res = await fetch(url, {
+   415→        method,
+   416→        headers: { 'Content-Type': 'application/json' },
+   417→        body: JSON.stringify(payload),
+   418→      })
+   419→
+   420→      if (!res.ok) {
+   421→        const errorData = await res.json().catch(() => ({}))
+   422→        throw new Error(errorData.error || 'Error al guardar venta')
+   423→      }
+   424→
+   425→      toast.success(isEditing ? 'Venta actualizada' : 'Venta registrada', {
+   426→        description: isEditing
+   427→          ? 'Los cambios se guardaron correctamente'
+   428→          : 'La nueva venta se registró exitosamente',
+   429→      })
+   430→      onSuccess()
+   431→    } catch (error: any) {
+   432→      toast.error('Error al guardar', {
+   433→        description: error.message || 'Intentá de nuevo más tarde',
+   434→      })
+   435→    } finally {
+   436→      setSubmitting(false)
+   437→    }
+   438→  }
+   439→
+   440→  if (loadingData) {
+   441→    return (
+   442→      <div className="flex items-center justify-center py-8">
+   443→        <Loader2 className="h-6 w-6 animate-spin text-mostaza" />
+   444→        <span className="ml-2 text-muted-foreground">Cargando datos...</span>
+   445→      </div>
+   446→    )
+   447→  }
+   448→
+   449→  return (
+   450→    <div className="space-y-6">
+   451→      {/* Header info */}
+   452→      {isEditing && (
+   453→        <div className="bg-muted/30 rounded-lg p-3 border border-marron/10">
+   454→          <p className="text-sm text-muted-foreground">
+   455→            Venta #{venta.id} — Cliente: {venta.cliente?.razon_social || `${venta.cliente?.nombre} ${venta.cliente?.apellido}`}
+   456→          </p>
+   457→        </div>
+   458→      )}
+   459→
+   460→      {/* From Pedido selector */}
+   461→      {fromPedido && (
+   462→        <div className="bg-mostaza/5 rounded-lg p-3 border border-mostaza/20">
+   463→          <Label className="text-sm font-medium text-marron mb-1 block">Seleccionar Pedido Pendiente *</Label>
+   464→          <Popover open={pedidoOpen} onOpenChange={setPedidoOpen}>
+   465→            <PopoverTrigger asChild>
+   466→              <Button
+   467→                variant="outline"
+   468→                role="combobox"
+   469→                aria-expanded={pedidoOpen}
+   470→                className={cn(
+   471→                  'w-full justify-between',
+   472→                  !idPedido && 'text-muted-foreground'
+   473→                )}
+   474→              >
+   475→                {idPedido
+   476→                  ? (() => {
+   477→                      const ped = pedidosPendientes.find((p) => p.id.toString() === idPedido)
+   478→                      return ped
+   479→                        ? `Pedido #${ped.id} — ${ped.cliente?.razon_social || `${ped.cliente?.nombre} ${ped.cliente?.apellido}`}`
+   480→                        : 'Seleccionar...'
+   481→                    })()
+   482→                  : 'Buscar pedido pendiente...'}
+   483→                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+   484→              </Button>
+   485→            </PopoverTrigger>
+   486→            <PopoverContent className="w-full p-0" align="start">
+   487→              <Command>
+   488→                <CommandInput placeholder="Buscar pedido..." />
+   489→                <CommandList>
+   490→                  <CommandEmpty>No se encontró pedido</CommandEmpty>
+   491→                  <CommandGroup>
+   492→                    {pedidosPendientes.map((ped) => (
+   493→                      <CommandItem
+   494→                        key={ped.id}
+   495→                        value={`pedido-${ped.id}`}
+   496→                        onSelect={() => {
+   497→                          handlePedidoSelect(ped.id.toString())
+   498→                          setPedidoOpen(false)
+   499→                        }}
+   500→                      >
+   501→                        <Check
+   502→                          className={cn(
+   503→                            'mr-2 h-4 w-4',
+   504→                            idPedido === ped.id.toString() ? 'opacity-100' : 'opacity-0'
+   505→                          )}
+   506→                        />
+   507→                        Pedido #{ped.id} — {ped.cliente?.razon_social || `${ped.cliente?.nombre} ${ped.cliente?.apellido}`}
+   508→                      </CommandItem>
+   509→                    ))}
+   510→                  </CommandGroup>
+   511→                </CommandList>
+   512→              </Command>
+   513→            </PopoverContent>
+   514→          </Popover>
+   515→        </div>
+   516→      )}
+   517→
+   518→      {/* Main fields */}
+   519→      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   520→        {/* Cliente - searchable combobox */}
+   521→        <div>
+   522→          <Label className="text-sm font-medium text-marron mb-1 block">Cliente *</Label>
+   523→          {isEditing || fromPedido ? (
+   524→            <Input
+   525→              value={
+   526→                idCliente
+   527→                  ? (() => {
+   528→                      const cli = clientes.find((c) => c.id.toString() === idCliente)
+   529→                      return cli?.razon_social || `${cli?.nombre} ${cli?.apellido}` || ''
+   530→                    })()
+   531→                  : ''
+   532→              }
+   533→              disabled
+   534→              className="bg-muted/50"
+   535→            />
+   536→          ) : (
+   537→            <Popover open={clienteOpen} onOpenChange={setClienteOpen}>
+   538→              <PopoverTrigger asChild>
+   539→                <Button
+   540→                  variant="outline"
+   541→                  role="combobox"
+   542→                  aria-expanded={clienteOpen}
+   543→                  className={cn(
+   544→                    'w-full justify-between',
+   545→                    !idCliente && 'text-muted-foreground'
+   546→                  )}
+   547→                >
+   548→                  {idCliente
+   549→                    ? (() => {
+   550→                        const cli = clientes.find((c) => c.id.toString() === idCliente)
+   551→                        return cli?.razon_social || `${cli?.nombre} ${cli?.apellido}` || 'Seleccionar...'
+   552→                      })()
+   553→                    : 'Buscar cliente...'}
+   554→                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+   555→                </Button>
+   556→              </PopoverTrigger>
+   557→              <PopoverContent className="w-full p-0" align="start">
+   558→                <Command>
+   559→                  <CommandInput placeholder="Buscar cliente..." />
+   560→                  <CommandList>
+   561→                    <CommandEmpty>No se encontró cliente</CommandEmpty>
+   562→                    <CommandGroup>
+   563→                      {clientes.map((cli) => (
+   564→                        <CommandItem
+   565→                          key={cli.id}
+   566→                          value={cli.razon_social || `${cli.nombre} ${cli.apellido}`}
+   567→                          onSelect={() => {
+   568→                            setIdCliente(cli.id.toString())
+   569→                            setClienteOpen(false)
+   570→                          }}
+   571→                        >
+   572→                          <Check
+   573→                            className={cn(
+   574→                              'mr-2 h-4 w-4',
+   575→                              idCliente === cli.id.toString() ? 'opacity-100' : 'opacity-0'
+   576→                            )}
+   577→                          />
+   578→                          {cli.razon_social || `${cli.nombre} ${cli.apellido}`}
+   579→                        </CommandItem>
+   580→                      ))}
+   581→                    </CommandGroup>
+   582→                  </CommandList>
+   583→                </Command>
+   584→              </PopoverContent>
+   585→            </Popover>
+   586→          )}
+   587→        </div>
+   588→
+   589→        {/* Fecha venta */}
+   590→        <div>
+   591→          <Label className="text-sm font-medium text-marron mb-1 block">Fecha Venta *</Label>
+   592→          <Input
+   593→            type="date"
+   594→            value={fechaVenta}
+   595→            onChange={(e) => setFechaVenta(e.target.value)}
+   596→            disabled={isEditing}
+   597→          />
+   598→        </div>
+   599→
+   600→        {/* Forma de pago */}
+   601→        <div>
+   602→          <Label className="text-sm font-medium text-marron mb-1 block">Forma de Pago *</Label>
+   603→          {isEditing ? (
+   604→            <Input
+   605→              value={venta.formaPago?.nombre_forma || ''}
+   606→              disabled
+   607→              className="bg-muted/50"
+   608→            />
+   609→          ) : (
+   610→            <Select value={idFormaPago} onValueChange={setIdFormaPago}>
+   611→              <SelectTrigger>
+   612→                <SelectValue placeholder="Seleccionar..." />
+   613→              </SelectTrigger>
+   614→              <SelectContent>
+   615→                {formasPago.map((fp) => (
+   616→                  <SelectItem key={fp.id} value={fp.id.toString()}>
+   617→                    {fp.nombre_forma}
+   618→                  </SelectItem>
+   619→                ))}
+   620→              </SelectContent>
+   621→            </Select>
+   622→          )}
+   623→        </div>
+   624→
+   625→        {/* Vendedor */}
+   626→        <div>
+   627→          <Label className="text-sm font-medium text-marron mb-1 block">Vendedor *</Label>
+   628→          {isEditing ? (
+   629→            <Input
+   630→              value={`${venta.vendedor?.persona?.nombre || ''} ${venta.vendedor?.persona?.apellido || ''}`}
+   631→              disabled
+   632→              className="bg-muted/50"
+   633→            />
+   634→          ) : (
+   635→            <Select value={idVendedor} onValueChange={setIdVendedor}>
+   636→              <SelectTrigger>
+   637→                <SelectValue placeholder="Seleccionar..." />
+   638→              </SelectTrigger>
+   639→              <SelectContent>
+   640→                {vendedores.map((v) => (
+   641→                  <SelectItem key={v.id} value={v.id.toString()}>
+   642→                    {v.persona?.nombre} {v.persona?.apellido}
+   643→                  </SelectItem>
+   644→                ))}
+   645→              </SelectContent>
+   646→            </Select>
+   647→          )}
+   648→        </div>
+   649→
+   650→        {/* Numero comprobante */}
+   651→        {!isEditing && (
+   652→          <div>
+   653→            <Label className="text-sm font-medium text-marron mb-1 block">Nº Comprobante</Label>
+   654→            <Input
+   655→              placeholder="Ej: 0001-12345678"
+   656→              value={numeroComprobante}
+   657→              onChange={(e) => setNumeroComprobante(e.target.value)}
+   658→            />
+   659→          </div>
+   660→        )}
+   661→
+   662→        {/* Estado (only in edit mode) */}
+   663→        {isEditing && (
+   664→          <>
+   665→            <div>
+   666→              <Label className="text-sm font-medium text-marron mb-1 block">Nº Comprobante</Label>
+   667→              <Input
+   668→                placeholder="Ej: 0001-12345678"
+   669→                value={numeroComprobante}
+   670→                onChange={(e) => setNumeroComprobante(e.target.value)}
+   671→              />
+   672→            </div>
+   673→            <div>
+   674→              <Label className="text-sm font-medium text-marron mb-1 block">Estado</Label>
+   675→              <Select value={idEstado} onValueChange={setIdEstado}>
+   676→                <SelectTrigger>
+   677→                  <SelectValue placeholder="Seleccionar..." />
+   678→                </SelectTrigger>
+   679→                <SelectContent>
+   680→                  {estados.map((est) => (
+   681→                    <SelectItem key={est.id} value={est.id.toString()}>
+   682→                      {est.nombre_estado}
+   683→                    </SelectItem>
+   684→                  ))}
+   685→                </SelectContent>
+   686→              </Select>
+   687→            </div>
+   688→          </>
+   689→        )}
+   690→      </div>
+   691→
+   692→      {/* Barcode scanner input - only in create mode */}
+   693→      {!venta && (
+   694→        <div className="mb-4">
+   695→          <div className="relative">
+   696→            <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+   697→            <input
+   698→              ref={codigoBarrasRef}
+   699→              type="text"
+   700→              placeholder="Escanear código de barras o buscar producto..."
+   701→              className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-mostaza focus:border-mostaza text-sm"
+   702→              onKeyDown={(e) => {
+   703→                if (e.key === 'Enter') {
+   704→                  e.preventDefault()
+   705→                  buscarProductoPorCodigo((e.target as HTMLInputElement).value)
+   706→                }
+   707→              }}
+   708→              autoFocus
+   709→            />
+   710→          </div>
+   711→        </div>
+   712→      )}
+   713→
+   714→      {/* Detail rows - only in create mode */}
+   715→      {!isEditing && (
+   716→        <>
+   717→          <Separator />
+   718→          <div>
+   719→            <div className="flex items-center justify-between mb-3">
+   720→              <Label className="text-sm font-semibold text-marron">Detalle de la Venta</Label>
+   721→              <Button
+   722→                type="button"
+   723→                variant="outline"
+   724→                size="sm"
+   725→                onClick={addDetailRow}
+   726→                className="border-mostaza/30 text-mostaza hover:bg-mostaza/10"
+   727→              >
+   728→                <Plus className="mr-1 h-4 w-4" />
+   729→                Agregar Fila
+   730→              </Button>
+   731→            </div>
+   732→
+   733→            <div className="space-y-3">
+   734→              {detalles.map((detalle, index) => (
+   735→                <div
+   736→                  key={detalle.key}
+   737→                  className="p-3 rounded-lg border border-marron/10 bg-muted/20 space-y-3"
+   738→                >
+   739→                  <div className="flex items-center justify-between">
+   740→                    <span className="text-xs font-medium text-muted-foreground">
+   741→                      Fila {index + 1}
+   742→                    </span>
+   743→                    {detalles.length > 1 && (
+   744→                      <Button
+   745→                        type="button"
+   746→                        variant="ghost"
+   747→                        size="icon"
+   748→                        className="h-9 w-9 hover:bg-rojo/10"
+   749→                        onClick={() => removeDetailRow(detalle.key)}
+   750→                      >
+   751→                        <Trash2 className="h-3.5 w-3.5 text-rojo" />
+   752→                      </Button>
+   753→                    )}
+   754→                  </div>
+   755→
+   756→                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+   757→                    {/* Producto Terminado */}
+   758→                    <div className="col-span-2 sm:col-span-1">
+   759→                      <Label className="text-xs text-muted-foreground">Producto Terminado</Label>
+   760→                      <Select
+   761→                        value={detalle.idProductoTerminado}
+   762→                        onValueChange={(v) => updateDetalle(detalle.key, 'idProductoTerminado', v)}
+   763→                      >
+   764→                        <SelectTrigger className="h-9">
+   765→                          <SelectValue placeholder="Seleccionar..." />
+   766→                        </SelectTrigger>
+   767→                        <SelectContent>
+   768→                          {productosTerminados.map((pt) => (
+   769→                            <SelectItem key={pt.id} value={pt.id.toString()}>
+   770→                              {pt.nombre} — {formatCurrency(pt.precio_venta)}
+   771→                            </SelectItem>
+   772→                          ))}
+   773→                        </SelectContent>
+   774→                      </Select>
+   775→                    </div>
+   776→
+   777→                    {/* Cantidad */}
+   778→                    <div>
+   779→                      <Label className="text-xs text-muted-foreground">Cantidad</Label>
+   780→                      <Input
+   781→                        type="number"
+   782→                        step="0.01"
+   783→                        min="0"
+   784→                        placeholder="0"
+   785→                        className="h-9"
+   786→                        value={detalle.cantidad}
+   787→                        onChange={(e) => updateDetalle(detalle.key, 'cantidad', e.target.value)}
+   788→                      />
+   789→                    </div>
+   790→
+   791→                    {/* Precio Unitario */}
+   792→                    <div>
+   793→                      <Label className="text-xs text-muted-foreground">Precio Unit.</Label>
+   794→                      <Input
+   795→                        type="number"
+   796→                        step="0.01"
+   797→                        min="0"
+   798→                        placeholder="0.00"
+   799→                        className="h-9"
+   800→                        value={detalle.precioUnitario}
+   801→                        onChange={(e) => updateDetalle(detalle.key, 'precioUnitario', e.target.value)}
+   802→                      />
+   803→                    </div>
+   804→
+   805→                    {/* Subtotal (auto-calculated) */}
+   806→                    <div>
+   807→                      <Label className="text-xs text-muted-foreground">Subtotal</Label>
+   808→                      <Input
+   809→                        className="h-9 bg-muted/50 font-semibold"
+   810→                        value={detalle.subtotal ? formatCurrency(parseFloat(detalle.subtotal)) : ''}
+   811→                        disabled
+   812→                      />
+   813→                    </div>
+   814→                  </div>
+   815→                </div>
+   816→              ))}
+   817→            </div>
+   818→          </div>
+   819→
+   820→          {/* Totals */}
+   821→          <Separator />
+   822→          <div className="flex justify-end">
+   823→            <div className="w-full sm:w-72 space-y-2">
+   824→              <div className="flex justify-between text-sm">
+   825→                <span className="text-muted-foreground">Subtotal</span>
+   826→                <span className="font-medium text-marron">{formatCurrency(subtotal)}</span>
+   827→              </div>
+   828→              <div className="flex justify-between text-sm">
+   829→                <span className="text-muted-foreground">IVA (21%)</span>
+   830→                <span className="font-medium text-marron">{formatCurrency(iva)}</span>
+   831→              </div>
+   832→              <Separator />
+   833→              <div className="flex justify-between text-base font-bold">
+   834→                <span className="text-marron">Total</span>
+   835→                <span className="text-marron">{formatCurrency(total)}</span>
+   836→              </div>
+   837→            </div>
+   838→          </div>
+   839→        </>
+   840→      )}
+   841→
+   842→      {/* Edit mode: show read-only detail summary */}
+   843→      {isEditing && venta.detalle && venta.detalle.length > 0 && (
+   844→        <>
+   845→          <Separator />
+   846→          <div>
+   847→            <Label className="text-sm font-semibold text-marron mb-2 block">
+   848→              Detalle de la Venta (solo lectura)
+   849→            </Label>
+   850→            <div className="rounded-lg border border-marron/10 overflow-hidden">
+   851→              <div className="overflow-x-auto">
+   852→              <table className="w-full min-w-[500px] text-sm">
+   853→                <thead className="bg-muted/50">
+   854→                  <tr>
+   855→                    <th className="text-left p-2 text-muted-foreground font-medium">Producto</th>
+   856→                    <th className="text-right p-2 text-muted-foreground font-medium">Cantidad</th>
+   857→                    <th className="text-right p-2 text-muted-foreground font-medium">P. Unit.</th>
+   858→                    <th className="text-right p-2 text-muted-foreground font-medium">Subtotal</th>
+   859→                  </tr>
+   860→                </thead>
+   861→                <tbody>
+   862→                  {venta.detalle.map((d: any) => (
+   863→                    <tr key={d.id} className="border-t border-marron/5">
+   864→                      <td className="p-2 text-marron">
+   865→                        {d.productoTerminado?.nombre || '-'}
+   866→                      </td>
+   867→                      <td className="p-2 text-right">{d.cantidad}</td>
+   868→                      <td className="p-2 text-right">{formatCurrency(d.precio_unitario)}</td>
+   869→                      <td className="p-2 text-right font-medium text-marron">
+   870→                        {formatCurrency(d.subtotal)}
+   871→                      </td>
+   872→                    </tr>
+   873→                  ))}
+   874→                </tbody>
+   875→              </table>
+   876→              </div>
+   877→            </div>
+   878→            <div className="flex justify-end mt-3">
+   879→              <div className="w-64 space-y-1">
+   880→                <div className="flex justify-between text-sm">
+   881→                  <span className="text-muted-foreground">Subtotal</span>
+   882→                  <span>{formatCurrency(venta.subtotal)}</span>
+   883→                </div>
+   884→                <div className="flex justify-between text-sm">
+   885→                  <span className="text-muted-foreground">IVA</span>
+   886→                  <span>{formatCurrency(venta.iva)}</span>
+   887→                </div>
+   888→                <div className="flex justify-between font-bold text-marron">
+   889→                  <span>Total</span>
+   890→                  <span>{formatCurrency(venta.total)}</span>
+   891→                </div>
+   892→              </div>
+   893→            </div>
+   894→          </div>
+   895→        </>
+   896→      )}
+   897→
+   898→      {/* Actions */}
+   899→      <div className="flex justify-end gap-2 pt-2">
+   900→        <Button
+   901→          type="button"
+   902→          variant="outline"
+   903→          onClick={onCancel}
+   904→        >
+   905→          Cancelar
+   906→        </Button>
+   907→        <Button
+   908→          type="button"
+   909→          className="bg-mostaza hover:bg-mostaza/90 text-marron font-semibold"
+   910→          disabled={submitting}
+   911→          onClick={handleSubmit}
+   912→        >
+   913→          {submitting ? (
+   914→            <>
+   915→              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+   916→              Guardando...
+   917→            </>
+   918→          ) : isEditing ? (
+   919→            'Guardar Cambios'
+   920→          ) : (
+   921→            'Registrar Venta'
+   922→          )}
+   923→        </Button>
+   924→      </div>
+   925→    </div>
+   926→  )
+   927→}
+   928→

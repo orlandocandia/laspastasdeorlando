@@ -1,0 +1,928 @@
+     1→     1→'use client'
+     2→     2→
+     3→     3→import { useState, useEffect, useMemo, useRef } from 'react'
+     4→     4→import { toast } from 'sonner'
+     5→     5→import { Loader2, Plus, Trash2, Check, ChevronsUpDown, ScanBarcode } from 'lucide-react'
+     6→     6→
+     7→     7→import { Button } from '@/components/ui/button'
+     8→     8→import { Input } from '@/components/ui/input'
+     9→     9→import { Textarea } from '@/components/ui/textarea'
+    10→    10→import { Label } from '@/components/ui/label'
+    11→    11→import { Separator } from '@/components/ui/separator'
+    12→    12→import {
+    13→    13→  Select,
+    14→    14→  SelectContent,
+    15→    15→  SelectItem,
+    16→    16→  SelectTrigger,
+    17→    17→  SelectValue,
+    18→    18→} from '@/components/ui/select'
+    19→    19→import {
+    20→    20→  Popover,
+    21→    21→  PopoverContent,
+    22→    22→  PopoverTrigger,
+    23→    23→} from '@/components/ui/popover'
+    24→    24→import {
+    25→    25→  Command,
+    26→    26→  CommandEmpty,
+    27→    27→  CommandGroup,
+    28→    28→  CommandInput,
+    29→    29→  CommandItem,
+    30→    30→  CommandList,
+    31→    31→} from '@/components/ui/command'
+    32→    32→import { cn } from '@/lib/utils'
+    33→    33→
+    34→    34→interface Cliente {
+    35→    35→  id: number
+    36→    36→  nombre: string
+    37→    37→  apellido: string
+    38→    38→  razon_social: string | null
+    39→    39→}
+    40→    40→
+    41→    41→interface FormaPago {
+    42→    42→  id: number
+    43→    43→  nombre_forma: string
+    44→    44→}
+    45→    45→
+    46→    46→interface EstadoGeneral {
+    47→    47→  id: number
+    48→    48→  nombre_estado: string
+    49→    49→  entidad_aplicable: string | null
+    50→    50→}
+    51→    51→
+    52→    52→interface ProductoTerminado {
+    53→    53→  id: number
+    54→    54→  nombre: string
+    55→    55→  precio_venta: number
+    56→    56→}
+    57→    57→
+    58→    58→interface Vendedor {
+    59→    59→  id: number
+    60→    60→  persona: { nombre: string; apellido: string }
+    61→    61→}
+    62→    62→
+    63→    63→interface PedidoPendiente {
+    64→    64→  id: number
+    65→    65→  fecha_pedido: string
+    66→    66→  cliente: { id: number; nombre: string; apellido: string; razon_social: string | null }
+    67→    67→  detalle: { id: number; id_producto_terminado: number; cantidad: number; precio_unitario: number; productoTerminado: { id: number; nombre: string; precio_venta: number } }[]
+    68→    68→  total: number
+    69→    69→}
+    70→    70→
+    71→    71→interface DetalleRow {
+    72→    72→  key: string
+    73→    73→  idProductoTerminado: string
+    74→    74→  cantidad: string
+    75→    75→  precioUnitario: string
+    76→    76→  subtotal: string
+    77→    77→}
+    78→    78→
+    79→    79→interface VentaFormProps {
+    80→    80→  venta?: any | null
+    81→    81→  fromPedido?: boolean
+    82→    82→  onSuccess: () => void
+    83→    83→  onCancel: () => void
+    84→    84→}
+    85→    85→
+    86→    86→const IVA_RATE = 0.21
+    87→    87→
+    88→    88→export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: VentaFormProps) {
+    89→    89→  const isEditing = !!venta
+    90→    90→
+    91→    91→  // Form fields
+    92→    92→  const [idCliente, setIdCliente] = useState('')
+    93→    93→  const [fechaVenta, setFechaVenta] = useState('')
+    94→    94→  const [idFormaPago, setIdFormaPago] = useState('')
+    95→    95→  const [idVendedor, setIdVendedor] = useState('')
+    96→    96→  const [numeroComprobante, setNumeroComprobante] = useState('')
+    97→    97→  const [idEstado, setIdEstado] = useState('')
+    98→    98→  const [observaciones, setObservaciones] = useState('')
+    99→    99→  const [idPedido, setIdPedido] = useState('')
+   100→   100→
+   101→   101→  // Detail rows
+   102→   102→  const [detalles, setDetalles] = useState<DetalleRow[]>([])
+   103→   103→
+   104→   104→  // Data
+   105→   105→  const [clientes, setClientes] = useState<Cliente[]>([])
+   106→   106→  const [formasPago, setFormasPago] = useState<FormaPago[]>([])
+   107→   107→  const [estados, setEstados] = useState<EstadoGeneral[]>([])
+   108→   108→  const [productosTerminados, setProductosTerminados] = useState<ProductoTerminado[]>([])
+   109→   109→  const [vendedores, setVendedores] = useState<Vendedor[]>([])
+   110→   110→  const [pedidosPendientes, setPedidosPendientes] = useState<PedidoPendiente[]>([])
+   111→   111→  const [submitting, setSubmitting] = useState(false)
+   112→   112→  const [loadingData, setLoadingData] = useState(true)
+   113→   113→
+   114→   114→  // Barcode scanner ref
+   115→   115→  const codigoBarrasRef = useRef<HTMLInputElement>(null)
+   116→   116→
+   117→   117→  // Combobox open states
+   118→   118→  const [clienteOpen, setClienteOpen] = useState(false)
+   119→   119→  const [pedidoOpen, setPedidoOpen] = useState(false)
+   120→   120→
+   121→   121→  // Load data
+   122→   122→  useEffect(() => {
+   123→   123→    async function loadData() {
+   124→   124→      try {
+   125→   125→        const [cliRes, fpRes, estRes, ptRes, venRes, pedRes] = await Promise.all([
+   126→   126→          fetch('/api/personas?tipo=cliente&limite=100'),
+   127→   127→          fetch('/api/formas-pago'),
+   128→   128→          fetch('/api/estados-generales?entidad_aplicable=venta'),
+   129→   129→          fetch('/api/productos-terminados?limite=200&estado=true'),
+   130→   130→          fetch('/api/usuarios'),
+   131→   131→          fromPedido
+   132→   132→            ? fetch('/api/pedidos-clientes?limite=100&id_estado=pendiente')
+   133→   133→            : Promise.resolve(new Response('[]', { status: 200 })),
+   134→   134→        ])
+   135→   135→
+   136→   136→        const cliData = await cliRes.json()
+   137→   137→        const fpData = await fpRes.json()
+   138→   138→        const estData = await estRes.json()
+   139→   139→        const ptData = await ptRes.json()
+   140→   140→        const venData = await venRes.json()
+   141→   141→        const pedData = await pedRes.json()
+   142→   142→
+   143→   143→        setClientes(cliData.personas || [])
+   144→   144→        setFormasPago(Array.isArray(fpData) ? fpData : [])
+   145→   145→        setEstados(Array.isArray(estData) ? estData : [])
+   146→   146→        setProductosTerminados(
+   147→   147→          (ptData.data || []).map((pt: any) => ({
+   148→   148→            id: pt.id,
+   149→   149→            nombre: pt.nombre,
+   150→   150→            precio_venta: pt.precio_venta,
+   151→   151→          }))
+   152→   152→        )
+   153→   153→        setVendedores(venData.usuarios || venData || [])
+   154→   154→        if (fromPedido) {
+   155→   155→          setPedidosPendientes(pedData.data || [])
+   156→   156→        }
+   157→   157→      } catch {
+   158→   158→        toast.error('Error al cargar datos del formulario')
+   159→   159→      } finally {
+   160→   160→        setLoadingData(false)
+   161→   161→      }
+   162→   162→    }
+   163→   163→    loadData()
+   164→   164→  }, [fromPedido])
+   165→   165→
+   166→   166→  // Populate form when editing
+   167→   167→  useEffect(() => {
+   168→   168→    if (venta) {
+   169→   169→      setIdCliente(venta.id_cliente?.toString() || '')
+   170→   170→      setFechaVenta(venta.fecha_venta ? venta.fecha_venta.split('T')[0] : '')
+   171→   171→      setIdFormaPago(venta.id_forma_pago?.toString() || '')
+   172→   172→      setIdVendedor(venta.id_vendedor?.toString() || '')
+   173→   173→      setNumeroComprobante(venta.numero_comprobante || '')
+   174→   174→      setIdEstado(venta.id_estado?.toString() || '')
+   175→   175→      setObservaciones(venta.observaciones || '')
+   176→   176→      setIdPedido(venta.id_pedido?.toString() || '')
+   177→   177→
+   178→   178→      if (venta.detalle && Array.isArray(venta.detalle)) {
+   179→   179→        setDetalles(
+   180→   180→          venta.detalle.map((d: any) => ({
+   181→   181→            key: `row-${d.id}`,
+   182→   182→            idProductoTerminado: d.id_producto_terminado?.toString() || '',
+   183→   183→            cantidad: d.cantidad?.toString() || '',
+   184→   184→            precioUnitario: d.precio_unitario?.toString() || '',
+   185→   185→            subtotal: d.subtotal?.toString() || '',
+   186→   186→          }))
+   187→   187→        )
+   188→   188→      }
+   189→   189→    } else {
+   190→   190→      // Defaults for new
+   191→   191→      setFechaVenta(new Date().toISOString().split('T')[0])
+   192→   192→      addDetailRow()
+   193→   193→    }
+   194→   194→  }, [venta])
+   195→   195→
+   196→   196→  // Handle pedido selection (fromPedido mode)
+   197→   197→  const handlePedidoSelect = (pedidoId: string) => {
+   198→   198→    setIdPedido(pedidoId)
+   199→   199→    const pedido = pedidosPendientes.find((p) => p.id.toString() === pedidoId)
+   200→   200→    if (pedido) {
+   201→   201→      setIdCliente(pedido.cliente?.id?.toString() || '')
+   202→   202→      setDetalles(
+   203→   203→        pedido.detalle.map((d: any) => ({
+   204→   204→          key: `row-${d.id || Date.now() + Math.random()}`,
+   205→   205→          idProductoTerminado: d.id_producto_terminado?.toString() || '',
+   206→   206→          cantidad: d.cantidad?.toString() || '',
+   207→   207→          precioUnitario: d.precio_unitario?.toString() || d.productoTerminado?.precio_venta?.toString() || '',
+   208→   208→          subtotal: (d.cantidad * (d.precio_unitario || d.productoTerminado?.precio_venta || 0)).toFixed(2),
+   209→   209→        }))
+   210→   210→      )
+   211→   211→    }
+   212→   212→  }
+   213→   213→
+   214→   214→  // Find product by id
+   215→   215→  const findProducto = (id: string) => {
+   216→   216→    return productosTerminados.find((p) => p.id.toString() === id)
+   217→   217→  }
+   218→   218→
+   219→   219→  // Search product by barcode
+   220→   220→  const buscarProductoPorCodigo = async (codigo: string) => {
+   221→   221→    if (!codigo.trim()) return
+   222→   222→    try {
+   223→   223→      const res = await fetch(`/api/productos-terminados/buscar-por-codigo?codigo=${encodeURIComponent(codigo.trim())}`)
+   224→   224→      const data = await res.json()
+   225→   225→
+   226→   226→      if (!res.ok || data.error) {
+   227→   227→        toast.error('Producto no encontrado')
+   228→   228→        return
+   229→   229→      }
+   230→   230→
+   231→   231→      if (data.multiples) {
+   232→   232→        toast.error('Múltiples productos coinciden, use búsqueda manual')
+   233→   233→        return
+   234→   234→      }
+   235→   235→
+   236→   236→      // Check if product already in detail rows
+   237→   237→      const existingIndex = detalles.findIndex(d => d.idProductoTerminado === data.id.toString())
+   238→   238→      if (existingIndex >= 0) {
+   239→   239→        // Increment quantity
+   240→   240→        const newDetalles = [...detalles]
+   241→   241→        const existing = newDetalles[existingIndex]
+   242→   242→        const newCantidad = (parseFloat(existing.cantidad) || 0) + 1
+   243→   243→        newDetalles[existingIndex] = {
+   244→   244→          ...existing,
+   245→   245→          cantidad: newCantidad.toString(),
+   246→   246→        }
+   247→   247→        newDetalles[existingIndex].subtotal = (newCantidad * parseFloat(existing.precioUnitario)).toFixed(2)
+   248→   248→        setDetalles(newDetalles)
+   249→   249→        toast.success(`${data.nombre} - cantidad actualizada`)
+   250→   250→      } else {
+   251→   251→        // Add new row
+   252→   252→        const newKey = `row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+   253→   253→        setDetalles(prev => [...prev, {
+   254→   254→          key: newKey,
+   255→   255→          idProductoTerminado: data.id.toString(),
+   256→   256→          cantidad: '1',
+   257→   257→          precioUnitario: data.precio_venta?.toString() || '',
+   258→   258→          subtotal: data.precio_venta?.toString() || '',
+   259→   259→        }])
+   260→   260→        toast.success(`${data.nombre} agregado`)
+   261→   261→      }
+   262→   262→
+   263→   263→      // Clear and refocus
+   264→   264→      if (codigoBarrasRef.current) {
+   265→   265→        codigoBarrasRef.current.value = ''
+   266→   266→        codigoBarrasRef.current.focus()
+   267→   267→      }
+   268→   268→    } catch {
+   269→   269→      toast.error('Error al buscar producto')
+   270→   270→    }
+   271→   271→  }
+   272→   272→
+   273→   273→  // Add detail row
+   274→   274→  const addDetailRow = () => {
+   275→   275→    setDetalles((prev) => [
+   276→   276→      ...prev,
+   277→   277→      {
+   278→   278→        key: `row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+   279→   279→        idProductoTerminado: '',
+   280→   280→        cantidad: '',
+   281→   281→        precioUnitario: '',
+   282→   282→        subtotal: '',
+   283→   283→      },
+   284→   284→    ])
+   285→   285→  }
+   286→   286→
+   287→   287→  // Remove detail row
+   288→   288→  const removeDetailRow = (key: string) => {
+   289→   289→    setDetalles((prev) => prev.filter((d) => d.key !== key))
+   290→   290→  }
+   291→   291→
+   292→   292→  // Update detail row
+   293→   293→  const updateDetalle = (key: string, field: keyof DetalleRow, value: string) => {
+   294→   294→    setDetalles((prev) =>
+   295→   295→      prev.map((d) => {
+   296→   296→        if (d.key !== key) return d
+   297→   297→
+   298→   298→        const updated = { ...d, [field]: value }
+   299→   299→
+   300→   300→        // When product changes, auto-fill precio_venta
+   301→   301→        if (field === 'idProductoTerminado' && value) {
+   302→   302→          const product = findProducto(value)
+   303→   303→          if (product) {
+   304→   304→            updated.precioUnitario = product.precio_venta?.toString() || ''
+   305→   305→          }
+   306→   306→        }
+   307→   307→
+   308→   308→        // Auto-calculate subtotal when cantidad or precio_unitario changes
+   309→   309→        if (field === 'cantidad' || field === 'precioUnitario') {
+   310→   310→          const cant = parseFloat(field === 'cantidad' ? value : updated.cantidad)
+   311→   311→          const precio = parseFloat(field === 'precioUnitario' ? value : updated.precioUnitario)
+   312→   312→          if (!isNaN(cant) && !isNaN(precio)) {
+   313→   313→            updated.subtotal = (cant * precio).toFixed(2)
+   314→   314→          } else {
+   315→   315→            updated.subtotal = ''
+   316→   316→          }
+   317→   317→        }
+   318→   318→
+   319→   319→        return updated
+   320→   320→      })
+   321→   321→    )
+   322→   322→  }
+   323→   323→
+   324→   324→  // Calculate totals
+   325→   325→  const { subtotal, iva, total } = useMemo(() => {
+   326→   326→    const sub = detalles.reduce((sum, d) => {
+   327→   327→      const st = parseFloat(d.subtotal)
+   328→   328→      return sum + (isNaN(st) ? 0 : st)
+   329→   329→    }, 0)
+   330→   330→    const ivaCalc = sub * IVA_RATE
+   331→   331→    return {
+   332→   332→      subtotal: sub,
+   333→   333→      iva: ivaCalc,
+   334→   334→      total: sub + ivaCalc,
+   335→   335→    }
+   336→   336→  }, [detalles])
+   337→   337→
+   338→   338→  const formatCurrency = (value: number) => {
+   339→   339→    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value)
+   340→   340→  }
+   341→   341→
+   342→   342→  // Submit
+   343→   343→  const handleSubmit = async () => {
+   344→   344→    // Validation
+   345→   345→    if (!isEditing) {
+   346→   346→      if (!idCliente) {
+   347→   347→        toast.error('Seleccioná un cliente')
+   348→   348→        return
+   349→   349→      }
+   350→   350→      if (!fechaVenta) {
+   351→   351→        toast.error('Ingresá la fecha de venta')
+   352→   352→        return
+   353→   353→      }
+   354→   354→      if (!idFormaPago) {
+   355→   355→        toast.error('Seleccioná una forma de pago')
+   356→   356→        return
+   357→   357→      }
+   358→   358→      if (!idVendedor) {
+   359→   359→        toast.error('Seleccioná un vendedor')
+   360→   360→        return
+   361→   361→      }
+   362→   362→      if (detalles.length === 0) {
+   363→   363→        toast.error('Agregá al menos un detalle a la venta')
+   364→   364→        return
+   365→   365→      }
+   366→   366→      for (let i = 0; i < detalles.length; i++) {
+   367→   367→        const d = detalles[i]
+   368→   368→        if (!d.idProductoTerminado) {
+   369→   369→          toast.error(`Fila ${i + 1}: Seleccioná un producto terminado`)
+   370→   370→          return
+   371→   371→        }
+   372→   372→        if (!d.cantidad || parseFloat(d.cantidad) <= 0) {
+   373→   373→          toast.error(`Fila ${i + 1}: Ingresá una cantidad válida`)
+   374→   374→          return
+   375→   375→        }
+   376→   376→        if (!d.precioUnitario || parseFloat(d.precioUnitario) <= 0) {
+   377→   377→          toast.error(`Fila ${i + 1}: Ingresá un precio unitario válido`)
+   378→   378→          return
+   379→   379→        }
+   380→   380→      }
+   381→   381→    }
+   382→   382→
+   383→   383→    setSubmitting(true)
+   384→   384→    try {
+   385→   385→      const payload = isEditing
+   386→   386→        ? {
+   387→   387→            id: venta.id,
+   388→   388→            numero_comprobante: numeroComprobante.trim() || null,
+   389→   389→            id_estado: idEstado ? parseInt(idEstado) : undefined,
+   390→   390→            observaciones: observaciones.trim() || null,
+   391→   391→          }
+   392→   392→        : {
+   393→   393→            id_cliente: parseInt(idCliente),
+   394→   394→            id_vendedor: parseInt(idVendedor),
+   395→   395→            id_forma_pago: parseInt(idFormaPago),
+   396→   396→            id_pedido: idPedido ? parseInt(idPedido) : null,
+   397→   397→            numero_comprobante: numeroComprobante.trim() || null,
+   398→   398→            fecha_venta: fechaVenta,
+   399→   399→            subtotal,
+   400→   400→            iva,
+   401→   401→            total,
+   402→   402→            observaciones: observaciones.trim() || null,
+   403→   403→            detalle: detalles.map((d) => ({
+   404→   404→              id_producto_terminado: parseInt(d.idProductoTerminado),
+   405→   405→              cantidad: parseFloat(d.cantidad),
+   406→   406→              precio_unitario: parseFloat(d.precioUnitario),
+   407→   407→              subtotal: parseFloat(d.subtotal),
+   408→   408→            })),
+   409→   409→          }
+   410→   410→
+   411→   411→      const url = isEditing ? `/api/ventas/${venta.id}` : '/api/ventas'
+   412→   412→      const method = isEditing ? 'PUT' : 'POST'
+   413→   413→
+   414→   414→      const res = await fetch(url, {
+   415→   415→        method,
+   416→   416→        headers: { 'Content-Type': 'application/json' },
+   417→   417→        body: JSON.stringify(payload),
+   418→   418→      })
+   419→   419→
+   420→   420→      if (!res.ok) {
+   421→   421→        const errorData = await res.json().catch(() => ({}))
+   422→   422→        throw new Error(errorData.error || 'Error al guardar venta')
+   423→   423→      }
+   424→   424→
+   425→   425→      toast.success(isEditing ? 'Venta actualizada' : 'Venta registrada', {
+   426→   426→        description: isEditing
+   427→   427→          ? 'Los cambios se guardaron correctamente'
+   428→   428→          : 'La nueva venta se registró exitosamente',
+   429→   429→      })
+   430→   430→      onSuccess()
+   431→   431→    } catch (error: any) {
+   432→   432→      toast.error('Error al guardar', {
+   433→   433→        description: error.message || 'Intentá de nuevo más tarde',
+   434→   434→      })
+   435→   435→    } finally {
+   436→   436→      setSubmitting(false)
+   437→   437→    }
+   438→   438→  }
+   439→   439→
+   440→   440→  if (loadingData) {
+   441→   441→    return (
+   442→   442→      <div className="flex items-center justify-center py-8">
+   443→   443→        <Loader2 className="h-6 w-6 animate-spin text-mostaza" />
+   444→   444→        <span className="ml-2 text-muted-foreground">Cargando datos...</span>
+   445→   445→      </div>
+   446→   446→    )
+   447→   447→  }
+   448→   448→
+   449→   449→  return (
+   450→   450→    <div className="space-y-6">
+   451→   451→      {/* Header info */}
+   452→   452→      {isEditing && (
+   453→   453→        <div className="bg-muted/30 rounded-lg p-3 border border-marron/10">
+   454→   454→          <p className="text-sm text-muted-foreground">
+   455→   455→            Venta #{venta.id} — Cliente: {venta.cliente?.razon_social || `${venta.cliente?.nombre} ${venta.cliente?.apellido}`}
+   456→   456→          </p>
+   457→   457→        </div>
+   458→   458→      )}
+   459→   459→
+   460→   460→      {/* From Pedido selector */}
+   461→   461→      {fromPedido && (
+   462→   462→        <div className="bg-mostaza/5 rounded-lg p-3 border border-mostaza/20">
+   463→   463→          <Label className="text-sm font-medium text-marron mb-1 block">Seleccionar Pedido Pendiente *</Label>
+   464→   464→          <Popover open={pedidoOpen} onOpenChange={setPedidoOpen}>
+   465→   465→            <PopoverTrigger asChild>
+   466→   466→              <Button
+   467→   467→                variant="outline"
+   468→   468→                role="combobox"
+   469→   469→                aria-expanded={pedidoOpen}
+   470→   470→                className={cn(
+   471→   471→                  'w-full justify-between',
+   472→   472→                  !idPedido && 'text-muted-foreground'
+   473→   473→                )}
+   474→   474→              >
+   475→   475→                {idPedido
+   476→   476→                  ? (() => {
+   477→   477→                      const ped = pedidosPendientes.find((p) => p.id.toString() === idPedido)
+   478→   478→                      return ped
+   479→   479→                        ? `Pedido #${ped.id} — ${ped.cliente?.razon_social || `${ped.cliente?.nombre} ${ped.cliente?.apellido}`}`
+   480→   480→                        : 'Seleccionar...'
+   481→   481→                    })()
+   482→   482→                  : 'Buscar pedido pendiente...'}
+   483→   483→                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+   484→   484→              </Button>
+   485→   485→            </PopoverTrigger>
+   486→   486→            <PopoverContent className="w-full p-0" align="start">
+   487→   487→              <Command>
+   488→   488→                <CommandInput placeholder="Buscar pedido..." />
+   489→   489→                <CommandList>
+   490→   490→                  <CommandEmpty>No se encontró pedido</CommandEmpty>
+   491→   491→                  <CommandGroup>
+   492→   492→                    {pedidosPendientes.map((ped) => (
+   493→   493→                      <CommandItem
+   494→   494→                        key={ped.id}
+   495→   495→                        value={`pedido-${ped.id}`}
+   496→   496→                        onSelect={() => {
+   497→   497→                          handlePedidoSelect(ped.id.toString())
+   498→   498→                          setPedidoOpen(false)
+   499→   499→                        }}
+   500→   500→                      >
+   501→   501→                        <Check
+   502→   502→                          className={cn(
+   503→   503→                            'mr-2 h-4 w-4',
+   504→   504→                            idPedido === ped.id.toString() ? 'opacity-100' : 'opacity-0'
+   505→   505→                          )}
+   506→   506→                        />
+   507→   507→                        Pedido #{ped.id} — {ped.cliente?.razon_social || `${ped.cliente?.nombre} ${ped.cliente?.apellido}`}
+   508→   508→                      </CommandItem>
+   509→   509→                    ))}
+   510→   510→                  </CommandGroup>
+   511→   511→                </CommandList>
+   512→   512→              </Command>
+   513→   513→            </PopoverContent>
+   514→   514→          </Popover>
+   515→   515→        </div>
+   516→   516→      )}
+   517→   517→
+   518→   518→      {/* Main fields */}
+   519→   519→      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   520→   520→        {/* Cliente - searchable combobox */}
+   521→   521→        <div>
+   522→   522→          <Label className="text-sm font-medium text-marron mb-1 block">Cliente *</Label>
+   523→   523→          {isEditing || fromPedido ? (
+   524→   524→            <Input
+   525→   525→              value={
+   526→   526→                idCliente
+   527→   527→                  ? (() => {
+   528→   528→                      const cli = clientes.find((c) => c.id.toString() === idCliente)
+   529→   529→                      return cli?.razon_social || `${cli?.nombre} ${cli?.apellido}` || ''
+   530→   530→                    })()
+   531→   531→                  : ''
+   532→   532→              }
+   533→   533→              disabled
+   534→   534→              className="bg-muted/50"
+   535→   535→            />
+   536→   536→          ) : (
+   537→   537→            <Popover open={clienteOpen} onOpenChange={setClienteOpen}>
+   538→   538→              <PopoverTrigger asChild>
+   539→   539→                <Button
+   540→   540→                  variant="outline"
+   541→   541→                  role="combobox"
+   542→   542→                  aria-expanded={clienteOpen}
+   543→   543→                  className={cn(
+   544→   544→                    'w-full justify-between',
+   545→   545→                    !idCliente && 'text-muted-foreground'
+   546→   546→                  )}
+   547→   547→                >
+   548→   548→                  {idCliente
+   549→   549→                    ? (() => {
+   550→   550→                        const cli = clientes.find((c) => c.id.toString() === idCliente)
+   551→   551→                        return cli?.razon_social || `${cli?.nombre} ${cli?.apellido}` || 'Seleccionar...'
+   552→   552→                      })()
+   553→   553→                    : 'Buscar cliente...'}
+   554→   554→                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+   555→   555→                </Button>
+   556→   556→              </PopoverTrigger>
+   557→   557→              <PopoverContent className="w-full p-0" align="start">
+   558→   558→                <Command>
+   559→   559→                  <CommandInput placeholder="Buscar cliente..." />
+   560→   560→                  <CommandList>
+   561→   561→                    <CommandEmpty>No se encontró cliente</CommandEmpty>
+   562→   562→                    <CommandGroup>
+   563→   563→                      {clientes.map((cli) => (
+   564→   564→                        <CommandItem
+   565→   565→                          key={cli.id}
+   566→   566→                          value={cli.razon_social || `${cli.nombre} ${cli.apellido}`}
+   567→   567→                          onSelect={() => {
+   568→   568→                            setIdCliente(cli.id.toString())
+   569→   569→                            setClienteOpen(false)
+   570→   570→                          }}
+   571→   571→                        >
+   572→   572→                          <Check
+   573→   573→                            className={cn(
+   574→   574→                              'mr-2 h-4 w-4',
+   575→   575→                              idCliente === cli.id.toString() ? 'opacity-100' : 'opacity-0'
+   576→   576→                            )}
+   577→   577→                          />
+   578→   578→                          {cli.razon_social || `${cli.nombre} ${cli.apellido}`}
+   579→   579→                        </CommandItem>
+   580→   580→                      ))}
+   581→   581→                    </CommandGroup>
+   582→   582→                  </CommandList>
+   583→   583→                </Command>
+   584→   584→              </PopoverContent>
+   585→   585→            </Popover>
+   586→   586→          )}
+   587→   587→        </div>
+   588→   588→
+   589→   589→        {/* Fecha venta */}
+   590→   590→        <div>
+   591→   591→          <Label className="text-sm font-medium text-marron mb-1 block">Fecha Venta *</Label>
+   592→   592→          <Input
+   593→   593→            type="date"
+   594→   594→            value={fechaVenta}
+   595→   595→            onChange={(e) => setFechaVenta(e.target.value)}
+   596→   596→            disabled={isEditing}
+   597→   597→          />
+   598→   598→        </div>
+   599→   599→
+   600→   600→        {/* Forma de pago */}
+   601→   601→        <div>
+   602→   602→          <Label className="text-sm font-medium text-marron mb-1 block">Forma de Pago *</Label>
+   603→   603→          {isEditing ? (
+   604→   604→            <Input
+   605→   605→              value={venta.formaPago?.nombre_forma || ''}
+   606→   606→              disabled
+   607→   607→              className="bg-muted/50"
+   608→   608→            />
+   609→   609→          ) : (
+   610→   610→            <Select value={idFormaPago} onValueChange={setIdFormaPago}>
+   611→   611→              <SelectTrigger>
+   612→   612→                <SelectValue placeholder="Seleccionar..." />
+   613→   613→              </SelectTrigger>
+   614→   614→              <SelectContent>
+   615→   615→                {formasPago.map((fp) => (
+   616→   616→                  <SelectItem key={fp.id} value={fp.id.toString()}>
+   617→   617→                    {fp.nombre_forma}
+   618→   618→                  </SelectItem>
+   619→   619→                ))}
+   620→   620→              </SelectContent>
+   621→   621→            </Select>
+   622→   622→          )}
+   623→   623→        </div>
+   624→   624→
+   625→   625→        {/* Vendedor */}
+   626→   626→        <div>
+   627→   627→          <Label className="text-sm font-medium text-marron mb-1 block">Vendedor *</Label>
+   628→   628→          {isEditing ? (
+   629→   629→            <Input
+   630→   630→              value={`${venta.vendedor?.persona?.nombre || ''} ${venta.vendedor?.persona?.apellido || ''}`}
+   631→   631→              disabled
+   632→   632→              className="bg-muted/50"
+   633→   633→            />
+   634→   634→          ) : (
+   635→   635→            <Select value={idVendedor} onValueChange={setIdVendedor}>
+   636→   636→              <SelectTrigger>
+   637→   637→                <SelectValue placeholder="Seleccionar..." />
+   638→   638→              </SelectTrigger>
+   639→   639→              <SelectContent>
+   640→   640→                {vendedores.map((v) => (
+   641→   641→                  <SelectItem key={v.id} value={v.id.toString()}>
+   642→   642→                    {v.persona?.nombre} {v.persona?.apellido}
+   643→   643→                  </SelectItem>
+   644→   644→                ))}
+   645→   645→              </SelectContent>
+   646→   646→            </Select>
+   647→   647→          )}
+   648→   648→        </div>
+   649→   649→
+   650→   650→        {/* Numero comprobante */}
+   651→   651→        {!isEditing && (
+   652→   652→          <div>
+   653→   653→            <Label className="text-sm font-medium text-marron mb-1 block">Nº Comprobante</Label>
+   654→   654→            <Input
+   655→   655→              placeholder="Ej: 0001-12345678"
+   656→   656→              value={numeroComprobante}
+   657→   657→              onChange={(e) => setNumeroComprobante(e.target.value)}
+   658→   658→            />
+   659→   659→          </div>
+   660→   660→        )}
+   661→   661→
+   662→   662→        {/* Estado (only in edit mode) */}
+   663→   663→        {isEditing && (
+   664→   664→          <>
+   665→   665→            <div>
+   666→   666→              <Label className="text-sm font-medium text-marron mb-1 block">Nº Comprobante</Label>
+   667→   667→              <Input
+   668→   668→                placeholder="Ej: 0001-12345678"
+   669→   669→                value={numeroComprobante}
+   670→   670→                onChange={(e) => setNumeroComprobante(e.target.value)}
+   671→   671→              />
+   672→   672→            </div>
+   673→   673→            <div>
+   674→   674→              <Label className="text-sm font-medium text-marron mb-1 block">Estado</Label>
+   675→   675→              <Select value={idEstado} onValueChange={setIdEstado}>
+   676→   676→                <SelectTrigger>
+   677→   677→                  <SelectValue placeholder="Seleccionar..." />
+   678→   678→                </SelectTrigger>
+   679→   679→                <SelectContent>
+   680→   680→                  {estados.map((est) => (
+   681→   681→                    <SelectItem key={est.id} value={est.id.toString()}>
+   682→   682→                      {est.nombre_estado}
+   683→   683→                    </SelectItem>
+   684→   684→                  ))}
+   685→   685→                </SelectContent>
+   686→   686→              </Select>
+   687→   687→            </div>
+   688→   688→          </>
+   689→   689→        )}
+   690→   690→      </div>
+   691→   691→
+   692→   692→      {/* Barcode scanner input - only in create mode */}
+   693→   693→      {!venta && (
+   694→   694→        <div className="mb-4">
+   695→   695→          <div className="relative">
+   696→   696→            <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+   697→   697→            <input
+   698→   698→              ref={codigoBarrasRef}
+   699→   699→              type="text"
+   700→   700→              placeholder="Escanear código de barras o buscar producto..."
+   701→   701→              className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-mostaza focus:border-mostaza text-sm"
+   702→   702→              onKeyDown={(e) => {
+   703→   703→                if (e.key === 'Enter') {
+   704→   704→                  e.preventDefault()
+   705→   705→                  buscarProductoPorCodigo((e.target as HTMLInputElement).value)
+   706→   706→                }
+   707→   707→              }}
+   708→   708→              autoFocus
+   709→   709→            />
+   710→   710→          </div>
+   711→   711→        </div>
+   712→   712→      )}
+   713→   713→
+   714→   714→      {/* Detail rows - only in create mode */}
+   715→   715→      {!isEditing && (
+   716→   716→        <>
+   717→   717→          <Separator />
+   718→   718→          <div>
+   719→   719→            <div className="flex items-center justify-between mb-3">
+   720→   720→              <Label className="text-sm font-semibold text-marron">Detalle de la Venta</Label>
+   721→   721→              <Button
+   722→   722→                type="button"
+   723→   723→                variant="outline"
+   724→   724→                size="sm"
+   725→   725→                onClick={addDetailRow}
+   726→   726→                className="border-mostaza/30 text-mostaza hover:bg-mostaza/10"
+   727→   727→              >
+   728→   728→                <Plus className="mr-1 h-4 w-4" />
+   729→   729→                Agregar Fila
+   730→   730→              </Button>
+   731→   731→            </div>
+   732→   732→
+   733→   733→            <div className="space-y-3">
+   734→   734→              {detalles.map((detalle, index) => (
+   735→   735→                <div
+   736→   736→                  key={detalle.key}
+   737→   737→                  className="p-3 rounded-lg border border-marron/10 bg-muted/20 space-y-3"
+   738→   738→                >
+   739→   739→                  <div className="flex items-center justify-between">
+   740→   740→                    <span className="text-xs font-medium text-muted-foreground">
+   741→   741→                      Fila {index + 1}
+   742→   742→                    </span>
+   743→   743→                    {detalles.length > 1 && (
+   744→   744→                      <Button
+   745→   745→                        type="button"
+   746→   746→                        variant="ghost"
+   747→   747→                        size="icon"
+   748→   748→                        className="h-9 w-9 hover:bg-rojo/10"
+   749→   749→                        onClick={() => removeDetailRow(detalle.key)}
+   750→   750→                      >
+   751→   751→                        <Trash2 className="h-3.5 w-3.5 text-rojo" />
+   752→   752→                      </Button>
+   753→   753→                    )}
+   754→   754→                  </div>
+   755→   755→
+   756→   756→                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+   757→   757→                    {/* Producto Terminado */}
+   758→   758→                    <div className="col-span-2 sm:col-span-1">
+   759→   759→                      <Label className="text-xs text-muted-foreground">Producto Terminado</Label>
+   760→   760→                      <Select
+   761→   761→                        value={detalle.idProductoTerminado}
+   762→   762→                        onValueChange={(v) => updateDetalle(detalle.key, 'idProductoTerminado', v)}
+   763→   763→                      >
+   764→   764→                        <SelectTrigger className="h-9">
+   765→   765→                          <SelectValue placeholder="Seleccionar..." />
+   766→   766→                        </SelectTrigger>
+   767→   767→                        <SelectContent>
+   768→   768→                          {productosTerminados.map((pt) => (
+   769→   769→                            <SelectItem key={pt.id} value={pt.id.toString()}>
+   770→   770→                              {pt.nombre} — {formatCurrency(pt.precio_venta)}
+   771→   771→                            </SelectItem>
+   772→   772→                          ))}
+   773→   773→                        </SelectContent>
+   774→   774→                      </Select>
+   775→   775→                    </div>
+   776→   776→
+   777→   777→                    {/* Cantidad */}
+   778→   778→                    <div>
+   779→   779→                      <Label className="text-xs text-muted-foreground">Cantidad</Label>
+   780→   780→                      <Input
+   781→   781→                        type="number"
+   782→   782→                        step="0.01"
+   783→   783→                        min="0"
+   784→   784→                        placeholder="0"
+   785→   785→                        className="h-9"
+   786→   786→                        value={detalle.cantidad}
+   787→   787→                        onChange={(e) => updateDetalle(detalle.key, 'cantidad', e.target.value)}
+   788→   788→                      />
+   789→   789→                    </div>
+   790→   790→
+   791→   791→                    {/* Precio Unitario */}
+   792→   792→                    <div>
+   793→   793→                      <Label className="text-xs text-muted-foreground">Precio Unit.</Label>
+   794→   794→                      <Input
+   795→   795→                        type="number"
+   796→   796→                        step="0.01"
+   797→   797→                        min="0"
+   798→   798→                        placeholder="0.00"
+   799→   799→                        className="h-9"
+   800→   800→                        value={detalle.precioUnitario}
+   801→   801→                        onChange={(e) => updateDetalle(detalle.key, 'precioUnitario', e.target.value)}
+   802→   802→                      />
+   803→   803→                    </div>
+   804→   804→
+   805→   805→                    {/* Subtotal (auto-calculated) */}
+   806→   806→                    <div>
+   807→   807→                      <Label className="text-xs text-muted-foreground">Subtotal</Label>
+   808→   808→                      <Input
+   809→   809→                        className="h-9 bg-muted/50 font-semibold"
+   810→   810→                        value={detalle.subtotal ? formatCurrency(parseFloat(detalle.subtotal)) : ''}
+   811→   811→                        disabled
+   812→   812→                      />
+   813→   813→                    </div>
+   814→   814→                  </div>
+   815→   815→                </div>
+   816→   816→              ))}
+   817→   817→            </div>
+   818→   818→          </div>
+   819→   819→
+   820→   820→          {/* Totals */}
+   821→   821→          <Separator />
+   822→   822→          <div className="flex justify-end">
+   823→   823→            <div className="w-full sm:w-72 space-y-2">
+   824→   824→              <div className="flex justify-between text-sm">
+   825→   825→                <span className="text-muted-foreground">Subtotal</span>
+   826→   826→                <span className="font-medium text-marron">{formatCurrency(subtotal)}</span>
+   827→   827→              </div>
+   828→   828→              <div className="flex justify-between text-sm">
+   829→   829→                <span className="text-muted-foreground">IVA (21%)</span>
+   830→   830→                <span className="font-medium text-marron">{formatCurrency(iva)}</span>
+   831→   831→              </div>
+   832→   832→              <Separator />
+   833→   833→              <div className="flex justify-between text-base font-bold">
+   834→   834→                <span className="text-marron">Total</span>
+   835→   835→                <span className="text-marron">{formatCurrency(total)}</span>
+   836→   836→              </div>
+   837→   837→            </div>
+   838→   838→          </div>
+   839→   839→        </>
+   840→   840→      )}
+   841→   841→
+   842→   842→      {/* Edit mode: show read-only detail summary */}
+   843→   843→      {isEditing && venta.detalle && venta.detalle.length > 0 && (
+   844→   844→        <>
+   845→   845→          <Separator />
+   846→   846→          <div>
+   847→   847→            <Label className="text-sm font-semibold text-marron mb-2 block">
+   848→   848→              Detalle de la Venta (solo lectura)
+   849→   849→            </Label>
+   850→   850→            <div className="rounded-lg border border-marron/10 overflow-hidden">
+   851→   851→              <div className="overflow-x-auto">
+   852→   852→              <table className="w-full min-w-[500px] text-sm">
+   853→   853→                <thead className="bg-muted/50">
+   854→   854→                  <tr>
+   855→   855→                    <th className="text-left p-2 text-muted-foreground font-medium">Producto</th>
+   856→   856→                    <th className="text-right p-2 text-muted-foreground font-medium">Cantidad</th>
+   857→   857→                    <th className="text-right p-2 text-muted-foreground font-medium">P. Unit.</th>
+   858→   858→                    <th className="text-right p-2 text-muted-foreground font-medium">Subtotal</th>
+   859→   859→                  </tr>
+   860→   860→                </thead>
+   861→   861→                <tbody>
+   862→   862→                  {venta.detalle.map((d: any) => (
+   863→   863→                    <tr key={d.id} className="border-t border-marron/5">
+   864→   864→                      <td className="p-2 text-marron">
+   865→   865→                        {d.productoTerminado?.nombre || '-'}
+   866→   866→                      </td>
+   867→   867→                      <td className="p-2 text-right">{d.cantidad}</td>
+   868→   868→                      <td className="p-2 text-right">{formatCurrency(d.precio_unitario)}</td>
+   869→   869→                      <td className="p-2 text-right font-medium text-marron">
+   870→   870→                        {formatCurrency(d.subtotal)}
+   871→   871→                      </td>
+   872→   872→                    </tr>
+   873→   873→                  ))}
+   874→   874→                </tbody>
+   875→   875→              </table>
+   876→   876→              </div>
+   877→   877→            </div>
+   878→   878→            <div className="flex justify-end mt-3">
+   879→   879→              <div className="w-64 space-y-1">
+   880→   880→                <div className="flex justify-between text-sm">
+   881→   881→                  <span className="text-muted-foreground">Subtotal</span>
+   882→   882→                  <span>{formatCurrency(venta.subtotal)}</span>
+   883→   883→                </div>
+   884→   884→                <div className="flex justify-between text-sm">
+   885→   885→                  <span className="text-muted-foreground">IVA</span>
+   886→   886→                  <span>{formatCurrency(venta.iva)}</span>
+   887→   887→                </div>
+   888→   888→                <div className="flex justify-between font-bold text-marron">
+   889→   889→                  <span>Total</span>
+   890→   890→                  <span>{formatCurrency(venta.total)}</span>
+   891→   891→                </div>
+   892→   892→              </div>
+   893→   893→            </div>
+   894→   894→          </div>
+   895→   895→        </>
+   896→   896→      )}
+   897→   897→
+   898→   898→      {/* Actions */}
+   899→   899→      <div className="flex justify-end gap-2 pt-2">
+   900→   900→        <Button
+   901→   901→          type="button"
+   902→   902→          variant="outline"
+   903→   903→          onClick={onCancel}
+   904→   904→        >
+   905→   905→          Cancelar
+   906→   906→        </Button>
+   907→   907→        <Button
+   908→   908→          type="button"
+   909→   909→          className="bg-mostaza hover:bg-mostaza/90 text-marron font-semibold"
+   910→   910→          disabled={submitting}
+   911→   911→          onClick={handleSubmit}
+   912→   912→        >
+   913→   913→          {submitting ? (
+   914→   914→            <>
+   915→   915→              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+   916→   916→              Guardando...
+   917→   917→            </>
+   918→   918→          ) : isEditing ? (
+   919→   919→            'Guardar Cambios'
+   920→   920→          ) : (
+   921→   921→            'Registrar Venta'
+   922→   922→          )}
+   923→   923→        </Button>
+   924→   924→      </div>
+   925→   925→    </div>
+   926→   926→  )
+   927→   927→}
+   928→   928→
