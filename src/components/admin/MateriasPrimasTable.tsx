@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import { toast } from 'sonner'
-import { Pencil, Trash2, Plus, Search, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, Loader2, ChevronLeft, ChevronRight, PackagePlus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,6 +40,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import MateriaPrimaForm from './MateriaPrimaForm'
+import { StockAdjustDialog } from './StockAdjustDialog'
 
 interface MateriaPrima {
   id: number
@@ -68,6 +69,7 @@ export default function MateriasPrimasTable() {
   const [search, setSearch] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState<string>('')
   const [filtroEstado, setFiltroEstado] = useState<string>('')
+  const [filtroStock, setFiltroStock] = useState<string>('')
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [pagina, setPagina] = useState(1)
   const [totalPaginas, setTotalPaginas] = useState(1)
@@ -75,6 +77,15 @@ export default function MateriasPrimasTable() {
   const [selectedMateriaPrima, setSelectedMateriaPrima] = useState<MateriaPrima | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [stockAdjustItem, setStockAdjustItem] = useState<MateriaPrima | null>(null)
+  const [stockAdjustOpen, setStockAdjustOpen] = useState(false)
+
+  // Read stock query param from URL on mount (for dashboard alerts)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const stockParam = params.get('stock')
+    if (stockParam) setFiltroStock(stockParam)
+  }, [])
 
   const fetchMateriasPrimas = useCallback(async () => {
     setLoading(true)
@@ -85,6 +96,7 @@ export default function MateriasPrimasTable() {
       if (search) params.set('buscar', search)
       if (filtroCategoria && filtroCategoria !== 'all') params.set('id_categoria', filtroCategoria)
       if (filtroEstado && filtroEstado !== 'all') params.set('estado', filtroEstado)
+      if (filtroStock && filtroStock !== 'all') params.set('stock', filtroStock)
 
       const res = await fetch(`/api/materias-primas?${params.toString()}`)
       if (!res.ok) throw new Error('Error al cargar materias primas')
@@ -97,7 +109,7 @@ export default function MateriasPrimasTable() {
     } finally {
       setLoading(false)
     }
-  }, [pagina, search, filtroCategoria, filtroEstado])
+  }, [pagina, search, filtroCategoria, filtroEstado, filtroStock])
 
   const fetchCategorias = useCallback(async () => {
     try {
@@ -121,7 +133,7 @@ export default function MateriasPrimasTable() {
   // Reset page when filters change
   useEffect(() => {
     setPagina(1)
-  }, [search, filtroCategoria, filtroEstado])
+  }, [search, filtroCategoria, filtroEstado, filtroStock])
 
   const handleDelete = async () => {
     if (!deleteId) return
@@ -197,6 +209,16 @@ export default function MateriasPrimasTable() {
               <SelectItem value="false">Inactivo</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={filtroStock} onValueChange={setFiltroStock}>
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue placeholder="Stock" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todo el stock</SelectItem>
+              <SelectItem value="sin_stock">Sin stock</SelectItem>
+              <SelectItem value="stock_bajo">Stock bajo</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <Button
           onClick={openNew}
@@ -226,91 +248,109 @@ export default function MateriasPrimasTable() {
               {materiasPrimas.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                    {search || filtroCategoria || filtroEstado
+                    {search || filtroCategoria || filtroEstado || filtroStock
                       ? 'No se encontraron materias primas con los filtros aplicados'
                       : 'No hay materias primas cargadas'}
                   </TableCell>
                 </TableRow>
               ) : (
-                materiasPrimas.map((mp) => (
-                  <TableRow key={mp.id} className="hover:bg-mostaza/5">
-                    <TableCell>
-                      <div className="relative w-10 h-10 rounded-md overflow-hidden bg-muted">
-                        {mp.imagen ? (
-                          <Image
-                            src={mp.imagen}
-                            alt={mp.nombre}
-                            fill
-                            loading="lazy"
-                            className="object-cover"
-                            sizes="48px"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                            N/A
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {mp.codigo || '-'}
-                    </TableCell>
-                    <TableCell className="font-medium text-marron">
-                      <div>{mp.nombre}</div>
-                      <div className="sm:hidden text-xs text-muted-foreground">
-                        {mp.categoria?.nombre || '-'}
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <Badge variant="outline" className="border-marron/20 text-marron">
-                        {mp.categoria?.nombre || '-'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {mp.stock_actual <= mp.stock_minimo ? (
-                        <Badge className="bg-rojo/10 text-rojo hover:bg-rojo/20">
-                          {mp.stock_actual}
+                materiasPrimas.map((mp) => {
+                  const sinStock = mp.stock_actual <= 0
+                  const stockBajo = mp.stock_actual > 0 && mp.stock_actual <= mp.stock_minimo
+
+                  return (
+                    <TableRow key={mp.id} className="hover:bg-mostaza/5">
+                      <TableCell>
+                        <div className="relative w-10 h-10 rounded-md overflow-hidden bg-muted">
+                          {mp.imagen ? (
+                            <Image
+                              src={mp.imagen}
+                              alt={mp.nombre}
+                              fill
+                              loading="lazy"
+                              className="object-cover"
+                              sizes="48px"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                              N/A
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {mp.codigo || '-'}
+                      </TableCell>
+                      <TableCell className="font-medium text-marron">
+                        <div>{mp.nombre}</div>
+                        <div className="sm:hidden text-xs text-muted-foreground">
+                          {mp.categoria?.nombre || '-'}
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <Badge variant="outline" className="border-marron/20 text-marron">
+                          {mp.categoria?.nombre || '-'}
                         </Badge>
-                      ) : (
-                        <span className="text-marron">{mp.stock_actual}</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-muted-foreground">
-                      {mp.stock_minimo}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <Badge
-                        className={
-                          mp.estado
-                            ? 'bg-oliva/10 text-oliva hover:bg-oliva/20'
-                            : 'bg-rojo/10 text-rojo hover:bg-rojo/20'
-                        }
-                      >
-                        {mp.estado ? 'Activo' : 'Inactivo'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-10 w-10 hover:bg-mostaza/10"
-                          onClick={() => openEdit(mp)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            sinStock
+                              ? 'bg-rojo/10 text-rojo hover:bg-rojo/20'
+                              : stockBajo
+                              ? 'bg-mostaza/10 text-mostaza hover:bg-mostaza/20'
+                              : 'bg-oliva/10 text-oliva hover:bg-oliva/20'
+                          }
                         >
-                          <Pencil className="h-4 w-4 text-mostaza" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-10 w-10 hover:bg-rojo/10"
-                          onClick={() => setDeleteId(mp.id)}
+                          {sinStock ? 'Sin stock' : mp.stock_actual}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground">
+                        {mp.stock_minimo}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <Badge
+                          className={
+                            mp.estado
+                              ? 'bg-oliva/10 text-oliva hover:bg-oliva/20'
+                              : 'bg-rojo/10 text-rojo hover:bg-rojo/20'
+                          }
                         >
-                          <Trash2 className="h-4 w-4 text-rojo" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                          {mp.estado ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 hover:bg-oliva/10"
+                            title="Cargar stock"
+                            onClick={() => { setStockAdjustItem(mp); setStockAdjustOpen(true) }}
+                          >
+                            <PackagePlus className="h-4 w-4 text-oliva" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 hover:bg-mostaza/10"
+                            onClick={() => openEdit(mp)}
+                          >
+                            <Pencil className="h-4 w-4 text-mostaza" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 hover:bg-rojo/10"
+                            onClick={() => setDeleteId(mp.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-rojo" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
@@ -387,6 +427,18 @@ export default function MateriasPrimasTable() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Stock Adjust Dialog */}
+      <StockAdjustDialog
+        open={stockAdjustOpen}
+        onClose={() => { setStockAdjustOpen(false); setStockAdjustItem(null) }}
+        tipo_item="materia_prima"
+        item_id={stockAdjustItem?.id ?? 0}
+        item_nombre={stockAdjustItem?.nombre ?? ''}
+        stock_actual={stockAdjustItem?.stock_actual ?? 0}
+        stock_minimo={stockAdjustItem?.stock_minimo ?? 0}
+        onSuccess={fetchMateriasPrimas}
+      />
     </div>
   )
 }

@@ -1,13 +1,43 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
-import { motion } from 'framer-motion'
-import { Package, MessageSquare, Phone, ArrowRight, UserCircle, Users, Leaf, PackageOpen, UtensilsCrossed, ShoppingCart, ClipboardList, ArrowLeftRight, Receipt, CalendarCheck, DollarSign, Factory, AlertTriangle, BookOpen, Shield, TrendingUp, FileBarChart } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  Package, MessageSquare, Phone, ArrowRight, UserCircle, Users,
+  Leaf, PackageOpen, UtensilsCrossed, ShoppingCart, ClipboardList,
+  ArrowLeftRight, Receipt, CalendarCheck, DollarSign, Factory,
+  AlertTriangle, BookOpen, Shield, TrendingUp, FileBarChart,
+  HelpCircle, CheckCircle, ChevronDown, ChevronUp, Utensils,
+  FlaskConical, ShoppingCartIcon, Boxes
+} from 'lucide-react'
 import Link from 'next/link'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface DashboardStats {
   productosActivos: number
@@ -30,7 +60,46 @@ interface DashboardStats {
   produccionDelMes: number
   costoPromedioProduccion: number
   stockCritico: number
+  recetasActivas: number
 }
+
+interface StockItem {
+  id: number
+  nombre: string
+  stock_actual: number
+  stock_minimo: number
+}
+
+interface StockAlerts {
+  productos_terminados: {
+    sin_stock: number
+    stock_bajo: number
+    ok: number
+    total: number
+    sin_stock_list: StockItem[]
+    stock_bajo_list: StockItem[]
+  }
+  materias_primas: {
+    sin_stock: number
+    stock_bajo: number
+    ok: number
+    total: number
+    sin_stock_list: StockItem[]
+    stock_bajo_list: StockItem[]
+  }
+  insumos: {
+    sin_stock: number
+    stock_bajo: number
+    ok: number
+    total: number
+    sin_stock_list: StockItem[]
+    stock_bajo_list: StockItem[]
+  }
+  recetas_activas: number
+  produccion_pendiente: number
+}
+
+// ─── Animation Variants ──────────────────────────────────────────────────────
 
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -44,6 +113,84 @@ const cardVariants = {
     },
   }),
 }
+
+const alertPanelVariants = {
+  hidden: { opacity: 0, y: -10, height: 0 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    height: 'auto',
+    transition: { duration: 0.4, ease: 'easeOut' },
+  },
+}
+
+// ─── Help Guide Data ─────────────────────────────────────────────────────────
+
+const helpSections = [
+  {
+    id: 'productos-terminados',
+    label: 'Productos Terminados',
+    icon: UtensilsCrossed,
+    steps: [
+      'Cargá tus productos terminados (sorrentinos, ravioles, etc.) con nombre, descripción y precio de venta.',
+      'Asigná un stock mínimo para recibir alertas cuando el stock esté bajo.',
+      'Cargá el stock inicial usando "Cargar Stock" o se sumará automáticamente al completar producciones.',
+      'Usá los productos terminados al registrar ventas para descontar stock automáticamente.',
+    ],
+  },
+  {
+    id: 'materias-primas',
+    label: 'Materias Primas',
+    icon: Leaf,
+    steps: [
+      'Ingresá las materias primas (harina, huevos, queso, etc.) con su unidad de medida.',
+      'Definí el stock mínimo para cada materia prima y recibí alertas cuando esté por debajo.',
+      'Comprá materias primas a proveedores usando el módulo de Compras para reponer el stock.',
+    ],
+  },
+  {
+    id: 'recetas',
+    label: 'Recetas',
+    icon: BookOpen,
+    steps: [
+      'Creá recetas vinculando un producto terminado con sus materias primas e insumos necesarios.',
+      'Especificá las cantidades exactas de cada ingrediente para producir una unidad del producto.',
+      'Las recetas se usan en Producción para calcular automáticamente el consumo de materias primas.',
+    ],
+  },
+  {
+    id: 'produccion',
+    label: 'Producción',
+    icon: Factory,
+    steps: [
+      'Seleccioná una receta existente y la cantidad a producir.',
+      'Al iniciar la producción, se reservan las materias primas e insumos necesarios.',
+      'Al completar la producción, se descuenta el stock de materias primas e insumos y se suma el stock del producto terminado.',
+    ],
+  },
+  {
+    id: 'ventas',
+    label: 'Ventas',
+    icon: Receipt,
+    steps: [
+      'Registrá una venta seleccionando productos terminados y cantidades.',
+      'Al confirmar la venta, se descuenta automáticamente el stock de los productos vendidos.',
+      'Llevá un registro de todas las ventas para control y reportes.',
+    ],
+  },
+  {
+    id: 'stock',
+    label: 'Stock',
+    icon: Boxes,
+    steps: [
+      'El stock se actualiza automáticamente al completar producciones (suma) o registrar ventas (descuenta).',
+      'Usá "Cargar Stock" para ajustes manuales, correcciones o ingresos que no provienen del flujo habitual.',
+      'Consultá los movimientos de stock en la sección de Movimientos de Stock para auditoría.',
+    ],
+  },
+]
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const { data: session } = useSession()
@@ -68,9 +215,15 @@ export default function DashboardPage() {
     produccionDelMes: 0,
     costoPromedioProduccion: 0,
     stockCritico: 0,
+    recetasActivas: 0,
   })
   const [loading, setLoading] = useState(true)
+  const [stockAlerts, setStockAlerts] = useState<StockAlerts | null>(null)
+  const [alertsOpen, setAlertsOpen] = useState(false)
+  const [alertsLoading, setAlertsLoading] = useState(true)
+  const [helpOpen, setHelpOpen] = useState(false)
 
+  // Fetch general stats
   useEffect(() => {
     async function fetchStats() {
       try {
@@ -131,6 +284,7 @@ export default function DashboardPage() {
           produccionDelMes: produccionData?.total || 0,
           costoPromedioProduccion: 0,
           stockCritico: 0,
+          recetasActivas: 0,
         })
       } catch (error) {
         console.error('Error fetching stats:', error)
@@ -141,6 +295,80 @@ export default function DashboardPage() {
 
     fetchStats()
   }, [])
+
+  // Fetch stock alerts
+  const fetchStockAlerts = useCallback(async () => {
+    setAlertsLoading(true)
+    try {
+      const res = await fetch('/api/stock-alerts')
+      if (res.ok) {
+        const data: StockAlerts = await res.json()
+        setStockAlerts(data)
+        // Update metric cards with real data
+        setStats(prev => ({
+          ...prev,
+          stockCritico: data.productos_terminados.sin_stock + data.productos_terminados.stock_bajo,
+          recetasActivas: data.recetas_activas,
+        }))
+      }
+    } catch (error) {
+      console.error('Error fetching stock alerts:', error)
+    } finally {
+      setAlertsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchStockAlerts()
+  }, [fetchStockAlerts])
+
+  // ─── Derived alert data ────────────────────────────────────────────────────
+
+  const totalAlerts = stockAlerts
+    ? stockAlerts.productos_terminados.sin_stock +
+      stockAlerts.materias_primas.stock_bajo +
+      stockAlerts.insumos.stock_bajo
+    : 0
+
+  const alertItems = stockAlerts
+    ? [
+        {
+          key: 'pt-sin-stock',
+          count: stockAlerts.productos_terminados.sin_stock,
+          label: 'productos terminados sin stock',
+          bgColor: 'bg-rojo/15',
+          borderColor: 'border-rojo/30',
+          textColor: 'text-rojo',
+          iconColor: 'text-rojo',
+          href: '/admin/productos-terminados?stock=sin_stock',
+          list: stockAlerts.productos_terminados.sin_stock_list,
+        },
+        {
+          key: 'mp-stock-bajo',
+          count: stockAlerts.materias_primas.stock_bajo,
+          label: 'materias primas con stock bajo',
+          bgColor: 'bg-mostaza/15',
+          borderColor: 'border-mostaza/30',
+          textColor: 'text-mostaza',
+          iconColor: 'text-mostaza',
+          href: '/admin/materias-primas?stock=stock_bajo',
+          list: stockAlerts.materias_primas.stock_bajo_list,
+        },
+        {
+          key: 'ins-stock-bajo',
+          count: stockAlerts.insumos.stock_bajo,
+          label: 'insumos con stock bajo',
+          bgColor: 'bg-mostaza/15',
+          borderColor: 'border-mostaza/30',
+          textColor: 'text-mostaza',
+          iconColor: 'text-mostaza',
+          href: '/admin/insumos?stock=stock_bajo',
+          list: stockAlerts.insumos.stock_bajo_list,
+        },
+      ].filter(a => a.count > 0)
+    : []
+
+  // ─── Metric Cards ──────────────────────────────────────────────────────────
 
   const metricCards = [
     {
@@ -176,12 +404,12 @@ export default function DashboardPage() {
       title: 'Stock Crítico',
       value: stats.stockCritico,
       icon: AlertTriangle,
-      color: 'bg-rojo/10 text-rojo',
-      href: '/admin/materias-primas',
+      color: stats.stockCritico > 0 ? 'bg-rojo/10 text-rojo' : 'bg-oliva/10 text-oliva',
+      href: '/admin/productos-terminados',
     },
     {
       title: 'Recetas Activas',
-      value: 0,
+      value: stats.recetasActivas,
       icon: BookOpen,
       color: 'bg-oliva/10 text-oliva',
       href: '/admin/recetas',
@@ -276,15 +504,208 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-marron">
-          ¡Hola, {firstName}! 👋
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Bienvenido al panel de administración de Pastas Orlando
-        </p>
+      {/* ─── Header with Greeting + Help Button ─────────────────────────────── */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold text-marron">
+            ¡Hola, {firstName}! 👋
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Bienvenido al panel de administración de Pastas Orlando
+          </p>
+        </div>
+
+        {/* ─── Help Button + Dialog ─────────────────────────────────────────── */}
+        <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              className="shrink-0 border-marron/20 hover:border-oliva hover:bg-oliva/5 text-marron gap-2"
+            >
+              <HelpCircle className="h-4 w-4" />
+              <span className="hidden sm:inline">¿Cómo usar esto?</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-marron text-xl">
+                <BookOpen className="h-5 w-5 text-oliva" />
+                Guía de Uso del Sistema
+              </DialogTitle>
+              <DialogDescription>
+                Aprendé a utilizar cada módulo del sistema paso a paso.
+              </DialogDescription>
+            </DialogHeader>
+
+            <Tabs defaultValue="productos-terminados" className="mt-2">
+              <TabsList className="flex flex-wrap h-auto gap-1 bg-crema/50 p-1 w-full">
+                {helpSections.map(section => (
+                  <TabsTrigger
+                    key={section.id}
+                    value={section.id}
+                    className="text-xs data-[state=active]:bg-marron data-[state=active]:text-crema"
+                  >
+                    <section.icon className="h-3.5 w-3.5 mr-1" />
+                    <span className="hidden sm:inline">{section.label}</span>
+                    <span className="sm:hidden">{section.label.split(' ')[0]}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              {helpSections.map(section => (
+                <TabsContent key={section.id} value={section.id} className="mt-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="rounded-lg bg-marron/10 p-2">
+                        <section.icon className="h-5 w-5 text-marron" />
+                      </div>
+                      <h3 className="font-semibold text-marron text-lg">
+                        {section.label}
+                      </h3>
+                    </div>
+                    <Separator />
+                    <ol className="space-y-3 mt-3">
+                      {section.steps.map((step, idx) => (
+                        <li key={idx} className="flex gap-3">
+                          <span className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-oliva/15 text-oliva text-xs font-bold">
+                            {idx + 1}
+                          </span>
+                          <p className="text-sm text-muted-foreground leading-relaxed pt-0.5">
+                            {step}
+                          </p>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
+          </DialogContent>
+        </Dialog>
       </div>
 
+      {/* ─── Stock Alerts Panel ───────────────────────────────────────────── */}
+      <AnimatePresence>
+        {!alertsLoading && stockAlerts && (
+          <motion.div
+            variants={alertPanelVariants}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+          >
+            {totalAlerts === 0 ? (
+              /* ── All OK Card ── */
+              <Card className="border-oliva/30 bg-oliva/5">
+                <CardContent className="py-4 px-5">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-full bg-oliva/20 p-2">
+                      <CheckCircle className="h-5 w-5 text-oliva" />
+                    </div>
+                    <p className="font-medium text-oliva">
+                      ✅ Todo el stock está en orden
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              /* ── Alerts Collapsible ── */
+              <Collapsible open={alertsOpen} onOpenChange={setAlertsOpen}>
+                <Card className="border-rojo/20">
+                  <CollapsibleTrigger asChild>
+                    <CardHeader className="cursor-pointer hover:bg-marron/5 transition-colors rounded-t-lg pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-full bg-rojo/15 p-2">
+                            <AlertTriangle className="h-5 w-5 text-rojo" />
+                          </div>
+                          <div>
+                            <CardTitle className="text-base text-marron">
+                              Alertas de Stock
+                            </CardTitle>
+                            <div className="flex flex-wrap gap-2 mt-1.5">
+                              {stockAlerts.productos_terminados.sin_stock > 0 && (
+                                <Badge variant="destructive" className="text-xs">
+                                  {stockAlerts.productos_terminados.sin_stock} sin stock
+                                </Badge>
+                              )}
+                              {stockAlerts.materias_primas.stock_bajo > 0 && (
+                                <Badge className="text-xs bg-mostaza text-white border-mostaza">
+                                  {stockAlerts.materias_primas.stock_bajo} MP bajo
+                                </Badge>
+                              )}
+                              {stockAlerts.insumos.stock_bajo > 0 && (
+                                <Badge className="text-xs bg-mostaza text-white border-mostaza">
+                                  {stockAlerts.insumos.stock_bajo} insumos bajo
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <motion.div
+                          animate={{ rotate: alertsOpen ? 180 : 0 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                        </motion.div>
+                      </div>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+
+                  <CollapsibleContent>
+                    <CardContent className="pt-0 pb-4 px-5 space-y-3">
+                      <Separator className="mb-2" />
+                      {alertItems.map(alert => (
+                        <Link key={alert.key} href={alert.href}>
+                          <motion.div
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={{ scale: 0.99 }}
+                            className={`rounded-lg border ${alert.borderColor} ${alert.bgColor} p-3 transition-colors hover:brightness-95`}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <AlertTriangle className={`h-4 w-4 ${alert.iconColor}`} />
+                              <span className={`font-semibold text-sm ${alert.textColor}`}>
+                                {alert.count} {alert.label}
+                              </span>
+                            </div>
+                            {alert.list.length > 0 && (
+                              <div className="ml-6 mt-1 space-y-1">
+                                {alert.list.slice(0, 5).map(item => (
+                                  <div key={item.id} className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <span>{item.nombre}</span>
+                                    <span className="font-mono">
+                                      {item.stock_actual} / {item.stock_minimo}
+                                    </span>
+                                  </div>
+                                ))}
+                                {alert.list.length > 5 && (
+                                  <p className="text-xs text-muted-foreground italic mt-1">
+                                    y {alert.list.length - 5} más...
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </motion.div>
+                        </Link>
+                      ))}
+
+                      <div className="flex justify-end pt-1">
+                        <Link href="/admin/productos-terminados?stock=sin_stock">
+                          <Button variant="ghost" size="sm" className="text-xs text-marron hover:text-rojo">
+                            Ver todos los detalles
+                            <ArrowRight className="ml-1 h-3 w-3" />
+                          </Button>
+                        </Link>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── Metric Cards Grid ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
         {metricCards.map((card, i) => (
           <motion.div
@@ -327,6 +748,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* ─── Quick Access ───────────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import { toast } from 'sonner'
-import { Pencil, Trash2, Plus, Search, Loader2, ChevronLeft, ChevronRight, Eye, EyeOff, Star, Tag, Barcode } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, Loader2, ChevronLeft, ChevronRight, Eye, EyeOff, Star, Tag, Barcode, PackagePlus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/select'
 import ProductoTerminadoForm from './ProductoTerminadoForm'
 import { EtiquetaProducto } from '@/components/admin/EtiquetaProducto'
+import { StockAdjustDialog } from './StockAdjustDialog'
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(price)
@@ -87,6 +88,9 @@ export default function ProductosTerminadosTable() {
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [productoEtiqueta, setProductoEtiqueta] = useState<{id: number, nombre: string, codigo_barras: string | null, codigo: string | null, precio_venta: number, peso_unitario_aprox: number, categoria?: {nombre: string} | null} | null>(null)
   const [showEtiqueta, setShowEtiqueta] = useState(false)
+  const [filtroStock, setFiltroStock] = useState<string>('')
+  const [stockAdjustItem, setStockAdjustItem] = useState<ProductoTerminado | null>(null)
+  const [stockAdjustOpen, setStockAdjustOpen] = useState(false)
 
   const fetchProductos = useCallback(async () => {
     setLoading(true)
@@ -97,6 +101,7 @@ export default function ProductosTerminadosTable() {
       if (search) params.set('buscar', search)
       if (filtroCategoria && filtroCategoria !== 'all') params.set('id_categoria', filtroCategoria)
       if (filtroEstado && filtroEstado !== 'all') params.set('estado', filtroEstado)
+      if (filtroStock && filtroStock !== 'all') params.set('stock', filtroStock)
 
       const res = await fetch(`/api/productos-terminados?${params.toString()}`)
       if (!res.ok) throw new Error('Error al cargar productos terminados')
@@ -109,7 +114,7 @@ export default function ProductosTerminadosTable() {
     } finally {
       setLoading(false)
     }
-  }, [pagina, search, filtroCategoria, filtroEstado])
+  }, [pagina, search, filtroCategoria, filtroEstado, filtroStock])
 
   const fetchCategorias = useCallback(async () => {
     try {
@@ -132,7 +137,13 @@ export default function ProductosTerminadosTable() {
 
   useEffect(() => {
     setPagina(1)
-  }, [search, filtroCategoria, filtroEstado])
+  }, [search, filtroCategoria, filtroEstado, filtroStock])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const stockParam = params.get('stock')
+    if (stockParam) setFiltroStock(stockParam)
+  }, [])
 
   const handleDelete = async () => {
     if (!deleteId) return
@@ -208,6 +219,16 @@ export default function ProductosTerminadosTable() {
               <SelectItem value="false">Inactivo</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={filtroStock} onValueChange={setFiltroStock}>
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue placeholder="Stock" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todo el stock</SelectItem>
+              <SelectItem value="sin_stock">Sin stock</SelectItem>
+              <SelectItem value="stock_bajo">Stock bajo</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <Button
           onClick={openNew}
@@ -240,7 +261,7 @@ export default function ProductosTerminadosTable() {
               {productos.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
-                    {search || filtroCategoria || filtroEstado
+                    {search || filtroCategoria || filtroEstado || filtroStock
                       ? 'No se encontraron productos con los filtros aplicados'
                       : 'No hay productos terminados cargados'}
                   </TableCell>
@@ -352,6 +373,18 @@ export default function ProductosTerminadosTable() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 hover:bg-oliva/10"
+                            title="Cargar stock"
+                            onClick={() => {
+                              setStockAdjustItem(pt)
+                              setStockAdjustOpen(true)
+                            }}
+                          >
+                            <PackagePlus className="h-4 w-4 text-oliva" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -467,6 +500,18 @@ export default function ProductosTerminadosTable() {
         producto={productoEtiqueta}
         open={showEtiqueta}
         onClose={() => { setShowEtiqueta(false); setProductoEtiqueta(null) }}
+      />
+
+      {/* Stock Adjust Dialog */}
+      <StockAdjustDialog
+        open={stockAdjustOpen}
+        onClose={() => { setStockAdjustOpen(false); setStockAdjustItem(null) }}
+        tipo_item="producto_terminado"
+        item_id={stockAdjustItem?.id ?? 0}
+        item_nombre={stockAdjustItem?.nombre ?? ''}
+        stock_actual={stockAdjustItem?.stock_actual ?? 0}
+        stock_minimo={stockAdjustItem?.stock_minimo ?? 0}
+        onSuccess={fetchProductos}
       />
     </div>
   )

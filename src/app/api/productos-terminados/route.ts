@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
     const id_categoria = searchParams.get('id_categoria')
     const estado = searchParams.get('estado')
     const tipo_harina = searchParams.get('tipo_harina')
+    const stock = searchParams.get('stock')
     const pagina = parseInt(searchParams.get('pagina') || '1')
     const limite = parseInt(searchParams.get('limite') || '10')
 
@@ -94,6 +95,33 @@ export async function GET(request: NextRequest) {
         { codigo: { contains: buscar } },
         { codigo_barras: { contains: buscar } },
       ]
+    }
+    // Stock filter: sin_stock = stock_actual <= 0, stock_bajo = 0 < stock_actual <= stock_minimo
+    if (stock === 'sin_stock') {
+      where.stock_actual = { lte: 0 }
+    }
+
+    // For "stock_bajo" we need in-memory filtering (can't compare two columns in SQLite)
+    const isStockBajoFilter = stock === 'stock_bajo'
+
+    if (isStockBajoFilter) {
+      // Fetch all matching items and filter in-memory
+      const allItems = await db.productoTerminado.findMany({
+        where,
+        include: { categoria: true },
+        orderBy: { nombre: 'asc' },
+      })
+      const filtered = allItems.filter(pt => pt.stock_actual > 0 && pt.stock_actual <= pt.stock_minimo)
+      const total = filtered.length
+      const start = (pagina - 1) * limite
+      const data = filtered.slice(start, start + limite)
+
+      return NextResponse.json({
+        data,
+        total,
+        pagina,
+        totalPaginas: Math.ceil(total / limite),
+      })
     }
 
     const [data, total] = await Promise.all([

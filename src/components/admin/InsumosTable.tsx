@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import { toast } from 'sonner'
-import { Pencil, Trash2, Plus, Search, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, Loader2, ChevronLeft, ChevronRight, PackagePlus } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -39,7 +39,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import InsumoForm from './InsumoForm'
+import { StockAdjustDialog } from './StockAdjustDialog'
 
 interface Insumo {
   id: number
@@ -68,6 +75,7 @@ export default function InsumosTable() {
   const [search, setSearch] = useState('')
   const [filtroTipo, setFiltroTipo] = useState<string>('')
   const [filtroEstado, setFiltroEstado] = useState<string>('')
+  const [filtroStock, setFiltroStock] = useState<string>('')
   const [tiposInsumo, setTiposInsumo] = useState<TipoInsumo[]>([])
   const [pagina, setPagina] = useState(1)
   const [totalPaginas, setTotalPaginas] = useState(1)
@@ -75,6 +83,15 @@ export default function InsumosTable() {
   const [selectedInsumo, setSelectedInsumo] = useState<Insumo | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [stockAdjustItem, setStockAdjustItem] = useState<Insumo | null>(null)
+  const [stockAdjustOpen, setStockAdjustOpen] = useState(false)
+
+  // Read stock query param from URL on mount (for dashboard alerts)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const stockParam = params.get('stock')
+    if (stockParam) setFiltroStock(stockParam)
+  }, [])
 
   const fetchInsumos = useCallback(async () => {
     setLoading(true)
@@ -85,6 +102,7 @@ export default function InsumosTable() {
       if (search) params.set('buscar', search)
       if (filtroTipo && filtroTipo !== 'all') params.set('id_tipo_insumo', filtroTipo)
       if (filtroEstado && filtroEstado !== 'all') params.set('estado', filtroEstado)
+      if (filtroStock && filtroStock !== 'all') params.set('stock', filtroStock)
 
       const res = await fetch(`/api/insumos?${params.toString()}`)
       if (!res.ok) throw new Error('Error al cargar insumos')
@@ -97,7 +115,7 @@ export default function InsumosTable() {
     } finally {
       setLoading(false)
     }
-  }, [pagina, search, filtroTipo, filtroEstado])
+  }, [pagina, search, filtroTipo, filtroEstado, filtroStock])
 
   const fetchTipos = useCallback(async () => {
     try {
@@ -120,7 +138,7 @@ export default function InsumosTable() {
 
   useEffect(() => {
     setPagina(1)
-  }, [search, filtroTipo, filtroEstado])
+  }, [search, filtroTipo, filtroEstado, filtroStock])
 
   const handleDelete = async () => {
     if (!deleteId) return
@@ -196,6 +214,16 @@ export default function InsumosTable() {
               <SelectItem value="false">Inactivo</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={filtroStock} onValueChange={setFiltroStock}>
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue placeholder="Todo el stock" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todo el stock</SelectItem>
+              <SelectItem value="sin_stock">Sin stock</SelectItem>
+              <SelectItem value="stock_bajo">Stock bajo</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <Button
           onClick={openNew}
@@ -225,91 +253,120 @@ export default function InsumosTable() {
               {insumos.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                    {search || filtroTipo || filtroEstado
+                    {search || filtroTipo || filtroEstado || filtroStock
                       ? 'No se encontraron insumos con los filtros aplicados'
                       : 'No hay insumos cargados'}
                   </TableCell>
                 </TableRow>
               ) : (
-                insumos.map((ins) => (
-                  <TableRow key={ins.id} className="hover:bg-mostaza/5">
-                    <TableCell>
-                      <div className="relative w-10 h-10 rounded-md overflow-hidden bg-muted">
-                        {ins.imagen ? (
-                          <Image
-                            src={ins.imagen}
-                            alt={ins.nombre}
-                            fill
-                            loading="lazy"
-                            className="object-cover"
-                            sizes="48px"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                            N/A
-                          </div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {ins.codigo || '-'}
-                    </TableCell>
-                    <TableCell className="font-medium text-marron">
-                      <div>{ins.nombre}</div>
-                      <div className="sm:hidden text-xs text-muted-foreground">
-                        {ins.tipoInsumo?.nombre || '-'}
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      <Badge variant="outline" className="border-marron/20 text-marron">
-                        {ins.tipoInsumo?.nombre || '-'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {ins.stock_actual <= ins.stock_minimo ? (
-                        <Badge className="bg-rojo/10 text-rojo hover:bg-rojo/20">
-                          {ins.stock_actual}
+                insumos.map((ins) => {
+                  const sinStock = ins.stock_actual <= 0
+                  const stockBajo = ins.stock_actual > 0 && ins.stock_actual <= ins.stock_minimo
+
+                  return (
+                    <TableRow key={ins.id} className="hover:bg-mostaza/5">
+                      <TableCell>
+                        <div className="relative w-10 h-10 rounded-md overflow-hidden bg-muted">
+                          {ins.imagen ? (
+                            <Image
+                              src={ins.imagen}
+                              alt={ins.nombre}
+                              fill
+                              loading="lazy"
+                              className="object-cover"
+                              sizes="48px"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                              N/A
+                            </div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-muted-foreground">
+                        {ins.codigo || '-'}
+                      </TableCell>
+                      <TableCell className="font-medium text-marron">
+                        <div>{ins.nombre}</div>
+                        <div className="sm:hidden text-xs text-muted-foreground">
+                          {ins.tipoInsumo?.nombre || '-'}
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        <Badge variant="outline" className="border-marron/20 text-marron">
+                          {ins.tipoInsumo?.nombre || '-'}
                         </Badge>
-                      ) : (
-                        <span className="text-marron">{ins.stock_actual}</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-muted-foreground">
-                      {ins.stock_minimo}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <Badge
-                        className={
-                          ins.estado
-                            ? 'bg-oliva/10 text-oliva hover:bg-oliva/20'
-                            : 'bg-rojo/10 text-rojo hover:bg-rojo/20'
-                        }
-                      >
-                        {ins.estado ? 'Activo' : 'Inactivo'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-10 w-10 hover:bg-mostaza/10"
-                          onClick={() => openEdit(ins)}
+                      </TableCell>
+                      <TableCell>
+                        {sinStock ? (
+                          <Badge className="bg-rojo/10 text-rojo hover:bg-rojo/20">
+                            Sin stock
+                          </Badge>
+                        ) : stockBajo ? (
+                          <Badge className="bg-mostaza/10 text-mostaza hover:bg-mostaza/20">
+                            {ins.stock_actual}
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-oliva/10 text-oliva hover:bg-oliva/20">
+                            {ins.stock_actual}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground">
+                        {ins.stock_minimo}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <Badge
+                          className={
+                            ins.estado
+                              ? 'bg-oliva/10 text-oliva hover:bg-oliva/20'
+                              : 'bg-rojo/10 text-rojo hover:bg-rojo/20'
+                          }
                         >
-                          <Pencil className="h-4 w-4 text-mostaza" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-10 w-10 hover:bg-rojo/10"
-                          onClick={() => setDeleteId(ins.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-rojo" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                          {ins.estado ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-10 w-10 hover:bg-oliva/10"
+                                  onClick={() => {
+                                    setStockAdjustItem(ins)
+                                    setStockAdjustOpen(true)
+                                  }}
+                                >
+                                  <PackagePlus className="h-4 w-4 text-oliva" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Cargar stock</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 hover:bg-mostaza/10"
+                            onClick={() => openEdit(ins)}
+                          >
+                            <Pencil className="h-4 w-4 text-mostaza" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 hover:bg-rojo/10"
+                            onClick={() => setDeleteId(ins.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-rojo" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
@@ -386,6 +443,18 @@ export default function InsumosTable() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Stock Adjust Dialog */}
+      <StockAdjustDialog
+        open={stockAdjustOpen}
+        onClose={() => { setStockAdjustOpen(false); setStockAdjustItem(null) }}
+        tipo_item="insumo"
+        item_id={stockAdjustItem?.id ?? 0}
+        item_nombre={stockAdjustItem?.nombre ?? ''}
+        stock_actual={stockAdjustItem?.stock_actual ?? 0}
+        stock_minimo={stockAdjustItem?.stock_minimo ?? 0}
+        onSuccess={fetchInsumos}
+      />
     </div>
   )
 }

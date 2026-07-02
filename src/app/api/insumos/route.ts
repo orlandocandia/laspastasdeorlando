@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const buscar = searchParams.get('buscar')
     const id_tipo_insumo = searchParams.get('id_tipo_insumo')
     const estado = searchParams.get('estado')
+    const stock = searchParams.get('stock')
     const pagina = parseInt(searchParams.get('pagina') || '1')
     const limite = parseInt(searchParams.get('limite') || '10')
 
@@ -19,6 +20,32 @@ export async function GET(request: NextRequest) {
         { nombre: { contains: buscar } },
         { codigo: { contains: buscar } },
       ]
+    }
+    // Stock filter
+    if (stock === 'sin_stock') {
+      where.stock_actual = { lte: 0 }
+    }
+
+    // For "stock_bajo" we need in-memory filtering (can't compare two columns in SQLite)
+    const isStockBajoFilter = stock === 'stock_bajo'
+
+    if (isStockBajoFilter) {
+      const allItems = await db.insumo.findMany({
+        where,
+        include: { tipoInsumo: true, unidadBase: true },
+        orderBy: { nombre: 'asc' },
+      })
+      const filtered = allItems.filter(ins => ins.stock_actual > 0 && ins.stock_actual <= ins.stock_minimo)
+      const total = filtered.length
+      const start = (pagina - 1) * limite
+      const data = filtered.slice(start, start + limite)
+
+      return NextResponse.json({
+        data,
+        total,
+        pagina,
+        totalPaginas: Math.ceil(total / limite),
+      })
     }
 
     const [data, total] = await Promise.all([
