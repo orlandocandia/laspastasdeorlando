@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import ChatAssistant from '@/components/admin/ChatAssistant'
 
 const navItems = [
   {
@@ -611,6 +612,7 @@ export default function DashboardLayout({
           {children}
         </div>
       </SidebarInset>
+      <ChatAssistant />
     </SidebarProvider>
   )
 }

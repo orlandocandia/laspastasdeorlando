@@ -1,0 +1,962 @@
+     1→'use client'
+     2→
+     3→import { useEffect, useState, useCallback } from 'react'
+     4→import { useSession } from 'next-auth/react'
+     5→import { motion, AnimatePresence } from 'framer-motion'
+     6→import {
+     7→  Package, MessageSquare, Phone, ArrowRight, UserCircle, Users,
+     8→  Leaf, PackageOpen, UtensilsCrossed, ShoppingCart, ClipboardList,
+     9→  ArrowLeftRight, Receipt, CalendarCheck, DollarSign, Factory,
+    10→  AlertTriangle, BookOpen, Shield, TrendingUp, FileBarChart,
+    11→  HelpCircle, CheckCircle, ChevronDown, ChevronUp, Utensils,
+    12→  FlaskConical, ShoppingCartIcon, Boxes
+    13→} from 'lucide-react'
+    14→import Link from 'next/link'
+    15→
+    16→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+    17→import { Button } from '@/components/ui/button'
+    18→import {
+    19→  Dialog,
+    20→  DialogContent,
+    21→  DialogDescription,
+    22→  DialogHeader,
+    23→  DialogTitle,
+    24→  DialogTrigger,
+    25→} from '@/components/ui/dialog'
+    26→import {
+    27→  Collapsible,
+    28→  CollapsibleContent,
+    29→  CollapsibleTrigger,
+    30→} from '@/components/ui/collapsible'
+    31→import {
+    32→  Tabs,
+    33→  TabsContent,
+    34→  TabsList,
+    35→  TabsTrigger,
+    36→} from '@/components/ui/tabs'
+    37→import { Badge } from '@/components/ui/badge'
+    38→import { Separator } from '@/components/ui/separator'
+    39→
+    40→// ─── Types ───────────────────────────────────────────────────────────────────
+    41→
+    42→interface DashboardStats {
+    43→  productosActivos: number
+    44→  opinionesPendientes: number
+    45→  interaccionesWhatsApp: number
+    46→  totalPersonas: number
+    47→  totalUsuarios: number
+    48→  totalMateriasPrimas: number
+    49→  totalInsumos: number
+    50→  totalProductosTerminados: number
+    51→  totalCompras: number
+    52→  totalPedidos: number
+    53→  totalMovimientos: number
+    54→  totalVentas: number
+    55→  totalPedidosClientes: number
+    56→  totalReservas: number
+    57→  ventasDelMes: number
+    58→  pedidosPendientes: number
+    59→  reservasActivas: number
+    60→  produccionDelMes: number
+    61→  costoPromedioProduccion: number
+    62→  stockCritico: number
+    63→  recetasActivas: number
+    64→}
+    65→
+    66→interface StockItem {
+    67→  id: number
+    68→  nombre: string
+    69→  stock_actual: number
+    70→  stock_minimo: number
+    71→}
+    72→
+    73→interface StockAlerts {
+    74→  productos_terminados: {
+    75→    sin_stock: number
+    76→    stock_bajo: number
+    77→    ok: number
+    78→    total: number
+    79→    sin_stock_list: StockItem[]
+    80→    stock_bajo_list: StockItem[]
+    81→  }
+    82→  materias_primas: {
+    83→    sin_stock: number
+    84→    stock_bajo: number
+    85→    ok: number
+    86→    total: number
+    87→    sin_stock_list: StockItem[]
+    88→    stock_bajo_list: StockItem[]
+    89→  }
+    90→  insumos: {
+    91→    sin_stock: number
+    92→    stock_bajo: number
+    93→    ok: number
+    94→    total: number
+    95→    sin_stock_list: StockItem[]
+    96→    stock_bajo_list: StockItem[]
+    97→  }
+    98→  recetas_activas: number
+    99→  produccion_pendiente: number
+   100→}
+   101→
+   102→// ─── Animation Variants ──────────────────────────────────────────────────────
+   103→
+   104→const cardVariants = {
+   105→  hidden: { opacity: 0, y: 20 },
+   106→  visible: (i: number) => ({
+   107→    opacity: 1,
+   108→    y: 0,
+   109→    transition: {
+   110→      delay: i * 0.08,
+   111→      duration: 0.5,
+   112→      ease: 'easeOut',
+   113→    },
+   114→  }),
+   115→}
+   116→
+   117→const alertPanelVariants = {
+   118→  hidden: { opacity: 0, y: -10, height: 0 },
+   119→  visible: {
+   120→    opacity: 1,
+   121→    y: 0,
+   122→    height: 'auto',
+   123→    transition: { duration: 0.4, ease: 'easeOut' },
+   124→  },
+   125→}
+   126→
+   127→// ─── Help Guide Data ─────────────────────────────────────────────────────────
+   128→
+   129→const helpSections = [
+   130→  {
+   131→    id: 'productos-terminados',
+   132→    label: 'Productos Terminados',
+   133→    icon: UtensilsCrossed,
+   134→    steps: [
+   135→      'Cargá tus productos terminados (sorrentinos, ravioles, etc.) con nombre, descripción y precio de venta.',
+   136→      'Asigná un stock mínimo para recibir alertas cuando el stock esté bajo.',
+   137→      'Cargá el stock inicial usando "Cargar Stock" o se sumará automáticamente al completar producciones.',
+   138→      'Usá los productos terminados al registrar ventas para descontar stock automáticamente.',
+   139→    ],
+   140→  },
+   141→  {
+   142→    id: 'materias-primas',
+   143→    label: 'Materias Primas',
+   144→    icon: Leaf,
+   145→    steps: [
+   146→      'Ingresá las materias primas (harina, huevos, queso, etc.) con su unidad de medida.',
+   147→      'Definí el stock mínimo para cada materia prima y recibí alertas cuando esté por debajo.',
+   148→      'Comprá materias primas a proveedores usando el módulo de Compras para reponer el stock.',
+   149→    ],
+   150→  },
+   151→  {
+   152→    id: 'recetas',
+   153→    label: 'Recetas',
+   154→    icon: BookOpen,
+   155→    steps: [
+   156→      'Creá recetas vinculando un producto terminado con sus materias primas e insumos necesarios.',
+   157→      'Especificá las cantidades exactas de cada ingrediente para producir una unidad del producto.',
+   158→      'Las recetas se usan en Producción para calcular automáticamente el consumo de materias primas.',
+   159→    ],
+   160→  },
+   161→  {
+   162→    id: 'produccion',
+   163→    label: 'Producción',
+   164→    icon: Factory,
+   165→    steps: [
+   166→      'Seleccioná una receta existente y la cantidad a producir.',
+   167→      'Al iniciar la producción, se reservan las materias primas e insumos necesarios.',
+   168→      'Al completar la producción, se descuenta el stock de materias primas e insumos y se suma el stock del producto terminado.',
+   169→    ],
+   170→  },
+   171→  {
+   172→    id: 'ventas',
+   173→    label: 'Ventas',
+   174→    icon: Receipt,
+   175→    steps: [
+   176→      'Registrá una venta seleccionando productos terminados y cantidades.',
+   177→      'Al confirmar la venta, se descuenta automáticamente el stock de los productos vendidos.',
+   178→      'Llevá un registro de todas las ventas para control y reportes.',
+   179→    ],
+   180→  },
+   181→  {
+   182→    id: 'stock',
+   183→    label: 'Stock',
+   184→    icon: Boxes,
+   185→    steps: [
+   186→      'El stock se actualiza automáticamente al completar producciones (suma) o registrar ventas (descuenta).',
+   187→      'Usá "Cargar Stock" para ajustes manuales, correcciones o ingresos que no provienen del flujo habitual.',
+   188→      'Consultá los movimientos de stock en la sección de Movimientos de Stock para auditoría.',
+   189→    ],
+   190→  },
+   191→]
+   192→
+   193→// ─── Component ───────────────────────────────────────────────────────────────
+   194→
+   195→export default function DashboardPage() {
+   196→  const { data: session } = useSession()
+   197→  const [stats, setStats] = useState<DashboardStats>({
+   198→    productosActivos: 0,
+   199→    opinionesPendientes: 0,
+   200→    interaccionesWhatsApp: 0,
+   201→    totalPersonas: 0,
+   202→    totalUsuarios: 0,
+   203→    totalMateriasPrimas: 0,
+   204→    totalInsumos: 0,
+   205→    totalProductosTerminados: 0,
+   206→    totalCompras: 0,
+   207→    totalPedidos: 0,
+   208→    totalMovimientos: 0,
+   209→    totalVentas: 0,
+   210→    totalPedidosClientes: 0,
+   211→    totalReservas: 0,
+   212→    ventasDelMes: 0,
+   213→    pedidosPendientes: 0,
+   214→    reservasActivas: 0,
+   215→    produccionDelMes: 0,
+   216→    costoPromedioProduccion: 0,
+   217→    stockCritico: 0,
+   218→    recetasActivas: 0,
+   219→  })
+   220→  const [loading, setLoading] = useState(true)
+   221→  const [stockAlerts, setStockAlerts] = useState<StockAlerts | null>(null)
+   222→  const [alertsOpen, setAlertsOpen] = useState(false)
+   223→  const [alertsLoading, setAlertsLoading] = useState(true)
+   224→  const [helpOpen, setHelpOpen] = useState(false)
+   225→
+   226→  // Fetch general stats
+   227→  useEffect(() => {
+   228→    async function fetchStats() {
+   229→      try {
+   230→        const [productosRes, opinionesRes, contactoRes, personasRes, usuariosRes, mpRes, insRes, ptRes, comprasRes, pedidosRes, stockRes, ventasRes, pedidosCliRes, reservasRes, produccionRes] = await Promise.all([
+   231→          fetch('/api/productos?stock=false'),
+   232→          fetch('/api/opiniones?admin=true&estado=pending'),
+   233→          fetch('/api/contacto?dias=30'),
+   234→          fetch('/api/personas?limite=1'),
+   235→          fetch('/api/usuarios'),
+   236→          fetch('/api/materias-primas?limite=1'),
+   237→          fetch('/api/insumos?limite=1'),
+   238→          fetch('/api/productos-terminados?limite=1'),
+   239→          fetch('/api/compras?limite=1'),
+   240→          fetch('/api/pedidos-proveedores?limite=1'),
+   241→          fetch('/api/stock-movements?limite=1'),
+   242→          fetch('/api/ventas?limite=1'),
+   243→          fetch('/api/pedidos-clientes?limite=1'),
+   244→          fetch('/api/reservas-clientes?limite=1'),
+   245→          fetch('/api/produccion?limite=1'),
+   246→        ])
+   247→
+   248→        const productos = await productosRes.json()
+   249→        const opiniones = await opinionesRes.json()
+   250→        const contacto = await contactoRes.json()
+   251→        const personasData = await personasRes.json()
+   252→        const usuariosData = await usuariosRes.json()
+   253→        const mpData = await mpRes.json()
+   254→        const insData = await insRes.json()
+   255→        const ptData = await ptRes.json()
+   256→        const comprasData = await comprasRes.json()
+   257→        const pedidosData = await pedidosRes.json()
+   258→        const stockData = await stockRes.json()
+   259→        const ventasData = await ventasRes.json()
+   260→        const pedidosCliData = await pedidosCliRes.json()
+   261→        const reservasData = await reservasRes.json()
+   262→        const produccionData = await produccionRes.json()
+   263→
+   264→        setStats({
+   265→          productosActivos: Array.isArray(productos)
+   266→            ? productos.filter((p: { stock: boolean }) => p.stock).length
+   267→            : 0,
+   268→          opinionesPendientes: Array.isArray(opiniones) ? opiniones.length : 0,
+   269→          interaccionesWhatsApp: contacto?.estadisticas?.total || 0,
+   270→          totalPersonas: personasData?.total || 0,
+   271→          totalUsuarios: Array.isArray(usuariosData) ? usuariosData.length : 0,
+   272→          totalMateriasPrimas: mpData?.total || 0,
+   273→          totalInsumos: insData?.total || 0,
+   274→          totalProductosTerminados: ptData?.total || 0,
+   275→          totalCompras: comprasData?.total || 0,
+   276→          totalPedidos: pedidosData?.total || 0,
+   277→          totalMovimientos: stockData?.total || 0,
+   278→          totalVentas: ventasData?.total || 0,
+   279→          totalPedidosClientes: pedidosCliData?.total || 0,
+   280→          totalReservas: reservasData?.total || 0,
+   281→          ventasDelMes: ventasData?.total || 0,
+   282→          pedidosPendientes: pedidosCliData?.total || 0,
+   283→          reservasActivas: reservasData?.total || 0,
+   284→          produccionDelMes: produccionData?.total || 0,
+   285→          costoPromedioProduccion: 0,
+   286→          stockCritico: 0,
+   287→          recetasActivas: 0,
+   288→        })
+   289→      } catch (error) {
+   290→        console.error('Error fetching stats:', error)
+   291→      } finally {
+   292→        setLoading(false)
+   293→      }
+   294→    }
+   295→
+   296→    fetchStats()
+   297→  }, [])
+   298→
+   299→  // Fetch stock alerts
+   300→  const fetchStockAlerts = useCallback(async () => {
+   301→    setAlertsLoading(true)
+   302→    try {
+   303→      const res = await fetch('/api/stock-alerts')
+   304→      if (res.ok) {
+   305→        const data: StockAlerts = await res.json()
+   306→        setStockAlerts(data)
+   307→        // Update metric cards with real data
+   308→        setStats(prev => ({
+   309→          ...prev,
+   310→          stockCritico: data.productos_terminados.sin_stock + data.productos_terminados.stock_bajo,
+   311→          recetasActivas: data.recetas_activas,
+   312→        }))
+   313→      }
+   314→    } catch (error) {
+   315→      console.error('Error fetching stock alerts:', error)
+   316→    } finally {
+   317→      setAlertsLoading(false)
+   318→    }
+   319→  }, [])
+   320→
+   321→  useEffect(() => {
+   322→    fetchStockAlerts()
+   323→  }, [fetchStockAlerts])
+   324→
+   325→  // ─── Derived alert data ────────────────────────────────────────────────────
+   326→
+   327→  const totalAlerts = stockAlerts
+   328→    ? stockAlerts.productos_terminados.sin_stock +
+   329→      stockAlerts.materias_primas.stock_bajo +
+   330→      stockAlerts.insumos.stock_bajo
+   331→    : 0
+   332→
+   333→  const alertItems = stockAlerts
+   334→    ? [
+   335→        {
+   336→          key: 'pt-sin-stock',
+   337→          count: stockAlerts.productos_terminados.sin_stock,
+   338→          label: 'productos terminados sin stock',
+   339→          bgColor: 'bg-rojo/15',
+   340→          borderColor: 'border-rojo/30',
+   341→          textColor: 'text-rojo',
+   342→          iconColor: 'text-rojo',
+   343→          href: '/admin/productos-terminados?stock=sin_stock',
+   344→          list: stockAlerts.productos_terminados.sin_stock_list,
+   345→        },
+   346→        {
+   347→          key: 'mp-stock-bajo',
+   348→          count: stockAlerts.materias_primas.stock_bajo,
+   349→          label: 'materias primas con stock bajo',
+   350→          bgColor: 'bg-mostaza/15',
+   351→          borderColor: 'border-mostaza/30',
+   352→          textColor: 'text-mostaza',
+   353→          iconColor: 'text-mostaza',
+   354→          href: '/admin/materias-primas?stock=stock_bajo',
+   355→          list: stockAlerts.materias_primas.stock_bajo_list,
+   356→        },
+   357→        {
+   358→          key: 'ins-stock-bajo',
+   359→          count: stockAlerts.insumos.stock_bajo,
+   360→          label: 'insumos con stock bajo',
+   361→          bgColor: 'bg-mostaza/15',
+   362→          borderColor: 'border-mostaza/30',
+   363→          textColor: 'text-mostaza',
+   364→          iconColor: 'text-mostaza',
+   365→          href: '/admin/insumos?stock=stock_bajo',
+   366→          list: stockAlerts.insumos.stock_bajo_list,
+   367→        },
+   368→      ].filter(a => a.count > 0)
+   369→    : []
+   370→
+   371→  // ─── Metric Cards ──────────────────────────────────────────────────────────
+   372→
+   373→  const metricCards = [
+   374→    {
+   375→      title: 'Ventas del Mes',
+   376→      value: stats.totalVentas,
+   377→      icon: DollarSign,
+   378→      color: 'bg-oliva/10 text-oliva',
+   379→      href: '/admin/ventas',
+   380→      isCurrency: false,
+   381→    },
+   382→    {
+   383→      title: 'Pedidos Pendientes',
+   384→      value: stats.totalPedidosClientes,
+   385→      icon: ClipboardList,
+   386→      color: 'bg-mostaza/10 text-mostaza',
+   387→      href: '/admin/pedidos-clientes',
+   388→    },
+   389→    {
+   390→      title: 'Reservas Activas',
+   391→      value: stats.totalReservas,
+   392→      icon: CalendarCheck,
+   393→      color: 'bg-rojo/10 text-rojo',
+   394→      href: '/admin/reservas-clientes',
+   395→    },
+   396→    {
+   397→      title: 'Producción del Mes',
+   398→      value: stats.produccionDelMes,
+   399→      icon: Factory,
+   400→      color: 'bg-marron/10 text-marron',
+   401→      href: '/admin/produccion',
+   402→    },
+   403→    {
+   404→      title: 'Stock Crítico',
+   405→      value: stats.stockCritico,
+   406→      icon: AlertTriangle,
+   407→      color: stats.stockCritico > 0 ? 'bg-rojo/10 text-rojo' : 'bg-oliva/10 text-oliva',
+   408→      href: '/admin/productos-terminados',
+   409→    },
+   410→    {
+   411→      title: 'Recetas Activas',
+   412→      value: stats.recetasActivas,
+   413→      icon: BookOpen,
+   414→      color: 'bg-oliva/10 text-oliva',
+   415→      href: '/admin/recetas',
+   416→    },
+   417→    {
+   418→      title: 'Ventas',
+   419→      value: stats.totalVentas,
+   420→      icon: Receipt,
+   421→      color: 'bg-marron/10 text-marron',
+   422→      href: '/admin/ventas',
+   423→    },
+   424→    {
+   425→      title: 'Productos Activos',
+   426→      value: stats.productosActivos,
+   427→      icon: Package,
+   428→      color: 'bg-mostaza/10 text-mostaza',
+   429→      href: '/admin/productos',
+   430→    },
+   431→    {
+   432→      title: 'Materias Primas',
+   433→      value: stats.totalMateriasPrimas,
+   434→      icon: Leaf,
+   435→      color: 'bg-oliva/10 text-oliva',
+   436→      href: '/admin/materias-primas',
+   437→    },
+   438→    {
+   439→      title: 'Insumos',
+   440→      value: stats.totalInsumos,
+   441→      icon: PackageOpen,
+   442→      color: 'bg-mostaza/10 text-mostaza',
+   443→      href: '/admin/insumos',
+   444→    },
+   445→    {
+   446→      title: 'Productos Terminados',
+   447→      value: stats.totalProductosTerminados,
+   448→      icon: UtensilsCrossed,
+   449→      color: 'bg-rojo/10 text-rojo',
+   450→      href: '/admin/productos-terminados',
+   451→    },
+   452→    {
+   453→      title: 'Compras',
+   454→      value: stats.totalCompras,
+   455→      icon: ShoppingCart,
+   456→      color: 'bg-marron/10 text-marron',
+   457→      href: '/admin/compras',
+   458→    },
+   459→    {
+   460→      title: 'Pedidos Proveedores',
+   461→      value: stats.totalPedidos,
+   462→      icon: ClipboardList,
+   463→      color: 'bg-mostaza/10 text-mostaza',
+   464→      href: '/admin/pedidos-proveedores',
+   465→    },
+   466→    {
+   467→      title: 'Mov. Stock',
+   468→      value: stats.totalMovimientos,
+   469→      icon: ArrowLeftRight,
+   470→      color: 'bg-oliva/10 text-oliva',
+   471→      href: '/admin/stock-movements',
+   472→    },
+   473→    {
+   474→      title: 'Opiniones Pendientes',
+   475→      value: stats.opinionesPendientes,
+   476→      icon: MessageSquare,
+   477→      color: 'bg-rojo/10 text-rojo',
+   478→      href: '/admin/opiniones',
+   479→    },
+   480→    {
+   481→      title: 'Interacciones WhatsApp',
+   482→      value: stats.interaccionesWhatsApp,
+   483→      icon: Phone,
+   484→      color: 'bg-whatsapp/10 text-whatsapp',
+   485→      href: '/admin/estadisticas',
+   486→    },
+   487→    {
+   488→      title: 'Total Personas',
+   489→      value: stats.totalPersonas,
+   490→      icon: UserCircle,
+   491→      color: 'bg-marron/10 text-marron',
+   492→      href: '/admin/personas',
+   493→    },
+   494→    {
+   495→      title: 'Total Usuarios',
+   496→      value: stats.totalUsuarios,
+   497→      icon: Users,
+   498→      color: 'bg-oliva/10 text-oliva',
+   499→      href: '/admin/usuarios',
+   500→    },
+   501→  ]
+   502→
+   503→  const firstName = session?.user?.name?.split(' ')[0] || 'Admin'
+   504→
+   505→  return (
+   506→    <div className="space-y-6">
+   507→      {/* ─── Header with Greeting + Help Button ─────────────────────────────── */}
+   508→      <div className="flex items-start justify-between gap-4">
+   509→        <div>
+   510→          <h1 className="text-2xl md:text-3xl font-bold text-marron">
+   511→            ¡Hola, {firstName}! 👋
+   512→          </h1>
+   513→          <p className="text-muted-foreground mt-1">
+   514→            Bienvenido al panel de administración de Pastas Orlando
+   515→          </p>
+   516→        </div>
+   517→
+   518→        {/* ─── Help Button + Dialog ─────────────────────────────────────────── */}
+   519→        <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+   520→          <DialogTrigger asChild>
+   521→            <Button
+   522→              variant="outline"
+   523→              className="shrink-0 border-marron/20 hover:border-oliva hover:bg-oliva/5 text-marron gap-2"
+   524→            >
+   525→              <HelpCircle className="h-4 w-4" />
+   526→              <span className="hidden sm:inline">¿Cómo usar esto?</span>
+   527→            </Button>
+   528→          </DialogTrigger>
+   529→          <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+   530→            <DialogHeader>
+   531→              <DialogTitle className="flex items-center gap-2 text-marron text-xl">
+   532→                <BookOpen className="h-5 w-5 text-oliva" />
+   533→                Guía de Uso del Sistema
+   534→              </DialogTitle>
+   535→              <DialogDescription>
+   536→                Aprendé a utilizar cada módulo del sistema paso a paso.
+   537→              </DialogDescription>
+   538→            </DialogHeader>
+   539→
+   540→            <Tabs defaultValue="productos-terminados" className="mt-2">
+   541→              <TabsList className="flex flex-wrap h-auto gap-1 bg-crema/50 p-1 w-full">
+   542→                {helpSections.map(section => (
+   543→                  <TabsTrigger
+   544→                    key={section.id}
+   545→                    value={section.id}
+   546→                    className="text-xs data-[state=active]:bg-marron data-[state=active]:text-crema"
+   547→                  >
+   548→                    <section.icon className="h-3.5 w-3.5 mr-1" />
+   549→                    <span className="hidden sm:inline">{section.label}</span>
+   550→                    <span className="sm:hidden">{section.label.split(' ')[0]}</span>
+   551→                  </TabsTrigger>
+   552→                ))}
+   553→              </TabsList>
+   554→
+   555→              {helpSections.map(section => (
+   556→                <TabsContent key={section.id} value={section.id} className="mt-4">
+   557→                  <div className="space-y-3">
+   558→                    <div className="flex items-center gap-2 mb-3">
+   559→                      <div className="rounded-lg bg-marron/10 p-2">
+   560→                        <section.icon className="h-5 w-5 text-marron" />
+   561→                      </div>
+   562→                      <h3 className="font-semibold text-marron text-lg">
+   563→                        {section.label}
+   564→                      </h3>
+   565→                    </div>
+   566→                    <Separator />
+   567→                    <ol className="space-y-3 mt-3">
+   568→                      {section.steps.map((step, idx) => (
+   569→                        <li key={idx} className="flex gap-3">
+   570→                          <span className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-oliva/15 text-oliva text-xs font-bold">
+   571→                            {idx + 1}
+   572→                          </span>
+   573→                          <p className="text-sm text-muted-foreground leading-relaxed pt-0.5">
+   574→                            {step}
+   575→                          </p>
+   576→                        </li>
+   577→                      ))}
+   578→                    </ol>
+   579→                  </div>
+   580→                </TabsContent>
+   581→              ))}
+   582→            </Tabs>
+   583→          </DialogContent>
+   584→        </Dialog>
+   585→      </div>
+   586→
+   587→      {/* ─── Stock Alerts Panel ───────────────────────────────────────────── */}
+   588→      <AnimatePresence>
+   589→        {!alertsLoading && stockAlerts && (
+   590→          <motion.div
+   591→            variants={alertPanelVariants}
+   592→            initial="hidden"
+   593→            animate="visible"
+   594→            exit="hidden"
+   595→          >
+   596→            {totalAlerts === 0 ? (
+   597→              /* ── All OK Card ── */
+   598→              <Card className="border-oliva/30 bg-oliva/5">
+   599→                <CardContent className="py-4 px-5">
+   600→                  <div className="flex items-center gap-3">
+   601→                    <div className="rounded-full bg-oliva/20 p-2">
+   602→                      <CheckCircle className="h-5 w-5 text-oliva" />
+   603→                    </div>
+   604→                    <p className="font-medium text-oliva">
+   605→                      ✅ Todo el stock está en orden
+   606→                    </p>
+   607→                  </div>
+   608→                </CardContent>
+   609→              </Card>
+   610→            ) : (
+   611→              /* ── Alerts Collapsible ── */
+   612→              <Collapsible open={alertsOpen} onOpenChange={setAlertsOpen}>
+   613→                <Card className="border-rojo/20">
+   614→                  <CollapsibleTrigger asChild>
+   615→                    <CardHeader className="cursor-pointer hover:bg-marron/5 transition-colors rounded-t-lg pb-3">
+   616→                      <div className="flex items-center justify-between">
+   617→                        <div className="flex items-center gap-3">
+   618→                          <div className="rounded-full bg-rojo/15 p-2">
+   619→                            <AlertTriangle className="h-5 w-5 text-rojo" />
+   620→                          </div>
+   621→                          <div>
+   622→                            <CardTitle className="text-base text-marron">
+   623→                              Alertas de Stock
+   624→                            </CardTitle>
+   625→                            <div className="flex flex-wrap gap-2 mt-1.5">
+   626→                              {stockAlerts.productos_terminados.sin_stock > 0 && (
+   627→                                <Badge variant="destructive" className="text-xs">
+   628→                                  {stockAlerts.productos_terminados.sin_stock} sin stock
+   629→                                </Badge>
+   630→                              )}
+   631→                              {stockAlerts.materias_primas.stock_bajo > 0 && (
+   632→                                <Badge className="text-xs bg-mostaza text-white border-mostaza">
+   633→                                  {stockAlerts.materias_primas.stock_bajo} MP bajo
+   634→                                </Badge>
+   635→                              )}
+   636→                              {stockAlerts.insumos.stock_bajo > 0 && (
+   637→                                <Badge className="text-xs bg-mostaza text-white border-mostaza">
+   638→                                  {stockAlerts.insumos.stock_bajo} insumos bajo
+   639→                                </Badge>
+   640→                              )}
+   641→                            </div>
+   642→                          </div>
+   643→                        </div>
+   644→                        <motion.div
+   645→                          animate={{ rotate: alertsOpen ? 180 : 0 }}
+   646→                          transition={{ duration: 0.2 }}
+   647→                        >
+   648→                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+   649→                        </motion.div>
+   650→                      </div>
+   651→                    </CardHeader>
+   652→                  </CollapsibleTrigger>
+   653→
+   654→                  <CollapsibleContent>
+   655→                    <CardContent className="pt-0 pb-4 px-5 space-y-3">
+   656→                      <Separator className="mb-2" />
+   657→                      {alertItems.map(alert => (
+   658→                        <Link key={alert.key} href={alert.href}>
+   659→                          <motion.div
+   660→                            whileHover={{ scale: 1.01 }}
+   661→                            whileTap={{ scale: 0.99 }}
+   662→                            className={`rounded-lg border ${alert.borderColor} ${alert.bgColor} p-3 transition-colors hover:brightness-95`}
+   663→                          >
+   664→                            <div className="flex items-center gap-2 mb-1">
+   665→                              <AlertTriangle className={`h-4 w-4 ${alert.iconColor}`} />
+   666→                              <span className={`font-semibold text-sm ${alert.textColor}`}>
+   667→                                {alert.count} {alert.label}
+   668→                              </span>
+   669→                            </div>
+   670→                            {alert.list.length > 0 && (
+   671→                              <div className="ml-6 mt-1 space-y-1">
+   672→                                {alert.list.slice(0, 5).map(item => (
+   673→                                  <div key={item.id} className="flex items-center justify-between text-xs text-muted-foreground">
+   674→                                    <span>{item.nombre}</span>
+   675→                                    <span className="font-mono">
+   676→                                      {item.stock_actual} / {item.stock_minimo}
+   677→                                    </span>
+   678→                                  </div>
+   679→                                ))}
+   680→                                {alert.list.length > 5 && (
+   681→                                  <p className="text-xs text-muted-foreground italic mt-1">
+   682→                                    y {alert.list.length - 5} más...
+   683→                                  </p>
+   684→                                )}
+   685→                              </div>
+   686→                            )}
+   687→                          </motion.div>
+   688→                        </Link>
+   689→                      ))}
+   690→
+   691→                      <div className="flex justify-end pt-1">
+   692→                        <Link href="/admin/productos-terminados?stock=sin_stock">
+   693→                          <Button variant="ghost" size="sm" className="text-xs text-marron hover:text-rojo">
+   694→                            Ver todos los detalles
+   695→                            <ArrowRight className="ml-1 h-3 w-3" />
+   696→                          </Button>
+   697→                        </Link>
+   698→                      </div>
+   699→                    </CardContent>
+   700→                  </CollapsibleContent>
+   701→                </Card>
+   702→              </Collapsible>
+   703→            )}
+   704→          </motion.div>
+   705→        )}
+   706→      </AnimatePresence>
+   707→
+   708→      {/* ─── Metric Cards Grid ──────────────────────────────────────────────── */}
+   709→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+   710→        {metricCards.map((card, i) => (
+   711→          <motion.div
+   712→            key={card.title}
+   713→            custom={i}
+   714→            variants={cardVariants}
+   715→            initial="hidden"
+   716→            animate="visible"
+   717→          >
+   718→            <Card className="hover:shadow-lg transition-shadow border-marron/5">
+   719→              <CardHeader className="flex flex-row items-center justify-between pb-2">
+   720→                <CardTitle className="text-sm font-medium text-muted-foreground">
+   721→                  {card.title}
+   722→                </CardTitle>
+   723→                <div className={`rounded-lg p-2 ${card.color}`}>
+   724→                  <card.icon className="h-4 w-4" />
+   725→                </div>
+   726→              </CardHeader>
+   727→              <CardContent>
+   728→                {loading ? (
+   729→                  <div className="h-8 w-16 bg-muted animate-pulse rounded" />
+   730→                ) : (
+   731→                  <div className="text-3xl font-bold text-marron">
+   732→                    {card.value}
+   733→                  </div>
+   734→                )}
+   735→                <Link href={card.href}>
+   736→                  <Button
+   737→                    variant="ghost"
+   738→                    size="sm"
+   739→                    className="mt-2 -ml-2 text-xs text-muted-foreground hover:text-marron"
+   740→                  >
+   741→                    Ver detalles
+   742→                    <ArrowRight className="ml-1 h-3 w-3" />
+   743→                  </Button>
+   744→                </Link>
+   745→              </CardContent>
+   746→            </Card>
+   747→          </motion.div>
+   748→        ))}
+   749→      </div>
+   750→
+   751→      {/* ─── Quick Access ───────────────────────────────────────────────────── */}
+   752→      <motion.div
+   753→        initial={{ opacity: 0, y: 20 }}
+   754→        animate={{ opacity: 1, y: 0 }}
+   755→        transition={{ delay: 0.5, duration: 0.5 }}
+   756→      >
+   757→        <Card className="border-marron/5">
+   758→          <CardHeader>
+   759→            <CardTitle className="text-lg text-marron">Accesos Rápidos</CardTitle>
+   760→          </CardHeader>
+   761→          <CardContent>
+   762→            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+   763→              <Link href="/admin/ventas">
+   764→                <Button
+   765→                  variant="outline"
+   766→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-oliva hover:bg-oliva/5"
+   767→                >
+   768→                  <Receipt className="mr-3 h-5 w-5 text-oliva" />
+   769→                  <div className="text-left">
+   770→                    <div className="font-medium text-marron">Ventas</div>
+   771→                    <div className="text-xs text-muted-foreground">Registrar ventas y descontar stock</div>
+   772→                  </div>
+   773→                </Button>
+   774→              </Link>
+   775→              <Link href="/admin/pedidos-clientes">
+   776→                <Button
+   777→                  variant="outline"
+   778→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-mostaza hover:bg-mostaza/5"
+   779→                >
+   780→                  <ClipboardList className="mr-3 h-5 w-5 text-mostaza" />
+   781→                  <div className="text-left">
+   782→                    <div className="font-medium text-marron">Pedidos de Clientes</div>
+   783→                    <div className="text-xs text-muted-foreground">Gestionar pedidos y entregas</div>
+   784→                  </div>
+   785→                </Button>
+   786→              </Link>
+   787→              <Link href="/admin/reservas-clientes">
+   788→                <Button
+   789→                  variant="outline"
+   790→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-rojo hover:bg-rojo/5"
+   791→                >
+   792→                  <CalendarCheck className="mr-3 h-5 w-5 text-rojo" />
+   793→                  <div className="text-left">
+   794→                    <div className="font-medium text-marron">Reservas</div>
+   795→                    <div className="text-xs text-muted-foreground">Reservas de productos con seña</div>
+   796→                  </div>
+   797→                </Button>
+   798→              </Link>
+   799→              <Link href="/admin/recetas">
+   800→                <Button
+   801→                  variant="outline"
+   802→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-oliva hover:bg-oliva/5"
+   803→                >
+   804→                  <BookOpen className="mr-3 h-5 w-5 text-oliva" />
+   805→                  <div className="text-left">
+   806→                    <div className="font-medium text-marron">Recetas</div>
+   807→                    <div className="text-xs text-muted-foreground">Recetas de producción y costos</div>
+   808→                  </div>
+   809→                </Button>
+   810→              </Link>
+   811→              <Link href="/admin/produccion">
+   812→                <Button
+   813→                  variant="outline"
+   814→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-marron hover:bg-marron/5"
+   815→                >
+   816→                  <Factory className="mr-3 h-5 w-5 text-marron" />
+   817→                  <div className="text-left">
+   818→                    <div className="font-medium text-marron">Producción</div>
+   819→                    <div className="text-xs text-muted-foreground">Producir y consumir stock</div>
+   820→                  </div>
+   821→                </Button>
+   822→              </Link>
+   823→              <Link href="/admin/compras">
+   824→                <Button
+   825→                  variant="outline"
+   826→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-marron hover:bg-marron/5"
+   827→                >
+   828→                  <ShoppingCart className="mr-3 h-5 w-5 text-marron" />
+   829→                  <div className="text-left">
+   830→                    <div className="font-medium text-marron">Compras</div>
+   831→                    <div className="text-xs text-muted-foreground">Registrar compras y actualizar stock</div>
+   832→                  </div>
+   833→                </Button>
+   834→              </Link>
+   835→              <Link href="/admin/pedidos-proveedores">
+   836→                <Button
+   837→                  variant="outline"
+   838→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-mostaza hover:bg-mostaza/5"
+   839→                >
+   840→                  <ClipboardList className="mr-3 h-5 w-5 text-mostaza" />
+   841→                  <div className="text-left">
+   842→                    <div className="font-medium text-marron">Pedidos a Proveedores</div>
+   843→                    <div className="text-xs text-muted-foreground">Seguimiento de pedidos pendientes</div>
+   844→                  </div>
+   845→                </Button>
+   846→              </Link>
+   847→              <Link href="/admin/materias-primas">
+   848→                <Button
+   849→                  variant="outline"
+   850→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-oliva hover:bg-oliva/5"
+   851→                >
+   852→                  <Leaf className="mr-3 h-5 w-5 text-oliva" />
+   853→                  <div className="text-left">
+   854→                    <div className="font-medium text-marron">Materias Primas</div>
+   855→                    <div className="text-xs text-muted-foreground">Gestionar stock de materias primas</div>
+   856→                  </div>
+   857→                </Button>
+   858→              </Link>
+   859→              <Link href="/admin/insumos">
+   860→                <Button
+   861→                  variant="outline"
+   862→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-mostaza hover:bg-mostaza/5"
+   863→                >
+   864→                  <PackageOpen className="mr-3 h-5 w-5 text-mostaza" />
+   865→                  <div className="text-left">
+   866→                    <div className="font-medium text-marron">Insumos</div>
+   867→                    <div className="text-xs text-muted-foreground">Envases, bandejas, bolsas</div>
+   868→                  </div>
+   869→                </Button>
+   870→              </Link>
+   871→              <Link href="/admin/productos-terminados">
+   872→                <Button
+   873→                  variant="outline"
+   874→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-rojo hover:bg-rojo/5"
+   875→                >
+   876→                  <UtensilsCrossed className="mr-3 h-5 w-5 text-rojo" />
+   877→                  <div className="text-left">
+   878→                    <div className="font-medium text-marron">Productos Terminados</div>
+   879→                    <div className="text-xs text-muted-foreground">Pastas para producción y venta</div>
+   880→                  </div>
+   881→                </Button>
+   882→              </Link>
+   883→              <Link href="/admin/stock-movements">
+   884→                <Button
+   885→                  variant="outline"
+   886→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-oliva hover:bg-oliva/5"
+   887→                >
+   888→                  <ArrowLeftRight className="mr-3 h-5 w-5 text-oliva" />
+   889→                  <div className="text-left">
+   890→                    <div className="font-medium text-marron">Movimientos de Stock</div>
+   891→                    <div className="text-xs text-muted-foreground">Historial de entradas y salidas</div>
+   892→                  </div>
+   893→                </Button>
+   894→              </Link>
+   895→              <Link href="/admin/productos">
+   896→                <Button
+   897→                  variant="outline"
+   898→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-mostaza hover:bg-mostaza/5"
+   899→                >
+   900→                  <Package className="mr-3 h-5 w-5 text-mostaza" />
+   901→                  <div className="text-left">
+   902→                    <div className="font-medium text-marron">Catálogo Landing</div>
+   903→                    <div className="text-xs text-muted-foreground">Productos visibles al público</div>
+   904→                  </div>
+   905→                </Button>
+   906→              </Link>
+   907→              <Link href="/admin/opiniones">
+   908→                <Button
+   909→                  variant="outline"
+   910→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-mostaza hover:bg-mostaza/5"
+   911→                >
+   912→                  <MessageSquare className="mr-3 h-5 w-5 text-rojo" />
+   913→                  <div className="text-left">
+   914→                    <div className="font-medium text-marron">Moderar Opiniones</div>
+   915→                    <div className="text-xs text-muted-foreground">Aprobar o rechazar reseñas</div>
+   916→                  </div>
+   917→                </Button>
+   918→              </Link>
+   919→              <Link href="/admin/auditoria">
+   920→                <Button
+   921→                  variant="outline"
+   922→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-oliva hover:bg-oliva/5"
+   923→                >
+   924→                  <Shield className="mr-3 h-5 w-5 text-oliva" />
+   925→                  <div className="text-left">
+   926→                    <div className="font-medium text-marron">Auditoría</div>
+   927→                    <div className="text-xs text-muted-foreground">Registro de acciones del sistema</div>
+   928→                  </div>
+   929→                </Button>
+   930→              </Link>
+   931→              <Link href="/admin/reportes">
+   932→                <Button
+   933→                  variant="outline"
+   934→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-mostaza hover:bg-mostaza/5"
+   935→                >
+   936→                  <FileBarChart className="mr-3 h-5 w-5 text-mostaza" />
+   937→                  <div className="text-left">
+   938→                    <div className="font-medium text-marron">Reportes</div>
+   939→                    <div className="text-xs text-muted-foreground">Reportes exportables Excel/PDF</div>
+   940→                  </div>
+   941→                </Button>
+   942→              </Link>
+   943→              <Link href="/admin/estadisticas">
+   944→                <Button
+   945→                  variant="outline"
+   946→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-mostaza hover:bg-mostaza/5"
+   947→                >
+   948→                  <Phone className="mr-3 h-5 w-5 text-whatsapp" />
+   949→                  <div className="text-left">
+   950→                    <div className="font-medium text-marron">Estadísticas WhatsApp</div>
+   951→                    <div className="text-xs text-muted-foreground">Ver interacciones y datos</div>
+   952→                  </div>
+   953→                </Button>
+   954→              </Link>
+   955→            </div>
+   956→          </CardContent>
+   957→        </Card>
+   958→      </motion.div>
+   959→    </div>
+   960→  )
+   961→}
+   962→
