@@ -8,32 +8,18 @@ import {
   Leaf, PackageOpen, UtensilsCrossed, ShoppingCart, ClipboardList,
   ArrowLeftRight, Receipt, CalendarCheck, DollarSign, Factory,
   AlertTriangle, BookOpen, Shield, TrendingUp, FileBarChart,
-  HelpCircle, CheckCircle, ChevronDown, ChevronUp, Utensils,
-  FlaskConical, ShoppingCartIcon, Boxes
+  HelpCircle, CheckCircle, ChevronDown, ChevronUp, Utensils
 } from 'lucide-react'
+import StaticHelp from '@/components/admin/StaticHelp'
 import Link from 'next/link'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 
@@ -123,72 +109,6 @@ const alertPanelVariants = {
     transition: { duration: 0.4, ease: 'easeOut' },
   },
 }
-
-// ─── Help Guide Data ─────────────────────────────────────────────────────────
-
-const helpSections = [
-  {
-    id: 'productos-terminados',
-    label: 'Productos Terminados',
-    icon: UtensilsCrossed,
-    steps: [
-      'Cargá tus productos terminados (sorrentinos, ravioles, etc.) con nombre, descripción y precio de venta.',
-      'Asigná un stock mínimo para recibir alertas cuando el stock esté bajo.',
-      'Cargá el stock inicial usando "Cargar Stock" o se sumará automáticamente al completar producciones.',
-      'Usá los productos terminados al registrar ventas para descontar stock automáticamente.',
-    ],
-  },
-  {
-    id: 'materias-primas',
-    label: 'Materias Primas',
-    icon: Leaf,
-    steps: [
-      'Ingresá las materias primas (harina, huevos, queso, etc.) con su unidad de medida.',
-      'Definí el stock mínimo para cada materia prima y recibí alertas cuando esté por debajo.',
-      'Comprá materias primas a proveedores usando el módulo de Compras para reponer el stock.',
-    ],
-  },
-  {
-    id: 'recetas',
-    label: 'Recetas',
-    icon: BookOpen,
-    steps: [
-      'Creá recetas vinculando un producto terminado con sus materias primas e insumos necesarios.',
-      'Especificá las cantidades exactas de cada ingrediente para producir una unidad del producto.',
-      'Las recetas se usan en Producción para calcular automáticamente el consumo de materias primas.',
-    ],
-  },
-  {
-    id: 'produccion',
-    label: 'Producción',
-    icon: Factory,
-    steps: [
-      'Seleccioná una receta existente y la cantidad a producir.',
-      'Al iniciar la producción, se reservan las materias primas e insumos necesarios.',
-      'Al completar la producción, se descuenta el stock de materias primas e insumos y se suma el stock del producto terminado.',
-    ],
-  },
-  {
-    id: 'ventas',
-    label: 'Ventas',
-    icon: Receipt,
-    steps: [
-      'Registrá una venta seleccionando productos terminados y cantidades.',
-      'Al confirmar la venta, se descuenta automáticamente el stock de los productos vendidos.',
-      'Llevá un registro de todas las ventas para control y reportes.',
-    ],
-  },
-  {
-    id: 'stock',
-    label: 'Stock',
-    icon: Boxes,
-    steps: [
-      'El stock se actualiza automáticamente al completar producciones (suma) o registrar ventas (descuenta).',
-      'Usá "Cargar Stock" para ajustes manuales, correcciones o ingresos que no provienen del flujo habitual.',
-      'Consultá los movimientos de stock en la sección de Movimientos de Stock para auditoría.',
-    ],
-  },
-]
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -515,73 +435,16 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* ─── Help Button + Dialog ─────────────────────────────────────────── */}
-        <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
-          <DialogTrigger asChild>
-            <Button
-              variant="outline"
-              className="shrink-0 border-marron/20 hover:border-oliva hover:bg-oliva/5 text-marron gap-2"
-            >
-              <HelpCircle className="h-4 w-4" />
-              <span className="hidden sm:inline">¿Cómo usar esto?</span>
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-marron text-xl">
-                <BookOpen className="h-5 w-5 text-oliva" />
-                Guía de Uso del Sistema
-              </DialogTitle>
-              <DialogDescription>
-                Aprendé a utilizar cada módulo del sistema paso a paso.
-              </DialogDescription>
-            </DialogHeader>
-
-            <Tabs defaultValue="productos-terminados" className="mt-2">
-              <TabsList className="flex flex-wrap h-auto gap-1 bg-crema/50 p-1 w-full">
-                {helpSections.map(section => (
-                  <TabsTrigger
-                    key={section.id}
-                    value={section.id}
-                    className="text-xs data-[state=active]:bg-marron data-[state=active]:text-crema"
-                  >
-                    <section.icon className="h-3.5 w-3.5 mr-1" />
-                    <span className="hidden sm:inline">{section.label}</span>
-                    <span className="sm:hidden">{section.label.split(' ')[0]}</span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              {helpSections.map(section => (
-                <TabsContent key={section.id} value={section.id} className="mt-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="rounded-lg bg-marron/10 p-2">
-                        <section.icon className="h-5 w-5 text-marron" />
-                      </div>
-                      <h3 className="font-semibold text-marron text-lg">
-                        {section.label}
-                      </h3>
-                    </div>
-                    <Separator />
-                    <ol className="space-y-3 mt-3">
-                      {section.steps.map((step, idx) => (
-                        <li key={idx} className="flex gap-3">
-                          <span className="shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-oliva/15 text-oliva text-xs font-bold">
-                            {idx + 1}
-                          </span>
-                          <p className="text-sm text-muted-foreground leading-relaxed pt-0.5">
-                            {step}
-                          </p>
-                        </li>
-                      ))}
-                    </ol>
-                  </div>
-                </TabsContent>
-              ))}
-            </Tabs>
-          </DialogContent>
-        </Dialog>
+        {/* ─── Help Button → Opens StaticHelp ──────────────────────────────────── */}
+        <Button
+          variant="outline"
+          className="shrink-0 border-marron/20 hover:border-oliva hover:bg-oliva/5 text-marron gap-2"
+          onClick={() => setHelpOpen(true)}
+        >
+          <HelpCircle className="h-4 w-4" />
+          <span className="hidden sm:inline">¿Cómo usar esto?</span>
+        </Button>
+        <StaticHelp open={helpOpen} onOpenChange={setHelpOpen} />
       </div>
 
       {/* ─── Stock Alerts Panel ───────────────────────────────────────────── */}
