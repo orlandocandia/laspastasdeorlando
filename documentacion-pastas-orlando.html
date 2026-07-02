@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentación Técnica — Sistema Pastas Orlando</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    :root {
+      --primary: #b45309;
+      --primary-light: #d97706;
+      --primary-dark: #92400e;
+      --accent: #059669;
+      --accent-light: #10b981;
+      --bg: #ffffff;
+      --bg-alt: #fffbeb;
+      --bg-code: #1e293b;
+      --text: #1e293b;
+      --text-light: #64748b;
+      --border: #e2e8f0;
+      --border-dark: #cbd5e1;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.7;
+      font-size: 14px;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+
+    /* Cover Page */
+    .cover {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      text-align: center;
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fde68a 100%);
+      padding: 60px 40px;
+    }
+
+    .cover-icon {
+      font-size: 80px;
+      margin-bottom: 24px;
+    }
+
+    .cover h1 {
+      font-size: 42px;
+      font-weight: 800;
+      color: var(--primary-dark);
+      margin-bottom: 12px;
+      letter-spacing: -1px;
+    }
+
+    .cover h2 {
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--primary);
+      margin-bottom: 40px;
+    }
+
+    .cover-meta {
+      display: flex;
+      gap: 32px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .cover-meta-item {
+      background: rgba(255,255,255,0.7);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 24px;
+      text-align: center;
+    }
+
+    .cover-meta-item .label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-light);
+      margin-bottom: 4px;
+    }
+
+    .cover-meta-item .value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    /* TOC */
+    .toc {
+      padding: 40px 60px;
+    }
+
+    .toc h2 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary-dark);
+      margin-bottom: 24px;
+      padding-bottom: 12px;
+      border-bottom: 3px solid var(--primary);
+    }
+
+    .toc-list {
+      list-style: none;
+      counter-reset: toc-counter;
+    }
+
+    .toc-list li {
+      counter-increment: toc-counter;
+      padding: 8px 0;
+      border-bottom: 1px dotted var(--border);
+    }
+
+    .toc-list li::before {
+      content: counter(toc-counter) ".";
+      font-weight: 700;
+      color: var(--primary);
+      margin-right: 12px;
+      min-width: 28px;
+      display: inline-block;
+    }
+
+    .toc-list li a {
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .toc-list li a:hover {
+      color: var(--primary);
+    }
+
+    /* Content */
+    .content {
+      padding: 40px 60px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--primary-dark);
+      margin: 48px 0 20px;
+      padding-bottom: 12px;
+      border-bottom: 3px solid var(--primary);
+    }
+
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 36px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--primary-dark);
+      margin: 24px 0 12px;
+    }
+
+    h4 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      margin: 18px 0 8px;
+    }
+
+    p {
+      margin-bottom: 12px;
+    }
+
+    strong {
+      font-weight: 600;
+      color: var(--primary-dark);
+    }
+
+    em {
+      font-style: italic;
+      color: var(--text-light);
+    }
+
+    /* Blockquote */
+    blockquote {
+      border-left: 4px solid var(--primary);
+      background: var(--bg-alt);
+      padding: 16px 20px;
+      margin: 16px 0;
+      border-radius: 0 8px 8px 0;
+    }
+
+    blockquote p {
+      margin: 0;
+    }
+
+    /* Lists */
+    ul, ol {
+      margin: 8px 0 16px 24px;
+    }
+
+    li {
+      margin-bottom: 4px;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 13px;
+    }
+
+    thead {
+      background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    }
+
+    th {
+      color: white;
+      font-weight: 600;
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 8px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:nth-child(even) {
+      background: #fefce8;
+    }
+
+    tr:hover {
+      background: #fef3c7;
+    }
+
+    /* Code blocks */
+    code {
+      font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 12px;
+    }
+
+    p code, li code, td code {
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--primary-dark);
+    }
+
+    pre {
+      background: var(--bg-code);
+      color: #e2e8f0;
+      padding: 16px 20px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 16px 0;
+      line-height: 1.5;
+    }
+
+    pre code {
+      color: inherit;
+      background: none;
+      border: none;
+      padding: 0;
+    }
+
+    /* Inline badges */
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-amber { background: #fef3c7; color: #92400e; }
+    .badge-blue { background: #dbeafe; color: #1e40af; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+
+    /* Section number badge */
+    .section-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+      font-size: 16px;
+      margin-right: 12px;
+    }
+
+    /* Horizontal rule */
+    hr {
+      border: none;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), transparent);
+      margin: 32px 0;
+    }
+
+    /* Feature card */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin: 16px 0;
+    }
+
+    .feature-card {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      background: var(--bg);
+    }
+
+    .feature-card h4 {
+      margin: 0 0 8px;
+      color: var(--primary);
+    }
+
+    .feature-card p {
+      font-size: 13px;
+      color: var(--text-light);
+      margin: 0;
+    }
+
+    /* Flow step */
+    .flow-steps {
+      counter-reset: step;
+    }
+
+    .flow-step {
+      counter-increment: step;
+      position: relative;
+      padding: 12px 16px 12px 52px;
+      margin: 8px 0;
+      background: var(--bg-alt);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .flow-step::before {
+      content: counter(step);
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Mermaid placeholder */
+    .mermaid-container {
+      background: var(--bg-alt);
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin: 20px 0;
+      text-align: center;
+    }
+
+    .mermaid-container pre {
+      background: transparent;
+      color: var(--text);
+      text-align: left;
+      font-size: 11px;
+    }
+
+    /* Footer */
+    .doc-footer {
+      text-align: center;
+      padding: 32px;
+      color: var(--text-light);
+      font-size: 12px;
+      border-top: 2px solid var(--border);
+      margin-top: 48px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover">
+  <div class="cover-icon">🍝</div>
+  <h1>Documentación Técnica Completa</h1>
+  <h2>Sistema Pastas Orlando — ERP + E-commerce</h2>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <div class="label">Versión</div>
+      <div class="value">Fase 13</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="label">Fecha</div>
+      <div class="value">Marzo 2026</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="label">Modelos</div>
+      <div class="value">40</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="label">Endpoints</div>
+      <div class="value">91+</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="label">Stack</div>
+      <div class="value">Next.js 16 + TS 5</div>
+    </div>
+  </div>
+</div>
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc page-break">
+  <h2>Índice de Contenidos</h2>
+  <ol class="toc-list">
+    <li><a href="#vision-general">Visión General</a></li>
+    <li><a href="#stack-tecnologico">Stack Tecnológico</a></li>
+    <li><a href="#modelo-de-datos">Modelo de Datos</a></li>
+    <li><a href="#modulos-principales">Módulos Principales</a></li>
+    <li><a href="#reglas-de-negocio">Reglas de Negocio</a></li>
+    <li><a href="#flujos-principales">Flujos Principales</a></li>
+    <li><a href="#endpoints-de-api">Endpoints de API</a></li>
+    <li><a href="#librerias-de-logica">Librerías de Lógica de Negocio</a></li>
+    <li><a href="#componentes-de-ui">Componentes de UI</a></li>
+    <li><a href="#seguridad">Seguridad</a></li>
+    <li><a href="#despliegue">Despliegue</a></li>
+    <li><a href="#diagrama-de-relaciones">Diagrama de Relaciones (ERD)</a></li>
+  </ol>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+<!-- 1. Visión General -->
+<h1 id="vision-general">1. Visión General</h1>
+
+<p><strong>Pastas Orlando</strong> es un sistema ERP + E-commerce diseñado para la gestión integral de una fábrica de pastas artesanales. El sistema cubre todo el ciclo operativo del negocio:</p>
+
+<ul>
+  <li><strong>E-commerce público</strong>: Catálogo de productos, carrito de compras, formulario de contacto, opiniones de clientes, integración con WhatsApp.</li>
+  <li><strong>Backoffice administrativo</strong>: Gestión de productos, materias primas, insumos, recetas, producción, compras, ventas, clientes, proveedores, pedidos, reservas, presupuestos, logística, notificaciones y seguridad.</li>
+</ul>
+
+<h3>Características destacadas</h3>
+
+<div class="feature-grid">
+  <div class="feature-card">
+    <h4>🏭 ERP Completo</h4>
+    <p>13 fases de desarrollo con 40 modelos de datos y 91+ endpoints API</p>
+  </div>
+  <div class="feature-card">
+    <h4>🛒 E-commerce Integrado</h4>
+    <p>Catálogo público con carrito, WhatsApp y formulario de contacto</p>
+  </div>
+  <div class="feature-card">
+    <h4>📋 Gestión de Producción</h4>
+    <p>Recetas, órdenes de producción, consumo de materias primas e insumos</p>
+  </div>
+  <div class="feature-card">
+    <h4>🗺️ Logística con Mapas</h4>
+    <p>Puntos de encuentro, rutas de entrega, mapa interactivo con Leaflet</p>
+  </div>
+  <div class="feature-card">
+    <h4>📄 Presupuestos</h4>
+    <p>Generación, aprobación, conversión a pedido, exportación PDF/WhatsApp</p>
+  </div>
+  <div class="feature-card">
+    <h4>🔒 Seguridad Avanzada</h4>
+    <p>2FA TOTP, RBAC, auditoría completa, detección de intrusos</p>
+  </div>
+  <div class="feature-card">
+    <h4>🔔 Notificaciones</h4>
+    <p>Email, WhatsApp, plantillas configurables, alertas automáticas</p>
+  </div>
+  <div class="feature-card">
+    <h4>📊 Código de Barras</h4>
+    <p>Generación EAN-13, etiquetas con código de barras, impresión PDF</p>
+  </div>
+</div>
+
+<!-- 2. Stack Tecnológico -->
+<h1 id="stack-tecnologico" class="page-break">2. Stack Tecnológico</h1>
+
+<table>
+  <thead>
+    <tr><th>Componente</th><th>Tecnología</th><th>Versión</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>Framework</strong></td><td>Next.js (App Router)</td><td>16</td></tr>
+    <tr><td><strong>Lenguaje</strong></td><td>TypeScript</td><td>5</td></tr>
+    <tr><td><strong>ORM</strong></td><td>Prisma (SQLite client)</td><td>Última estable</td></tr>
+    <tr><td><strong>Base de datos</strong></td><td>SQLite (dev) / Turso (prod)</td><td>—</td></tr>
+    <tr><td><strong>Autenticación</strong></td><td>NextAuth.js</td><td>v4</td></tr>
+    <tr><td><strong>Estilos</strong></td><td>Tailwind CSS</td><td>4</td></tr>
+    <tr><td><strong>Componentes UI</strong></td><td>shadcn/ui (New York style)</td><td>—</td></tr>
+    <tr><td><strong>Iconos</strong></td><td>Lucide React</td><td>—</td></tr>
+    <tr><td><strong>Mapas</strong></td><td>Leaflet + React-Leaflet</td><td>—</td></tr>
+    <tr><td><strong>Gráficos</strong></td><td>Recharts</td><td>—</td></tr>
+    <tr><td><strong>Exportación</strong></td><td>@react-pdf/renderer, xlsx</td><td>—</td></tr>
+    <tr><td><strong>2FA</strong></td><td>otpauth, qrcode</td><td>—</td></tr>
+    <tr><td><strong>Email</strong></td><td>Nodemailer</td><td>—</td></tr>
+    <tr><td><strong>State</strong></td><td>Zustand (client), TanStack Query (server)</td><td>—</td></tr>
+  </tbody>
+</table>
+
+<h3>Estructura del proyecto</h3>
+
+<pre><code>src/
+├── app/
+│   ├── api/                    # 91+ endpoints API REST
+│   │   ├── 2fa/                # Autenticación 2FA
+│   │   ├── auditoria/          # Registros de auditoría
+│   │   ├── auth/               # NextAuth + reset password
+│   │   ├── categorias/         # Categorías de productos
+│   │   ├── compras/            # Compras a proveedores
+│   │   ├── consultas/          # Consultas web
+│   │   ├── contactos/          # Formulario de contacto
+│   │   ├── estados-generales/  # Estados del sistema
+│   │   ├── formas-pago/        # Formas de pago
+│   │   ├── geografia/          # País/Provincia/Depto/Municipio
+│   │   ├── insumos/            # Insumos
+│   │   ├── logistica/          # Entregas, puntos de encuentro, mapas
+│   │   ├── marcas/             # Marcas
+│   │   ├── materias-primas/    # Materias primas
+│   │   ├── notificaciones/     # Plantillas, historial, alertas
+│   │   ├── opiniones/          # Reseñas de clientes
+│   │   ├── pedidos-clientes/   # Pedidos de clientes
+│   │   ├── pedidos-proveedores/# Pedidos a proveedores
+│   │   ├── personas/           # Clientes/Proveedores
+│   │   ├── presupuestos/       # Presupuestos/Cotizaciones
+│   │   ├── produccion/         # Órdenes de producción
+│   │   ├── productos-terminados/# Productos terminados
+│   │   ├── productos/          # Productos (landing)
+│   │   ├── recetas/            # Recetas
+│   │   ├── reportes/           # Reportes y exportaciones
+│   │   ├── reservas-clientes/  # Reservas
+│   │   ├── seguridad/          # Roles, sesiones, logs
+│   │   ├── stock-movements/    # Movimientos de stock
+│   │   ├── unidades-medida/    # Unidades de medida
+│   │   ├── usuarios/           # Usuarios y permisos
+│   │   └── ventas/             # Ventas
+│   ├── page.tsx                # Página principal (landing + admin)
+│   └── layout.tsx              # Layout raíz
+├── components/
+│   ├── admin/                  # Componentes administrativos (38+)
+│   │   └── reportes/           # Exportadores CSV/Excel/PDF
+│   ├── layout/                 # Navbar, Footer, ScrollToTop
+│   ├── logistica/              # Mapas y selección de ubicación
+│   ├── print/                  # Componentes de impresión PDF
+│   ├── sections/               # Secciones de la landing
+│   ├── products/               # Cards de productos
+│   ├── opiniones/              # Reseñas públicas
+│   ├── skeletons/              # Loading skeletons
+│   ├── icons/                  # Iconos SVG custom
+│   └── ui/                     # shadcn/ui components
+├── lib/
+│   ├── db.ts                   # Prisma Client singleton
+│   ├── auditoria-service.ts    # Servicio de auditoría
+│   ├── auth-helpers.ts         # Helpers de autenticación
+│   ├── notificaciones-service.ts # Servicio de notificaciones
+│   ├── permisos-service.ts     # Servicio de permisos RBAC
+│   ├── presupuesto-utils.ts    # Utilidades de presupuestos
+│   ├── email.ts                # Envío de emails
+│   ├── whatsapp-admin.ts       # Notificaciones WhatsApp admin
+│   ├── smtp-transporter.ts     # Configuración SMTP
+│   ├── plantillas.ts           # Plantillas de notificaciones
+│   ├── upload.ts               # Subida de imágenes
+│   ├── prisma-utils.ts         # Utilidades Prisma
+│   ├── db-env.ts               # Configuración BD por entorno
+│   ├── performance.ts          # Monitoreo de rendimiento
+│   ├── notifications.ts        # Notificaciones internas
+│   ├── providers.tsx           # Providers de la app
+│   └── utils.ts                # Utilidades generales
+└── prisma/
+    └── schema.prisma           # 40 modelos de datos</code></pre>
+
+<!-- 3. Modelo de Datos -->
+<h1 id="modelo-de-datos" class="page-break">3. Modelo de Datos</h1>
+
+<p>El esquema de Prisma contiene <strong>40 modelos</strong> organizados por módulos funcionales:</p>
+
+<h2>3.1 Modelos Originales (Fase 1)</h2>
+
+<table>
+  <thead><tr><th>Modelo</th><th>Descripción</th><th>Campos clave</th></tr></thead>
+  <tbody>
+    <tr><td><code>Producto</code></td><td>Productos de la landing page</td><td>nombre, categoria, precio, peso, imagen, destacado</td></tr>
+    <tr><td><code>Opinion</code></td><td>Reseñas de clientes</td><td>nombre, calificacion, comentario, estado, respuesta</td></tr>
+    <tr><td><code>InteraccionWhatsApp</code></td><td>Registro de interacciones WhatsApp</td><td>tipo, mensaje_enviado, ip, fecha</td></tr>
+  </tbody>
+</table>
+
+<h2>3.2 Módulo Geográfico</h2>
+
+<table>
+  <thead><tr><th>Modelo</th><th>Descripción</th><th>Campos clave</th></tr></thead>
+  <tbody>
+    <tr><td><code>Pais</code></td><td>Países</td><td>nombre</td></tr>
+    <tr><td><code>Provincia</code></td><td>Provincias/Estados</td><td>id_pais, nombre</td></tr>
+    <tr><td><code>Departamento</code></td><td>Departamentos</td><td>id_provincia, nombre</td></tr>
+    <tr><td><code>Municipio</code></td><td>Municipios/Localidades</td><td>id_departamento, nombre</td></tr>
+  </tbody>
+</table>
+
+<h2>3.3 Módulo Personas</h2>
+
+<table>
+  <thead><tr><th>Modelo</th><th>Descripción</th><th>Campos clave</th></tr></thead>
+  <tbody>
+    <tr><td><code>TipoPersona</code></td><td>Tipos (cliente, proveedor, etc.)</td><td>nombre</td></tr>
+    <tr><td><code>Persona</code></td><td>Personas con datos completos</td><td>nombre, apellido, numero_documento, tipo_persona, cuit, condicion_iva, latitud, longitud</td></tr>
+    <tr><td><code>TipoContacto</code></td><td>Tipos de contacto</td><td>nombre</td></tr>
+    <tr><td><code>Contacto</code></td><td>Contactos de personas</td><td>id_persona, id_tipo_contacto, valor, es_principal, verificado</td></tr>
+    <tr><td><code>TipoDireccion</code></td><td>Tipos de dirección</td><td>nombre</td></tr>
+    <tr><td><code>Direccion</code></td><td>Direcciones de personas</td><td>id_persona, id_tipo_direccion, direccion, latitud, longitud, es_principal</td></tr>
+  </tbody>
+</table>
+
+<h2>3.4 Usuarios y Seguridad</h2>
+
+<table>
+  <thead><tr><th>Modelo</th><th>Descripción</th><th>Campos clave</th></tr></thead>
+  <tbody>
+    <tr><td><code>Usuario</code></td><td>Usuarios del sistema</td><td>id_persona, email, password, estado</td></tr>
+    <tr><td><code>Rol</code></td><td>Roles (admin, produccion, ventas, lectura)</td><td>nombre, descripcion, es_default</td></tr>
+    <tr><td><code>UsuarioRol</code></td><td>Asignación usuario-rol</td><td>id_usuario, id_rol</td></tr>
+    <tr><td><code>Permiso</code></td><td>Permisos (formato: modulo.accion)</td><td>nombre, modulo</td></tr>
+    <tr><td><code>RolPermiso</code></td><td>Asignación rol-permiso</td><td>id_rol, id_permiso</td></tr>
+    <tr><td><code>Sesion</code></td><td>Sesiones de usuario</td><td>id_usuario, token, ip, dispositivo</td></tr>
+    <tr><td><code>Usuario2FA</code></td><td>Autenticación 2FA TOTP</td><td>id_usuario, secret_2fa, activado, codigos_respaldo</td></tr>
+    <tr><td><code>LogAcceso</code></td><td>Logs de acceso</td><td>email_intento, resultado, ip, user_agent, navegador</td></tr>
+    <tr><td><code>SesionActiva</code></td><td>Sesiones activas monitoreadas</td><td>id_sesion, id_usuario, ip, estado</td></tr>
+    <tr><td><code>Auditoria</code></td><td>Registro de auditoría</td><td>id_usuario, accion, modulo, entidad_id, detalles, ip</td></tr>
+    <tr><td><code>PasswordReset</code></td><td>Recuperación de contraseña</td><td>email, token, usado, fecha_expiracion</td></tr>
+  </tbody>
+</table>
+
+<h2>3.5 Unidades y Categorías</h2>
+
+<table>
+  <thead><tr><th>Modelo</th><th>Descripción</th><th>Campos clave</th></tr></thead>
+  <tbody>
+    <tr><td><code>UnidadMedida</code></td><td>Unidades de medida</td><td>codigo, nombre, conversion_a_base, tipo_medida</td></tr>
+    <tr><td><code>CategoriaMateriaPrima</code></td><td>Categorías de materias primas</td><td>nombre, descripcion</td></tr>
+    <tr><td><code>TipoInsumo</code></td><td>Tipos de insumos</td><td>nombre</td></tr>
+    <tr><td><code>CategoriaProductoTerminado</code></td><td>Categorías de productos</td><td>nombre, seccion, imagen</td></tr>
+    <tr><td><code>Marca</code></td><td>Marcas de productos</td><td>nombre</td></tr>
+    <tr><td><code>EstadoGeneral</code></td><td>Estados del sistema</td><td>nombre_estado, entidad_aplicable, es_final</td></tr>
+    <tr><td><code>FormaPago</code></td><td>Formas de pago</td><td>nombre_forma, requiere_identificacion</td></tr>
+  </tbody>
+</table>
+
+<h2>3.6 Materias Primas e Insumos</h2>
+
+<table>
+  <thead><tr><th>Modelo</th><th>Descripción</th><th>Campos clave</th></tr></thead>
+  <tbody>
+    <tr><td><code>MateriaPrima</code></td><td>Materias primas</td><td>codigo, nombre, id_categoria, id_unidad_base, stock_actual, stock_minimo, precio_compra_referencia</td></tr>
+    <tr><td><code>Insumo</code></td><td>Insumos</td><td>codigo, nombre, id_tipo_insumo, id_unidad_base, stock_actual, stock_minimo</td></tr>
+  </tbody>
+</table>
+
+<h2>3.7 Productos Terminados y Recetas</h2>
+
+<table>
+  <thead><tr><th>Modelo</th><th>Descripción</th><th>Campos clave</th></tr></thead>
+  <tbody>
+    <tr><td><code>ProductoTerminado</code></td><td>Productos finales</td><td>codigo, codigo_barras, nombre, id_categoria, tipo_harina, seccion, precio_venta, stock_actual, modo_coccion</td></tr>
+    <tr><td><code>Receta</code></td><td>Recetas de producción</td><td>id_producto_terminado, nombre_receta, rendimiento_unidades, activo</td></tr>
+    <tr><td><code>DetalleReceta</code></td><td>Ingredientes de receta</td><td>id_receta, id_materia_prima, id_insumo, cantidad_necesaria, costo_estimado</td></tr>
+  </tbody>
+</table>
+
+<h2>3.8 Compras y Pedidos a Proveedores</h2>
+
+<table>
+  <thead><tr><th>Modelo</th><th>Descripción</th><th>Campos clave</th></tr></thead>
+  <tbody>
+    <tr><td><code>Compra</code></td><td>Compras a proveedores</td><td>id_proveedor, id_forma_pago, numero_factura, subtotal, iva, total, id_estado</td></tr>
+    <tr><td><code>DetalleCompra</code></td><td>Detalle de compra</td><td>id_compra, id_materia_prima, id_insumo, id_marca, cantidad_comprada, precio_unitario, lote, codigo_barras_escaner</td></tr>
+    <tr><td><code>PedidoProveedor</code></td><td>Pedidos a proveedores</td><td>id_proveedor, fecha_pedido, fecha_entrega_estimada, total_estimado, id_estado</td></tr>
+    <tr><td><code>DetallePedidoProveedor</code></td><td>Detalle de pedido a proveedor</td><td>id_pedido, id_materia_prima, id_insumo, cantidad_pedida, precio_estimado</td></tr>
+  </tbody>
+</table>
+
+<h2>3.9 Ventas y Pedidos de Clientes</h2>
+
+<table>
+  <thead><tr><th>Modelo</th><th>Descripción</th><th>Campos clave</th></tr></thead>
+  <tbody>
+    <tr><td><code>PedidoCliente</code></td><td>Pedidos de clientes</td><td>id_cliente, fecha_pedido, subtotal, total, senia, id_estado</td></tr>
+    <tr><td><code>DetallePedidoCliente</code></td><td>Detalle de pedido</td><td>id_pedido, id_producto_terminado, cantidad, precio_unitario, subtotal</td></tr>
+    <tr><td><code>ReservaCliente</code></td><td>Reservas de clientes</td><td>id_cliente, fecha_reserva, fecha_validez_hasta, cantidad_reservada, senia, id_estado</td></tr>
+    <tr><td><code>Venta</code></td><td>Ventas realizadas</td><td>id_cliente, id_vendedor, id_forma_pago, numero_comprobante, subtotal, iva, total, id_estado</td></tr>
+    <tr><td><code>DetalleVenta</code></td><td>Detalle de venta</td><td>id_venta, id_producto_terminado, cantidad, precio_unitario, subtotal</td></tr>
+  </tbody>
+</table>
+
+<h2>3.10 Producción y Stock</h2>
+
+<table>
+  <thead><tr><th>Modelo</th><th>Descripción</th><th>Campos clave</th></tr></thead>
+  <tbody>
+    <tr><td><code>Produccion</code></td><td>Órdenes de producción</td><td>id_receta, id_supervisor, cantidad_producida, costo_total_materias_primas, costo_total_insumos, costo_total, id_estado</td></tr>
+    <tr><td><code>DetalleProduccionConsumo</code></td><td>Consumo de MP/insumos</td><td>id_produccion, id_materia_prima, id_insumo, cantidad_consumida, costo_unitario, costo_total</td></tr>
+    <tr><td><code>DetalleProduccionGenerado</code></td><td>Productos generados</td><td>id_produccion, id_producto_terminado, cantidad_generada, costo_unitario, costo_total</td></tr>
+    <tr><td><code>StockMovement</code></td><td>Movimientos de stock</td><td>tipo_movimiento, id_materia_prima, id_insumo, id_producto_terminado, cantidad, stock_antes, stock_despues</td></tr>
+  </tbody>
+</table>
+
+<h2>3.11 Logística y Notificaciones</h2>
+
+<table>
+  <thead><tr><th>Modelo</th><th>Descripción</th><th>Campos clave</th></tr></thead>
+  <tbody>
+    <tr><td><code>PuntoEncuentro</code></td><td>Puntos de entrega</td><td>nombre, direccion, latitud, longitud, horarios</td></tr>
+    <tr><td><code>Entrega</code></td><td>Entregas programadas</td><td>id_pedido, id_punto_encuentro, fecha_programada, estado, latitud_entrega</td></tr>
+    <tr><td><code>NotificacionEntrega</code></td><td>Notificaciones de entrega</td><td>id_entrega, tipo, canal, destinatario, mensaje, estado</td></tr>
+    <tr><td><code>PlantillaNotificacion</code></td><td>Plantillas de notificación</td><td>nombre, canal, asunto, mensaje (con variables {{}})</td></tr>
+    <tr><td><code>Notificacion</code></td><td>Notificaciones enviadas</td><td>id_plantilla, tipo, destinatario, asunto, mensaje, estado, fecha_programada</td></tr>
+    <tr><td><code>AlertaConfiguracion</code></td><td>Configuración de alertas</td><td>tipo, activo, umbral, destinatarios, frecuencia</td></tr>
+  </tbody>
+</table>
+
+<h2>3.12 Presupuestos / Cotizaciones</h2>
+
+<table>
+  <thead><tr><th>Modelo</th><th>Descripción</th><th>Campos clave</th></tr></thead>
+  <tbody>
+    <tr><td><code>Presupuesto</code></td><td>Presupuestos/Cotizaciones</td><td>id_cliente, numero, fecha_creacion, fecha_validez, subtotal, iva, total, estado</td></tr>
+    <tr><td><code>DetallePresupuesto</code></td><td>Detalle de presupuesto</td><td>id_presupuesto, id_producto_terminado, cantidad, precio_unitario, subtotal, observaciones</td></tr>
+  </tbody>
+</table>
+
+<h2>3.13 Tablas de Referencia</h2>
+
+<table>
+  <thead><tr><th>Modelo</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>EmpresaTelefonica</code></td><td>Empresas de telefonía</td></tr>
+    <tr><td><code>ServicioCorreoElectronico</code></td><td>Servicios de correo</td></tr>
+    <tr><td><code>TipoPlataforma</code></td><td>Tipos de plataforma</td></tr>
+    <tr><td><code>TipoEntidad</code></td><td>Tipos de entidad</td></tr>
+    <tr><td><code>EstadoSesion</code></td><td>Estados de sesión</td></tr>
+    <tr><td><code>Consulta</code></td><td>Consultas desde formulario web</td></tr>
+  </tbody>
+</table>
+
+<!-- 4. Módulos Principales -->
+<h1 id="modulos-principales" class="page-break">4. Módulos Principales</h1>
+
+<h2>4.1 Productos (Landing + Admin)</h2>
+
+<p><strong>Funcionalidades:</strong></p>
+<ul>
+  <li>Catálogo público con filtros por categoría, tipo de harina y sección</li>
+  <li>Productos destacados en la página principal</li>
+  <li>Gestión completa CRUD de productos terminados</li>
+  <li>Generación automática de códigos y códigos de barras EAN-13</li>
+  <li>Subida de imágenes con preview</li>
+  <li>Etiquetas con código de barras para impresión</li>
+  <li>Modo de cocción (hervir, hornear, etc.)</li>
+  <li>Textos personalizados (frente/reverso) para cada producto</li>
+  <li>Visibilidad configurable en landing (<code>visible_en_landing</code>)</li>
+</ul>
+
+<h2>4.2 Stock</h2>
+
+<p><strong>Funcionalidades:</strong></p>
+<ul>
+  <li>Gestión de stock de materias primas, insumos y productos terminados</li>
+  <li>Movimientos de stock con auditoría completa (stock_antes, stock_despues)</li>
+  <li>Tipos de movimiento: compra, venta, produccion_consumo, produccion_genera, ajuste_in, ajuste_out, devolucion</li>
+  <li>Alertas de stock mínimo</li>
+  <li>Historial completo de movimientos</li>
+</ul>
+
+<h2>4.3 Recetas</h2>
+
+<p><strong>Funcionalidades:</strong></p>
+<ul>
+  <li>Definición de recetas con ingredientes (materias primas e insumos)</li>
+  <li>Cantidad necesaria por ingrediente con unidad de medida</li>
+  <li>Cálculo automático de costo estimado por receta</li>
+  <li>Rendimiento en unidades por receta</li>
+  <li>Múltiples recetas por producto terminado</li>
+  <li>Activación/desactivación de recetas</li>
+</ul>
+
+<h2>4.4 Producción</h2>
+
+<p><strong>Funcionalidades:</strong></p>
+<ul>
+  <li>Órdenes de producción vinculadas a recetas</li>
+  <li>Validación de stock disponible antes de producir</li>
+  <li>Consumo automático de materias primas e insumos al completar</li>
+  <li>Generación automática de productos terminados</li>
+  <li>Cálculo de costos: materias primas, insumos, costo total</li>
+  <li>Supervisor de producción</li>
+  <li>Estados: pendiente, en_proceso, completada, cancelada</li>
+  <li>Impresión de orden de producción en PDF</li>
+</ul>
+
+<h2>4.5 Ventas</h2>
+
+<p><strong>Funcionalidades:</strong></p>
+<ul>
+  <li>Registro de ventas con detalle de productos</li>
+  <li>Cálculo automático de IVA 21%</li>
+  <li>Vinculación con pedidos de clientes</li>
+  <li>Seña/reserva parcial</li>
+  <li>Múltiples formas de pago</li>
+  <li>Comprobante de venta</li>
+  <li>Código de barras escaneado por producto</li>
+</ul>
+
+<h2>4.6 Compras</h2>
+
+<p><strong>Funcionalidades:</strong></p>
+<ul>
+  <li>Registro de compras a proveedores</li>
+  <li>Detalle con materias primas e insumos</li>
+  <li>Marcas por producto</li>
+  <li>Fecha de vencimiento y lote</li>
+  <li>Código de barras del escáner</li>
+  <li>Conversión automática a unidad base</li>
+  <li>Cálculo de precio por unidad base</li>
+</ul>
+
+<h2>4.7 Clientes y Proveedores</h2>
+
+<p><strong>Funcionalidades:</strong></p>
+<ul>
+  <li>Gestión unificada de personas (modelo <code>Persona</code>)</li>
+  <li>Tipos de persona: cliente, proveedor, ambos</li>
+  <li>Múltiples contactos por persona (teléfono, email, etc.)</li>
+  <li>Múltiples direcciones por persona</li>
+  <li>Ubicación en mapa con validación</li>
+  <li>Datos fiscales: CUIT, razón social, condición IVA</li>
+  <li>Georreferenciación (latitud, longitud)</li>
+</ul>
+
+<h2>4.8 Presupuestos / Cotizaciones</h2>
+
+<p><strong>Funcionalidades:</strong></p>
+<ul>
+  <li>Generación de presupuestos con numeración única</li>
+  <li>Detalle de productos con cantidad y precio</li>
+  <li>Cálculo automático de subtotal, IVA y total</li>
+  <li>Fecha de validez configurable</li>
+  <li>Estados: pendiente, aprobado, rechazado, expirado, convertido</li>
+  <li>Conversión automática a pedido de cliente</li>
+  <li>Exportación a PDF profesional</li>
+  <li>Envío por WhatsApp con enlace al PDF</li>
+</ul>
+
+<h2>4.9 Logística</h2>
+
+<p><strong>Funcionalidades:</strong></p>
+<ul>
+  <li>Puntos de encuentro configurables con horarios</li>
+  <li>Programación de entregas con fecha y rango horario</li>
+  <li>Direcciones alternativas de entrega</li>
+  <li>Mapa interactivo con Leaflet para visualizar entregas</li>
+  <li>Mapa de proveedores con ubicación</li>
+  <li>Notificaciones de entrega (recordatorio, confirmación, retraso, completado)</li>
+  <li>Selección de ubicación en mapa para personas</li>
+</ul>
+
+<h2>4.10 Notificaciones</h2>
+
+<p><strong>Funcionalidades:</strong></p>
+<ul>
+  <li>Plantillas configurables con variables dinámicas <code>{{nombre}}</code>, <code>{{pedido}}</code>, etc.</li>
+  <li>Canales: email y WhatsApp</li>
+  <li>Historial de notificaciones enviadas</li>
+  <li>Alertas automáticas configurables (stock bajo, pedidos pendientes, etc.)</li>
+  <li>Programación de envíos</li>
+  <li>Reintentos automáticos en caso de error</li>
+</ul>
+
+<!-- 5. Reglas de Negocio -->
+<h1 id="reglas-de-negocio" class="page-break">5. Reglas de Negocio</h1>
+
+<h2>5.1 Cálculo de Costos</h2>
+
+<pre><code>costo_receta = Σ (cantidad_necesaria × precio_compra_referencia)
+  para cada DetalleReceta
+
+costo_produccion = costo_total_materias_primas + costo_total_insumos
+
+costo_unitario_producto = costo_produccion / cantidad_producida
+
+precio_venta = definido manualmente (sugiere: costo_unitario × margen)</code></pre>
+
+<h2>5.2 Gestión de Stock</h2>
+
+<ul>
+  <li><strong>Entrada de stock</strong>: compras (MP/insumos), producción (productos terminados), ajustes positivos, devoluciones</li>
+  <li><strong>Salida de stock</strong>: ventas (productos terminados), producción-consumo (MP/insumos), ajustes negativos</li>
+  <li><strong>Stock mínimo</strong>: alerta automática cuando <code>stock_actual ≤ stock_minimo</code></li>
+  <li><strong>Movimientos</strong>: registro obligatorio con stock_antes y stock_despues, referencia al origen</li>
+</ul>
+
+<h2>5.3 IVA 21%</h2>
+
+<ul>
+  <li>Todas las ventas y compras calculan IVA al 21%</li>
+  <li><code>subtotal</code> = suma de (cantidad × precio_unitario) sin IVA</li>
+  <li><code>iva</code> = subtotal × 0.21</li>
+  <li><code>total</code> = subtotal + iva</li>
+  <li>Condición IVA de personas: Responsable Inscripto, Monotributista, Consumidor Final, Exento</li>
+</ul>
+
+<h2>5.4 Código de Barras EAN-13</h2>
+
+<ul>
+  <li>Generación automática para productos terminados</li>
+  <li>Prefijo configurable para la empresa</li>
+  <li>Dígito verificador calculado automáticamente</li>
+  <li>Escaneo de código de barras en compras y ventas</li>
+  <li>Impresión de etiquetas con código de barras en PDF</li>
+</ul>
+
+<h2>5.5 Control de Acceso (RBAC)</h2>
+
+<ul>
+  <li><strong>Roles</strong>: admin, produccion, ventas, lectura</li>
+  <li><strong>Permisos</strong>: formato <code>modulo.accion</code> (ej: <code>productos.ver</code>, <code>ventas.crear</code>)</li>
+  <li><strong>Módulos de permisos</strong>: productos, compras, ventas, produccion, usuarios, auditoria, reportes, seguridad</li>
+  <li><strong>Rol por defecto</strong>: se asigna automáticamente al crear usuario</li>
+  <li><strong>Verificación</strong>: middleware en cada endpoint que requiere autenticación</li>
+</ul>
+
+<h2>5.6 Estados del Sistema</h2>
+
+<p>Los estados se gestionan a través del modelo <code>EstadoGeneral</code> con <code>entidad_aplicable</code>:</p>
+
+<table>
+  <thead><tr><th>Entidad</th><th>Estados posibles</th></tr></thead>
+  <tbody>
+    <tr><td>Compra</td><td>pendiente, confirmada, recibida, cancelada</td></tr>
+    <tr><td>PedidoProveedor</td><td>pendiente, confirmado, en_transito, recibido, cancelado</td></tr>
+    <tr><td>PedidoCliente</td><td>pendiente, confirmado, en_produccion, listo, entregado, cancelado</td></tr>
+    <tr><td>ReservaCliente</td><td>pendiente, confirmada, cancelada, expirada</td></tr>
+    <tr><td>Venta</td><td>pendiente, completada, cancelada, devuelta</td></tr>
+    <tr><td>Produccion</td><td>pendiente, en_proceso, completada, cancelada</td></tr>
+    <tr><td>Presupuesto</td><td>pendiente, aprobado, rechazado, expirado, convertido</td></tr>
+    <tr><td>Entrega</td><td>programado, en_camino, entregado, cancelado, reagendado</td></tr>
+  </tbody>
+</table>
+
+<h2>5.7 Señas y Reservas</h2>
+
+<ul>
+  <li>Los pedidos de cliente pueden tener seña parcial (<code>senia</code>)</li>
+  <li>Las reservas tienen fecha de validez (<code>fecha_validez_hasta</code>)</li>
+  <li>Al confirmar reserva, se actualiza <code>cantidad_confirmada</code></li>
+  <li>Stock se afecta solo al confirmar, no al reservar</li>
+</ul>
+
+<!-- 6. Flujos Principales -->
+<h1 id="flujos-principales" class="page-break">6. Flujos Principales</h1>
+
+<h2>6.1 Flujo de Compra a Proveedor</h2>
+
+<div class="flow-steps">
+  <div class="flow-step">Se crea un <strong>PedidoProveedor</strong> con los materiales/insumos necesarios</div>
+  <div class="flow-step">Se selecciona proveedor y se definen cantidades y precios estimados</div>
+  <div class="flow-step">Al recibir la mercadería, se crea una <strong>Compra</strong> vinculada al proveedor</div>
+  <div class="flow-step">Se registra el <strong>DetalleCompra</strong> con cantidades reales, precios, lote y vencimiento</div>
+  <div class="flow-step">Se actualiza automáticamente el <strong>stock</strong> de materias primas/insumos (tipo: <code>compra</code>)</div>
+  <div class="flow-step">Se registran los <strong>StockMovement</strong> correspondientes</div>
+  <div class="flow-step">Se calcula el <code>precio_compra_referencia</code> actualizado (promedio ponderado)</div>
+</div>
+
+<h2>6.2 Flujo de Venta a Cliente</h2>
+
+<div class="flow-steps">
+  <div class="flow-step">El cliente realiza un <strong>PedidoCliente</strong> con los productos deseados</div>
+  <div class="flow-step">Se verifica stock disponible de productos terminados</div>
+  <div class="flow-step">Opcionalmente se registra una <strong>ReservaCliente</strong> con seña</div>
+  <div class="flow-step">Al confirmar, se genera una <strong>Venta</strong> con detalle de productos</div>
+  <div class="flow-step">Se descuenta el <strong>stock</strong> de productos terminados (tipo: <code>venta</code>)</div>
+  <div class="flow-step">Se generan los <strong>StockMovement</strong> correspondientes</div>
+  <div class="flow-step">Se programa la <strong>Entrega</strong> logística</div>
+  <div class="flow-step">Se envían <strong>notificaciones</strong> al cliente (confirmación, recordatorio)</div>
+</div>
+
+<h2>6.3 Flujo de Producción</h2>
+
+<div class="flow-steps">
+  <div class="flow-step">Se crea una <strong>Producción</strong> seleccionando una <strong>Receta</strong> activa</div>
+  <div class="flow-step">Se define la cantidad a producir</div>
+  <div class="flow-step">Se ejecuta <strong>validar-stock</strong>: verifica si hay MP e insumos suficientes</div>
+  <div class="flow-step">Si hay stock, se pasa a "en_proceso"</div>
+  <div class="flow-step">Al completar la producción: se descuenta stock de MP/insumos consumidos, se incrementa stock de productos terminados, se calculan costos reales</div>
+  <div class="flow-step">Se imprime la <strong>Orden de Producción</strong> en PDF</div>
+</div>
+
+<h2>6.4 Flujo de Presupuesto</h2>
+
+<div class="flow-steps">
+  <div class="flow-step">Se crea un <strong>Presupuesto</strong> para un cliente</div>
+  <div class="flow-step">Se agregan productos con cantidades y precios</div>
+  <div class="flow-step">Se calculan subtotal, IVA (21%) y total</div>
+  <div class="flow-step">Se define fecha de validez</div>
+  <div class="flow-step">El cliente puede <strong>aprobar</strong> o <strong>rechazar</strong> el presupuesto</div>
+  <div class="flow-step">Si se aprueba, se puede <strong>convertir a pedido</strong> automáticamente</div>
+  <div class="flow-step">Se puede <strong>exportar a PDF</strong> profesional</div>
+  <div class="flow-step">Se puede <strong>enviar por WhatsApp</strong> con enlace al PDF</div>
+</div>
+
+<h2>6.5 Flujo de Logística</h2>
+
+<div class="flow-steps">
+  <div class="flow-step">Se programa una <strong>Entrega</strong> para un pedido</div>
+  <div class="flow-step">Se selecciona un <strong>PuntoEncuentro</strong> o dirección alternativa</div>
+  <div class="flow-step">Se define fecha y rango horario</div>
+  <div class="flow-step">El estado avanza: programado → en_camino → entregado</div>
+  <div class="flow-step">Se visualizan entregas en el <strong>mapa interactivo</strong></div>
+  <div class="flow-step">Se envían <strong>notificaciones</strong> automáticas al cliente</div>
+  <div class="flow-step">Si hay retraso, se notifica y se puede reagendar</div>
+</div>
+
+<h2>6.6 Flujo de Seguridad</h2>
+
+<div class="flow-steps">
+  <div class="flow-step">El usuario se autentica con email y contraseña</div>
+  <div class="flow-step">Si tiene 2FA activado, se solicita código TOTP</div>
+  <div class="flow-step">Se registran intentos en <strong>LogAcceso</strong> (OK, FAIL, BLOCKED, 2FA_REQUIRED, 2FA_OK, 2FA_FAIL)</div>
+  <div class="flow-step">Se crea una <strong>SesionActiva</strong> con IP y user agent</div>
+  <div class="flow-step">Cada acción se registra en <strong>Auditoria</strong> con detalles antes/después</div>
+  <div class="flow-step">Si se detectan múltiples intentos fallidos, se bloquea temporalmente</div>
+  <div class="flow-step">El admin puede ver y revocar sesiones activas</div>
+  <div class="flow-step">Se puede forzar cierre de sesión remoto</div>
+</div>
+
+<!-- 7. Endpoints de API -->
+<h1 id="endpoints-de-api" class="page-break">7. Endpoints de API</h1>
+
+<h2>7.1 Autenticación (4 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>POST</code></td><td>/api/auth/[...nextauth]</td><td>NextAuth.js (login, logout, session)</td></tr>
+    <tr><td><code>POST</code></td><td>/api/auth/forgot-password</td><td>Solicitar recuperación de contraseña</td></tr>
+    <tr><td><code>POST</code></td><td>/api/auth/reset-password</td><td>Resetear contraseña con token</td></tr>
+  </tbody>
+</table>
+
+<h2>7.2 2FA (4 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/2fa/status</td><td>Estado del 2FA del usuario</td></tr>
+    <tr><td><code>POST</code></td><td>/api/2fa/activate</td><td>Activar 2FA (genera secreto TOTP)</td></tr>
+    <tr><td><code>POST</code></td><td>/api/2fa/verify</td><td>Verificar código TOTP</td></tr>
+    <tr><td><code>POST</code></td><td>/api/2fa/disable</td><td>Desactivar 2FA</td></tr>
+  </tbody>
+</table>
+
+<h2>7.3 Usuarios (5 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/usuarios</td><td>Listar usuarios</td></tr>
+    <tr><td><code>POST</code></td><td>/api/usuarios</td><td>Crear usuario</td></tr>
+    <tr><td><code>GET</code></td><td>/api/usuarios/[id]</td><td>Obtener usuario por ID</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/usuarios/[id]</td><td>Actualizar usuario</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/usuarios/[id]/roles</td><td>Actualizar roles de usuario</td></tr>
+    <tr><td><code>GET</code></td><td>/api/usuarios/permisos</td><td>Obtener permisos del usuario actual</td></tr>
+  </tbody>
+</table>
+
+<h2>7.4 Seguridad (4 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/seguridad/logs-acceso</td><td>Logs de acceso</td></tr>
+    <tr><td><code>GET</code></td><td>/api/seguridad/roles</td><td>Listar roles y permisos</td></tr>
+    <tr><td><code>GET</code></td><td>/api/seguridad/sesiones</td><td>Listar sesiones activas</td></tr>
+    <tr><td><code>DELETE</code></td><td>/api/seguridad/sesiones/[id]</td><td>Revocar sesión</td></tr>
+  </tbody>
+</table>
+
+<h2>7.5 Auditoría (2 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/auditoria</td><td>Listar registros de auditoría</td></tr>
+    <tr><td><code>GET</code></td><td>/api/auditoria/[id]</td><td>Obtener registro por ID</td></tr>
+  </tbody>
+</table>
+
+<h2>7.6 Personas (4 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/personas</td><td>Listar personas (con filtros por tipo)</td></tr>
+    <tr><td><code>POST</code></td><td>/api/personas</td><td>Crear persona</td></tr>
+    <tr><td><code>GET</code></td><td>/api/personas/[id]</td><td>Obtener persona por ID</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/personas/[id]</td><td>Actualizar persona</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/personas/[id]/ubicacion</td><td>Actualizar ubicación en mapa</td></tr>
+  </tbody>
+</table>
+
+<h2>7.7 Materias Primas (5 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/materias-primas</td><td>Listar materias primas</td></tr>
+    <tr><td><code>POST</code></td><td>/api/materias-primas</td><td>Crear materia prima</td></tr>
+    <tr><td><code>GET</code></td><td>/api/materias-primas/[id]</td><td>Obtener materia prima por ID</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/materias-primas/[id]</td><td>Actualizar materia prima</td></tr>
+    <tr><td><code>DELETE</code></td><td>/api/materias-primas/[id]</td><td>Eliminar materia prima</td></tr>
+  </tbody>
+</table>
+
+<h2>7.8 Insumos (5 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/insumos</td><td>Listar insumos</td></tr>
+    <tr><td><code>POST</code></td><td>/api/insumos</td><td>Crear insumo</td></tr>
+    <tr><td><code>GET</code></td><td>/api/insumos/[id]</td><td>Obtener insumo por ID</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/insumos/[id]</td><td>Actualizar insumo</td></tr>
+    <tr><td><code>DELETE</code></td><td>/api/insumos/[id]</td><td>Eliminar insumo</td></tr>
+  </tbody>
+</table>
+
+<h2>7.9 Productos Terminados (8 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/productos-terminados</td><td>Listar productos terminados</td></tr>
+    <tr><td><code>POST</code></td><td>/api/productos-terminados</td><td>Crear producto terminado</td></tr>
+    <tr><td><code>GET</code></td><td>/api/productos-terminados/[id]</td><td>Obtener producto por ID</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/productos-terminados/[id]</td><td>Actualizar producto</td></tr>
+    <tr><td><code>DELETE</code></td><td>/api/productos-terminados/[id]</td><td>Eliminar producto</td></tr>
+    <tr><td><code>GET</code></td><td>/api/productos-terminados/public</td><td>Catálogo público</td></tr>
+    <tr><td><code>GET</code></td><td>/api/productos-terminados/buscar-por-codigo</td><td>Buscar por código de barras</td></tr>
+    <tr><td><code>POST</code></td><td>/api/productos-terminados/generar-codigos</td><td>Generar códigos automáticos</td></tr>
+    <tr><td><code>POST</code></td><td>/api/productos-terminados/generar-codigos-barras</td><td>Generar códigos de barras EAN-13</td></tr>
+  </tbody>
+</table>
+
+<h2>7.10 Recetas (5 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/recetas</td><td>Listar recetas</td></tr>
+    <tr><td><code>POST</code></td><td>/api/recetas</td><td>Crear receta</td></tr>
+    <tr><td><code>GET</code></td><td>/api/recetas/[id]</td><td>Obtener receta por ID</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/recetas/[id]</td><td>Actualizar receta</td></tr>
+    <tr><td><code>DELETE</code></td><td>/api/recetas/[id]</td><td>Eliminar receta</td></tr>
+  </tbody>
+</table>
+
+<h2>7.11 Compras (5 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/compras</td><td>Listar compras</td></tr>
+    <tr><td><code>POST</code></td><td>/api/compras</td><td>Crear compra</td></tr>
+    <tr><td><code>GET</code></td><td>/api/compras/[id]</td><td>Obtener compra por ID</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/compras/[id]</td><td>Actualizar compra</td></tr>
+    <tr><td><code>DELETE</code></td><td>/api/compras/[id]</td><td>Eliminar compra</td></tr>
+  </tbody>
+</table>
+
+<h2>7.12 Pedidos a Proveedores (5 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/pedidos-proveedores</td><td>Listar pedidos a proveedores</td></tr>
+    <tr><td><code>POST</code></td><td>/api/pedidos-proveedores</td><td>Crear pedido</td></tr>
+    <tr><td><code>GET</code></td><td>/api/pedidos-proveedores/[id]</td><td>Obtener pedido por ID</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/pedidos-proveedores/[id]</td><td>Actualizar pedido</td></tr>
+    <tr><td><code>DELETE</code></td><td>/api/pedidos-proveedores/[id]</td><td>Eliminar pedido</td></tr>
+  </tbody>
+</table>
+
+<h2>7.13 Pedidos de Clientes (5 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/pedidos-clientes</td><td>Listar pedidos de clientes</td></tr>
+    <tr><td><code>POST</code></td><td>/api/pedidos-clientes</td><td>Crear pedido</td></tr>
+    <tr><td><code>GET</code></td><td>/api/pedidos-clientes/[id]</td><td>Obtener pedido por ID</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/pedidos-clientes/[id]</td><td>Actualizar pedido</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/pedidos-clientes/[id]/estado</td><td>Cambiar estado del pedido</td></tr>
+  </tbody>
+</table>
+
+<h2>7.14 Reservas (5 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/reservas-clientes</td><td>Listar reservas</td></tr>
+    <tr><td><code>POST</code></td><td>/api/reservas-clientes</td><td>Crear reserva</td></tr>
+    <tr><td><code>GET</code></td><td>/api/reservas-clientes/[id]</td><td>Obtener reserva por ID</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/reservas-clientes/[id]</td><td>Actualizar reserva</td></tr>
+    <tr><td><code>DELETE</code></td><td>/api/reservas-clientes/[id]</td><td>Eliminar reserva</td></tr>
+  </tbody>
+</table>
+
+<h2>7.15 Ventas (5 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/ventas</td><td>Listar ventas</td></tr>
+    <tr><td><code>POST</code></td><td>/api/ventas</td><td>Crear venta</td></tr>
+    <tr><td><code>GET</code></td><td>/api/ventas/[id]</td><td>Obtener venta por ID</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/ventas/[id]</td><td>Actualizar venta</td></tr>
+    <tr><td><code>DELETE</code></td><td>/api/ventas/[id]</td><td>Eliminar venta</td></tr>
+  </tbody>
+</table>
+
+<h2>7.16 Producción (4 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/produccion</td><td>Listar producciones</td></tr>
+    <tr><td><code>POST</code></td><td>/api/produccion</td><td>Crear producción</td></tr>
+    <tr><td><code>GET</code></td><td>/api/produccion/validar-stock</td><td>Validar stock disponible para receta</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/produccion/[id]/completar</td><td>Completar producción (afecta stock)</td></tr>
+  </tbody>
+</table>
+
+<h2>7.17 Presupuestos (6 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/presupuestos</td><td>Listar presupuestos</td></tr>
+    <tr><td><code>POST</code></td><td>/api/presupuestos</td><td>Crear presupuesto</td></tr>
+    <tr><td><code>GET</code></td><td>/api/presupuestos/[id]</td><td>Obtener presupuesto por ID</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/presupuestos/[id]</td><td>Actualizar presupuesto</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/presupuestos/[id]/estado</td><td>Cambiar estado (aprobar/rechazar)</td></tr>
+    <tr><td><code>POST</code></td><td>/api/presupuestos/[id]/convertir-pedido</td><td>Convertir a pedido de cliente</td></tr>
+  </tbody>
+</table>
+
+<h2>7.18 Stock (1 endpoint)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/stock-movements</td><td>Listar movimientos de stock</td></tr>
+  </tbody>
+</table>
+
+<h2>7.19 Logística (11 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/logistica/entregas</td><td>Listar entregas</td></tr>
+    <tr><td><code>POST</code></td><td>/api/logistica/entregas</td><td>Crear entrega</td></tr>
+    <tr><td><code>GET</code></td><td>/api/logistica/entregas/[id]</td><td>Obtener entrega por ID</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/logistica/entregas/[id]</td><td>Actualizar entrega</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/logistica/entregas/[id]/estado</td><td>Cambiar estado de entrega</td></tr>
+    <tr><td><code>GET</code></td><td>/api/logistica/puntos-encuentro</td><td>Listar puntos de encuentro</td></tr>
+    <tr><td><code>POST</code></td><td>/api/logistica/puntos-encuentro</td><td>Crear punto de encuentro</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/logistica/puntos-encuentro/[id]</td><td>Actualizar punto de encuentro</td></tr>
+    <tr><td><code>DELETE</code></td><td>/api/logistica/puntos-encuentro/[id]</td><td>Eliminar punto de encuentro</td></tr>
+    <tr><td><code>GET</code></td><td>/api/logistica/mapa/entregas</td><td>Datos de entregas para mapa</td></tr>
+    <tr><td><code>GET</code></td><td>/api/logistica/mapa/proveedores</td><td>Datos de proveedores para mapa</td></tr>
+  </tbody>
+</table>
+
+<h2>7.20 Notificaciones (8 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/notificaciones/plantillas</td><td>Listar plantillas</td></tr>
+    <tr><td><code>POST</code></td><td>/api/notificaciones/plantillas</td><td>Crear plantilla</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/notificaciones/plantillas/[id]</td><td>Actualizar plantilla</td></tr>
+    <tr><td><code>GET</code></td><td>/api/notificaciones/historial</td><td>Historial de notificaciones</td></tr>
+    <tr><td><code>GET</code></td><td>/api/notificaciones/historial/[id]</td><td>Detalle de notificación</td></tr>
+    <tr><td><code>POST</code></td><td>/api/notificaciones/enviar</td><td>Enviar notificación</td></tr>
+    <tr><td><code>GET</code></td><td>/api/notificaciones/alertas/config</td><td>Configuración de alertas</td></tr>
+    <tr><td><code>POST</code></td><td>/api/notificaciones/alertas/ejecutar</td><td>Ejecutar alertas automáticas</td></tr>
+  </tbody>
+</table>
+
+<h2>7.21 Reportes (8 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/reportes/ventas</td><td>Reporte de ventas</td></tr>
+    <tr><td><code>GET</code></td><td>/api/reportes/compras</td><td>Reporte de compras</td></tr>
+    <tr><td><code>GET</code></td><td>/api/reportes/compras-pendientes</td><td>Compras pendientes de recibir</td></tr>
+    <tr><td><code>GET</code></td><td>/api/reportes/produccion</td><td>Reporte de producción</td></tr>
+    <tr><td><code>GET</code></td><td>/api/reportes/stock</td><td>Reporte de stock</td></tr>
+    <tr><td><code>GET</code></td><td>/api/reportes/finanzas</td><td>Reporte financiero</td></tr>
+    <tr><td><code>GET</code></td><td>/api/reportes/pedidos-dia</td><td>Pedidos del día</td></tr>
+    <tr><td><code>GET</code></td><td>/api/reportes/hoja-ruta</td><td>Hoja de ruta para entregas</td></tr>
+  </tbody>
+</table>
+
+<h2>7.22 Tablas de Referencia (8 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/categorias</td><td>Categorías de productos</td></tr>
+    <tr><td><code>GET</code></td><td>/api/unidades-medida</td><td>Unidades de medida</td></tr>
+    <tr><td><code>GET</code></td><td>/api/marcas</td><td>Marcas</td></tr>
+    <tr><td><code>GET</code></td><td>/api/estados-generales</td><td>Estados generales</td></tr>
+    <tr><td><code>GET/PUT/DELETE</code></td><td>/api/estados-generales/[id]</td><td>CRUD estado general</td></tr>
+    <tr><td><code>GET</code></td><td>/api/formas-pago</td><td>Formas de pago</td></tr>
+    <tr><td><code>GET/PUT/DELETE</code></td><td>/api/formas-pago/[id]</td><td>CRUD forma de pago</td></tr>
+    <tr><td><code>GET</code></td><td>/api/geografia</td><td>Datos geográficos</td></tr>
+  </tbody>
+</table>
+
+<h2>7.23 Otros (5 endpoints)</h2>
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td><code>GET</code></td><td>/api/opiniones</td><td>Listar opiniones</td></tr>
+    <tr><td><code>POST</code></td><td>/api/contacto</td><td>Formulario de contacto</td></tr>
+    <tr><td><code>GET</code></td><td>/api/consultas</td><td>Listar consultas web</td></tr>
+    <tr><td><code>GET</code></td><td>/api/consultas/count</td><td>Contar consultas no leídas</td></tr>
+    <tr><td><code>PUT</code></td><td>/api/consultas/[id]</td><td>Actualizar consulta (marcar leída)</td></tr>
+  </tbody>
+</table>
+
+<!-- 8. Librerías de Lógica de Negocio -->
+<h1 id="librerias-de-logica" class="page-break">8. Librerías de Lógica de Negocio</h1>
+
+<h2>8.1 <code>auditoria-service.ts</code></h2>
+<p>Servicio centralizado de auditoría. Registra todas las acciones del sistema.</p>
+<pre><code>registrarAuditoria(accion, modulo, entidad_id, entidad_nombre, detalles, ip, user_agent)</code></pre>
+<ul>
+  <li>Acciones: CREATE, UPDATE, DELETE, LOGIN_OK, LOGIN_FAIL, LOGOUT, EXPORT, VIEW</li>
+  <li>Módulos: productos, compras, ventas, produccion, usuarios, reportes, login</li>
+  <li>Detalles: JSON string con cambios antes/después</li>
+</ul>
+
+<h2>8.2 <code>auth-helpers.ts</code></h2>
+<p>Funciones auxiliares de autenticación para NextAuth.js v4.</p>
+<ul>
+  <li>Verificación de credenciales</li>
+  <li>Obtención de sesión actual</li>
+  <li>Verificación de permisos por rol</li>
+  <li>Validación de 2FA</li>
+</ul>
+
+<h2>8.3 <code>permisos-service.ts</code></h2>
+<p>Servicio de permisos RBAC.</p>
+<ul>
+  <li><code>tienePermiso(usuarioId, permisoNombre)</code>: Verifica si un usuario tiene un permiso específico</li>
+  <li><code>obtenerPermisosUsuario(usuarioId)</code>: Lista todos los permisos del usuario</li>
+  <li><code>obtenerRolesUsuario(usuarioId)</code>: Lista roles del usuario</li>
+  <li><code>verificarAcceso(modulo, accion)</code>: Middleware de verificación</li>
+</ul>
+
+<h2>8.4 <code>notificaciones-service.ts</code></h2>
+<p>Servicio de envío de notificaciones por email y WhatsApp.</p>
+<ul>
+  <li><code>enviarNotificacion(tipo, destinatario, datos)</code>: Envío genérico</li>
+  <li><code>enviarEmail(destinatario, asunto, mensaje)</code>: Email via Nodemailer</li>
+  <li><code>enviarWhatsApp(destinatario, mensaje)</code>: WhatsApp via API</li>
+  <li><code>procesarPlantilla(plantilla, variables)</code>: Reemplazo de variables {{}}</li>
+</ul>
+
+<h2>8.5 <code>presupuesto-utils.ts</code></h2>
+<p>Utilidades para gestión de presupuestos/cotizaciones.</p>
+<ul>
+  <li><code>generarNumeroPresupuesto()</code>: Generación de numeración única</li>
+  <li><code>calcularTotales(detalles)</code>: Cálculo de subtotal, IVA, total</li>
+  <li><code>puedeConvertirse(presupuesto)</code>: Validación de estado para conversión</li>
+  <li><code>convertirAPedido(presupuestoId)</code>: Conversión automática a pedido</li>
+</ul>
+
+<h2>8.6 <code>email.ts</code></h2>
+<p>Configuración y envío de correos electrónicos.</p>
+<ul>
+  <li><code>enviarEmail(opciones)</code>: Envío con Nodemailer</li>
+  <li>Soporte para HTML y texto plano</li>
+  <li>Plantillas de email para notificaciones</li>
+</ul>
+
+<h2>8.7 <code>smtp-transporter.ts</code></h2>
+<p>Configuración del transporter SMTP.</p>
+<ul>
+  <li>Creación del transporter con variables de entorno</li>
+  <li>Soporte para Gmail, SendGrid, SMTP personalizado</li>
+  <li>Pool de conexiones</li>
+</ul>
+
+<h2>8.8 <code>whatsapp-admin.ts</code></h2>
+<p>Notificaciones administrativas por WhatsApp.</p>
+<ul>
+  <li><code>enviarWhatsAppAdmin(mensaje)</code>: Envío al número de admin</li>
+  <li>Formato de mensajes con emojis y estructura</li>
+  <li>Integración con WhatsApp Business API</li>
+</ul>
+
+<h2>8.9 <code>plantillas.ts</code></h2>
+<p>Definición de plantillas de notificación predefinidas.</p>
+<ul>
+  <li>Plantillas para: pedido confirmado, stock bajo, entrega recordatorio, etc.</li>
+  <li>Variables dinámicas: <code>{{nombre}}</code>, <code>{{pedido}}</code>, <code>{{producto}}</code></li>
+  <li>Formato para email y WhatsApp</li>
+</ul>
+
+<h2>8.10 <code>upload.ts</code></h2>
+<p>Gestión de subida de imágenes.</p>
+<ul>
+  <li>Validación de tipos de archivo (JPEG, PNG, WebP)</li>
+  <li>Redimensionado automático</li>
+  <li>Almacenamiento en <code>/public/uploads/</code></li>
+  <li>Generación de nombres únicos</li>
+</ul>
+
+<h2>8.11 <code>prisma-utils.ts</code></h2>
+<p>Utilidades para operaciones comunes de Prisma.</p>
+<ul>
+  <li><code>paginar(query, pagina, limite)</code>: Paginación genérica</li>
+  <li><code>incluirRelaciones(modelo)</code>: Inclusión de relaciones comunes</li>
+  <li>Manejo de transacciones</li>
+</ul>
+
+<h2>8.12 <code>db-env.ts</code></h2>
+<p>Configuración de base de datos por entorno.</p>
+<ul>
+  <li>Desarrollo: SQLite local (<code>file:./dev.db</code>)</li>
+  <li>Producción: Turso (libSQL)</li>
+  <li>Configuración automática según <code>NODE_ENV</code></li>
+</ul>
+
+<h2>8.13 <code>performance.ts</code></h2>
+<p>Monitoreo y optimización de rendimiento.</p>
+<ul>
+  <li>Métricas de tiempo de respuesta de API</li>
+  <li>Logging de queries lentas</li>
+  <li>Cache en memoria para datos frecuentes</li>
+</ul>
+
+<h2>8.14 <code>notifications.ts</code></h2>
+<p>Sistema de notificaciones internas (toast) para la UI.</p>
+<ul>
+  <li>Tipos: success, error, warning, info</li>
+  <li>Integración con sonner/toast de shadcn/ui</li>
+</ul>
+
+<h2>8.15 <code>db.ts</code></h2>
+<p>Singleton de Prisma Client.</p>
+<pre><code>import { PrismaClient } from '@prisma/client'
+export const db = new PrismaClient()</code></pre>
+
+<!-- 9. Componentes de UI -->
+<h1 id="componentes-de-ui" class="page-break">9. Componentes de UI</h1>
+
+<h2>9.1 Formularios (13 formularios principales)</h2>
+
+<table>
+  <thead><tr><th>Componente</th><th>Funcionalidad</th></tr></thead>
+  <tbody>
+    <tr><td><code>ProductoForm</code></td><td>Crear/editar productos de la landing</td></tr>
+    <tr><td><code>ProductoTerminadoForm</code></td><td>Crear/editar productos terminados con código de barras</td></tr>
+    <tr><td><code>MateriaPrimaForm</code></td><td>Crear/editar materias primas con unidad de medida</td></tr>
+    <tr><td><code>InsumoForm</code></td><td>Crear/editar insumos</td></tr>
+    <tr><td><code>RecetaForm</code></td><td>Crear/editar recetas con ingredientes dinámicos</td></tr>
+    <tr><td><code>ProduccionForm</code></td><td>Crear/editar órdenes de producción</td></tr>
+    <tr><td><code>CompraForm</code></td><td>Registrar compras con detalle y escaneo</td></tr>
+    <tr><td><code>PedidoProveedorForm</code></td><td>Crear pedidos a proveedores</td></tr>
+    <tr><td><code>PedidoClienteForm</code></td><td>Crear pedidos de clientes</td></tr>
+    <tr><td><code>VentaForm</code></td><td>Registrar ventas</td></tr>
+    <tr><td><code>PersonaForm</code></td><td>Crear/editar personas con contactos y direcciones</td></tr>
+    <tr><td><code>ReservaClienteForm</code></td><td>Crear/editar reservas</td></tr>
+    <tr><td><code>UsuarioForm</code></td><td>Crear/editar usuarios con roles</td></tr>
+  </tbody>
+</table>
+
+<h2>9.2 Tablas (13 tablas principales)</h2>
+
+<table>
+  <thead><tr><th>Componente</th><th>Funcionalidad</th></tr></thead>
+  <tbody>
+    <tr><td><code>ProductosTable</code></td><td>Listado de productos landing</td></tr>
+    <tr><td><code>ProductosTerminadosTable</code></td><td>Listado de productos terminados</td></tr>
+    <tr><td><code>MateriasPrimasTable</code></td><td>Listado de materias primas</td></tr>
+    <tr><td><code>InsumosTable</code></td><td>Listado de insumos</td></tr>
+    <tr><td><code>RecetasTable</code></td><td>Listado de recetas</td></tr>
+    <tr><td><code>ProduccionTable</code></td><td>Listado de órdenes de producción</td></tr>
+    <tr><td><code>ComprasTable</code></td><td>Listado de compras</td></tr>
+    <tr><td><code>PedidosProveedoresTable</code></td><td>Listado de pedidos a proveedores</td></tr>
+    <tr><td><code>PedidosClientesTable</code></td><td>Listado de pedidos de clientes</td></tr>
+    <tr><td><code>VentasTable</code></td><td>Listado de ventas</td></tr>
+    <tr><td><code>PersonasTable</code></td><td>Listado de personas (clientes/proveedores)</td></tr>
+    <tr><td><code>ReservasClientesTable</code></td><td>Listado de reservas</td></tr>
+    <tr><td><code>UsuariosTable</code></td><td>Listado de usuarios</td></tr>
+  </tbody>
+</table>
+
+<h2>9.3 Componentes Especiales</h2>
+
+<table>
+  <thead><tr><th>Componente</th><th>Funcionalidad</th></tr></thead>
+  <tbody>
+    <tr><td><code>ContactosEditor</code></td><td>Editor de contactos múltiples por persona</td></tr>
+    <tr><td><code>ImageUploader</code></td><td>Subida de imágenes con preview</td></tr>
+    <tr><td><code>ImageUploaderProducto</code></td><td>Subida de imágenes para productos</td></tr>
+    <tr><td><code>EtiquetaProducto</code></td><td>Etiqueta con código de barras</td></tr>
+    <tr><td><code>StockMovementsTable</code></td><td>Historial de movimientos de stock</td></tr>
+    <tr><td><code>OpinionesTable</code></td><td>Gestión de opiniones/reseñas</td></tr>
+    <tr><td><code>CategoriasManager</code></td><td>Gestión de categorías</td></tr>
+    <tr><td><code>EstadoGeneralManager</code></td><td>Gestión de estados</td></tr>
+    <tr><td><code>FormaPagoManager</code></td><td>Gestión de formas de pago</td></tr>
+    <tr><td><code>MarcasManager</code></td><td>Gestión de marcas</td></tr>
+    <tr><td><code>UnidadesMedidaManager</code></td><td>Gestión de unidades de medida</td></tr>
+  </tbody>
+</table>
+
+<h2>9.4 Componentes de Logística</h2>
+
+<table>
+  <thead><tr><th>Componente</th><th>Funcionalidad</th></tr></thead>
+  <tbody>
+    <tr><td><code>MapaEntregas</code></td><td>Mapa Leaflet con entregas del día</td></tr>
+    <tr><td><code>MapaProveedores</code></td><td>Mapa con ubicación de proveedores</td></tr>
+    <tr><td><code>MapaLeaflet</code></td><td>Componente base de mapa reutilizable</td></tr>
+    <tr><td><code>SelectorUbicacion</code></td><td>Selector de ubicación en mapa</td></tr>
+  </tbody>
+</table>
+
+<h2>9.5 Componentes de Impresión</h2>
+
+<table>
+  <thead><tr><th>Componente</th><th>Funcionalidad</th></tr></thead>
+  <tbody>
+    <tr><td><code>PresupuestoPDF</code></td><td>Generación de PDF de presupuesto</td></tr>
+    <tr><td><code>PresupuestoPDFDocument</code></td><td>Documento PDF de presupuesto (@react-pdf)</td></tr>
+    <tr><td><code>OrdenProduccionPrint</code></td><td>Impresión de orden de producción</td></tr>
+    <tr><td><code>HojaRutaPrint</code></td><td>Impresión de hoja de ruta</td></tr>
+    <tr><td><code>EtiquetaProductoPDF</code></td><td>Etiqueta con código de barras en PDF</td></tr>
+  </tbody>
+</table>
+
+<h2>9.6 Componentes de Reportes</h2>
+
+<table>
+  <thead><tr><th>Componente</th><th>Funcionalidad</th></tr></thead>
+  <tbody>
+    <tr><td><code>ExportadorCSV</code></td><td>Exportación a CSV</td></tr>
+    <tr><td><code>ExportadorExcel</code></td><td>Exportación a Excel (.xlsx)</td></tr>
+    <tr><td><code>ExportadorPDF</code></td><td>Exportación a PDF</td></tr>
+  </tbody>
+</table>
+
+<h2>9.7 Componentes de Layout</h2>
+
+<table>
+  <thead><tr><th>Componente</th><th>Funcionalidad</th></tr></thead>
+  <tbody>
+    <tr><td><code>Navbar</code></td><td>Barra de navegación responsive</td></tr>
+    <tr><td><code>Footer</code></td><td>Pie de página</td></tr>
+    <tr><td><code>ScrollToTop</code></td><td>Botón de scroll al inicio</td></tr>
+  </tbody>
+</table>
+
+<!-- 10. Seguridad -->
+<h1 id="seguridad" class="page-break">10. Seguridad</h1>
+
+<h2>10.1 Autenticación 2FA (TOTP)</h2>
+
+<ul>
+  <li>Implementación basada en RFC 6238 (TOTP)</li>
+  <li>Generación de secreto con <code>otpauth</code></li>
+  <li>Código QR para configuración en apps (Google Authenticator, Authy)</li>
+  <li>Códigos de respaldo generados al activar</li>
+  <li>Verificación en cada login si está activado</li>
+  <li>Estados: <code>2FA_REQUIRED</code>, <code>2FA_OK</code>, <code>2FA_FAIL</code></li>
+</ul>
+
+<h2>10.2 RBAC (Control de Acceso Basado en Roles)</h2>
+
+<ul>
+  <li><strong>4 roles predefinidos</strong>: admin, produccion, ventas, lectura</li>
+  <li><strong>Permisos granulares</strong>: formato <code>modulo.accion</code></li>
+  <li><strong>Módulos</strong>: productos, compras, ventas, produccion, usuarios, auditoria, reportes, seguridad</li>
+  <li><strong>Verificación en cada endpoint</strong>: middleware automático</li>
+  <li><strong>Asignación flexible</strong>: múltiples roles por usuario</li>
+</ul>
+
+<h2>10.3 Auditoría Completa</h2>
+
+<ul>
+  <li><strong>Registro de todas las acciones</strong>: CREATE, UPDATE, DELETE, LOGIN, LOGOUT, EXPORT, VIEW</li>
+  <li><strong>Detalles JSON</strong>: cambios antes/después de cada modificación</li>
+  <li><strong>IP y User Agent</strong>: registro de origen de cada acción</li>
+  <li><strong>Módulo y entidad</strong>: clasificación de cada acción</li>
+  <li><strong>Búsqueda y filtros</strong>: por fecha, módulo, acción, usuario</li>
+</ul>
+
+<h2>10.4 Detección de Intrusos</h2>
+
+<ul>
+  <li><strong>Registro de intentos de login</strong>: OK, FAIL, BLOCKED</li>
+  <li><strong>Información del dispositivo</strong>: navegador, SO, dispositivo, IP</li>
+  <li><strong>Bloqueo temporal</strong>: después de múltiples intentos fallidos</li>
+  <li><strong>Logs de acceso</strong>: historial completo con geolocalización aproximada</li>
+</ul>
+
+<h2>10.5 Gestión de Sesiones</h2>
+
+<ul>
+  <li><strong>Sesiones activas</strong>: listado con IP, dispositivo, fecha</li>
+  <li><strong>Revocación remota</strong>: cierre de sesión desde el admin</li>
+  <li><strong>Expiración automática</strong>: sesiones con fecha de expiración</li>
+  <li><strong>Estados</strong>: active, expired, revoked</li>
+</ul>
+
+<h2>10.6 Recuperación de Contraseña</h2>
+
+<ul>
+  <li><strong>Token único</strong>: generado al solicitar recuperación</li>
+  <li><strong>Expiración</strong>: token con fecha de vencimiento</li>
+  <li><strong>Uso único</strong>: marca <code>usado</code> al cambiar contraseña</li>
+  <li><strong>IP registrada</strong>: seguridad adicional</li>
+</ul>
+
+<!-- 11. Despliegue -->
+<h1 id="despliegue" class="page-break">11. Despliegue</h1>
+
+<h2>11.1 Plataformas</h2>
+
+<table>
+  <thead><tr><th>Componente</th><th>Plataforma</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Aplicación</strong></td><td>Vercel</td></tr>
+    <tr><td><strong>Base de datos</strong></td><td>Turso (libSQL)</td></tr>
+    <tr><td><strong>Imágenes</strong></td><td>Vercel Blob / Local</td></tr>
+    <tr><td><strong>Email</strong></td><td>Gmail SMTP / SendGrid</td></tr>
+    <tr><td><strong>WhatsApp</strong></td><td>WhatsApp Business API</td></tr>
+  </tbody>
+</table>
+
+<h2>11.2 Variables de Entorno</h2>
+
+<pre><code># Base de datos
+DATABASE_URL="file:./dev.db"                    # Desarrollo (SQLite)
+TURSO_DATABASE_URL="libsql://..."               # Producción (Turso)
+TURSO_AUTH_TOKEN="..."                          # Token de Turso
+
+# Autenticación
+NEXTAUTH_SECRET="..."                           # Secreto de NextAuth
+NEXTAUTH_URL="https://pastasorlando.com.ar"     # URL de la app
+
+# Email
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_USER="..."
+SMTP_PASS="..."
+
+# WhatsApp
+WHATSAPP_ADMIN_NUMBER="..."
+WHATSAPP_API_URL="..."
+
+# General
+NODE_ENV="production"
+NEXT_PUBLIC_APP_URL="https://pastasorlando.com.ar"</code></pre>
+
+<h2>11.3 Comandos de Despliegue</h2>
+
+<pre><code># Desarrollo
+bun run dev
+
+# Push de schema a BD
+bun run db:push
+
+# Build de producción
+bun run build
+
+# Iniciar en producción
+bun run start</code></pre>
+
+<h2>11.4 Flujo de CI/CD</h2>
+
+<ol>
+  <li>Push a <code>main</code> en GitHub</li>
+  <li>Vercel detecta cambios automáticamente</li>
+  <li>Build y deploy automático</li>
+  <li>Migraciones de BD con <code>prisma db push</code></li>
+  <li>Variables de entorno configuradas en Vercel Dashboard</li>
+</ol>
+
+<!-- 12. Diagrama de Relaciones -->
+<h1 id="diagrama-de-relaciones" class="page-break">12. Diagrama de Relaciones (ERD)</h1>
+
+<div class="mermaid-container">
+  <p><strong>Diagrama Entidad-Relación (Mermaid)</strong></p>
+  <pre>
+erDiagram
+    Pais ||--o{ Provincia : tiene
+    Provincia ||--o{ Departamento : tiene
+    Departamento ||--o{ Municipio : tiene
+    Municipio ||--o{ Direccion : tiene
+    Municipio ||--o{ Persona : vive_en
+
+    TipoPersona ||--o{ Persona : es_tipo
+    Persona ||--o{ Contacto : tiene
+    TipoContacto ||--o{ Contacto : es_tipo
+    Persona ||--o{ Direccion : tiene
+    TipoDireccion ||--o{ Direccion : es_tipo
+    Persona ||--o| Usuario : es_usuario
+    Persona ||--o{ Compra : provee
+    Persona ||--o{ PedidoProveedor : provee
+    Persona ||--o{ PedidoCliente : compra
+    Persona ||--o{ ReservaCliente : reserva
+    Persona ||--o{ Venta : compra
+    Persona ||--o{ Presupuesto : solicita
+
+    Usuario ||--o{ UsuarioRol : tiene
+    Rol ||--o{ UsuarioRol : asignado_a
+    Rol ||--o{ RolPermiso : tiene
+    Permiso ||--o{ RolPermiso : asignado_a
+    Usuario ||--o{ StockMovement : registra
+    Usuario ||--o{ Venta : vende
+    Usuario ||--o{ Auditoria : realiza
+    Usuario ||--o| Usuario2FA : tiene_2fa
+    Usuario ||--o{ LogAcceso : intenta
+    Usuario ||--o{ SesionActiva : tiene_sesion
+
+    UnidadMedida ||--o{ MateriaPrima : usa
+    UnidadMedida ||--o{ Insumo : usa
+    UnidadMedida ||--o{ DetalleReceta : usa
+    UnidadMedida ||--o{ DetalleCompra : usa
+    UnidadMedida ||--o{ DetallePedidoProveedor : usa
+    UnidadMedida ||--o{ StockMovement : usa
+
+    CategoriaMateriaPrima ||--o{ MateriaPrima : categoriza
+    TipoInsumo ||--o{ Insumo : es_tipo
+
+    MateriaPrima ||--o{ DetalleReceta : usada_en
+    MateriaPrima ||--o{ DetalleCompra : comprada_en
+    MateriaPrima ||--o{ DetallePedidoProveedor : pedida_en
+    MateriaPrima ||--o{ StockMovement : movida_en
+    MateriaPrima ||--o{ DetalleProduccionConsumo : consumida_en
+
+    Insumo ||--o{ DetalleReceta : usado_en
+    Insumo ||--o{ DetalleCompra : comprado_en
+    Insumo ||--o{ DetallePedidoProveedor : pedido_en
+    Insumo ||--o{ StockMovement : movido_en
+    Insumo ||--o{ DetalleProduccionConsumo : consumido_en
+
+    Marca ||--o{ DetalleCompra : marca_de
+
+    CategoriaProductoTerminado ||--o{ ProductoTerminado : categoriza
+    ProductoTerminado ||--o{ Receta : tiene
+    ProductoTerminado ||--o{ StockMovement : movido_en
+    ProductoTerminado ||--o{ DetallePedidoCliente : pedido_en
+    ProductoTerminado ||--o{ ReservaCliente : reservado_en
+    ProductoTerminado ||--o{ DetalleVenta : vendido_en
+    ProductoTerminado ||--o{ DetalleProduccionGenerado : generado_en
+    ProductoTerminado ||--o{ DetallePresupuesto : presupuestado_en
+
+    Receta ||--o{ DetalleReceta : contiene
+    Receta ||--o{ Produccion : produce
+
+    EstadoGeneral ||--o{ Compra : tiene_estado
+    EstadoGeneral ||--o{ PedidoProveedor : tiene_estado
+    EstadoGeneral ||--o{ PedidoCliente : tiene_estado
+    EstadoGeneral ||--o{ ReservaCliente : tiene_estado
+    EstadoGeneral ||--o{ Venta : tiene_estado
+    EstadoGeneral ||--o{ Produccion : tiene_estado
+
+    FormaPago ||--o{ Compra : paga_con
+    FormaPago ||--o{ Venta : cobra_con
+
+    Compra ||--o{ DetalleCompra : contiene
+    PedidoProveedor ||--o{ DetallePedidoProveedor : contiene
+    PedidoCliente ||--o{ DetallePedidoCliente : contiene
+    PedidoCliente ||--o{ ReservaCliente : tiene
+    PedidoCliente ||--o| Venta : genera
+    PedidoCliente ||--o{ Entrega : entregado_en
+    PedidoCliente ||--o| Presupuesto : convertido_de
+
+    Venta ||--o{ DetalleVenta : contiene
+
+    Produccion ||--o{ DetalleProduccionConsumo : consume
+    Produccion ||--o{ DetalleProduccionGenerado : genera
+
+    PuntoEncuentro ||--o{ Entrega : entrega_en
+    Entrega ||--o{ NotificacionEntrega : notifica
+
+    PlantillaNotificacion ||--o{ Notificacion : usa
+
+    Presupuesto ||--o{ DetallePresupuesto : contiene
+  </pre>
+</div>
+
+<!-- Footer -->
+<div class="doc-footer">
+  <p><strong>Nota:</strong> Esta documentación refleja el estado del sistema en la Fase 13 (Presupuestos/Cotizaciones). El sistema está en desarrollo activo y puede haber cambios posteriores.</p>
+  <p>Documentación generada automáticamente — Pastas Orlando &copy; 2026</p>
+</div>
+
+</div><!-- /content -->
+
+</body>
+</html>
