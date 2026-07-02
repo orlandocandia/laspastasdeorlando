@@ -16,6 +16,18 @@ export async function GET(
       where: { id: parseInt(id) },
       include: {
         categoria: true,
+        recetas: {
+          where: { activo: true },
+          include: {
+            detalleRecetas: {
+              include: {
+                materiaPrima: { select: { id: true, nombre: true, precio_compra_referencia: true } },
+                insumo: { select: { id: true, nombre: true, precio_compra_referencia: true } },
+                unidad: { select: { id: true, codigo: true, nombre: true } },
+              },
+            },
+          },
+        },
       },
     })
 
@@ -23,7 +35,37 @@ export async function GET(
       return NextResponse.json({ error: 'Producto terminado no encontrado' }, { status: 404 })
     }
 
-    return NextResponse.json(productoTerminado)
+    // Calculate cost from the first active recipe
+    const recetaActiva = productoTerminado.recetas?.[0]
+    let costoProduccion = 0
+    let costoMP = 0
+    let costoInsumos = 0
+    if (recetaActiva) {
+      costoMP = recetaActiva.detalleRecetas
+        .filter(d => d.materiaPrima)
+        .reduce((sum, d) => sum + d.costo_estimado, 0)
+      costoInsumos = recetaActiva.detalleRecetas
+        .filter(d => d.insumo)
+        .reduce((sum, d) => sum + d.costo_estimado, 0)
+      costoProduccion = recetaActiva.rendimiento_unidades > 0
+        ? (costoMP + costoInsumos) / recetaActiva.rendimiento_unidades
+        : 0
+    }
+    const margen = productoTerminado.precio_venta - costoProduccion
+    const margenPorcentaje = productoTerminado.precio_venta > 0
+      ? (margen / productoTerminado.precio_venta) * 100
+      : 0
+
+    // Return with computed fields
+    return NextResponse.json({
+      ...productoTerminado,
+      costo_produccion: Math.round(costoProduccion * 100) / 100,
+      margen: Math.round(margen * 100) / 100,
+      margen_porcentaje: Math.round(margenPorcentaje * 100) / 100,
+      costo_mp: Math.round(costoMP * 100) / 100,
+      costo_insumos: Math.round(costoInsumos * 100) / 100,
+      receta_activa: recetaActiva || null,
+    })
   } catch (error) {
     console.error('Error al obtener producto terminado:', error)
     return NextResponse.json({ error: 'Error al obtener producto terminado' }, { status: 500 })

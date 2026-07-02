@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useState, useEffect } from 'react'
-import { Loader2, Barcode, PackagePlus } from 'lucide-react'
+import { Loader2, Barcode, PackagePlus, TrendingUp, AlertCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -531,6 +531,60 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
             <p className="text-xs text-muted-foreground mt-1">
               Se actualiza con producciones, ventas o cargas manuales
             </p>
+          </div>
+        )}
+
+        {/* Margen de Ganancia */}
+        {isEditing && productoTerminado?.costo_produccion !== undefined && (
+          <div className="bg-muted/50 rounded-lg p-3 border">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="h-4 w-4 text-mostaza" />
+              <span className="text-sm font-semibold text-marron">Margen de Ganancia</span>
+            </div>
+            {productoTerminado.tiene_receta === false && productoTerminado.costo_produccion === 0 ? (
+              <div className="flex items-center gap-2 text-sm text-mostaza">
+                <AlertCircle className="h-4 w-4" />
+                <span>Sin receta asignada — no se puede calcular el costo</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <span className="text-xs text-muted-foreground">Costo Producción</span>
+                  <p className="text-sm font-bold text-marron">
+                    {formatPrice(productoTerminado.costo_produccion || 0)}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Precio Venta</span>
+                  <p className="text-sm font-bold text-marron">
+                    {formatPrice(productoTerminado.precio_venta || 0)}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Margen ($)</span>
+                  <p className="text-sm font-bold text-marron">
+                    {formatPrice(productoTerminado.margen || 0)}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Margen (%)</span>
+                  <p className={`text-sm font-bold ${
+                    (productoTerminado.margen_porcentaje || 0) > 50
+                      ? 'text-oliva'
+                      : (productoTerminado.margen_porcentaje || 0) >= 30
+                      ? 'text-mostaza'
+                      : 'text-rojo'
+                  }`}>
+                    {(productoTerminado.margen_porcentaje || 0).toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+            )}
+            {productoTerminado.receta_activa && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Basado en receta: {productoTerminado.receta_activa.nombre_receta} (rinde {productoTerminado.receta_activa.rendimiento_unidades} u.)
+              </p>
+            )}
           </div>
         )}
 

@@ -27,6 +27,7 @@ import {
   Layers,
   TrendingUp,
   ShieldCheck,
+  Shield,
   Bell,
   Truck,
   MapPin,
@@ -38,6 +39,8 @@ import {
   Ruler,
   Lock,
   Eye,
+  Database,
+  Clock,
 } from 'lucide-react'
 import {
   Dialog,
@@ -1539,6 +1542,273 @@ const helpSections: HelpSection[] = [
             Las funciones de logística con mapas requieren que las direcciones de clientes y proveedores
             estén correctamente cargadas con coordenadas válidas.
           </InfoBox>
+        </div>
+      </div>
+    ),
+  },
+
+  // ─── 11. Costos y Rentabilidad ──────────────────────────────────────
+  {
+    id: 'costos-rentabilidad',
+    title: 'Costos y Rentabilidad',
+    iconComponent: TrendingUp,
+    summary: 'Control de costos de producción, márgenes de ganancia y análisis de rentabilidad por producto.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El módulo de <strong className="text-marron">Costos y Rentabilidad</strong> te permite conocer
+          exactamente cuánto te cuesta producir cada producto y qué margen de ganancia obtenés.
+          Es fundamental para tomar decisiones de precios y detectar productos poco rentables.
+        </p>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-mostaza" />
+            ¿Cómo se calcula el costo?
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            El costo de producción se calcula automáticamente a partir de la <strong>receta activa</strong> del producto:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Se suman los <strong>costos estimados</strong> de todos los ingredientes (MP e insumos) de la receta</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>El total se divide por el <strong>rendimiento</strong> (unidades que produce la receta)</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Resultado = <strong>Costo de producción por unidad</strong></span>
+            </li>
+          </ul>
+          <InfoBox type="info">
+            Si un producto no tiene receta activa, el costo se muestra como $0 y el margen como 100%.
+            Asigná una receta para obtener datos reales.
+          </InfoBox>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-mostaza" />
+            Margen de ganancia
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            El margen se muestra con un código de colores para identificar rápidamente la rentabilidad:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <Badge className="bg-oliva/10 text-oliva">🟢 &gt;50%</Badge>
+              <span>Margen saludable — buena rentabilidad</span>
+            </li>
+            <li className="flex gap-2">
+              <Badge className="bg-mostaza/10 text-mostaza">🟠 30-50%</Badge>
+              <span>Margen moderado — revisar costos o precio</span>
+            </li>
+            <li className="flex gap-2">
+              <Badge className="bg-rojo/10 text-rojo">🔴 &lt;30%</Badge>
+              <span>Margen bajo — posiblemente pierde dinero</span>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <FileBarChart className="h-4 w-4 text-mostaza" />
+            Reporte de Rentabilidad
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            En el módulo de <ModuleRef name="Reportes" />, la pestaña <strong>"Rentabilidad"</strong> muestra
+            una tabla comparativa de todos los productos con su costo, precio de venta, margen en $ y %,
+            desglosado por costo de MP y costo de insumos. Podés ordenar por cualquier columna y exportar
+            a Excel o PDF.
+          </p>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-mostaza" />
+            Dónde ver el margen
+          </h4>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Tabla de Productos:</strong> columna "Margen" con porcentaje colorizado</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Formulario de edición:</strong> sección "Margen de Ganancia" con detalle completo</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Página de detalle:</strong> tarjeta con costo, precio, margen $ y %</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Reportes → Rentabilidad:</strong> análisis completo de todos los productos</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    ),
+  },
+
+  // ─── 12. Promociones ─────────────────────────────────────────────────
+  {
+    id: 'promociones',
+    title: 'Promociones',
+    iconComponent: Tag,
+    summary: 'Configuración de descuentos, ofertas 2x1 y promociones por tiempo limitado.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El módulo de <strong className="text-marron">Promociones</strong> te permite crear y gestionar
+          descuentos y ofertas para tus productos terminados, aumentando las ventas y la visibilidad
+          de productos específicos.
+        </p>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Tag className="h-4 w-4 text-mostaza" />
+            Tipos de promoción
+          </h4>
+          <div className="space-y-2">
+            <div className="flex items-start gap-3 bg-mostaza/5 border border-mostaza/15 rounded-lg p-3">
+              <Badge className="bg-mostaza/10 text-mostaza">%</Badge>
+              <div>
+                <p className="font-medium text-sm">Descuento Porcentual</p>
+                <p className="text-xs text-muted-foreground">Ej: 15% de descuento en todos los sorrentinos. Se aplica un porcentaje al precio de venta.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-oliva/5 border border-oliva/15 rounded-lg p-3">
+              <Badge className="bg-oliva/10 text-oliva">$</Badge>
+              <div>
+                <p className="font-medium text-sm">Descuento Fijo</p>
+                <p className="text-xs text-muted-foreground">Ej: $500 de descuento en ravioles. Se resta un monto fijo al precio.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-marron/5 border border-marron/15 rounded-lg p-3">
+              <Badge className="bg-marron/10 text-marron">2x1</Badge>
+              <div>
+                <p className="font-medium text-sm">2x1</p>
+                <p className="text-xs text-muted-foreground">Comprás 2 y pagás 1. El descuento es del 50% sobre el total.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-rojo/5 border border-rojo/15 rounded-lg p-3">
+              <Badge className="bg-rojo/10 text-rojo">⏰</Badge>
+              <div>
+                <p className="font-medium text-sm">Tiempo Limitado</p>
+                <p className="text-xs text-muted-foreground">Oferta con fecha de inicio y fin. Al vencer, se desactiva automáticamente.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Settings className="h-4 w-4 text-mostaza" />
+            Configuración
+          </h4>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Productos participantes:</strong> seleccioná qué productos incluyen la promoción</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Fecha de inicio y fin:</strong> definí el período de vigencia</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Aplicar automáticamente:</strong> la promoción se aplica en ventas sin intervención manual</span>
+            </li>
+          </ul>
+        </div>
+
+        <InfoBox type="tip">
+          Combiná promociones con el reporte de Rentabilidad para identificar productos con alto margen
+          donde podés ofrecer descuentos sin perder rentabilidad.
+        </InfoBox>
+      </div>
+    ),
+  },
+
+  // ─── 13. Backup y Restauración ───────────────────────────────────────
+  {
+    id: 'backup',
+    title: 'Backup y Restauración',
+    iconComponent: Shield,
+    summary: 'Creación de copias de seguridad, descarga y restauración de la base de datos.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El módulo de <strong className="text-marron">Backup</strong> te permite crear copias de seguridad
+          de toda la base de datos, descargarlas y restaurarlas en caso de necesidad.
+        </p>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Shield className="h-4 w-4 text-mostaza" />
+            Tipos de backup
+          </h4>
+          <div className="space-y-2">
+            <div className="flex items-start gap-3 bg-crema/60 border border-mostaza/10 rounded-lg p-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-oliva/15">
+                <Database className="h-4 w-4 text-oliva" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">Backup Completo (.db)</p>
+                <p className="text-xs text-muted-foreground">Copia exacta del archivo de base de datos. Es la opción más rápida y confiable.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-crema/60 border border-mostaza/10 rounded-lg p-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-mostaza/15">
+                <FileText className="h-4 w-4 text-mostaza" />
+              </div>
+              <div>
+                <p className="font-medium text-sm">Backup SQL (.sql)</p>
+                <p className="text-xs text-muted-foreground">Exportación en formato SQL. Útil para migrar a otro motor de base de datos.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-rojo" />
+            Restauración
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Al restaurar un backup, se reemplaza la base de datos actual con la copia seleccionada.
+            <strong> El sistema crea automáticamente un backup de seguridad</strong> antes de restaurar,
+            por si necesitás revertir.
+          </p>
+          <InfoBox type="warning">
+            La restauración reemplaza TODOS los datos actuales. Asegurate de que el backup
+            sea el correcto antes de confirmar.
+          </InfoBox>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Clock className="h-4 w-4 text-mostaza" />
+            Recomendaciones
+          </h4>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <CheckCircle2 className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <span>Hacé un backup <strong>antes de cambios importantes</strong> (cargas masivas, modificaciones de precios)</span>
+            </li>
+            <li className="flex gap-2">
+              <CheckCircle2 className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <span>Descargá los backups a tu computadora como <strong>copia adicional</strong></span>
+            </li>
+            <li className="flex gap-2">
+              <CheckCircle2 className="h-4 w-4 text-oliva shrink-0 mt-0.5" />
+              <span>Eliminá backups antiguos para <strong>liberar espacio</strong></span>
+            </li>
+          </ul>
         </div>
       </div>
     ),

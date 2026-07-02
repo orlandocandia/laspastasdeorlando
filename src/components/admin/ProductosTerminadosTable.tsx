@@ -93,6 +93,7 @@ export default function ProductosTerminadosTable() {
   const [stockAdjustItem, setStockAdjustItem] = useState<ProductoTerminado | null>(null)
   const [stockAdjustOpen, setStockAdjustOpen] = useState(false)
   const [stockInitialOpen, setStockInitialOpen] = useState(false)
+  const [costData, setCostData] = useState<Record<number, { costo_produccion: number; margen: number; margen_porcentaje: number; tiene_receta: boolean }> >({})
 
   const fetchProductos = useCallback(async () => {
     setLoading(true)
@@ -111,6 +112,21 @@ export default function ProductosTerminadosTable() {
       setProductos(data.data || [])
       setTotal(data.total || 0)
       setTotalPaginas(data.totalPaginas || 1)
+
+      // Fetch cost data
+      try {
+        const costRes = await fetch('/api/productos-terminados/costos')
+        if (costRes.ok) {
+          const costJson = await costRes.json()
+          const costMap: Record<number, any> = {}
+          for (const item of (costJson.data || [])) {
+            costMap[item.id] = item
+          }
+          setCostData(costMap)
+        }
+      } catch {
+        // silent fail for cost data
+      }
     } catch {
       toast.error('Error al cargar productos terminados')
     } finally {
@@ -263,6 +279,7 @@ export default function ProductosTerminadosTable() {
                 <TableHead className="hidden sm:table-cell">Categoría</TableHead>
                 <TableHead className="hidden md:table-cell">Harina</TableHead>
                 <TableHead>Precio</TableHead>
+                <TableHead className="hidden lg:table-cell">Margen</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead className="hidden md:table-cell">Landing</TableHead>
                 <TableHead className="hidden md:table-cell">Estado</TableHead>
@@ -272,7 +289,7 @@ export default function ProductosTerminadosTable() {
             <TableBody>
               {productos.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={12} className="text-center py-8 text-muted-foreground">
                     {search || filtroCategoria || filtroEstado || filtroStock
                       ? 'No se encontraron productos con los filtros aplicados'
                       : 'No hay productos terminados cargados'}
@@ -351,6 +368,23 @@ export default function ProductosTerminadosTable() {
                       </TableCell>
                       <TableCell className="font-medium">
                         {formatPrice(pt.precio_venta)}
+                      </TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        {costData[pt.id] ? (
+                          <div className="text-xs">
+                            <span className={`font-bold ${
+                              costData[pt.id].margen_porcentaje > 50 ? 'text-oliva' :
+                              costData[pt.id].margen_porcentaje >= 30 ? 'text-mostaza' : 'text-rojo'
+                            }`}>
+                              {costData[pt.id].margen_porcentaje.toFixed(0)}%
+                            </span>
+                            {!costData[pt.id].tiene_receta && (
+                              <span className="text-muted-foreground ml-1">—</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge

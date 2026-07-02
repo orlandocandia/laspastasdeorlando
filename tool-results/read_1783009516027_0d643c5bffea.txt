@@ -1,0 +1,839 @@
+     1→'use client'
+     2→
+     3→import { useEffect, useState, useCallback } from 'react'
+     4→import { useSession } from 'next-auth/react'
+     5→import { motion, AnimatePresence } from 'framer-motion'
+     6→import {
+     7→  Package, MessageSquare, Phone, ArrowRight, UserCircle, Users,
+     8→  Leaf, PackageOpen, UtensilsCrossed, ShoppingCart, ClipboardList,
+     9→  ArrowLeftRight, Receipt, CalendarCheck, DollarSign, Factory,
+    10→  AlertTriangle, BookOpen, Shield, TrendingUp, FileBarChart,
+    11→  CheckCircle, ChevronDown, ChevronUp, Utensils, Info, AlertCircle
+    12→} from 'lucide-react'
+    13→import Link from 'next/link'
+    14→
+    15→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+    16→import { Button } from '@/components/ui/button'
+    17→import {
+    18→  Collapsible,
+    19→  CollapsibleContent,
+    20→  CollapsibleTrigger,
+    21→} from '@/components/ui/collapsible'
+    22→import { Badge } from '@/components/ui/badge'
+    23→import { Separator } from '@/components/ui/separator'
+    24→
+    25→// ─── Types ───────────────────────────────────────────────────────────────────
+    26→
+    27→interface DashboardStats {
+    28→  productosActivos: number
+    29→  opinionesPendientes: number
+    30→  interaccionesWhatsApp: number
+    31→  totalPersonas: number
+    32→  totalUsuarios: number
+    33→  totalMateriasPrimas: number
+    34→  totalInsumos: number
+    35→  totalProductosTerminados: number
+    36→  totalCompras: number
+    37→  totalPedidos: number
+    38→  totalMovimientos: number
+    39→  totalVentas: number
+    40→  totalPedidosClientes: number
+    41→  totalReservas: number
+    42→  ventasDelMes: number
+    43→  pedidosPendientes: number
+    44→  reservasActivas: number
+    45→  produccionDelMes: number
+    46→  costoPromedioProduccion: number
+    47→  stockCritico: number
+    48→  recetasActivas: number
+    49→}
+    50→
+    51→// ─── Alert Types ────────────────────────────────────────────────────────────
+    52→
+    53→type AlertSeverity = 'critica' | 'media' | 'informativa'
+    54→
+    55→interface AlertItem {
+    56→  id: number
+    57→  nombre: string
+    58→  stock_actual?: number
+    59→  stock_minimo?: number
+    60→  fecha?: string | null
+    61→}
+    62→
+    63→interface AlertEntry {
+    64→  count: number
+    65→  severity: AlertSeverity
+    66→  label: string
+    67→  items: AlertItem[]
+    68→  href: string
+    69→}
+    70→
+    71→interface AlertsData {
+    72→  alertas: {
+    73→    stock: Record<string, AlertEntry>
+    74→    produccion: Record<string, AlertEntry>
+    75→    clientes: Record<string, AlertEntry>
+    76→    proveedores: Record<string, AlertEntry>
+    77→    ventas: Record<string, AlertEntry>
+    78→    tienda: Record<string, AlertEntry>
+    79→  }
+    80→  resumen: {
+    81→    total: number
+    82→    criticas: number
+    83→    medias: number
+    84→    informativas: number
+    85→  }
+    86→}
+    87→
+    88→const CATEGORY_META: Record<string, { label: string; icon: typeof AlertTriangle }> = {
+    89→  stock: { label: 'Stock', icon: Package },
+    90→  produccion: { label: 'Producción y Recetas', icon: Factory },
+    91→  clientes: { label: 'Clientes y Pedidos', icon: ClipboardList },
+    92→  proveedores: { label: 'Proveedores y Compras', icon: ShoppingCart },
+    93→  ventas: { label: 'Ventas y Presupuestos', icon: Receipt },
+    94→  tienda: { label: 'Productos y Tienda', icon: UtensilsCrossed },
+    95→}
+    96→
+    97→const SEVERITY_META: Record<AlertSeverity, { color: string; bg: string; border: string; icon: typeof AlertTriangle }> = {
+    98→  critica: { color: 'text-rojo', bg: 'bg-rojo/10', border: 'border-rojo/30', icon: AlertTriangle },
+    99→  media: { color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', icon: AlertCircle },
+   100→  informativa: { color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', icon: Info },
+   101→}
+   102→
+   103→// ─── Animation Variants ──────────────────────────────────────────────────────
+   104→
+   105→const cardVariants = {
+   106→  hidden: { opacity: 0, y: 20 },
+   107→  visible: (i: number) => ({
+   108→    opacity: 1,
+   109→    y: 0,
+   110→    transition: {
+   111→      delay: i * 0.08,
+   112→      duration: 0.5,
+   113→      ease: 'easeOut',
+   114→    },
+   115→  }),
+   116→}
+   117→
+   118→const alertPanelVariants = {
+   119→  hidden: { opacity: 0, y: -10, height: 0 },
+   120→  visible: {
+   121→    opacity: 1,
+   122→    y: 0,
+   123→    height: 'auto',
+   124→    transition: { duration: 0.4, ease: 'easeOut' },
+   125→  },
+   126→}
+   127→
+   128→// ─── Component ───────────────────────────────────────────────────────────────
+   129→
+   130→export default function DashboardPage() {
+   131→  const { data: session } = useSession()
+   132→  const [stats, setStats] = useState<DashboardStats>({
+   133→    productosActivos: 0,
+   134→    opinionesPendientes: 0,
+   135→    interaccionesWhatsApp: 0,
+   136→    totalPersonas: 0,
+   137→    totalUsuarios: 0,
+   138→    totalMateriasPrimas: 0,
+   139→    totalInsumos: 0,
+   140→    totalProductosTerminados: 0,
+   141→    totalCompras: 0,
+   142→    totalPedidos: 0,
+   143→    totalMovimientos: 0,
+   144→    totalVentas: 0,
+   145→    totalPedidosClientes: 0,
+   146→    totalReservas: 0,
+   147→    ventasDelMes: 0,
+   148→    pedidosPendientes: 0,
+   149→    reservasActivas: 0,
+   150→    produccionDelMes: 0,
+   151→    costoPromedioProduccion: 0,
+   152→    stockCritico: 0,
+   153→    recetasActivas: 0,
+   154→  })
+   155→  const [loading, setLoading] = useState(true)
+   156→  const [alertsData, setAlertsData] = useState<AlertsData | null>(null)
+   157→  const [alertsOpen, setAlertsOpen] = useState(false)
+   158→  const [alertsLoading, setAlertsLoading] = useState(true)
+   159→  const [activeAlertCategory, setActiveAlertCategory] = useState<string>('stock')
+   160→
+   161→  // Fetch general stats
+   162→  useEffect(() => {
+   163→    async function fetchStats() {
+   164→      try {
+   165→        const [productosRes, opinionesRes, contactoRes, personasRes, usuariosRes, mpRes, insRes, ptRes, comprasRes, pedidosRes, stockRes, ventasRes, pedidosCliRes, reservasRes, produccionRes] = await Promise.all([
+   166→          fetch('/api/productos?stock=false'),
+   167→          fetch('/api/opiniones?admin=true&estado=pending'),
+   168→          fetch('/api/contacto?dias=30'),
+   169→          fetch('/api/personas?limite=1'),
+   170→          fetch('/api/usuarios'),
+   171→          fetch('/api/materias-primas?limite=1'),
+   172→          fetch('/api/insumos?limite=1'),
+   173→          fetch('/api/productos-terminados?limite=1'),
+   174→          fetch('/api/compras?limite=1'),
+   175→          fetch('/api/pedidos-proveedores?limite=1'),
+   176→          fetch('/api/stock-movements?limite=1'),
+   177→          fetch('/api/ventas?limite=1'),
+   178→          fetch('/api/pedidos-clientes?limite=1'),
+   179→          fetch('/api/reservas-clientes?limite=1'),
+   180→          fetch('/api/produccion?limite=1'),
+   181→        ])
+   182→
+   183→        const productos = await productosRes.json()
+   184→        const opiniones = await opinionesRes.json()
+   185→        const contacto = await contactoRes.json()
+   186→        const personasData = await personasRes.json()
+   187→        const usuariosData = await usuariosRes.json()
+   188→        const mpData = await mpRes.json()
+   189→        const insData = await insRes.json()
+   190→        const ptData = await ptRes.json()
+   191→        const comprasData = await comprasRes.json()
+   192→        const pedidosData = await pedidosRes.json()
+   193→        const stockData = await stockRes.json()
+   194→        const ventasData = await ventasRes.json()
+   195→        const pedidosCliData = await pedidosCliRes.json()
+   196→        const reservasData = await reservasRes.json()
+   197→        const produccionData = await produccionRes.json()
+   198→
+   199→        setStats({
+   200→          productosActivos: Array.isArray(productos)
+   201→            ? productos.filter((p: { stock: boolean }) => p.stock).length
+   202→            : 0,
+   203→          opinionesPendientes: Array.isArray(opiniones) ? opiniones.length : 0,
+   204→          interaccionesWhatsApp: contacto?.estadisticas?.total || 0,
+   205→          totalPersonas: personasData?.total || 0,
+   206→          totalUsuarios: Array.isArray(usuariosData) ? usuariosData.length : 0,
+   207→          totalMateriasPrimas: mpData?.total || 0,
+   208→          totalInsumos: insData?.total || 0,
+   209→          totalProductosTerminados: ptData?.total || 0,
+   210→          totalCompras: comprasData?.total || 0,
+   211→          totalPedidos: pedidosData?.total || 0,
+   212→          totalMovimientos: stockData?.total || 0,
+   213→          totalVentas: ventasData?.total || 0,
+   214→          totalPedidosClientes: pedidosCliData?.total || 0,
+   215→          totalReservas: reservasData?.total || 0,
+   216→          ventasDelMes: ventasData?.total || 0,
+   217→          pedidosPendientes: pedidosCliData?.total || 0,
+   218→          reservasActivas: reservasData?.total || 0,
+   219→          produccionDelMes: produccionData?.total || 0,
+   220→          costoPromedioProduccion: 0,
+   221→          stockCritico: 0,
+   222→          recetasActivas: 0,
+   223→        })
+   224→      } catch (error) {
+   225→        console.error('Error fetching stats:', error)
+   226→      } finally {
+   227→        setLoading(false)
+   228→      }
+   229→    }
+   230→
+   231→    fetchStats()
+   232→  }, [])
+   233→
+   234→  // Fetch comprehensive alerts
+   235→  const fetchAlerts = useCallback(async () => {
+   236→    setAlertsLoading(true)
+   237→    try {
+   238→      const res = await fetch('/api/alerts')
+   239→      if (res.ok) {
+   240→        const data: AlertsData = await res.json()
+   241→        setAlertsData(data)
+   242→        setStats(prev => ({
+   243→          ...prev,
+   244→          stockCritico: data.resumen.criticas,
+   245→          recetasActivas: data.alertas.produccion.receta_sin_ingredientes
+   246→            ? 0 : 0, // Keep from stats API
+   247→        }))
+   248→      }
+   249→    } catch (error) {
+   250→      console.error('Error fetching alerts:', error)
+   251→    } finally {
+   252→      setAlertsLoading(false)
+   253→    }
+   254→  }, [])
+   255→
+   256→  useEffect(() => {
+   257→    fetchAlerts()
+   258→  }, [fetchAlerts])
+   259→
+   260→  // ─── Derived alert data ────────────────────────────────────────────────────
+   261→
+   262→  // Get active alerts only (count > 0)
+   263→  const activeCategories = alertsData
+   264→    ? Object.entries(alertsData.alertas)
+   265→        .map(([key, entries]) => ({
+   266→          key,
+   267→          meta: CATEGORY_META[key],
+   268→          alerts: Object.values(entries).filter((e: AlertEntry) => e.count > 0),
+   269→          total: Object.values(entries).reduce((sum: number, e: AlertEntry) => sum + e.count, 0),
+   270→        }))
+   271→        .filter(cat => cat.total > 0)
+   272→    : []
+   273→
+   274→  const totalAlerts = alertsData?.resumen.total ?? 0
+   275→
+   276→  // ─── Metric Cards ──────────────────────────────────────────────────────────
+   277→
+   278→  const metricCards = [
+   279→    {
+   280→      title: 'Ventas del Mes',
+   281→      value: stats.totalVentas,
+   282→      icon: DollarSign,
+   283→      color: 'bg-oliva/10 text-oliva',
+   284→      href: '/admin/ventas',
+   285→      isCurrency: false,
+   286→    },
+   287→    {
+   288→      title: 'Pedidos Pendientes',
+   289→      value: stats.totalPedidosClientes,
+   290→      icon: ClipboardList,
+   291→      color: 'bg-mostaza/10 text-mostaza',
+   292→      href: '/admin/pedidos-clientes',
+   293→    },
+   294→    {
+   295→      title: 'Reservas Activas',
+   296→      value: stats.totalReservas,
+   297→      icon: CalendarCheck,
+   298→      color: 'bg-rojo/10 text-rojo',
+   299→      href: '/admin/reservas-clientes',
+   300→    },
+   301→    {
+   302→      title: 'Producción del Mes',
+   303→      value: stats.produccionDelMes,
+   304→      icon: Factory,
+   305→      color: 'bg-marron/10 text-marron',
+   306→      href: '/admin/produccion',
+   307→    },
+   308→    {
+   309→      title: 'Alertas Críticas',
+   310→      value: stats.stockCritico,
+   311→      icon: AlertTriangle,
+   312→      color: stats.stockCritico > 0 ? 'bg-rojo/10 text-rojo' : 'bg-oliva/10 text-oliva',
+   313→      href: '/admin/dashboard',
+   314→    },
+   315→    {
+   316→      title: 'Recetas Activas',
+   317→      value: stats.recetasActivas,
+   318→      icon: BookOpen,
+   319→      color: 'bg-oliva/10 text-oliva',
+   320→      href: '/admin/recetas',
+   321→    },
+   322→    {
+   323→      title: 'Ventas',
+   324→      value: stats.totalVentas,
+   325→      icon: Receipt,
+   326→      color: 'bg-marron/10 text-marron',
+   327→      href: '/admin/ventas',
+   328→    },
+   329→    {
+   330→      title: 'Productos Activos',
+   331→      value: stats.productosActivos,
+   332→      icon: Package,
+   333→      color: 'bg-mostaza/10 text-mostaza',
+   334→      href: '/admin/productos',
+   335→    },
+   336→    {
+   337→      title: 'Materias Primas',
+   338→      value: stats.totalMateriasPrimas,
+   339→      icon: Leaf,
+   340→      color: 'bg-oliva/10 text-oliva',
+   341→      href: '/admin/materias-primas',
+   342→    },
+   343→    {
+   344→      title: 'Insumos',
+   345→      value: stats.totalInsumos,
+   346→      icon: PackageOpen,
+   347→      color: 'bg-mostaza/10 text-mostaza',
+   348→      href: '/admin/insumos',
+   349→    },
+   350→    {
+   351→      title: 'Productos Terminados',
+   352→      value: stats.totalProductosTerminados,
+   353→      icon: UtensilsCrossed,
+   354→      color: 'bg-rojo/10 text-rojo',
+   355→      href: '/admin/productos-terminados',
+   356→    },
+   357→    {
+   358→      title: 'Compras',
+   359→      value: stats.totalCompras,
+   360→      icon: ShoppingCart,
+   361→      color: 'bg-marron/10 text-marron',
+   362→      href: '/admin/compras',
+   363→    },
+   364→    {
+   365→      title: 'Pedidos Proveedores',
+   366→      value: stats.totalPedidos,
+   367→      icon: ClipboardList,
+   368→      color: 'bg-mostaza/10 text-mostaza',
+   369→      href: '/admin/pedidos-proveedores',
+   370→    },
+   371→    {
+   372→      title: 'Mov. Stock',
+   373→      value: stats.totalMovimientos,
+   374→      icon: ArrowLeftRight,
+   375→      color: 'bg-oliva/10 text-oliva',
+   376→      href: '/admin/stock-movements',
+   377→    },
+   378→    {
+   379→      title: 'Opiniones Pendientes',
+   380→      value: stats.opinionesPendientes,
+   381→      icon: MessageSquare,
+   382→      color: 'bg-rojo/10 text-rojo',
+   383→      href: '/admin/opiniones',
+   384→    },
+   385→    {
+   386→      title: 'Interacciones WhatsApp',
+   387→      value: stats.interaccionesWhatsApp,
+   388→      icon: Phone,
+   389→      color: 'bg-whatsapp/10 text-whatsapp',
+   390→      href: '/admin/estadisticas',
+   391→    },
+   392→    {
+   393→      title: 'Total Personas',
+   394→      value: stats.totalPersonas,
+   395→      icon: UserCircle,
+   396→      color: 'bg-marron/10 text-marron',
+   397→      href: '/admin/personas',
+   398→    },
+   399→    {
+   400→      title: 'Total Usuarios',
+   401→      value: stats.totalUsuarios,
+   402→      icon: Users,
+   403→      color: 'bg-oliva/10 text-oliva',
+   404→      href: '/admin/usuarios',
+   405→    },
+   406→  ]
+   407→
+   408→  const firstName = session?.user?.name?.split(' ')[0] || 'Admin'
+   409→
+   410→  return (
+   411→    <div className="space-y-6">
+   412→      {/* ─── Header with Greeting + Help Button ─────────────────────────────── */}
+   413→      <div className="flex items-start justify-between gap-4">
+   414→        <div>
+   415→          <h1 className="text-2xl md:text-3xl font-bold text-marron">
+   416→            ¡Hola, {firstName}! 👋
+   417→          </h1>
+   418→          <p className="text-muted-foreground mt-1">
+   419→            Bienvenido al panel de administración de Pastas Orlando
+   420→          </p>
+   421→        </div>
+   422→
+   423→
+   424→      </div>
+   425→
+   426→      {/* ─── Alerts Panel ───────────────────────────────────────────── */}
+   427→      <AnimatePresence>
+   428→        {!alertsLoading && alertsData && (
+   429→          <motion.div
+   430→            variants={alertPanelVariants}
+   431→            initial="hidden"
+   432→            animate="visible"
+   433→            exit="hidden"
+   434→          >
+   435→            {totalAlerts === 0 ? (
+   436→              /* ── All OK Card ── */
+   437→              <Card className="border-oliva/30 bg-oliva/5">
+   438→                <CardContent className="py-4 px-5">
+   439→                  <div className="flex items-center gap-3">
+   440→                    <div className="rounded-full bg-oliva/20 p-2">
+   441→                      <CheckCircle className="h-5 w-5 text-oliva" />
+   442→                    </div>
+   443→                    <p className="font-medium text-oliva">
+   444→                      ✅ Todo está en orden — No hay alertas activas
+   445→                    </p>
+   446→                  </div>
+   447→                </CardContent>
+   448→              </Card>
+   449→            ) : (
+   450→              /* ── Comprehensive Alerts Panel ── */
+   451→              <Collapsible open={alertsOpen} onOpenChange={setAlertsOpen}>
+   452→                <Card className="border-rojo/20">
+   453→                  <CollapsibleTrigger asChild>
+   454→                    <CardHeader className="cursor-pointer hover:bg-marron/5 transition-colors rounded-t-lg pb-3">
+   455→                      <div className="flex items-center justify-between">
+   456→                        <div className="flex items-center gap-3">
+   457→                          <div className="rounded-full bg-rojo/15 p-2">
+   458→                            <AlertTriangle className="h-5 w-5 text-rojo" />
+   459→                          </div>
+   460→                          <div>
+   461→                            <CardTitle className="text-base text-marron">
+   462→                              Panel de Alertas
+   463→                            </CardTitle>
+   464→                            <div className="flex flex-wrap gap-2 mt-1.5">
+   465→                              {alertsData!.resumen.criticas > 0 && (
+   466→                                <Badge variant="destructive" className="text-xs">
+   467→                                  {alertsData!.resumen.criticas} críticas
+   468→                                </Badge>
+   469→                              )}
+   470→                              {alertsData!.resumen.medias > 0 && (
+   471→                                <Badge className="text-xs bg-orange-500 text-white border-orange-500">
+   472→                                  {alertsData!.resumen.medias} medias
+   473→                                </Badge>
+   474→                              )}
+   475→                              {alertsData!.resumen.informativas > 0 && (
+   476→                                <Badge className="text-xs bg-blue-500 text-white border-blue-500">
+   477→                                  {alertsData!.resumen.informativas} informativas
+   478→                                </Badge>
+   479→                              )}
+   480→                            </div>
+   481→                          </div>
+   482→                        </div>
+   483→                        <motion.div
+   484→                          animate={{ rotate: alertsOpen ? 180 : 0 }}
+   485→                          transition={{ duration: 0.2 }}
+   486→                        >
+   487→                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+   488→                        </motion.div>
+   489→                      </div>
+   490→                    </CardHeader>
+   491→                  </CollapsibleTrigger>
+   492→
+   493→                  <CollapsibleContent>
+   494→                    <CardContent className="pt-0 pb-4 px-5 space-y-4">
+   495→                      <Separator className="mb-1" />
+   496→
+   497→                      {/* Category tabs */}
+   498→                      <div className="flex flex-wrap gap-1.5">
+   499→                        {activeCategories.map(cat => (
+   500→                          <button
+   501→                            key={cat.key}
+   502→                            type="button"
+   503→                            onClick={() => setActiveAlertCategory(cat.key)}
+   504→                            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+   505→                              activeAlertCategory === cat.key
+   506→                                ? 'bg-marron text-crema shadow-sm'
+   507→                                : 'bg-muted text-muted-foreground hover:bg-marron/10 hover:text-marron'
+   508→                            }`}
+   509→                          >
+   510→                            <cat.meta.icon className="h-3.5 w-3.5" />
+   511→                            {cat.meta.label}
+   512→                            <span className={`ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+   513→                              activeAlertCategory === cat.key
+   514→                                ? 'bg-crema/20 text-crema'
+   515→                                : 'bg-marron/10 text-marron'
+   516→                            }`}>
+   517→                              {cat.total}
+   518→                            </span>
+   519→                          </button>
+   520→                        ))}
+   521→                      </div>
+   522→
+   523→                      {/* Alert items for active category */}
+   524→                      {activeCategories
+   525→                        .filter(cat => cat.key === activeAlertCategory)
+   526→                        .map(cat => (
+   527→                          <div key={cat.key} className="space-y-2">
+   528→                            {cat.alerts.map((alert: AlertEntry, idx: number) => {
+   529→                              const sev = SEVERITY_META[alert.severity]
+   530→                              const SevIcon = sev.icon
+   531→                              return (
+   532→                                <Link key={idx} href={alert.href}>
+   533→                                  <motion.div
+   534→                                    whileHover={{ scale: 1.005 }}
+   535→                                    whileTap={{ scale: 0.995 }}
+   536→                                    className={`rounded-lg border ${sev.border} ${sev.bg} p-3 transition-colors hover:brightness-95`}
+   537→                                  >
+   538→                                    <div className="flex items-center gap-2 mb-1">
+   539→                                      <SevIcon className={`h-4 w-4 ${sev.color}`} />
+   540→                                      <span className={`font-semibold text-sm ${sev.color}`}>
+   541→                                        {alert.count} {alert.label}
+   542→                                      </span>
+   543→                                      <Badge variant="outline" className={`text-[10px] ml-auto ${sev.color} border-current`}>
+   544→                                        {alert.severity === 'critica' ? '🔴 Crítica' : alert.severity === 'media' ? '🟠 Media' : '🔵 Info'}
+   545→                                      </Badge>
+   546→                                    </div>
+   547→                                    {alert.items.length > 0 && (
+   548→                                      <div className="ml-6 mt-1 space-y-1">
+   549→                                        {alert.items.slice(0, 5).map(item => (
+   550→                                          <div key={item.id} className="flex items-center justify-between text-xs text-muted-foreground">
+   551→                                            <span className="truncate mr-2">{item.nombre}</span>
+   552→                                            {item.stock_actual !== undefined && item.stock_minimo !== undefined ? (
+   553→                                              <span className="font-mono shrink-0">
+   554→                                                {item.stock_actual} / {item.stock_minimo}
+   555→                                              </span>
+   556→                                            ) : item.fecha ? (
+   557→                                              <span className="font-mono shrink-0">
+   558→                                                {new Date(item.fecha).toLocaleDateString('es-AR')}
+   559→                                              </span>
+   560→                                            ) : null}
+   561→                                          </div>
+   562→                                        ))}
+   563→                                        {alert.items.length > 5 && (
+   564→                                          <p className="text-xs text-muted-foreground italic mt-1">
+   565→                                            y {alert.items.length - 5} más...
+   566→                                          </p>
+   567→                                        )}
+   568→                                      </div>
+   569→                                    )}
+   570→                                  </motion.div>
+   571→                                </Link>
+   572→                              )
+   573→                            })}
+   574→                          </div>
+   575→                        ))}
+   576→                    </CardContent>
+   577→                  </CollapsibleContent>
+   578→                </Card>
+   579→              </Collapsible>
+   580→            )}
+   581→          </motion.div>
+   582→        )}
+   583→      </AnimatePresence>
+   584→
+   585→      {/* ─── Metric Cards Grid ──────────────────────────────────────────────── */}
+   586→      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+   587→        {metricCards.map((card, i) => (
+   588→          <motion.div
+   589→            key={card.title}
+   590→            custom={i}
+   591→            variants={cardVariants}
+   592→            initial="hidden"
+   593→            animate="visible"
+   594→          >
+   595→            <Card className="hover:shadow-lg transition-shadow border-marron/5">
+   596→              <CardHeader className="flex flex-row items-center justify-between pb-2">
+   597→                <CardTitle className="text-sm font-medium text-muted-foreground">
+   598→                  {card.title}
+   599→                </CardTitle>
+   600→                <div className={`rounded-lg p-2 ${card.color}`}>
+   601→                  <card.icon className="h-4 w-4" />
+   602→                </div>
+   603→              </CardHeader>
+   604→              <CardContent>
+   605→                {loading ? (
+   606→                  <div className="h-8 w-16 bg-muted animate-pulse rounded" />
+   607→                ) : (
+   608→                  <div className="text-3xl font-bold text-marron">
+   609→                    {card.value}
+   610→                  </div>
+   611→                )}
+   612→                <Link href={card.href}>
+   613→                  <Button
+   614→                    variant="ghost"
+   615→                    size="sm"
+   616→                    className="mt-2 -ml-2 text-xs text-muted-foreground hover:text-marron"
+   617→                  >
+   618→                    Ver detalles
+   619→                    <ArrowRight className="ml-1 h-3 w-3" />
+   620→                  </Button>
+   621→                </Link>
+   622→              </CardContent>
+   623→            </Card>
+   624→          </motion.div>
+   625→        ))}
+   626→      </div>
+   627→
+   628→      {/* ─── Quick Access ───────────────────────────────────────────────────── */}
+   629→      <motion.div
+   630→        initial={{ opacity: 0, y: 20 }}
+   631→        animate={{ opacity: 1, y: 0 }}
+   632→        transition={{ delay: 0.5, duration: 0.5 }}
+   633→      >
+   634→        <Card className="border-marron/5">
+   635→          <CardHeader>
+   636→            <CardTitle className="text-lg text-marron">Accesos Rápidos</CardTitle>
+   637→          </CardHeader>
+   638→          <CardContent>
+   639→            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+   640→              <Link href="/admin/ventas">
+   641→                <Button
+   642→                  variant="outline"
+   643→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-oliva hover:bg-oliva/5"
+   644→                >
+   645→                  <Receipt className="mr-3 h-5 w-5 text-oliva" />
+   646→                  <div className="text-left">
+   647→                    <div className="font-medium text-marron">Ventas</div>
+   648→                    <div className="text-xs text-muted-foreground">Registrar ventas y descontar stock</div>
+   649→                  </div>
+   650→                </Button>
+   651→              </Link>
+   652→              <Link href="/admin/pedidos-clientes">
+   653→                <Button
+   654→                  variant="outline"
+   655→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-mostaza hover:bg-mostaza/5"
+   656→                >
+   657→                  <ClipboardList className="mr-3 h-5 w-5 text-mostaza" />
+   658→                  <div className="text-left">
+   659→                    <div className="font-medium text-marron">Pedidos de Clientes</div>
+   660→                    <div className="text-xs text-muted-foreground">Gestionar pedidos y entregas</div>
+   661→                  </div>
+   662→                </Button>
+   663→              </Link>
+   664→              <Link href="/admin/reservas-clientes">
+   665→                <Button
+   666→                  variant="outline"
+   667→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-rojo hover:bg-rojo/5"
+   668→                >
+   669→                  <CalendarCheck className="mr-3 h-5 w-5 text-rojo" />
+   670→                  <div className="text-left">
+   671→                    <div className="font-medium text-marron">Reservas</div>
+   672→                    <div className="text-xs text-muted-foreground">Reservas de productos con seña</div>
+   673→                  </div>
+   674→                </Button>
+   675→              </Link>
+   676→              <Link href="/admin/recetas">
+   677→                <Button
+   678→                  variant="outline"
+   679→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-oliva hover:bg-oliva/5"
+   680→                >
+   681→                  <BookOpen className="mr-3 h-5 w-5 text-oliva" />
+   682→                  <div className="text-left">
+   683→                    <div className="font-medium text-marron">Recetas</div>
+   684→                    <div className="text-xs text-muted-foreground">Recetas de producción y costos</div>
+   685→                  </div>
+   686→                </Button>
+   687→              </Link>
+   688→              <Link href="/admin/produccion">
+   689→                <Button
+   690→                  variant="outline"
+   691→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-marron hover:bg-marron/5"
+   692→                >
+   693→                  <Factory className="mr-3 h-5 w-5 text-marron" />
+   694→                  <div className="text-left">
+   695→                    <div className="font-medium text-marron">Producción</div>
+   696→                    <div className="text-xs text-muted-foreground">Producir y consumir stock</div>
+   697→                  </div>
+   698→                </Button>
+   699→              </Link>
+   700→              <Link href="/admin/compras">
+   701→                <Button
+   702→                  variant="outline"
+   703→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-marron hover:bg-marron/5"
+   704→                >
+   705→                  <ShoppingCart className="mr-3 h-5 w-5 text-marron" />
+   706→                  <div className="text-left">
+   707→                    <div className="font-medium text-marron">Compras</div>
+   708→                    <div className="text-xs text-muted-foreground">Registrar compras y actualizar stock</div>
+   709→                  </div>
+   710→                </Button>
+   711→              </Link>
+   712→              <Link href="/admin/pedidos-proveedores">
+   713→                <Button
+   714→                  variant="outline"
+   715→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-mostaza hover:bg-mostaza/5"
+   716→                >
+   717→                  <ClipboardList className="mr-3 h-5 w-5 text-mostaza" />
+   718→                  <div className="text-left">
+   719→                    <div className="font-medium text-marron">Pedidos a Proveedores</div>
+   720→                    <div className="text-xs text-muted-foreground">Seguimiento de pedidos pendientes</div>
+   721→                  </div>
+   722→                </Button>
+   723→              </Link>
+   724→              <Link href="/admin/materias-primas">
+   725→                <Button
+   726→                  variant="outline"
+   727→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-oliva hover:bg-oliva/5"
+   728→                >
+   729→                  <Leaf className="mr-3 h-5 w-5 text-oliva" />
+   730→                  <div className="text-left">
+   731→                    <div className="font-medium text-marron">Materias Primas</div>
+   732→                    <div className="text-xs text-muted-foreground">Gestionar stock de materias primas</div>
+   733→                  </div>
+   734→                </Button>
+   735→              </Link>
+   736→              <Link href="/admin/insumos">
+   737→                <Button
+   738→                  variant="outline"
+   739→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-mostaza hover:bg-mostaza/5"
+   740→                >
+   741→                  <PackageOpen className="mr-3 h-5 w-5 text-mostaza" />
+   742→                  <div className="text-left">
+   743→                    <div className="font-medium text-marron">Insumos</div>
+   744→                    <div className="text-xs text-muted-foreground">Envases, bandejas, bolsas</div>
+   745→                  </div>
+   746→                </Button>
+   747→              </Link>
+   748→              <Link href="/admin/productos-terminados">
+   749→                <Button
+   750→                  variant="outline"
+   751→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-rojo hover:bg-rojo/5"
+   752→                >
+   753→                  <UtensilsCrossed className="mr-3 h-5 w-5 text-rojo" />
+   754→                  <div className="text-left">
+   755→                    <div className="font-medium text-marron">Productos Terminados</div>
+   756→                    <div className="text-xs text-muted-foreground">Pastas para producción y venta</div>
+   757→                  </div>
+   758→                </Button>
+   759→              </Link>
+   760→              <Link href="/admin/stock-movements">
+   761→                <Button
+   762→                  variant="outline"
+   763→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-oliva hover:bg-oliva/5"
+   764→                >
+   765→                  <ArrowLeftRight className="mr-3 h-5 w-5 text-oliva" />
+   766→                  <div className="text-left">
+   767→                    <div className="font-medium text-marron">Movimientos de Stock</div>
+   768→                    <div className="text-xs text-muted-foreground">Historial de entradas y salidas</div>
+   769→                  </div>
+   770→                </Button>
+   771→              </Link>
+   772→              <Link href="/admin/productos">
+   773→                <Button
+   774→                  variant="outline"
+   775→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-mostaza hover:bg-mostaza/5"
+   776→                >
+   777→                  <Package className="mr-3 h-5 w-5 text-mostaza" />
+   778→                  <div className="text-left">
+   779→                    <div className="font-medium text-marron">Catálogo Landing</div>
+   780→                    <div className="text-xs text-muted-foreground">Productos visibles al público</div>
+   781→                  </div>
+   782→                </Button>
+   783→              </Link>
+   784→              <Link href="/admin/opiniones">
+   785→                <Button
+   786→                  variant="outline"
+   787→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-mostaza hover:bg-mostaza/5"
+   788→                >
+   789→                  <MessageSquare className="mr-3 h-5 w-5 text-rojo" />
+   790→                  <div className="text-left">
+   791→                    <div className="font-medium text-marron">Moderar Opiniones</div>
+   792→                    <div className="text-xs text-muted-foreground">Aprobar o rechazar reseñas</div>
+   793→                  </div>
+   794→                </Button>
+   795→              </Link>
+   796→              <Link href="/admin/auditoria">
+   797→                <Button
+   798→                  variant="outline"
+   799→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-oliva hover:bg-oliva/5"
+   800→                >
+   801→                  <Shield className="mr-3 h-5 w-5 text-oliva" />
+   802→                  <div className="text-left">
+   803→                    <div className="font-medium text-marron">Auditoría</div>
+   804→                    <div className="text-xs text-muted-foreground">Registro de acciones del sistema</div>
+   805→                  </div>
+   806→                </Button>
+   807→              </Link>
+   808→              <Link href="/admin/reportes">
+   809→                <Button
+   810→                  variant="outline"
+   811→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-mostaza hover:bg-mostaza/5"
+   812→                >
+   813→                  <FileBarChart className="mr-3 h-5 w-5 text-mostaza" />
+   814→                  <div className="text-left">
+   815→                    <div className="font-medium text-marron">Reportes</div>
+   816→                    <div className="text-xs text-muted-foreground">Reportes exportables Excel/PDF</div>
+   817→                  </div>
+   818→                </Button>
+   819→              </Link>
+   820→              <Link href="/admin/estadisticas">
+   821→                <Button
+   822→                  variant="outline"
+   823→                  className="w-full justify-start h-auto py-3 border-marron/10 hover:border-mostaza hover:bg-mostaza/5"
+   824→                >
+   825→                  <Phone className="mr-3 h-5 w-5 text-whatsapp" />
+   826→                  <div className="text-left">
+   827→                    <div className="font-medium text-marron">Estadísticas WhatsApp</div>
+   828→                    <div className="text-xs text-muted-foreground">Ver interacciones y datos</div>
+   829→                  </div>
+   830→                </Button>
+   831→              </Link>
+   832→            </div>
+   833→          </CardContent>
+   834→        </Card>
+   835→      </motion.div>
+   836→    </div>
+   837→  )
+   838→}
+   839→

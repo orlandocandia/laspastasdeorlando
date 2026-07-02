@@ -1,0 +1,762 @@
+     1→'use client'
+     2→
+     3→import { useForm } from 'react-hook-form'
+     4→import { zodResolver } from '@hookform/resolvers/zod'
+     5→import { z } from 'zod'
+     6→import { useState, useEffect } from 'react'
+     7→import { Loader2, Barcode, PackagePlus } from 'lucide-react'
+     8→import { toast } from 'sonner'
+     9→
+    10→import { Button } from '@/components/ui/button'
+    11→import { Input } from '@/components/ui/input'
+    12→import { Textarea } from '@/components/ui/textarea'
+    13→import { Switch } from '@/components/ui/switch'
+    14→import { Label } from '@/components/ui/label'
+    15→import { Separator } from '@/components/ui/separator'
+    16→import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+    17→import {
+    18→  Form,
+    19→  FormControl,
+    20→  FormField,
+    21→  FormItem,
+    22→  FormLabel,
+    23→  FormMessage,
+    24→} from '@/components/ui/form'
+    25→import {
+    26→  Select,
+    27→  SelectContent,
+    28→  SelectItem,
+    29→  SelectTrigger,
+    30→  SelectValue,
+    31→} from '@/components/ui/select'
+    32→import ImageUploaderProducto from './ImageUploaderProducto'
+    33→import { StockInitialLoadDialog } from './StockInitialLoadDialog'
+    34→
+    35→const productoTerminadoSchema = z.object({
+    36→  codigo: z.string().optional(),
+    37→  codigo_barras: z.string().optional(),
+    38→  nombre: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
+    39→  descripcion: z.string().optional(),
+    40→  id_categoria: z.string().min(1, 'Seleccioná una categoría'),
+    41→  tipo_harina: z.string().optional(),
+    42→  seccion: z.string().nullable().optional(),
+    43→  peso_unitario_aprox: z.coerce.number().min(0, 'El peso no puede ser negativo').default(0),
+    44→  unidades: z.coerce.number().min(1, 'Debe tener al menos 1 unidad').optional().nullable(),
+    45→  precio_venta: z.coerce.number().min(0, 'El precio no puede ser negativo').default(0),
+    46→  stock_minimo: z.coerce.number().min(0, 'El stock mínimo no puede ser negativo').default(0),
+    47→  destacado: z.boolean().default(false),
+    48→  orden: z.coerce.number().min(0, 'El orden no puede ser negativo').default(0),
+    49→  visible_en_landing: z.boolean().default(true),
+    50→  imagen: z.string().optional(),
+    51→  modo_coccion: z.string().optional(),
+    52→  texto_frente: z.string().optional(),
+    53→  texto_reverso: z.string().optional(),
+    54→  estado: z.boolean().default(true),
+    55→})
+    56→
+    57→type ProductoTerminadoFormValues = z.infer<typeof productoTerminadoSchema>
+    58→
+    59→const formatPrice = (price: number) =>
+    60→  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(price)
+    61→
+    62→interface Categoria {
+    63→  id: number
+    64→  nombre: string
+    65→}
+    66→
+    67→interface ProductoTerminadoFormProps {
+    68→  productoTerminado?: any | null
+    69→  onSuccess: () => void
+    70→}
+    71→
+    72→export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: ProductoTerminadoFormProps) {
+    73→  const [submitting, setSubmitting] = useState(false)
+    74→  const [imageUrl, setImageUrl] = useState(productoTerminado?.imagen || '')
+    75→  const [categorias, setCategorias] = useState<Categoria[]>([])
+    76→  const [loadingCategorias, setLoadingCategorias] = useState(true)
+    77→  const [proximoCodigoBarras, setProximoCodigoBarras] = useState<string | null>(null)
+    78→  const [stockInitialOpen, setStockInitialOpen] = useState(false)
+    79→  const [stockActualLocal, setStockActualLocal] = useState(productoTerminado?.stock_actual ?? 0)
+    80→
+    81→  const isEditing = !!productoTerminado
+    82→
+    83→  const form = useForm<ProductoTerminadoFormValues>({
+    84→    resolver: zodResolver(productoTerminadoSchema),
+    85→    defaultValues: {
+    86→      codigo: productoTerminado?.codigo || '',
+    87→      codigo_barras: productoTerminado?.codigo_barras || '',
+    88→      nombre: productoTerminado?.nombre || '',
+    89→      descripcion: productoTerminado?.descripcion || '',
+    90→      id_categoria: productoTerminado?.id_categoria?.toString() || '',
+    91→      tipo_harina: productoTerminado?.tipo_harina || '',
+    92→      seccion: productoTerminado?.seccion ?? null,
+    93→      peso_unitario_aprox: productoTerminado?.peso_unitario_aprox ?? 0,
+    94→      unidades: productoTerminado?.unidades ?? undefined,
+    95→      precio_venta: productoTerminado?.precio_venta ?? 0,
+    96→      stock_minimo: productoTerminado?.stock_minimo ?? 0,
+    97→      destacado: productoTerminado?.destacado ?? false,
+    98→      orden: productoTerminado?.orden ?? 0,
+    99→      visible_en_landing: productoTerminado?.visible_en_landing ?? true,
+   100→      imagen: productoTerminado?.imagen || '',
+   101→      modo_coccion: productoTerminado?.modo_coccion || '',
+   102→      texto_frente: productoTerminado?.texto_frente || '',
+   103→      texto_reverso: productoTerminado?.texto_reverso || '',
+   104→      estado: productoTerminado?.estado ?? true,
+   105→    },
+   106→  })
+   107→
+   108→  // Reset form and imageUrl when switching products
+   109→  useEffect(() => {
+   110→    const defaults = {
+   111→      codigo: productoTerminado?.codigo || '',
+   112→      codigo_barras: productoTerminado?.codigo_barras || '',
+   113→      nombre: productoTerminado?.nombre || '',
+   114→      descripcion: productoTerminado?.descripcion || '',
+   115→      id_categoria: productoTerminado?.id_categoria?.toString() || '',
+   116→      tipo_harina: productoTerminado?.tipo_harina || '',
+   117→      seccion: productoTerminado?.seccion ?? null,
+   118→      peso_unitario_aprox: productoTerminado?.peso_unitario_aprox ?? 0,
+   119→      unidades: productoTerminado?.unidades ?? undefined,
+   120→      precio_venta: productoTerminado?.precio_venta ?? 0,
+   121→      stock_minimo: productoTerminado?.stock_minimo ?? 0,
+   122→      destacado: productoTerminado?.destacado ?? false,
+   123→      orden: productoTerminado?.orden ?? 0,
+   124→      visible_en_landing: productoTerminado?.visible_en_landing ?? true,
+   125→      imagen: productoTerminado?.imagen || '',
+   126→      modo_coccion: productoTerminado?.modo_coccion || '',
+   127→      texto_frente: productoTerminado?.texto_frente || '',
+   128→      texto_reverso: productoTerminado?.texto_reverso || '',
+   129→      estado: productoTerminado?.estado ?? true,
+   130→    }
+   131→    form.reset(defaults)
+   132→    setImageUrl(productoTerminado?.imagen || '')
+   133→  }, [productoTerminado, form])
+   134→
+   135→  useEffect(() => {
+   136→    async function fetchCategorias() {
+   137→      try {
+   138→        const res = await fetch('/api/categorias?tipo=productos-terminados')
+   139→        if (!res.ok) throw new Error('Error al cargar categorías')
+   140→        const data = await res.json()
+   141→        setCategorias(Array.isArray(data) ? data : [])
+   142→      } catch {
+   143→        toast.error('Error al cargar categorías')
+   144→      } finally {
+   145→        setLoadingCategorias(false)
+   146→      }
+   147→    }
+   148→
+   149→    fetchCategorias()
+   150→  }, [])
+   151→
+   152→  // Fetch next barcode for new products
+   153→  useEffect(() => {
+   154→    if (!isEditing) {
+   155→      async function fetchProximoCodigo() {
+   156→        try {
+   157→          const res = await fetch('/api/productos-terminados/generar-codigos-barras')
+   158→          if (res.ok) {
+   159→            const data = await res.json()
+   160→            setProximoCodigoBarras(data.proximo_codigo)
+   161→          }
+   162→        } catch {
+   163→          // Silently fail - barcode will be generated server-side
+   164→        }
+   165→      }
+   166→      fetchProximoCodigo()
+   167→    }
+   168→  }, [isEditing])
+   169→
+   170→  async function onSubmit(data: ProductoTerminadoFormValues) {
+   171→    setSubmitting(true)
+   172→    try {
+   173→      const payload = {
+   174→        ...data,
+   175→        imagen: imageUrl || null,
+   176→        descripcion: data.descripcion || null,
+   177→        codigo: data.codigo || null,
+   178→        codigo_barras: data.codigo_barras || null,
+   179→        id_categoria: parseInt(data.id_categoria),
+   180→        tipo_harina: data.tipo_harina || null,
+   181→        seccion: data.seccion || null,
+   182→        unidades: data.unidades || null,
+   183→        modo_coccion: data.modo_coccion || null,
+   184→        texto_frente: data.texto_frente || null,
+   185→        texto_reverso: data.texto_reverso || null,
+   186→      }
+   187→
+   188→      let url = '/api/productos-terminados'
+   189→      let method = 'POST'
+   190→
+   191→      if (isEditing) {
+   192→        url = `/api/productos-terminados/${productoTerminado.id}`
+   193→        method = 'PUT'
+   194→      }
+   195→
+   196→      const res = await fetch(url, {
+   197→        method,
+   198→        headers: { 'Content-Type': 'application/json' },
+   199→        body: JSON.stringify(payload),
+   200→      })
+   201→
+   202→      if (!res.ok) {
+   203→        const errorData = await res.json().catch(() => ({}))
+   204→        throw new Error(errorData.error || 'Error al guardar producto terminado')
+   205→      }
+   206→
+   207→      toast.success(isEditing ? 'Producto terminado actualizado' : 'Producto terminado creado', {
+   208→        description: isEditing
+   209→          ? 'Los cambios se guardaron correctamente'
+   210→          : 'El nuevo producto terminado se agregó al catálogo',
+   211→      })
+   212→
+   213→      onSuccess()
+   214→    } catch (error: any) {
+   215→      toast.error('Error al guardar', {
+   216→        description: error.message || 'Intentá de nuevo más tarde',
+   217→      })
+   218→    } finally {
+   219→      setSubmitting(false)
+   220→    }
+   221→  }
+   222→
+   223→  return (
+   224→    <Form {...form}>
+   225→      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+   226→        <FormField
+   227→          control={form.control}
+   228→          name="nombre"
+   229→          render={({ field }) => (
+   230→            <FormItem>
+   231→              <FormLabel>Nombre *</FormLabel>
+   232→              <FormControl>
+   233→                <Input placeholder="Sorrentinos de Jamón y Queso" {...field} />
+   234→              </FormControl>
+   235→              <FormMessage />
+   236→            </FormItem>
+   237→          )}
+   238→        />
+   239→
+   240→        <FormField
+   241→          control={form.control}
+   242→          name="codigo"
+   243→          render={({ field }) => (
+   244→            <FormItem>
+   245→              <FormLabel>Código</FormLabel>
+   246→              <FormControl>
+   247→                <Input placeholder="PT-001 (opcional)" {...field} />
+   248→              </FormControl>
+   249→              <FormMessage />
+   250→            </FormItem>
+   251→          )}
+   252→        />
+   253→
+   254→        <FormField
+   255→          control={form.control}
+   256→          name="codigo_barras"
+   257→          render={({ field }) => (
+   258→            <FormItem>
+   259→              <FormLabel>Código de barras</FormLabel>
+   260→              <FormControl>
+   261→                <Input type="text" placeholder="Ej: 7791234567890" {...field} />
+   262→              </FormControl>
+   263→              {!isEditing && !field.value && proximoCodigoBarras && (
+   264→                <div className="flex items-center gap-2 mt-1">
+   265→                  <Barcode className="h-3.5 w-3.5 text-mostaza" />
+   266→                  <p className="text-xs text-muted-foreground">
+   267→                    Se generará automáticamente: <span className="font-mono font-semibold text-marron">{proximoCodigoBarras}</span>
+   268→                  </p>
+   269→                </div>
+   270→              )}
+   271→              {isEditing && field.value && (
+   272→                <p className="text-xs text-muted-foreground">
+   273→                  Código EAN-13 asignado al producto
+   274→                </p>
+   275→              )}
+   276→              {!isEditing && (
+   277→                <p className="text-xs text-muted-foreground">
+   278→                  Dejá vacío para generar automáticamente un código EAN-13 (779...)
+   279→                </p>
+   280→              )}
+   281→              <FormMessage />
+   282→            </FormItem>
+   283→          )}
+   284→        />
+   285→
+   286→        <FormField
+   287→          control={form.control}
+   288→          name="descripcion"
+   289→          render={({ field }) => (
+   290→            <FormItem>
+   291→              <FormLabel>Descripción</FormLabel>
+   292→              <FormControl>
+   293→                <Textarea
+   294→                  placeholder="Descripción del producto terminado..."
+   295→                  className="resize-none"
+   296→                  rows={3}
+   297→                  {...field}
+   298→                />
+   299→              </FormControl>
+   300→              <FormMessage />
+   301→            </FormItem>
+   302→          )}
+   303→        />
+   304→
+   305→        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   306→          <FormField
+   307→            control={form.control}
+   308→            name="id_categoria"
+   309→            render={({ field }) => (
+   310→              <FormItem>
+   311→                <FormLabel>Categoría *</FormLabel>
+   312→                <Select onValueChange={field.onChange} value={field.value}>
+   313→                  <FormControl>
+   314→                    <SelectTrigger>
+   315→                      <SelectValue placeholder={loadingCategorias ? 'Cargando...' : 'Seleccionar...'} />
+   316→                    </SelectTrigger>
+   317→                  </FormControl>
+   318→                  <SelectContent>
+   319→                    {categorias.map((cat) => (
+   320→                      <SelectItem key={cat.id} value={cat.id.toString()}>
+   321→                        {cat.nombre}
+   322→                      </SelectItem>
+   323→                    ))}
+   324→                  </SelectContent>
+   325→                </Select>
+   326→                <FormMessage />
+   327→              </FormItem>
+   328→            )}
+   329→          />
+   330→
+   331→          <FormField
+   332→            control={form.control}
+   333→            name="tipo_harina"
+   334→            render={({ field }) => (
+   335→              <FormItem>
+   336→                <FormLabel>Tipo de Harina</FormLabel>
+   337→                <Select onValueChange={field.onChange} value={field.value || undefined}>
+   338→                  <FormControl>
+   339→                    <SelectTrigger>
+   340→                      <SelectValue placeholder="Sin especificar" />
+   341→                    </SelectTrigger>
+   342→                  </FormControl>
+   343→                  <SelectContent>
+   344→                    <SelectItem value="con_gluten">Con Gluten</SelectItem>
+   345→                    <SelectItem value="integral">Integral</SelectItem>
+   346→                    <SelectItem value="sin_gluten">Sin Gluten</SelectItem>
+   347→                  </SelectContent>
+   348→                </Select>
+   349→                <FormMessage />
+   350→              </FormItem>
+   351→            )}
+   352→          />
+   353→
+   354→          <FormField
+   355→            control={form.control}
+   356→            name="peso_unitario_aprox"
+   357→            render={({ field }) => (
+   358→              <FormItem>
+   359→                <FormLabel>Peso Aprox. (kg)</FormLabel>
+   360→                <FormControl>
+   361→                  <Input type="number" step="0.01" min="0" placeholder="0.5" {...field} />
+   362→                </FormControl>
+   363→                <FormMessage />
+   364→              </FormItem>
+   365→            )}
+   366→          />
+   367→
+   368→          <FormField
+   369→            control={form.control}
+   370→            name="unidades"
+   371→            render={({ field }) => (
+   372→              <FormItem>
+   373→                <FormLabel>Unidades por paquete</FormLabel>
+   374→                <FormControl>
+   375→                  <Input
+   376→                    type="number"
+   377→                    step="1"
+   378→                    min="1"
+   379→                    placeholder="Ej: 12, 24"
+   380→                    value={field.value ?? ''}
+   381→                    onChange={(e) => {
+   382→                      const val = e.target.value
+   383→                      field.onChange(val === '' ? null : parseInt(val))
+   384→                    }}
+   385→                  />
+   386→                </FormControl>
+   387→                <p className="text-xs text-muted-foreground">
+   388→                  Cantidad de unidades (ej: 12 empanadas). Dejá vacío si no aplica.
+   389→                </p>
+   390→                <FormMessage />
+   391→              </FormItem>
+   392→            )}
+   393→          />
+   394→        </div>
+   395→
+   396→        {/* Selector de sección: Crudo / Horneado / Sin especificar */}
+   397→        <FormField
+   398→          control={form.control}
+   399→          name="seccion"
+   400→          render={({ field }) => {
+   401→            const value = field.value ?? ''
+   402→            return (
+   403→              <FormItem className="space-y-2">
+   404→                <FormLabel>Tipo de producto</FormLabel>
+   405→                <FormControl>
+   406→                  <RadioGroup
+   407→                    value={value}
+   408→                    onValueChange={(v) => field.onChange(v === '' ? null : v)}
+   409→                    className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1"
+   410→                  >
+   411→                    {/* Sin especificar */}
+   412→                    <label
+   413→                      htmlFor="seccion-none"
+   414→                      className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
+   415→                        value === ''
+   416→                          ? 'border-mostaza bg-mostaza/5 ring-1 ring-mostaza/30'
+   417→                          : 'border-input hover:border-mostaza/50 hover:bg-muted/40'
+   418→                      }`}
+   419→                    >
+   420→                      <RadioGroupItem value="" id="seccion-none" className="mt-0.5" />
+   421→                      <div className="space-y-0.5">
+   422→                        <span className="block text-sm font-semibold text-marron">
+   423→                          🤷 Sin especificar
+   424→                        </span>
+   425→                        <span className="block text-xs text-muted-foreground">
+   426→                          Usa la sección de la categoría
+   427→                        </span>
+   428→                      </div>
+   429→                    </label>
+   430→
+   431→                    {/* Crudo → pastas */}
+   432→                    <label
+   433→                      htmlFor="seccion-pastas"
+   434→                      className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
+   435→                        value === 'pastas'
+   436→                          ? 'border-mostaza bg-mostaza/5 ring-1 ring-mostaza/30'
+   437→                          : 'border-input hover:border-mostaza/50 hover:bg-muted/40'
+   438→                      }`}
+   439→                    >
+   440→                      <RadioGroupItem value="pastas" id="seccion-pastas" className="mt-0.5" />
+   441→                      <div className="space-y-0.5">
+   442→                        <span className="block text-sm font-semibold text-marron">
+   443→                          🍝 Crudo
+   444→                        </span>
+   445→                        <span className="block text-xs text-muted-foreground">
+   446→                          Para cocinar en casa · va a <b>Pastas</b>
+   447→                        </span>
+   448→                      </div>
+   449→                    </label>
+   450→
+   451→                    {/* Horneado → horneados */}
+   452→                    <label
+   453→                      htmlFor="seccion-horneados"
+   454→                      className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-all ${
+   455→                        value === 'horneados'
+   456→                          ? 'border-mostaza bg-mostaza/5 ring-1 ring-mostaza/30'
+   457→                          : 'border-input hover:border-mostaza/50 hover:bg-muted/40'
+   458→                      }`}
+   459→                    >
+   460→                      <RadioGroupItem value="horneados" id="seccion-horneados" className="mt-0.5" />
+   461→                      <div className="space-y-0.5">
+   462→                        <span className="block text-sm font-semibold text-marron">
+   463→                          🔥 Horneado
+   464→                        </span>
+   465→                        <span className="block text-xs text-muted-foreground">
+   466→                          Listo para comer · va a <b>Horneados</b>
+   467→                        </span>
+   468→                      </div>
+   469→                    </label>
+   470→                  </RadioGroup>
+   471→                </FormControl>
+   472→                <p className="text-xs text-muted-foreground">
+   473→                  Si no elegís nada, se usa la sección de la categoría. Si el producto y su categoría no tienen sección, no se mostrará en la landing.
+   474→                </p>
+   475→                <FormMessage />
+   476→              </FormItem>
+   477→            )
+   478→          }}
+   479→        />
+   480→
+   481→        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   482→          <FormField
+   483→            control={form.control}
+   484→            name="precio_venta"
+   485→            render={({ field }) => (
+   486→              <FormItem>
+   487→                <FormLabel>Precio de Venta *</FormLabel>
+   488→                <FormControl>
+   489→                  <Input type="number" step="0.01" min="0" placeholder="0.00" {...field} />
+   490→                </FormControl>
+   491→                <FormMessage />
+   492→              </FormItem>
+   493→            )}
+   494→          />
+   495→
+   496→          <FormField
+   497→            control={form.control}
+   498→            name="stock_minimo"
+   499→            render={({ field }) => (
+   500→              <FormItem>
+   501→                <FormLabel>Stock Mínimo</FormLabel>
+   502→                <FormControl>
+   503→                  <Input type="number" step="1" min="0" placeholder="5" {...field} />
+   504→                </FormControl>
+   505→                <FormMessage />
+   506→              </FormItem>
+   507→            )}
+   508→          />
+   509→        </div>
+   510→
+   511→        {/* Stock actual - solo lectura + botón Cargar Stock */}
+   512→        {isEditing && (
+   513→          <div className="bg-muted/50 rounded-lg p-3 border">
+   514→            <div className="flex items-center justify-between">
+   515→              <div>
+   516→                <span className="text-sm font-medium text-muted-foreground">Stock Actual</span>
+   517→                <p className="text-lg font-bold text-marron">
+   518→                  {stockActualLocal} u.
+   519→                </p>
+   520→              </div>
+   521→              <Button
+   522→                type="button"
+   523→                size="sm"
+   524→                onClick={() => setStockInitialOpen(true)}
+   525→                className="bg-oliva hover:bg-oliva/90 text-white font-semibold"
+   526→              >
+   527→                <PackagePlus className="mr-1.5 h-4 w-4" />
+   528→                Cargar Stock
+   529→              </Button>
+   530→            </div>
+   531→            <p className="text-xs text-muted-foreground mt-1">
+   532→              Se actualiza con producciones, ventas o cargas manuales
+   533→            </p>
+   534→          </div>
+   535→        )}
+   536→
+   537→        {/* Stock Initial Load Dialog — solo visible al editar */}
+   538→        {isEditing && productoTerminado && (
+   539→          <StockInitialLoadDialog
+   540→            open={stockInitialOpen}
+   541→            onClose={() => setStockInitialOpen(false)}
+   542→            preselectedProduct={{
+   543→              id: productoTerminado.id,
+   544→              nombre: productoTerminado.nombre,
+   545→              stock_actual: stockActualLocal,
+   546→              stock_minimo: productoTerminado.stock_minimo ?? 0,
+   547→            }}
+   548→            onSuccess={async () => {
+   549→              // Refresh stock_actual from server
+   550→              try {
+   551→                const res = await fetch(`/api/productos-terminados/${productoTerminado.id}`)
+   552→                if (res.ok) {
+   553→                  const data = await res.json()
+   554→                  setStockActualLocal(data.stock_actual ?? 0)
+   555→                }
+   556→              } catch {
+   557→                // silent fail
+   558→              }
+   559→            }}
+   560→          />
+   561→        )}
+   562→
+   563→        {/* Modo de cocción / uso — etiqueta dinámica según categoría */}
+   564→        <FormField
+   565→          control={form.control}
+   566→          name="modo_coccion"
+   567→          render={({ field }) => {
+   568→            const selectedCatId = form.watch('id_categoria')
+   569→            const selectedCat = categorias.find((c) => c.id.toString() === selectedCatId)
+   570→            const catNombre = selectedCat?.nombre?.toLowerCase() || ''
+   571→
+   572→            const esCategoriaUso = /tapa|empanada|pastelito|pascualina|tarta/.test(catNombre)
+   573→
+   574→            const etiqueta = esCategoriaUso
+   575→              ? '📦 Modo de uso y conservación (opcional)'
+   576→              : '🍝 Modo de cocción (opcional)'
+   577→
+   578→            const placeholderUso = `📦 **Modo de Uso y Conservación**\n\n🌿 **Producto Fresco**\n🥟 Conservar refrigerado.\n🍴 Listo para usar.\n❄️ Si no lo utiliza, puede congelarlo.\n\n---\n\n❄️ **Producto Congelado**\n🧊 Descongelar en heladera.\n🥟 Utilizar una vez que las tapas estén flexibles.\n🚫 Evitar volver a congelar para conservar su textura y calidad.`
+   579→
+   580→            const placeholderCoccion = `🍝 **Tallarines**\n\n🌾 **Frescos**\n💧 Agua hirviendo con sal a gusto.\n🍴 Separar suavemente los fideos durante el primer minuto.\n⏱️ Cocinar 4 a 5 min, revolviendo ocasionalmente.\n👨‍🍳 Probar antes de escurrir. Si es necesario, cocinar 1 o 2 min más.\n\n❄️ **Freezados**\n💧 Directo al agua hirviendo con sal a gusto.\n🍴 Separar suavemente los fideos durante el primer minuto.\n⏱️ Cocinar 6 a 8 min, revolviendo ocasionalmente.\n👨‍🍳 Probar antes de escurrir. Si es necesario, cocinar 1 o 2 min más.`
+   581→
+   582→            const placeholder = esCategoriaUso ? placeholderUso : placeholderCoccion
+   583→
+   584→            const helpText = esCategoriaUso
+   585→              ? '💡 Podés usar emojis (📦🌿🥟❄️🧊🚫🍴), negritas con **texto**, y saltos de línea. Si lo dejás vacío, se mostrará un enlace a WhatsApp.'
+   586→              : '💡 Podés usar emojis (🍝✅❄️⏱️👨‍🍳🥟🌾), negritas con **texto**, y saltos de línea. Si lo dejás vacío, se mostrará un enlace a WhatsApp.'
+   587→
+   588→            return (
+   589→              <FormItem>
+   590→                <FormLabel>{etiqueta}</FormLabel>
+   591→                <FormControl>
+   592→                  <Textarea
+   593→                    placeholder={placeholder}
+   594→                    className="resize-none"
+   595→                    rows={8}
+   596→                    {...field}
+   597→                  />
+   598→                </FormControl>
+   599→                <p className="text-xs text-muted-foreground">
+   600→                  {helpText}
+   601→                </p>
+   602→                <FormMessage />
+   603→              </FormItem>
+   604→            )
+   605→          }}
+   606→        />
+   607→
+   608→        {/* Textos personalizados frente/reverso */}
+   609→        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+   610→          <FormField
+   611→            control={form.control}
+   612→            name="texto_frente"
+   613→            render={({ field }) => (
+   614→              <FormItem>
+   615→                <FormLabel>Texto del frente (opcional)</FormLabel>
+   616→                <FormControl>
+   617→                  <Input placeholder="Ej: 🍝 Modo de cocción" {...field} />
+   618→                </FormControl>
+   619→                <p className="text-xs text-muted-foreground">
+   620→                  Se muestra al pasar el mouse sobre la tarjeta. Si lo dejás vacío, se usa el valor por defecto según categoría.
+   621→                </p>
+   622→                <FormMessage />
+   623→              </FormItem>
+   624→            )}
+   625→          />
+   626→
+   627→          <FormField
+   628→            control={form.control}
+   629→            name="texto_reverso"
+   630→            render={({ field }) => (
+   631→              <FormItem>
+   632→                <FormLabel>Texto del reverso (opcional)</FormLabel>
+   633→                <FormControl>
+   634→                  <Input placeholder="Ej: 🍝 Modo de cocción" {...field} />
+   635→                </FormControl>
+   636→                <p className="text-xs text-muted-foreground">
+   637→                  Título en el reverso de la tarjeta. Si lo dejás vacío, se usa el valor por defecto según categoría.
+   638→                </p>
+   639→                <FormMessage />
+   640→              </FormItem>
+   641→            )}
+   642→          />
+   643→        </div>
+   644→
+   645→        <div>
+   646→          <FormLabel>Foto</FormLabel>
+   647→          <div className="mt-2">
+   648→            <ImageUploaderProducto
+   649→              currentImage={productoTerminado?.imagen}
+   650→              onUpload={(url) => {
+   651→                setImageUrl(url)
+   652→                form.setValue('imagen', url)
+   653→              }}
+   654→              uploadUrl="/api/upload/producto-terminado"
+   655→            />
+   656→          </div>
+   657→        </div>
+   658→
+   659→        <Separator />
+   660→
+   661→        {/* Landing Page Settings */}
+   662→        <div className="space-y-3">
+   663→          <h4 className="text-sm font-semibold text-marron">Configuración Landing Page</h4>
+   664→
+   665→          <div className="flex items-center gap-6">
+   666→            <FormField
+   667→              control={form.control}
+   668→              name="visible_en_landing"
+   669→              render={({ field }) => (
+   670→                <FormItem className="flex items-center gap-2 space-y-0">
+   671→                  <FormControl>
+   672→                    <Switch
+   673→                      checked={field.value}
+   674→                      onCheckedChange={field.onChange}
+   675→                    />
+   676→                  </FormControl>
+   677→                  <Label className="text-sm font-normal cursor-pointer">
+   678→                    Visible en landing
+   679→                  </Label>
+   680→                </FormItem>
+   681→              )}
+   682→            />
+   683→
+   684→            <FormField
+   685→              control={form.control}
+   686→              name="destacado"
+   687→              render={({ field }) => (
+   688→                <FormItem className="flex items-center gap-2 space-y-0">
+   689→                  <FormControl>
+   690→                    <Switch
+   691→                      checked={field.value}
+   692→                      onCheckedChange={field.onChange}
+   693→                    />
+   694→                  </FormControl>
+   695→                  <Label className="text-sm font-normal cursor-pointer">
+   696→                    Destacado
+   697→                  </Label>
+   698→                </FormItem>
+   699→              )}
+   700→            />
+   701→          </div>
+   702→
+   703→          <FormField
+   704→            control={form.control}
+   705→            name="orden"
+   706→            render={({ field }) => (
+   707→              <FormItem>
+   708→                <FormLabel>Orden de aparición</FormLabel>
+   709→                <FormControl>
+   710→                  <Input type="number" step="1" min="0" placeholder="0" className="w-full sm:w-32" {...field} />
+   711→                </FormControl>
+   712→                <FormMessage />
+   713→              </FormItem>
+   714→            )}
+   715→          />
+   716→        </div>
+   717→
+   718→        <Separator />
+   719→
+   720→        <div className="flex items-center gap-3 pt-2">
+   721→          <FormField
+   722→            control={form.control}
+   723→            name="estado"
+   724→            render={({ field }) => (
+   725→              <FormItem className="flex items-center gap-2 space-y-0">
+   726→                <FormControl>
+   727→                  <Switch
+   728→                    checked={field.value}
+   729→                    onCheckedChange={field.onChange}
+   730→                  />
+   731→                </FormControl>
+   732→                <Label className="text-sm font-normal cursor-pointer">
+   733→                  Activo
+   734→                </Label>
+   735→              </FormItem>
+   736→            )}
+   737→          />
+   738→        </div>
+   739→
+   740→        <div className="flex justify-end gap-2 pt-4">
+   741→          <Button
+   742→            type="submit"
+   743→            className="bg-mostaza hover:bg-mostaza/90 text-marron font-semibold"
+   744→            disabled={submitting}
+   745→          >
+   746→            {submitting ? (
+   747→              <>
+   748→                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+   749→                Guardando...
+   750→              </>
+   751→            ) : isEditing ? (
+   752→              'Guardar Cambios'
+   753→            ) : (
+   754→              'Crear Producto Terminado'
+   755→            )}
+   756→          </Button>
+   757→        </div>
+   758→      </form>
+   759→    </Form>
+   760→  )
+   761→}
+   762→

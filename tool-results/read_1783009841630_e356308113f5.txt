@@ -1,0 +1,553 @@
+     1→'use client'
+     2→
+     3→import { useState, useEffect, useCallback } from 'react'
+     4→import { toast } from 'sonner'
+     5→import { Loader2, DollarSign, ShoppingCart, Package, Factory, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react'
+     6→
+     7→import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+     8→import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+     9→import { Badge } from '@/components/ui/badge'
+    10→import { Input } from '@/components/ui/input'
+    11→import { Button } from '@/components/ui/button'
+    12→import {
+    13→  Table,
+    14→  TableBody,
+    15→  TableCell,
+    16→  TableHead,
+    17→  TableHeader,
+    18→  TableRow,
+    19→} from '@/components/ui/table'
+    20→import ExportadorExcel from '@/components/admin/reportes/ExportadorExcel'
+    21→import ExportadorPDF from '@/components/admin/reportes/ExportadorPDF'
+    22→import ExportadorCSV from '@/components/admin/reportes/ExportadorCSV'
+    23→
+    24→const formatPrice = (price: number) =>
+    25→  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(price)
+    26→
+    27→const formatNumber = (n: number) =>
+    28→  new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 }).format(n)
+    29→
+    30→export default function ReportesPage() {
+    31→  const [tab, setTab] = useState('ventas')
+    32→  const [fechaDesde, setFechaDesde] = useState('')
+    33→  const [fechaHasta, setFechaHasta] = useState('')
+    34→  const [loading, setLoading] = useState(false)
+    35→
+    36→  // Data states
+    37→  const [ventasData, setVentasData] = useState<any>(null)
+    38→  const [comprasData, setComprasData] = useState<any>(null)
+    39→  const [stockData, setStockData] = useState<any>(null)
+    40→  const [produccionData, setProduccionData] = useState<any>(null)
+    41→  const [finanzasData, setFinanzasData] = useState<any>(null)
+    42→
+    43→  const setDateRange = (range: string) => {
+    44→    const hoy = new Date()
+    45→    let desde = ''
+    46→    switch (range) {
+    47→      case 'hoy':
+    48→        desde = hoy.toISOString().split('T')[0]
+    49→        break
+    50→      case 'semana': {
+    51→        const hace7 = new Date(hoy)
+    52→        hace7.setDate(hace7.getDate() - 7)
+    53→        desde = hace7.toISOString().split('T')[0]
+    54→        break
+    55→      }
+    56→      case 'mes': {
+    57→        const hace30 = new Date(hoy)
+    58→        hace30.setDate(hace30.getDate() - 30)
+    59→        desde = hace30.toISOString().split('T')[0]
+    60→        break
+    61→      }
+    62→      case 'anio': {
+    63→        desde = `${hoy.getFullYear()}-01-01`
+    64→        break
+    65→      }
+    66→    }
+    67→    setFechaDesde(desde)
+    68→    setFechaHasta(hoy.toISOString().split('T')[0])
+    69→  }
+    70→
+    71→  const fetchVentas = useCallback(async () => {
+    72→    setLoading(true)
+    73→    try {
+    74→      const params = new URLSearchParams()
+    75→      if (fechaDesde) params.set('fecha_desde', fechaDesde)
+    76→      if (fechaHasta) params.set('fecha_hasta', fechaHasta)
+    77→      const res = await fetch(`/api/reportes/ventas?${params.toString()}`)
+    78→      if (!res.ok) throw new Error()
+    79→      const data = await res.json()
+    80→      setVentasData(data)
+    81→    } catch { toast.error('Error al cargar reporte de ventas') }
+    82→    finally { setLoading(false) }
+    83→  }, [fechaDesde, fechaHasta])
+    84→
+    85→  const fetchCompras = useCallback(async () => {
+    86→    setLoading(true)
+    87→    try {
+    88→      const params = new URLSearchParams()
+    89→      if (fechaDesde) params.set('fecha_desde', fechaDesde)
+    90→      if (fechaHasta) params.set('fecha_hasta', fechaHasta)
+    91→      const res = await fetch(`/api/reportes/compras?${params.toString()}`)
+    92→      if (!res.ok) throw new Error()
+    93→      const data = await res.json()
+    94→      setComprasData(data)
+    95→    } catch { toast.error('Error al cargar reporte de compras') }
+    96→    finally { setLoading(false) }
+    97→  }, [fechaDesde, fechaHasta])
+    98→
+    99→  const fetchStock = useCallback(async () => {
+   100→    setLoading(true)
+   101→    try {
+   102→      const res = await fetch('/api/reportes/stock')
+   103→      if (!res.ok) throw new Error()
+   104→      const data = await res.json()
+   105→      setStockData(data)
+   106→    } catch { toast.error('Error al cargar reporte de stock') }
+   107→    finally { setLoading(false) }
+   108→  }, [])
+   109→
+   110→  const fetchProduccion = useCallback(async () => {
+   111→    setLoading(true)
+   112→    try {
+   113→      const params = new URLSearchParams()
+   114→      if (fechaDesde) params.set('fecha_desde', fechaDesde)
+   115→      if (fechaHasta) params.set('fecha_hasta', fechaHasta)
+   116→      const res = await fetch(`/api/reportes/produccion?${params.toString()}`)
+   117→      if (!res.ok) throw new Error()
+   118→      const data = await res.json()
+   119→      setProduccionData(data)
+   120→    } catch { toast.error('Error al cargar reporte de producción') }
+   121→    finally { setLoading(false) }
+   122→  }, [fechaDesde, fechaHasta])
+   123→
+   124→  const fetchFinanzas = useCallback(async () => {
+   125→    setLoading(true)
+   126→    try {
+   127→      const params = new URLSearchParams()
+   128→      if (fechaDesde) params.set('fecha_desde', fechaDesde)
+   129→      if (fechaHasta) params.set('fecha_hasta', fechaHasta)
+   130→      const res = await fetch(`/api/reportes/finanzas?${params.toString()}`)
+   131→      if (!res.ok) throw new Error()
+   132→      const data = await res.json()
+   133→      setFinanzasData(data)
+   134→    } catch { toast.error('Error al cargar reporte financiero') }
+   135→    finally { setLoading(false) }
+   136→  }, [fechaDesde, fechaHasta])
+   137→
+   138→  useEffect(() => {
+   139→    switch (tab) {
+   140→      case 'ventas': fetchVentas(); break
+   141→      case 'compras': fetchCompras(); break
+   142→      case 'stock': fetchStock(); break
+   143→      case 'produccion': fetchProduccion(); break
+   144→      case 'finanzas': fetchFinanzas(); break
+   145→    }
+   146→  }, [tab, fetchVentas, fetchCompras, fetchStock, fetchProduccion, fetchFinanzas])
+   147→
+   148→  return (
+   149→    <div className="space-y-6">
+   150→      <div>
+   151→        <h1 className="text-2xl font-bold text-marron">Reportes</h1>
+   152→        <p className="text-muted-foreground text-sm">Reportes exportables del sistema</p>
+   153→      </div>
+   154→
+   155→      {/* Date Range Selector */}
+   156→      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+   157→        <div className="flex gap-2 flex-wrap">
+   158→          <Button variant="outline" size="sm" onClick={() => setDateRange('hoy')} className="text-xs">Hoy</Button>
+   159→          <Button variant="outline" size="sm" onClick={() => setDateRange('semana')} className="text-xs">Semana</Button>
+   160→          <Button variant="outline" size="sm" onClick={() => setDateRange('mes')} className="text-xs">Mes</Button>
+   161→          <Button variant="outline" size="sm" onClick={() => setDateRange('anio')} className="text-xs">Año</Button>
+   162→        </div>
+   163→        <div className="flex gap-2 items-center">
+   164→          <Input type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} className="w-36" />
+   165→          <span className="text-muted-foreground">a</span>
+   166→          <Input type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} className="w-36" />
+   167→        </div>
+   168→      </div>
+   169→
+   170→      <Tabs value={tab} onValueChange={setTab}>
+   171→        <TabsList className="grid grid-cols-5 w-full">
+   172→          <TabsTrigger value="ventas">Ventas</TabsTrigger>
+   173→          <TabsTrigger value="compras">Compras</TabsTrigger>
+   174→          <TabsTrigger value="stock">Stock</TabsTrigger>
+   175→          <TabsTrigger value="produccion">Producción</TabsTrigger>
+   176→          <TabsTrigger value="finanzas">Finanzas</TabsTrigger>
+   177→        </TabsList>
+   178→
+   179→        {/* VENTAS */}
+   180→        <TabsContent value="ventas" className="space-y-4">
+   181→          {loading ? (
+   182→            <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-mostaza" /></div>
+   183→          ) : ventasData ? (
+   184→            <>
+   185→              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   186→                <Card className="border-marron/5">
+   187→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total Ventas</CardTitle></CardHeader>
+   188→                  <CardContent><p className="text-2xl font-bold text-marron">{formatPrice(ventasData.resumen.totalVentas)}</p></CardContent>
+   189→                </Card>
+   190→                <Card className="border-marron/5">
+   191→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Cantidad</CardTitle></CardHeader>
+   192→                  <CardContent><p className="text-2xl font-bold text-marron">{ventasData.resumen.cantidadVentas}</p></CardContent>
+   193→                </Card>
+   194→                <Card className="border-marron/5">
+   195→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Ticket Promedio</CardTitle></CardHeader>
+   196→                  <CardContent><p className="text-2xl font-bold text-marron">{formatPrice(ventasData.resumen.ticketPromedio)}</p></CardContent>
+   197→                </Card>
+   198→              </div>
+   199→
+   200→              {/* Productos más vendidos */}
+   201→              <Card className="border-marron/5">
+   202→                <CardHeader className="flex flex-row items-center justify-between">
+   203→                  <CardTitle className="text-base text-marron">Productos Más Vendidos</CardTitle>
+   204→                  <div className="flex gap-2">
+   205→                    <ExportadorExcel data={ventasData.productosMasVendidos} filename="productos_mas_vendidos" columns={[{ key: 'nombre', header: 'Producto' }, { key: 'cantidad', header: 'Cantidad' }, { key: 'subtotal', header: 'Subtotal' }]} modulo="reportes" />
+   206→                    <ExportadorCSV data={ventasData.productosMasVendidos} filename="productos_mas_vendidos" columns={[{ key: 'nombre', header: 'Producto' }, { key: 'cantidad', header: 'Cantidad' }, { key: 'subtotal', header: 'Subtotal' }]} modulo="reportes" />
+   207→                  </div>
+   208→                </CardHeader>
+   209→                <CardContent>
+   210→                  <Table>
+   211→                    <TableHeader><TableRow>
+   212→                      <TableHead>Producto</TableHead><TableHead className="text-right">Cantidad</TableHead><TableHead className="text-right">Subtotal</TableHead>
+   213→                    </TableRow></TableHeader>
+   214→                    <TableBody>
+   215→                      {ventasData.productosMasVendidos.map((p: any, i: number) => (
+   216→                        <TableRow key={i}><TableCell className="font-medium">{p.nombre}</TableCell><TableCell className="text-right">{formatNumber(p.cantidad)}</TableCell><TableCell className="text-right">{formatPrice(p.subtotal)}</TableCell></TableRow>
+   217→                      ))}
+   218→                    </TableBody>
+   219→                  </Table>
+   220→                </CardContent>
+   221→              </Card>
+   222→
+   223→              {/* Clientes más frecuentes */}
+   224→              <Card className="border-marron/5">
+   225→                <CardHeader><CardTitle className="text-base text-marron">Clientes Más Frecuentes</CardTitle></CardHeader>
+   226→                <CardContent>
+   227→                  <Table>
+   228→                    <TableHeader><TableRow>
+   229→                      <TableHead>Cliente</TableHead><TableHead className="text-right">Compras</TableHead><TableHead className="text-right">Total</TableHead>
+   230→                    </TableRow></TableHeader>
+   231→                    <TableBody>
+   232→                      {ventasData.clientesMasFrecuentes.map((c: any, i: number) => (
+   233→                        <TableRow key={i}><TableCell className="font-medium">{c.nombre}</TableCell><TableCell className="text-right">{c.compras}</TableCell><TableCell className="text-right">{formatPrice(c.total)}</TableCell></TableRow>
+   234→                      ))}
+   235→                    </TableBody>
+   236→                  </Table>
+   237→                </CardContent>
+   238→              </Card>
+   239→
+   240→              {/* Ventas por día */}
+   241→              <Card className="border-marron/5">
+   242→                <CardHeader className="flex flex-row items-center justify-between">
+   243→                  <CardTitle className="text-base text-marron">Ventas por Día</CardTitle>
+   244→                  <div className="flex gap-2">
+   245→                    <ExportadorExcel data={ventasData.ventasPorDia} filename="ventas_por_dia" columns={[{ key: 'fecha', header: 'Fecha' }, { key: 'cantidad', header: 'Ventas' }, { key: 'total', header: 'Total' }]} modulo="reportes" />
+   246→                  </div>
+   247→                </CardHeader>
+   248→                <CardContent>
+   249→                  <div className="max-h-64 overflow-y-auto">
+   250→                    <Table>
+   251→                      <TableHeader><TableRow>
+   252→                        <TableHead>Fecha</TableHead><TableHead className="text-right">Ventas</TableHead><TableHead className="text-right">Total</TableHead>
+   253→                      </TableRow></TableHeader>
+   254→                      <TableBody>
+   255→                        {ventasData.ventasPorDia.map((d: any, i: number) => (
+   256→                          <TableRow key={i}><TableCell>{d.fecha}</TableCell><TableCell className="text-right">{d.cantidad}</TableCell><TableCell className="text-right">{formatPrice(d.total)}</TableCell></TableRow>
+   257→                        ))}
+   258→                      </TableBody>
+   259→                    </Table>
+   260→                  </div>
+   261→                </CardContent>
+   262→              </Card>
+   263→            </>
+   264→          ) : null}
+   265→        </TabsContent>
+   266→
+   267→        {/* COMPRAS */}
+   268→        <TabsContent value="compras" className="space-y-4">
+   269→          {loading ? (
+   270→            <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-mostaza" /></div>
+   271→          ) : comprasData ? (
+   272→            <>
+   273→              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   274→                <Card className="border-marron/5">
+   275→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total Compras</CardTitle></CardHeader>
+   276→                  <CardContent><p className="text-2xl font-bold text-marron">{formatPrice(comprasData.resumen.totalCompras)}</p></CardContent>
+   277→                </Card>
+   278→                <Card className="border-marron/5">
+   279→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Cantidad</CardTitle></CardHeader>
+   280→                  <CardContent><p className="text-2xl font-bold text-marron">{comprasData.resumen.cantidadCompras}</p></CardContent>
+   281→                </Card>
+   282→                <Card className="border-marron/5">
+   283→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Promedio</CardTitle></CardHeader>
+   284→                  <CardContent><p className="text-2xl font-bold text-marron">{formatPrice(comprasData.resumen.promedioCompra)}</p></CardContent>
+   285→                </Card>
+   286→              </div>
+   287→
+   288→              <Card className="border-marron/5">
+   289→                <CardHeader className="flex flex-row items-center justify-between">
+   290→                  <CardTitle className="text-base text-marron">Proveedores Más Utilizados</CardTitle>
+   291→                  <div className="flex gap-2">
+   292→                    <ExportadorExcel data={comprasData.proveedoresMasUtilizados} filename="proveedores" columns={[{ key: 'nombre', header: 'Proveedor' }, { key: 'compras', header: 'Compras' }, { key: 'total', header: 'Total' }]} modulo="reportes" />
+   293→                  </div>
+   294→                </CardHeader>
+   295→                <CardContent>
+   296→                  <Table>
+   297→                    <TableHeader><TableRow>
+   298→                      <TableHead>Proveedor</TableHead><TableHead className="text-right">Compras</TableHead><TableHead className="text-right">Total</TableHead>
+   299→                    </TableRow></TableHeader>
+   300→                    <TableBody>
+   301→                      {comprasData.proveedoresMasUtilizados.map((p: any, i: number) => (
+   302→                        <TableRow key={i}><TableCell className="font-medium">{p.nombre}</TableCell><TableCell className="text-right">{p.compras}</TableCell><TableCell className="text-right">{formatPrice(p.total)}</TableCell></TableRow>
+   303→                      ))}
+   304→                    </TableBody>
+   305→                  </Table>
+   306→                </CardContent>
+   307→              </Card>
+   308→
+   309→              <Card className="border-marron/5">
+   310→                <CardHeader><CardTitle className="text-base text-marron">Productos Más Comprados</CardTitle></CardHeader>
+   311→                <CardContent>
+   312→                  <Table>
+   313→                    <TableHeader><TableRow>
+   314→                      <TableHead>Producto</TableHead><TableHead className="text-right">Cantidad</TableHead><TableHead className="text-right">Total</TableHead>
+   315→                    </TableRow></TableHeader>
+   316→                    <TableBody>
+   317→                      {comprasData.productosMasComprados.map((p: any, i: number) => (
+   318→                        <TableRow key={i}><TableCell className="font-medium">{p.nombre}</TableCell><TableCell className="text-right">{formatNumber(p.cantidad)}</TableCell><TableCell className="text-right">{formatPrice(p.total)}</TableCell></TableRow>
+   319→                      ))}
+   320→                    </TableBody>
+   321→                  </Table>
+   322→                </CardContent>
+   323→              </Card>
+   324→            </>
+   325→          ) : null}
+   326→        </TabsContent>
+   327→
+   328→        {/* STOCK */}
+   329→        <TabsContent value="stock" className="space-y-4">
+   330→          {loading ? (
+   331→            <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-mostaza" /></div>
+   332→          ) : stockData ? (
+   333→            <>
+   334→              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+   335→                <Card className="border-marron/5">
+   336→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Valor Stock Total</CardTitle></CardHeader>
+   337→                  <CardContent><p className="text-2xl font-bold text-marron">{formatPrice(stockData.resumen.valorStockTotal)}</p></CardContent>
+   338→                </Card>
+   339→                <Card className="border-marron/5">
+   340→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Stock Crítico</CardTitle></CardHeader>
+   341→                  <CardContent><p className="text-2xl font-bold text-rojo">{stockData.resumen.stockCriticoMP + stockData.resumen.stockCriticoInsumos + stockData.resumen.stockCriticoPT}</p></CardContent>
+   342→                </Card>
+   343→                <Card className="border-marron/5">
+   344→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Valor MP</CardTitle></CardHeader>
+   345→                  <CardContent><p className="text-xl font-bold text-marron">{formatPrice(stockData.resumen.valorStockMP)}</p></CardContent>
+   346→                </Card>
+   347→                <Card className="border-marron/5">
+   348→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Valor PT</CardTitle></CardHeader>
+   349→                  <CardContent><p className="text-xl font-bold text-marron">{formatPrice(stockData.resumen.valorStockPT)}</p></CardContent>
+   350→                </Card>
+   351→              </div>
+   352→
+   353→              {/* Alertas de Stock */}
+   354→              {stockData.alertasStock.length > 0 && (
+   355→                <Card className="border-rojo/20 bg-rojo/5">
+   356→                  <CardHeader className="flex flex-row items-center justify-between">
+   357→                    <CardTitle className="text-base text-rojo flex items-center gap-2">
+   358→                      <AlertTriangle className="h-5 w-5" /> Alertas de Stock Bajo
+   359→                    </CardTitle>
+   360→                    <div className="flex gap-2">
+   361→                      <ExportadorExcel data={stockData.alertasStock} filename="alertas_stock" columns={[{ key: 'tipo', header: 'Tipo' }, { key: 'nombre', header: 'Nombre' }, { key: 'stock_actual', header: 'Stock Actual' }, { key: 'stock_minimo', header: 'Stock Mínimo' }]} modulo="reportes" />
+   362→                    </div>
+   363→                  </CardHeader>
+   364→                  <CardContent>
+   365→                    <Table>
+   366→                      <TableHeader><TableRow>
+   367→                        <TableHead>Tipo</TableHead><TableHead>Nombre</TableHead><TableHead className="text-right">Stock Actual</TableHead><TableHead className="text-right">Stock Mínimo</TableHead>
+   368→                      </TableRow></TableHeader>
+   369→                      <TableBody>
+   370→                        {stockData.alertasStock.map((a: any, i: number) => (
+   371→                          <TableRow key={i}>
+   372→                            <TableCell><Badge variant="outline" className="text-xs">{a.tipo}</Badge></TableCell>
+   373→                            <TableCell className="font-medium">{a.nombre}</TableCell>
+   374→                            <TableCell className="text-right text-rojo font-bold">{formatNumber(a.stock_actual)} {a.unidad}</TableCell>
+   375→                            <TableCell className="text-right">{formatNumber(a.stock_minimo)} {a.unidad}</TableCell>
+   376→                          </TableRow>
+   377→                        ))}
+   378→                      </TableBody>
+   379→                    </Table>
+   380→                  </CardContent>
+   381→                </Card>
+   382→              )}
+   383→
+   384→              {/* Productos Terminados */}
+   385→              <Card className="border-marron/5">
+   386→                <CardHeader className="flex flex-row items-center justify-between">
+   387→                  <CardTitle className="text-base text-marron">Stock de Productos Terminados</CardTitle>
+   388→                  <div className="flex gap-2">
+   389→                    <ExportadorExcel data={stockData.productosTerminados.map((p: any) => ({ nombre: p.nombre, categoria: p.categoria?.nombre, stock_actual: p.stock_actual, stock_minimo: p.stock_minimo, precio_venta: p.precio_venta, valor: p.stock_actual * p.precio_venta }))} filename="stock_pt" columns={[{ key: 'nombre', header: 'Producto' }, { key: 'categoria', header: 'Categoría' }, { key: 'stock_actual', header: 'Stock' }, { key: 'precio_venta', header: 'Precio' }, { key: 'valor', header: 'Valor' }]} modulo="reportes" />
+   390→                  </div>
+   391→                </CardHeader>
+   392→                <CardContent>
+   393→                  <div className="max-h-64 overflow-y-auto">
+   394→                    <Table>
+   395→                      <TableHeader><TableRow>
+   396→                        <TableHead>Producto</TableHead><TableHead>Categoría</TableHead><TableHead className="text-right">Stock</TableHead><TableHead className="text-right">Precio</TableHead><TableHead className="text-right">Valor</TableHead>
+   397→                      </TableRow></TableHeader>
+   398→                      <TableBody>
+   399→                        {stockData.productosTerminados.map((p: any) => (
+   400→                          <TableRow key={p.id}>
+   401→                            <TableCell className="font-medium">{p.nombre}</TableCell>
+   402→                            <TableCell><Badge variant="outline" className="text-xs">{p.categoria?.nombre}</Badge></TableCell>
+   403→                            <TableCell className="text-right"><span className={p.stock_actual <= p.stock_minimo ? 'text-rojo font-bold' : ''}>{formatNumber(p.stock_actual)}</span></TableCell>
+   404→                            <TableCell className="text-right">{formatPrice(p.precio_venta)}</TableCell>
+   405→                            <TableCell className="text-right">{formatPrice(p.stock_actual * p.precio_venta)}</TableCell>
+   406→                          </TableRow>
+   407→                        ))}
+   408→                      </TableBody>
+   409→                    </Table>
+   410→                  </div>
+   411→                </CardContent>
+   412→              </Card>
+   413→            </>
+   414→          ) : null}
+   415→        </TabsContent>
+   416→
+   417→        {/* PRODUCCIÓN */}
+   418→        <TabsContent value="produccion" className="space-y-4">
+   419→          {loading ? (
+   420→            <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-mostaza" /></div>
+   421→          ) : produccionData ? (
+   422→            <>
+   423→              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+   424→                <Card className="border-marron/5">
+   425→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total Producido</CardTitle></CardHeader>
+   426→                  <CardContent><p className="text-2xl font-bold text-marron">{produccionData.resumen.totalProducido} u.</p></CardContent>
+   427→                </Card>
+   428→                <Card className="border-marron/5">
+   429→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Costo Total</CardTitle></CardHeader>
+   430→                  <CardContent><p className="text-2xl font-bold text-marron">{formatPrice(produccionData.resumen.costoTotal)}</p></CardContent>
+   431→                </Card>
+   432→                <Card className="border-marron/5">
+   433→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Costo Promedio</CardTitle></CardHeader>
+   434→                  <CardContent><p className="text-2xl font-bold text-marron">{formatPrice(produccionData.resumen.costoPromedio)}/u</p></CardContent>
+   435→                </Card>
+   436→              </div>
+   437→
+   438→              <Card className="border-marron/5">
+   439→                <CardHeader className="flex flex-row items-center justify-between">
+   440→                  <CardTitle className="text-base text-marron">Costos por Producto</CardTitle>
+   441→                  <div className="flex gap-2">
+   442→                    <ExportadorExcel data={produccionData.costosPorProducto.map((c: any) => ({ producto: c.producto, producido: c.producido, costoTotal: c.costoTotal, costoPromedio: c.costoPromedio }))} filename="costos_produccion" columns={[{ key: 'producto', header: 'Producto' }, { key: 'producido', header: 'Producido' }, { key: 'costoTotal', header: 'Costo Total' }, { key: 'costoPromedio', header: 'Costo Prom.' }]} modulo="reportes" />
+   443→                    <ExportadorPDF data={produccionData.costosPorProducto.map((c: any) => ({ producto: c.producto, producido: String(c.producido), costoTotal: formatPrice(c.costoTotal), costoPromedio: formatPrice(c.costoPromedio) }))} filename="costos_produccion" title="Costos de Producción" columns={[{ key: 'producto', header: 'Producto' }, { key: 'producido', header: 'Producido' }, { key: 'costoTotal', header: 'Costo Total' }, { key: 'costoPromedio', header: 'Costo Prom.' }]} modulo="reportes" />
+   444→                  </div>
+   445→                </CardHeader>
+   446→                <CardContent>
+   447→                  <Table>
+   448→                    <TableHeader><TableRow>
+   449→                      <TableHead>Producto</TableHead><TableHead className="text-right">Producido</TableHead><TableHead className="text-right">Costo Total</TableHead><TableHead className="text-right">Costo Prom.</TableHead>
+   450→                    </TableRow></TableHeader>
+   451→                    <TableBody>
+   452→                      {produccionData.costosPorProducto.map((c: any, i: number) => (
+   453→                        <TableRow key={i}><TableCell className="font-medium">{c.producto}</TableCell><TableCell className="text-right">{c.producido} u.</TableCell><TableCell className="text-right">{formatPrice(c.costoTotal)}</TableCell><TableCell className="text-right">{formatPrice(c.costoPromedio)}</TableCell></TableRow>
+   454→                      ))}
+   455→                    </TableBody>
+   456→                  </Table>
+   457→                </CardContent>
+   458→              </Card>
+   459→            </>
+   460→          ) : null}
+   461→        </TabsContent>
+   462→
+   463→        {/* FINANZAS */}
+   464→        <TabsContent value="finanzas" className="space-y-4">
+   465→          {loading ? (
+   466→            <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-mostaza" /></div>
+   467→          ) : finanzasData ? (
+   468→            <>
+   469→              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+   470→                <Card className="border-oliva/20">
+   471→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground flex items-center gap-1"><TrendingUp className="h-3.5 w-3.5 text-oliva" /> Ingresos</CardTitle></CardHeader>
+   472→                  <CardContent><p className="text-2xl font-bold text-oliva">{formatPrice(finanzasData.resumen.ingresos)}</p></CardContent>
+   473→                </Card>
+   474→                <Card className="border-rojo/20">
+   475→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground flex items-center gap-1"><TrendingDown className="h-3.5 w-3.5 text-rojo" /> Egresos</CardTitle></CardHeader>
+   476→                  <CardContent><p className="text-2xl font-bold text-rojo">{formatPrice(finanzasData.resumen.totalEgresos)}</p></CardContent>
+   477→                </Card>
+   478→                <Card className={finanzasData.resumen.resultado >= 0 ? 'border-oliva/20' : 'border-rojo/20'}>
+   479→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Resultado</CardTitle></CardHeader>
+   480→                  <CardContent><p className={`text-2xl font-bold ${finanzasData.resumen.resultado >= 0 ? 'text-oliva' : 'text-rojo'}`}>{formatPrice(finanzasData.resumen.resultado)}</p></CardContent>
+   481→                </Card>
+   482→                <Card className="border-marron/5">
+   483→                  <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Margen</CardTitle></CardHeader>
+   484→                  <CardContent><p className={`text-2xl font-bold ${finanzasData.resumen.margenPromedio >= 0 ? 'text-oliva' : 'text-rojo'}`}>{finanzasData.resumen.margenPromedio.toFixed(1)}%</p></CardContent>
+   485→                </Card>
+   486→              </div>
+   487→
+   488→              {/* Ingresos vs Egresos por mes */}
+   489→              <Card className="border-marron/5">
+   490→                <CardHeader className="flex flex-row items-center justify-between">
+   491→                  <CardTitle className="text-base text-marron">Ingresos vs Egresos por Mes</CardTitle>
+   492→                  <div className="flex gap-2">
+   493→                    <ExportadorExcel data={finanzasData.datosPorMes.map((m: any) => ({ mes: m.mes, ingresos: m.ingresos, egresosCompras: m.egresosCompras, egresosProduccion: m.egresosProduccion, resultado: m.ingresos - m.egresosCompras - m.egresosProduccion }))} filename="finanzas_mensual" columns={[{ key: 'mes', header: 'Mes' }, { key: 'ingresos', header: 'Ingresos' }, { key: 'egresosCompras', header: 'Egresos Compras' }, { key: 'egresosProduccion', header: 'Egresos Producción' }, { key: 'resultado', header: 'Resultado' }]} modulo="reportes" />
+   494→                  </div>
+   495→                </CardHeader>
+   496→                <CardContent>
+   497→                  <Table>
+   498→                    <TableHeader><TableRow>
+   499→                      <TableHead>Mes</TableHead><TableHead className="text-right">Ingresos</TableHead><TableHead className="text-right">Egresos Compras</TableHead><TableHead className="text-right">Egresos Prod.</TableHead><TableHead className="text-right">Resultado</TableHead>
+   500→                    </TableRow></TableHeader>
+   501→                    <TableBody>
+   502→                      {finanzasData.datosPorMes.map((m: any, i: number) => {
+   503→                        const resultado = m.ingresos - m.egresosCompras - m.egresosProduccion
+   504→                        return (
+   505→                          <TableRow key={i}>
+   506→                            <TableCell className="font-medium">{m.mes}</TableCell>
+   507→                            <TableCell className="text-right text-oliva">{formatPrice(m.ingresos)}</TableCell>
+   508→                            <TableCell className="text-right text-rojo">{formatPrice(m.egresosCompras)}</TableCell>
+   509→                            <TableCell className="text-right text-rojo">{formatPrice(m.egresosProduccion)}</TableCell>
+   510→                            <TableCell className={`text-right font-bold ${resultado >= 0 ? 'text-oliva' : 'text-rojo'}`}>{formatPrice(resultado)}</TableCell>
+   511→                          </TableRow>
+   512→                        )
+   513→                      })}
+   514→                    </TableBody>
+   515→                  </Table>
+   516→                </CardContent>
+   517→              </Card>
+   518→
+   519→              {/* Margen por producto */}
+   520→              <Card className="border-marron/5">
+   521→                <CardHeader className="flex flex-row items-center justify-between">
+   522→                  <CardTitle className="text-base text-marron">Margen por Producto</CardTitle>
+   523→                  <div className="flex gap-2">
+   524→                    <ExportadorExcel data={finanzasData.margenesPorProducto.map((m: any) => ({ producto: m.producto, ingreso: m.ingreso, costoProduccion: m.costoProduccion, margen: m.margen.toFixed(2) + '%' }))} filename="margen_producto" columns={[{ key: 'producto', header: 'Producto' }, { key: 'ingreso', header: 'Ingreso' }, { key: 'costoProduccion', header: 'Costo Prod.' }, { key: 'margen', header: 'Margen %' }]} modulo="reportes" />
+   525→                    <ExportadorPDF data={finanzasData.margenesPorProducto.map((m: any) => ({ producto: m.producto, ingreso: formatPrice(m.ingreso), costoProduccion: formatPrice(m.costoProduccion), margen: m.margen.toFixed(1) + '%' }))} filename="margen_producto" title="Margen por Producto" columns={[{ key: 'producto', header: 'Producto' }, { key: 'ingreso', header: 'Ingreso' }, { key: 'costoProduccion', header: 'Costo Prod.' }, { key: 'margen', header: 'Margen' }]} modulo="reportes" />
+   526→                  </div>
+   527→                </CardHeader>
+   528→                <CardContent>
+   529→                  <Table>
+   530→                    <TableHeader><TableRow>
+   531→                      <TableHead>Producto</TableHead><TableHead className="text-right">Ingreso</TableHead><TableHead className="text-right">Costo Prod.</TableHead><TableHead className="text-right">Margen</TableHead>
+   532→                    </TableRow></TableHeader>
+   533→                    <TableBody>
+   534→                      {finanzasData.margenesPorProducto.map((m: any, i: number) => (
+   535→                        <TableRow key={i}>
+   536→                          <TableCell className="font-medium">{m.producto}</TableCell>
+   537→                          <TableCell className="text-right">{formatPrice(m.ingreso)}</TableCell>
+   538→                          <TableCell className="text-right">{formatPrice(m.costoProduccion)}</TableCell>
+   539→                          <TableCell className={`text-right font-bold ${m.margen >= 0 ? 'text-oliva' : 'text-rojo'}`}>{m.margen.toFixed(1)}%</TableCell>
+   540→                        </TableRow>
+   541→                      ))}
+   542→                    </TableBody>
+   543→                  </Table>
+   544→                </CardContent>
+   545→              </Card>
+   546→            </>
+   547→          ) : null}
+   548→        </TabsContent>
+   549→      </Tabs>
+   550→    </div>
+   551→  )
+   552→}
+   553→
