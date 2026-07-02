@@ -8,7 +8,7 @@ import {
   Leaf, PackageOpen, UtensilsCrossed, ShoppingCart, ClipboardList,
   ArrowLeftRight, Receipt, CalendarCheck, DollarSign, Factory,
   AlertTriangle, BookOpen, Shield, TrendingUp, FileBarChart,
-  CheckCircle, ChevronDown, ChevronUp, Utensils
+  CheckCircle, ChevronDown, ChevronUp, Utensils, Info, AlertCircle
 } from 'lucide-react'
 import Link from 'next/link'
 
@@ -48,40 +48,56 @@ interface DashboardStats {
   recetasActivas: number
 }
 
-interface StockItem {
+// ─── Alert Types ────────────────────────────────────────────────────────────
+
+type AlertSeverity = 'critica' | 'media' | 'informativa'
+
+interface AlertItem {
   id: number
   nombre: string
-  stock_actual: number
-  stock_minimo: number
+  stock_actual?: number
+  stock_minimo?: number
+  fecha?: string | null
 }
 
-interface StockAlerts {
-  productos_terminados: {
-    sin_stock: number
-    stock_bajo: number
-    ok: number
-    total: number
-    sin_stock_list: StockItem[]
-    stock_bajo_list: StockItem[]
+interface AlertEntry {
+  count: number
+  severity: AlertSeverity
+  label: string
+  items: AlertItem[]
+  href: string
+}
+
+interface AlertsData {
+  alertas: {
+    stock: Record<string, AlertEntry>
+    produccion: Record<string, AlertEntry>
+    clientes: Record<string, AlertEntry>
+    proveedores: Record<string, AlertEntry>
+    ventas: Record<string, AlertEntry>
+    tienda: Record<string, AlertEntry>
   }
-  materias_primas: {
-    sin_stock: number
-    stock_bajo: number
-    ok: number
+  resumen: {
     total: number
-    sin_stock_list: StockItem[]
-    stock_bajo_list: StockItem[]
+    criticas: number
+    medias: number
+    informativas: number
   }
-  insumos: {
-    sin_stock: number
-    stock_bajo: number
-    ok: number
-    total: number
-    sin_stock_list: StockItem[]
-    stock_bajo_list: StockItem[]
-  }
-  recetas_activas: number
-  produccion_pendiente: number
+}
+
+const CATEGORY_META: Record<string, { label: string; icon: typeof AlertTriangle }> = {
+  stock: { label: 'Stock', icon: Package },
+  produccion: { label: 'Producción y Recetas', icon: Factory },
+  clientes: { label: 'Clientes y Pedidos', icon: ClipboardList },
+  proveedores: { label: 'Proveedores y Compras', icon: ShoppingCart },
+  ventas: { label: 'Ventas y Presupuestos', icon: Receipt },
+  tienda: { label: 'Productos y Tienda', icon: UtensilsCrossed },
+}
+
+const SEVERITY_META: Record<AlertSeverity, { color: string; bg: string; border: string; icon: typeof AlertTriangle }> = {
+  critica: { color: 'text-rojo', bg: 'bg-rojo/10', border: 'border-rojo/30', icon: AlertTriangle },
+  media: { color: 'text-orange-600', bg: 'bg-orange-50', border: 'border-orange-200', icon: AlertCircle },
+  informativa: { color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', icon: Info },
 }
 
 // ─── Animation Variants ──────────────────────────────────────────────────────
@@ -137,9 +153,10 @@ export default function DashboardPage() {
     recetasActivas: 0,
   })
   const [loading, setLoading] = useState(true)
-  const [stockAlerts, setStockAlerts] = useState<StockAlerts | null>(null)
+  const [alertsData, setAlertsData] = useState<AlertsData | null>(null)
   const [alertsOpen, setAlertsOpen] = useState(false)
   const [alertsLoading, setAlertsLoading] = useState(true)
+  const [activeAlertCategory, setActiveAlertCategory] = useState<string>('stock')
 
   // Fetch general stats
   useEffect(() => {
@@ -214,77 +231,47 @@ export default function DashboardPage() {
     fetchStats()
   }, [])
 
-  // Fetch stock alerts
-  const fetchStockAlerts = useCallback(async () => {
+  // Fetch comprehensive alerts
+  const fetchAlerts = useCallback(async () => {
     setAlertsLoading(true)
     try {
-      const res = await fetch('/api/stock-alerts')
+      const res = await fetch('/api/alerts')
       if (res.ok) {
-        const data: StockAlerts = await res.json()
-        setStockAlerts(data)
-        // Update metric cards with real data
+        const data: AlertsData = await res.json()
+        setAlertsData(data)
         setStats(prev => ({
           ...prev,
-          stockCritico: data.productos_terminados.sin_stock + data.productos_terminados.stock_bajo,
-          recetasActivas: data.recetas_activas,
+          stockCritico: data.resumen.criticas,
+          recetasActivas: data.alertas.produccion.receta_sin_ingredientes
+            ? 0 : 0, // Keep from stats API
         }))
       }
     } catch (error) {
-      console.error('Error fetching stock alerts:', error)
+      console.error('Error fetching alerts:', error)
     } finally {
       setAlertsLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchStockAlerts()
-  }, [fetchStockAlerts])
+    fetchAlerts()
+  }, [fetchAlerts])
 
   // ─── Derived alert data ────────────────────────────────────────────────────
 
-  const totalAlerts = stockAlerts
-    ? stockAlerts.productos_terminados.sin_stock +
-      stockAlerts.materias_primas.stock_bajo +
-      stockAlerts.insumos.stock_bajo
-    : 0
-
-  const alertItems = stockAlerts
-    ? [
-        {
-          key: 'pt-sin-stock',
-          count: stockAlerts.productos_terminados.sin_stock,
-          label: 'productos terminados sin stock',
-          bgColor: 'bg-rojo/15',
-          borderColor: 'border-rojo/30',
-          textColor: 'text-rojo',
-          iconColor: 'text-rojo',
-          href: '/admin/productos-terminados?stock=sin_stock',
-          list: stockAlerts.productos_terminados.sin_stock_list,
-        },
-        {
-          key: 'mp-stock-bajo',
-          count: stockAlerts.materias_primas.stock_bajo,
-          label: 'materias primas con stock bajo',
-          bgColor: 'bg-mostaza/15',
-          borderColor: 'border-mostaza/30',
-          textColor: 'text-mostaza',
-          iconColor: 'text-mostaza',
-          href: '/admin/materias-primas?stock=stock_bajo',
-          list: stockAlerts.materias_primas.stock_bajo_list,
-        },
-        {
-          key: 'ins-stock-bajo',
-          count: stockAlerts.insumos.stock_bajo,
-          label: 'insumos con stock bajo',
-          bgColor: 'bg-mostaza/15',
-          borderColor: 'border-mostaza/30',
-          textColor: 'text-mostaza',
-          iconColor: 'text-mostaza',
-          href: '/admin/insumos?stock=stock_bajo',
-          list: stockAlerts.insumos.stock_bajo_list,
-        },
-      ].filter(a => a.count > 0)
+  // Get active alerts only (count > 0)
+  const activeCategories = alertsData
+    ? Object.entries(alertsData.alertas)
+        .map(([key, entries]) => ({
+          key,
+          meta: CATEGORY_META[key],
+          alerts: Object.values(entries).filter((e: AlertEntry) => e.count > 0),
+          total: Object.values(entries).reduce((sum: number, e: AlertEntry) => sum + e.count, 0),
+        }))
+        .filter(cat => cat.total > 0)
     : []
+
+  const totalAlerts = alertsData?.resumen.total ?? 0
 
   // ─── Metric Cards ──────────────────────────────────────────────────────────
 
@@ -319,11 +306,11 @@ export default function DashboardPage() {
       href: '/admin/produccion',
     },
     {
-      title: 'Stock Crítico',
+      title: 'Alertas Críticas',
       value: stats.stockCritico,
       icon: AlertTriangle,
       color: stats.stockCritico > 0 ? 'bg-rojo/10 text-rojo' : 'bg-oliva/10 text-oliva',
-      href: '/admin/productos-terminados',
+      href: '/admin/dashboard',
     },
     {
       title: 'Recetas Activas',
@@ -436,9 +423,9 @@ export default function DashboardPage() {
 
       </div>
 
-      {/* ─── Stock Alerts Panel ───────────────────────────────────────────── */}
+      {/* ─── Alerts Panel ───────────────────────────────────────────── */}
       <AnimatePresence>
-        {!alertsLoading && stockAlerts && (
+        {!alertsLoading && alertsData && (
           <motion.div
             variants={alertPanelVariants}
             initial="hidden"
@@ -454,13 +441,13 @@ export default function DashboardPage() {
                       <CheckCircle className="h-5 w-5 text-oliva" />
                     </div>
                     <p className="font-medium text-oliva">
-                      ✅ Todo el stock está en orden
+                      ✅ Todo está en orden — No hay alertas activas
                     </p>
                   </div>
                 </CardContent>
               </Card>
             ) : (
-              /* ── Alerts Collapsible ── */
+              /* ── Comprehensive Alerts Panel ── */
               <Collapsible open={alertsOpen} onOpenChange={setAlertsOpen}>
                 <Card className="border-rojo/20">
                   <CollapsibleTrigger asChild>
@@ -472,22 +459,22 @@ export default function DashboardPage() {
                           </div>
                           <div>
                             <CardTitle className="text-base text-marron">
-                              Alertas de Stock
+                              Panel de Alertas
                             </CardTitle>
                             <div className="flex flex-wrap gap-2 mt-1.5">
-                              {stockAlerts.productos_terminados.sin_stock > 0 && (
+                              {alertsData!.resumen.criticas > 0 && (
                                 <Badge variant="destructive" className="text-xs">
-                                  {stockAlerts.productos_terminados.sin_stock} sin stock
+                                  {alertsData!.resumen.criticas} críticas
                                 </Badge>
                               )}
-                              {stockAlerts.materias_primas.stock_bajo > 0 && (
-                                <Badge className="text-xs bg-mostaza text-white border-mostaza">
-                                  {stockAlerts.materias_primas.stock_bajo} MP bajo
+                              {alertsData!.resumen.medias > 0 && (
+                                <Badge className="text-xs bg-orange-500 text-white border-orange-500">
+                                  {alertsData!.resumen.medias} medias
                                 </Badge>
                               )}
-                              {stockAlerts.insumos.stock_bajo > 0 && (
-                                <Badge className="text-xs bg-mostaza text-white border-mostaza">
-                                  {stockAlerts.insumos.stock_bajo} insumos bajo
+                              {alertsData!.resumen.informativas > 0 && (
+                                <Badge className="text-xs bg-blue-500 text-white border-blue-500">
+                                  {alertsData!.resumen.informativas} informativas
                                 </Badge>
                               )}
                             </div>
@@ -504,50 +491,88 @@ export default function DashboardPage() {
                   </CollapsibleTrigger>
 
                   <CollapsibleContent>
-                    <CardContent className="pt-0 pb-4 px-5 space-y-3">
-                      <Separator className="mb-2" />
-                      {alertItems.map(alert => (
-                        <Link key={alert.key} href={alert.href}>
-                          <motion.div
-                            whileHover={{ scale: 1.01 }}
-                            whileTap={{ scale: 0.99 }}
-                            className={`rounded-lg border ${alert.borderColor} ${alert.bgColor} p-3 transition-colors hover:brightness-95`}
-                          >
-                            <div className="flex items-center gap-2 mb-1">
-                              <AlertTriangle className={`h-4 w-4 ${alert.iconColor}`} />
-                              <span className={`font-semibold text-sm ${alert.textColor}`}>
-                                {alert.count} {alert.label}
-                              </span>
-                            </div>
-                            {alert.list.length > 0 && (
-                              <div className="ml-6 mt-1 space-y-1">
-                                {alert.list.slice(0, 5).map(item => (
-                                  <div key={item.id} className="flex items-center justify-between text-xs text-muted-foreground">
-                                    <span>{item.nombre}</span>
-                                    <span className="font-mono">
-                                      {item.stock_actual} / {item.stock_minimo}
-                                    </span>
-                                  </div>
-                                ))}
-                                {alert.list.length > 5 && (
-                                  <p className="text-xs text-muted-foreground italic mt-1">
-                                    y {alert.list.length - 5} más...
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                          </motion.div>
-                        </Link>
-                      ))}
+                    <CardContent className="pt-0 pb-4 px-5 space-y-4">
+                      <Separator className="mb-1" />
 
-                      <div className="flex justify-end pt-1">
-                        <Link href="/admin/productos-terminados?stock=sin_stock">
-                          <Button variant="ghost" size="sm" className="text-xs text-marron hover:text-rojo">
-                            Ver todos los detalles
-                            <ArrowRight className="ml-1 h-3 w-3" />
-                          </Button>
-                        </Link>
+                      {/* Category tabs */}
+                      <div className="flex flex-wrap gap-1.5">
+                        {activeCategories.map(cat => (
+                          <button
+                            key={cat.key}
+                            type="button"
+                            onClick={() => setActiveAlertCategory(cat.key)}
+                            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                              activeAlertCategory === cat.key
+                                ? 'bg-marron text-crema shadow-sm'
+                                : 'bg-muted text-muted-foreground hover:bg-marron/10 hover:text-marron'
+                            }`}
+                          >
+                            <cat.meta.icon className="h-3.5 w-3.5" />
+                            {cat.meta.label}
+                            <span className={`ml-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                              activeAlertCategory === cat.key
+                                ? 'bg-crema/20 text-crema'
+                                : 'bg-marron/10 text-marron'
+                            }`}>
+                              {cat.total}
+                            </span>
+                          </button>
+                        ))}
                       </div>
+
+                      {/* Alert items for active category */}
+                      {activeCategories
+                        .filter(cat => cat.key === activeAlertCategory)
+                        .map(cat => (
+                          <div key={cat.key} className="space-y-2">
+                            {cat.alerts.map((alert: AlertEntry, idx: number) => {
+                              const sev = SEVERITY_META[alert.severity]
+                              const SevIcon = sev.icon
+                              return (
+                                <Link key={idx} href={alert.href}>
+                                  <motion.div
+                                    whileHover={{ scale: 1.005 }}
+                                    whileTap={{ scale: 0.995 }}
+                                    className={`rounded-lg border ${sev.border} ${sev.bg} p-3 transition-colors hover:brightness-95`}
+                                  >
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <SevIcon className={`h-4 w-4 ${sev.color}`} />
+                                      <span className={`font-semibold text-sm ${sev.color}`}>
+                                        {alert.count} {alert.label}
+                                      </span>
+                                      <Badge variant="outline" className={`text-[10px] ml-auto ${sev.color} border-current`}>
+                                        {alert.severity === 'critica' ? '🔴 Crítica' : alert.severity === 'media' ? '🟠 Media' : '🔵 Info'}
+                                      </Badge>
+                                    </div>
+                                    {alert.items.length > 0 && (
+                                      <div className="ml-6 mt-1 space-y-1">
+                                        {alert.items.slice(0, 5).map(item => (
+                                          <div key={item.id} className="flex items-center justify-between text-xs text-muted-foreground">
+                                            <span className="truncate mr-2">{item.nombre}</span>
+                                            {item.stock_actual !== undefined && item.stock_minimo !== undefined ? (
+                                              <span className="font-mono shrink-0">
+                                                {item.stock_actual} / {item.stock_minimo}
+                                              </span>
+                                            ) : item.fecha ? (
+                                              <span className="font-mono shrink-0">
+                                                {new Date(item.fecha).toLocaleDateString('es-AR')}
+                                              </span>
+                                            ) : null}
+                                          </div>
+                                        ))}
+                                        {alert.items.length > 5 && (
+                                          <p className="text-xs text-muted-foreground italic mt-1">
+                                            y {alert.items.length - 5} más...
+                                          </p>
+                                        )}
+                                      </div>
+                                    )}
+                                  </motion.div>
+                                </Link>
+                              )
+                            })}
+                          </div>
+                        ))}
                     </CardContent>
                   </CollapsibleContent>
                 </Card>
