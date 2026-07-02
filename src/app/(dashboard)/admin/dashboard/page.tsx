@@ -8,9 +8,8 @@ import {
   Leaf, PackageOpen, UtensilsCrossed, ShoppingCart, ClipboardList,
   ArrowLeftRight, Receipt, CalendarCheck, DollarSign, Factory,
   AlertTriangle, BookOpen, Shield, TrendingUp, FileBarChart,
-  HelpCircle, CheckCircle, ChevronDown, ChevronUp, Utensils
+  CheckCircle, ChevronDown, ChevronUp, Utensils
 } from 'lucide-react'
-import StaticHelp from '@/components/admin/StaticHelp'
 import Link from 'next/link'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -141,7 +140,6 @@ export default function DashboardPage() {
   const [stockAlerts, setStockAlerts] = useState<StockAlerts | null>(null)
   const [alertsOpen, setAlertsOpen] = useState(false)
   const [alertsLoading, setAlertsLoading] = useState(true)
-  const [helpOpen, setHelpOpen] = useState(false)
 
   // Fetch general stats
   useEffect(() => {
@@ -435,16 +433,7 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        {/* ─── Help Button → Opens StaticHelp ──────────────────────────────────── */}
-        <Button
-          variant="outline"
-          className="shrink-0 border-marron/20 hover:border-oliva hover:bg-oliva/5 text-marron gap-2"
-          onClick={() => setHelpOpen(true)}
-        >
-          <HelpCircle className="h-4 w-4" />
-          <span className="hidden sm:inline">¿Cómo usar esto?</span>
-        </Button>
-        <StaticHelp open={helpOpen} onOpenChange={setHelpOpen} />
+
       </div>
 
       {/* ─── Stock Alerts Panel ───────────────────────────────────────────── */}
