@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db, ensureDbReady } from '@/lib/db'
 
 // GET /api/promociones
 export async function GET(request: NextRequest) {
   try {
+    await ensureDbReady()
     const { searchParams } = new URL(request.url)
     const activo = searchParams.get('activo')
     const tipo = searchParams.get('tipo')

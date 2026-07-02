@@ -279,7 +279,7 @@ export default function ProductosTerminadosTable() {
                 <TableHead className="hidden sm:table-cell">Categoría</TableHead>
                 <TableHead className="hidden md:table-cell">Harina</TableHead>
                 <TableHead>Precio</TableHead>
-                <TableHead className="hidden lg:table-cell">Margen</TableHead>
+                <TableHead className="hidden md:table-cell">Margen</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead className="hidden md:table-cell">Landing</TableHead>
                 <TableHead className="hidden md:table-cell">Estado</TableHead>
@@ -369,15 +369,20 @@ export default function ProductosTerminadosTable() {
                       <TableCell className="font-medium">
                         {formatPrice(pt.precio_venta)}
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell">
+                      <TableCell className="hidden md:table-cell">
                         {costData[pt.id] ? (
-                          <div className="text-xs">
+                          <div className="text-xs space-y-0.5">
                             <span className={`font-bold ${
                               costData[pt.id].margen_porcentaje > 50 ? 'text-oliva' :
                               costData[pt.id].margen_porcentaje >= 30 ? 'text-mostaza' : 'text-rojo'
                             }`}>
                               {costData[pt.id].margen_porcentaje.toFixed(0)}%
                             </span>
+                            {costData[pt.id].tiene_receta && costData[pt.id].costo_produccion > 0 && (
+                              <div className="text-[10px] text-muted-foreground">
+                                Costo: {formatPrice(costData[pt.id].costo_produccion)}
+                              </div>
+                            )}
                             {!costData[pt.id].tiene_receta && (
                               <span className="text-muted-foreground ml-1">—</span>
                             )}

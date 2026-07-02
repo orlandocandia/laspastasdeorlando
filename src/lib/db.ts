@@ -70,6 +70,35 @@ async function autoMigrateTurso(client: Client) {
     { sql: 'ALTER TABLE "ProductoTerminado" ADD COLUMN "texto_reverso" TEXT', desc: 'ProductoTerminado.texto_reverso' },
     { sql: 'ALTER TABLE "CategoriaProductoTerminado" ADD COLUMN "seccion" TEXT', desc: 'CategoriaProductoTerminado.seccion' },
     { sql: 'ALTER TABLE "ProductoTerminado" ADD COLUMN "seccion" TEXT', desc: 'ProductoTerminado.seccion' },
+
+    // ── CREATE TABLE Promocion (if not exists) ──────────────
+    { sql: `CREATE TABLE IF NOT EXISTS "Promocion" (
+      "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "nombre" TEXT NOT NULL,
+      "descripcion" TEXT,
+      "tipo" TEXT NOT NULL,
+      "valor_descuento" REAL NOT NULL DEFAULT 0,
+      "fecha_inicio" DATETIME NOT NULL,
+      "fecha_fin" DATETIME,
+      "activo" BOOLEAN NOT NULL DEFAULT 1,
+      "aplicar_auto" BOOLEAN NOT NULL DEFAULT 0,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME
+    )`, desc: 'Promocion table' },
+
+    // ── CREATE TABLE PromocionProducto (if not exists) ──────
+    { sql: `CREATE TABLE IF NOT EXISTS "PromocionProducto" (
+      "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "id_promocion" INTEGER NOT NULL,
+      "id_producto_terminado" INTEGER NOT NULL,
+      "id_categoria" INTEGER,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("id_promocion") REFERENCES "Promocion"("id") ON DELETE CASCADE,
+      FOREIGN KEY ("id_producto_terminado") REFERENCES "ProductoTerminado"("id"),
+      FOREIGN KEY ("id_categoria") REFERENCES "CategoriaProductoTerminado"("id")
+    )`, desc: 'PromocionProducto table' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "PromocionProducto_id_promocion_idx" ON "PromocionProducto"("id_promocion")', desc: 'PromocionProducto_id_promocion_idx' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "PromocionProducto_id_producto_terminado_idx" ON "PromocionProducto"("id_producto_terminado")', desc: 'PromocionProducto_id_producto_terminado_idx' },
   ]
 
   // Data migrations: set seccion for known categories (idempotent — WHERE seccion IS NULL)

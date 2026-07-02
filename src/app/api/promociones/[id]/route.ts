@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db, ensureDbReady } from '@/lib/db'
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    await ensureDbReady()
     const { id } = await params
     const promocion = await db.promocion.findUnique({
       where: { id: parseInt(id) },
