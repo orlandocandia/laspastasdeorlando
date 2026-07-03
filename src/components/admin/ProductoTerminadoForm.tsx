@@ -535,13 +535,18 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
         )}
 
         {/* Margen de Ganancia */}
-        {isEditing && productoTerminado?.costo_produccion !== undefined && (
+        {isEditing && (
           <div className="bg-muted/50 rounded-lg p-3 border">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="h-4 w-4 text-mostaza" />
               <span className="text-sm font-semibold text-marron">Margen de Ganancia</span>
             </div>
-            {productoTerminado.tiene_receta === false && productoTerminado.costo_produccion === 0 ? (
+            {productoTerminado?.costo_produccion === undefined ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <AlertCircle className="h-4 w-4" />
+                <span>Cargando datos de costo...</span>
+              </div>
+            ) : productoTerminado.tiene_receta === false && productoTerminado.costo_produccion === 0 ? (
               <div className="flex items-center gap-2 text-sm text-mostaza">
                 <AlertCircle className="h-4 w-4" />
                 <span>Sin receta asignada — no se puede calcular el costo</span>
@@ -580,7 +585,7 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
                 </div>
               </div>
             )}
-            {productoTerminado.receta_activa && (
+            {productoTerminado?.receta_activa && (
               <p className="text-xs text-muted-foreground mt-2">
                 Basado en receta: {productoTerminado.receta_activa.nombre_receta} (rinde {productoTerminado.receta_activa.rendimiento_unidades} u.)
               </p>

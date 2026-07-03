@@ -67,6 +67,12 @@ interface ProductoTerminado {
   imagen?: string | null
   estado: boolean
   categoria: { id: number; nombre: string; seccion?: string | null }
+  // Cost/margin fields (merged from costData API)
+  costo_produccion?: number
+  margen?: number
+  margen_porcentaje?: number
+  tiene_receta?: boolean
+  receta_activa?: { nombre_receta: string; rendimiento_unidades: number } | null
 }
 
 interface Categoria {
@@ -93,7 +99,7 @@ export default function ProductosTerminadosTable() {
   const [stockAdjustItem, setStockAdjustItem] = useState<ProductoTerminado | null>(null)
   const [stockAdjustOpen, setStockAdjustOpen] = useState(false)
   const [stockInitialOpen, setStockInitialOpen] = useState(false)
-  const [costData, setCostData] = useState<Record<number, { costo_produccion: number; margen: number; margen_porcentaje: number; tiene_receta: boolean }> >({})
+  const [costData, setCostData] = useState<Record<number, { costo_produccion: number; margen: number; margen_porcentaje: number; tiene_receta: boolean; receta_nombre?: string; rendimiento_unidades?: number }> >({})
 
   const fetchProductos = useCallback(async () => {
     setLoading(true)
@@ -189,7 +195,19 @@ export default function ProductosTerminadosTable() {
   }
 
   const openEdit = (producto: ProductoTerminado) => {
-    setSelectedProducto(producto)
+    // Merge cost data into the product so the form can show Margen info
+    const costInfo = costData[producto.id]
+    const productWithCost: ProductoTerminado = {
+      ...producto,
+      costo_produccion: costInfo?.costo_produccion,
+      margen: costInfo?.margen,
+      margen_porcentaje: costInfo?.margen_porcentaje,
+      tiene_receta: costInfo?.tiene_receta,
+      receta_activa: costInfo?.tiene_receta
+        ? { nombre_receta: costInfo.receta_nombre || '', rendimiento_unidades: costInfo.rendimiento_unidades || 1 }
+        : null,
+    }
+    setSelectedProducto(productWithCost)
     setFormOpen(true)
   }
 
@@ -279,7 +297,7 @@ export default function ProductosTerminadosTable() {
                 <TableHead className="hidden sm:table-cell">Categoría</TableHead>
                 <TableHead className="hidden md:table-cell">Harina</TableHead>
                 <TableHead>Precio</TableHead>
-                <TableHead className="hidden md:table-cell">Margen</TableHead>
+                <TableHead>Margen</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead className="hidden md:table-cell">Landing</TableHead>
                 <TableHead className="hidden md:table-cell">Estado</TableHead>
@@ -369,7 +387,7 @@ export default function ProductosTerminadosTable() {
                       <TableCell className="font-medium">
                         {formatPrice(pt.precio_venta)}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
+                      <TableCell>
                         {costData[pt.id] ? (
                           <div className="text-xs space-y-0.5">
                             <span className={`font-bold ${
