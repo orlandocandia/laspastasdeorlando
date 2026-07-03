@@ -5,6 +5,16 @@ import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
+interface PromocionInfo {
+  promocionId: number
+  promocionNombre: string
+  tipo: string
+  valor_descuento: number
+  precio_original: number
+  precio_final: number
+  descuento_label: string
+}
+
 interface ProductCardProps {
   producto: {
     id: number
@@ -26,6 +36,7 @@ interface ProductCardProps {
       imagen?: string | null
     }
   }
+  promocion?: PromocionInfo | null
 }
 
 const priceFormatter = new Intl.NumberFormat('es-AR', {
@@ -46,7 +57,9 @@ function renderizarModoCoccion(texto: string | null) {
   return html
 }
 
-export default function ProductCard({ producto }: ProductCardProps) {
+export type { PromocionInfo }
+
+export default function ProductCard({ producto, promocion }: ProductCardProps) {
   const sinStock = producto.stock_actual <= 0
   const [isFlipped, setIsFlipped] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
@@ -84,6 +97,8 @@ export default function ProductCard({ producto }: ProductCardProps) {
   const defaultReverso = esTapa ? '📦 Uso y Conservación' : '🍝 Modo de cocción'
   const textoFrente = producto.texto_frente?.trim() || defaultFrente
   const tituloReverso = producto.texto_reverso?.trim() || defaultReverso
+
+  const tienePromocion = !!promocion
 
   return (
     <div
@@ -133,10 +148,19 @@ export default function ProductCard({ producto }: ProductCardProps) {
               />
 
               {/* Destacado Badge */}
-              {producto.destacado && !sinStock && (
+              {producto.destacado && !sinStock && !tienePromocion && (
                 <div className="absolute top-3 left-3 z-10">
                   <Badge className="bg-mostaza text-marron text-xs font-bold px-3 py-1 shadow-md border-0">
                     ⭐ Destacado
+                  </Badge>
+                </div>
+              )}
+
+              {/* Promoción Badge — takes priority over Destacado */}
+              {tienePromocion && (
+                <div className="absolute top-3 left-3 z-10">
+                  <Badge className="bg-rojo text-white text-xs font-bold px-3 py-1 shadow-lg border-0 animate-pulse">
+                    🔥 {promocion.descuento_label}
                   </Badge>
                 </div>
               )}
@@ -191,9 +215,22 @@ export default function ProductCard({ producto }: ProductCardProps) {
                 </p>
               )}
               <div className="flex items-center justify-between mt-auto pt-2">
-                <p className="text-mostaza font-bold text-lg">
-                  {priceFormatter.format(producto.precio_venta)}
-                </p>
+                <div className="flex flex-col">
+                  {tienePromocion ? (
+                    <>
+                      <span className="text-muted-foreground text-xs line-through">
+                        {priceFormatter.format(promocion.precio_original)}
+                      </span>
+                      <span className="text-rojo font-bold text-lg leading-tight">
+                        {priceFormatter.format(promocion.precio_final)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-mostaza font-bold text-lg">
+                      {priceFormatter.format(producto.precio_venta)}
+                    </span>
+                  )}
+                </div>
                 <Button
                   size="sm"
                   onClick={(e) => {
@@ -242,6 +279,24 @@ export default function ProductCard({ producto }: ProductCardProps) {
 
           {/* Body — scrollable if text is long */}
           <div className="flex-1 overflow-y-auto p-4 pt-3 text-sm sm:text-sm md:text-sm lg:text-base">
+            {tienePromocion && (
+              <div className="mb-4 bg-rojo/5 border border-rojo/20 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm">🔥</span>
+                  <span className="font-bold text-rojo text-sm">{promocion.descuento_label}</span>
+                  <span className="text-xs text-muted-foreground">— {promocion.promocionNombre}</span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <span className="line-through text-muted-foreground">
+                    {priceFormatter.format(promocion.precio_original)}
+                  </span>
+                  <span className="font-bold text-rojo">
+                    {priceFormatter.format(promocion.precio_final)}
+                  </span>
+                </div>
+              </div>
+            )}
+
             {hasModoCoccion ? (
               <div
                 className="text-marron/80 leading-relaxed [&_strong]:text-marron [&_strong]:font-bold"

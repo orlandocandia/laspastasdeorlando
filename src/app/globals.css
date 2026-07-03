@@ -217,6 +217,15 @@
   background: #5C3A21;
 }
 
+/* Hide scrollbar for horizontal carousels */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
 /* ============================================
    HERO — Responsive para notebooks (1366×768)
    Solo se aplica en pantallas con ancho ≥ 640px

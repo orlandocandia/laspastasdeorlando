@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { PackageOpen, ArrowLeft, Wheat, Leaf, Sparkles, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import ProductCard from '@/components/products/ProductCard'
+import type { PromocionInfo } from '@/components/products/ProductCard'
 
 interface ProductoPublico {
   id: number
@@ -149,6 +150,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   const [seccionActiva, setSeccionActiva] = useState<Seccion | null>(null)
   const [familiaActiva, setFamiliaActiva] = useState<string | null>(null)
   const [visibleCount, setVisibleCount] = useState(PRODUCTS_PER_PAGE)
+  const [productoPromociones, setProductoPromociones] = useState<Record<number, PromocionInfo>>({})
   const fetchedRef = useRef(false)
   const productosGridRef = useRef<HTMLDivElement>(null)
 
@@ -161,19 +163,29 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
       setLoading(true)
       setError('')
       try {
-        const results = await Promise.all(
-          TODOS_FILTROS.map(async (tipo) => {
-            const res = await fetch(`/api/productos-terminados/public?tipo=${tipo}`)
-            if (!res.ok) throw new Error(`Error cargando ${tipo}`)
-            const data = await res.json()
-            return { tipo, productos: (data.productos || []) as ProductoPublico[] }
-          })
-        )
+        const [results, promoRes] = await Promise.all([
+          Promise.all(
+            TODOS_FILTROS.map(async (tipo) => {
+              const res = await fetch(`/api/productos-terminados/public?tipo=${tipo}`)
+              if (!res.ok) throw new Error(`Error cargando ${tipo}`)
+              const data = await res.json()
+              return { tipo, productos: (data.productos || []) as ProductoPublico[] }
+            })
+          ),
+          fetch('/api/promociones/public').then(async (res) => {
+            if (res.ok) {
+              const data = await res.json()
+              return data.productoPromociones || {}
+            }
+            return {}
+          }).catch(() => ({})),
+        ])
         setCache((prev) => {
           const next = { ...prev }
           for (const r of results) next[r.tipo] = r.productos
           return next
         })
+        setProductoPromociones(promoRes as Record<number, PromocionInfo>)
       } catch {
         setError('No se pudieron cargar los productos. Intentá más tarde.')
       } finally {
@@ -687,7 +699,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                         <>
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                             {productosVisibles.map((producto) => (
-                              <ProductCard key={producto.id} producto={producto} />
+                              <ProductCard key={producto.id} producto={producto} promocion={productoPromociones[producto.id] || null} />
                             ))}
                           </div>
 
