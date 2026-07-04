@@ -149,16 +149,16 @@ export default function ProductCard({ producto, promocion }: ProductCardProps) {
 
               {/* Destacado Badge */}
               {producto.destacado && !sinStock && !tienePromocion && (
-                <div className="absolute top-3 left-3 z-10">
+                <div className="absolute top-3 right-3 z-10">
                   <Badge className="bg-mostaza text-marron text-xs font-bold px-3 py-1 shadow-md border-0">
                     ⭐ Destacado
                   </Badge>
                 </div>
               )}
 
-              {/* Promoción Badge — takes priority over Destacado */}
+              {/* Promoción Badge — takes priority over Destacado, top-right corner */}
               {tienePromocion && (
-                <div className="absolute top-3 left-3 z-10">
+                <div className="absolute top-3 right-3 z-10">
                   <Badge className="bg-rojo text-white text-xs font-bold px-3 py-1 shadow-lg border-0 animate-pulse">
                     🔥 {promocion.descuento_label}
                   </Badge>

@@ -209,10 +209,10 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     fetchAll()
   }, [])
 
-  // Reset visible count when family or section changes
+  // Reset visible count when family, section, or soloOfertas changes
   useEffect(() => {
     setVisibleCount(PRODUCTS_PER_PAGE)
-  }, [familiaActiva, seccionActiva])
+  }, [familiaActiva, seccionActiva, soloOfertas])
 
   // Sync with parent filtro state — instant, no refetch
   useEffect(() => {
@@ -331,9 +331,26 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     return data
   }, [productos, familias, productoPromociones])
 
+  // All products in the active section (across all families)
+  const productosSeccion = useMemo(() => {
+    if (!seccionActiva) return []
+    return productos.filter((p) => {
+      const effSec = p.seccion ?? p.categoria.seccion
+      return effSec === seccionActiva
+    })
+  }, [productos, seccionActiva])
+
   // Products for the active family — filtered by both family name and effective section
+  // When soloOfertas is active and no family is selected, show all promo products in the section
   const productosFamilia = useMemo(() => {
-    if (!familiaActiva || !seccionActiva) return []
+    if (!seccionActiva) return []
+
+    // When soloOfertas is active and no specific family, show all promo products in the section
+    if (soloOfertas && !familiaActiva) {
+      return productosSeccion.filter((p) => !!productoPromociones[p.id])
+    }
+
+    if (!familiaActiva) return []
     const base = productos.filter((p) => {
       if (p.categoria.nombre !== familiaActiva) return false
       const effSec = p.seccion ?? p.categoria.seccion
@@ -344,7 +361,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
       return base.filter((p) => !!productoPromociones[p.id])
     }
     return base
-  }, [productos, familiaActiva, seccionActiva, soloOfertas, productoPromociones])
+  }, [productos, familiaActiva, seccionActiva, soloOfertas, productoPromociones, productosSeccion])
 
   const productosVisibles = useMemo(() => {
     return productosFamilia.slice(0, visibleCount)
@@ -408,6 +425,12 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     })
     return base.filter((p) => !!productoPromociones[p.id]).length
   }, [productos, familiaActiva, seccionActiva, productoPromociones])
+
+  // How many products have promos in the entire active section (across all families)
+  const promoCountInSection = useMemo(() => {
+    if (!seccionActiva) return 0
+    return productosSeccion.filter((p) => !!productoPromociones[p.id]).length
+  }, [productosSeccion, seccionActiva, productoPromociones])
 
   // Retry: re-fetch all
   const handleRetry = useCallback(async () => {
@@ -610,12 +633,13 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                 </button>
               ))}
 
-              {/* Solo Ofertas toggle */}
-              {Object.keys(productoPromociones).length > 0 && (
+              {/* Solo Ofertas toggle — shows all promo products in section when no family is selected */}
+              {promoCountInSection > 0 && (
                 <button
                   onClick={() => {
                     setSoloOfertas((prev) => !prev)
-                    setFamiliaActiva(null)
+                    // Don't clear family — if a family is selected, filter within it;
+                    // if no family is selected, show all promo products in the section
                   }}
                   className={`
                     inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold
@@ -627,7 +651,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                   `}
                 >
                   <Tag className="h-3.5 w-3.5" />
-                  Solo Ofertas
+                  {soloOfertas ? `Solo Ofertas (${promoCountInSection})` : `Solo Ofertas`}
                 </button>
               )}
             </div>
@@ -748,6 +772,63 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                     )
                   })}
                 </div>
+
+                {/* ══════ Solo Ofertas: All promo products in section (when no family selected) ══════ */}
+                {soloOfertas && !familiaActiva && (
+                  <div ref={productosGridRef} className="bg-crema/50 rounded-2xl p-6 mt-6">
+                    {/* Header */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 rounded-full bg-rojo/10 flex items-center justify-center flex-shrink-0">
+                        <Flame className="h-4 w-4 text-rojo" />
+                      </div>
+                      <h3 className="text-xl font-bold text-marron">
+                        Ofertas en {seccionConfig.label}
+                      </h3>
+                      <span className="text-sm text-muted-foreground">
+                        — {productosFamilia.length} {productosFamilia.length === 1 ? 'producto en oferta' : 'productos en oferta'}
+                      </span>
+                    </div>
+
+                    {/* Products Grid — paginated */}
+                    {productosFamilia.length === 0 ? (
+                      <div className="text-center py-8">
+                        <PackageOpen className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
+                        <p className="text-muted-foreground">
+                          No hay productos en oferta para este filtro en esta sección
+                        </p>
+                        <Button
+                          variant="link"
+                          onClick={() => setSoloOfertas(false)}
+                          className="text-rojo mt-2"
+                        >
+                          Ver todos los productos
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                          {productosVisibles.map((producto) => (
+                            <ProductCard key={producto.id} producto={producto} promocion={productoPromociones[producto.id] || null} />
+                          ))}
+                        </div>
+
+                        {/* "Ver más" button */}
+                        {hasMore && (
+                          <div className="flex justify-center mt-8">
+                            <Button
+                              variant="outline"
+                              onClick={handleLoadMore}
+                              className="border-mostaza text-marron hover:bg-mostaza hover:text-marron gap-2"
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                              Ver más ofertas ({productosFamilia.length - visibleCount} restantes)
+                            </Button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Expanded Family Products — paginated with "Ver más" */}
                 {familiaActiva && (() => {
