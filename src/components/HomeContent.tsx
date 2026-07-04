@@ -11,7 +11,6 @@ import Nosotros from '@/components/sections/Nosotros'
 import Opiniones from '@/components/sections/Opiniones'
 import FAQ from '@/components/sections/FAQ'
 import Contacto from '@/components/sections/Contacto'
-import OfertasEspeciales from '@/components/sections/OfertasEspeciales'
 
 export type FiltroHarina = 'con_gluten' | 'integral' | 'sin_gluten'
 
@@ -23,7 +22,6 @@ export default function HomeContent() {
       <Navbar />
       <main className="flex-1">
         <Hero />
-        <OfertasEspeciales />
         <Productos filtroActivo={filtroActivo} onFiltroChange={setFiltroActivo} />
         <ComoPedir />
         <Nosotros />
