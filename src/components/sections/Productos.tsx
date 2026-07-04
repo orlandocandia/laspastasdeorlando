@@ -239,6 +239,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   const handleFiltroChange = useCallback((nuevoFiltro: FiltroHarina) => {
     setFiltro(nuevoFiltro)
     setFamiliaActiva(null)
+    setSoloOfertas(false) // Filters are mutually exclusive — deactivate Solo Ofertas
     onFiltroChange?.(nuevoFiltro)
   }, [onFiltroChange])
 
@@ -259,7 +260,20 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   }, [onFiltroChange])
 
   // Current products from cache — instant swap, no network
-  const productos = cache[filtro]
+  // When soloOfertas is active, merge ALL flour types (since it's an exclusive filter)
+  const productos = useMemo(() => {
+    if (soloOfertas) {
+      // Merge all caches, dedup by product ID
+      const seen = new Map<number, ProductoPublico>()
+      for (const tipo of TODOS_FILTROS) {
+        for (const p of cache[tipo]) {
+          if (!seen.has(p.id)) seen.set(p.id, p)
+        }
+      }
+      return Array.from(seen.values())
+    }
+    return cache[filtro]
+  }, [cache, filtro, soloOfertas])
 
   // Build families dynamically from product categories, grouped by seccion
   const familiasBySeccion = useMemo(() => {
@@ -653,7 +667,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                   className={`
                     inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold
                     transition-colors duration-150 border
-                    ${filtro === f.key
+                    ${filtro === f.key && !soloOfertas
                       ? 'bg-mostaza text-marron border-mostaza shadow-md'
                       : 'bg-white text-marron/70 border-marron/10 hover:border-mostaza/50 hover:text-marron'
                     }
@@ -664,13 +678,20 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                 </button>
               ))}
 
-              {/* Solo Ofertas toggle — shows all promo products in section when no family is selected */}
+              {/* Solo Ofertas toggle — mutually exclusive with flour filters */}
               {promoCountInSection > 0 && (
                 <button
                   onClick={() => {
-                    setSoloOfertas((prev) => !prev)
-                    // Don't clear family — if a family is selected, filter within it;
-                    // if no family is selected, show all promo products in the section
+                    if (!soloOfertas) {
+                      // Activating Solo Ofertas — deactivate flour filter, show all flour types
+                      setSoloOfertas(true)
+                      setFamiliaActiva(null)
+                    } else {
+                      // Deactivating Solo Ofertas — restore default flour filter
+                      setSoloOfertas(false)
+                      setFiltro('con_gluten')
+                      onFiltroChange?.('con_gluten')
+                    }
                   }}
                   className={`
                     inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold
@@ -908,11 +929,19 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                         </span>
                       </div>
 
-                      {/* Solo Ofertas sub-filter (within family) */}
+                      {/* Solo Ofertas sub-filter (within family) — mutually exclusive with flour filters */}
                       {promoCountInFamily > 0 && (
                         <div className="mb-4">
                           <button
-                            onClick={() => setSoloOfertas((prev) => !prev)}
+                            onClick={() => {
+                              if (!soloOfertas) {
+                                setSoloOfertas(true)
+                              } else {
+                                setSoloOfertas(false)
+                                setFiltro('con_gluten')
+                                onFiltroChange?.('con_gluten')
+                              }
+                            }}
                             className={`
                               inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold
                               transition-colors duration-150 border
