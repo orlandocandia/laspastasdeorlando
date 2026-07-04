@@ -342,18 +342,19 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
 
   // Compute product counts per family
   const familiaData = useMemo(() => {
-    const data: Record<string, { count: number; hasProducts: boolean; hasPromos: boolean }> = {}
+    const data: Record<string, { count: number; hasProducts: boolean; hasPromos: boolean; promoCount: number }> = {}
     for (const familia of familias) {
       const prods = productos.filter((p) => {
         if (p.categoria.nombre !== familia.nombre) return false
         const effSec = p.seccion ?? p.categoria.seccion
         return effSec === familia.seccion
       })
-      const hasPromos = prods.some((p) => !!productoPromociones[p.id])
+      const promoProds = prods.filter((p) => !!productoPromociones[p.id])
       data[familia.nombre] = {
         count: prods.length,
         hasProducts: prods.length > 0,
-        hasPromos,
+        hasPromos: promoProds.length > 0,
+        promoCount: promoProds.length,
       }
     }
     return data
@@ -369,27 +370,20 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   }, [productos, seccionActiva])
 
   // Products for the active family — filtered by both family name and effective section
-  // When soloOfertas is active and no family is selected, show all promo products in the section
+  // When soloOfertas is active and a family is selected, show only promo products in that family
   const productosFamilia = useMemo(() => {
-    if (!seccionActiva) return []
-
-    // When soloOfertas is active and no specific family, show all promo products in the section
-    if (soloOfertas && !familiaActiva) {
-      return productosSeccion.filter((p) => !!productoPromociones[p.id])
-    }
-
-    if (!familiaActiva) return []
+    if (!seccionActiva || !familiaActiva) return []
     const base = productos.filter((p) => {
       if (p.categoria.nombre !== familiaActiva) return false
       const effSec = p.seccion ?? p.categoria.seccion
       return effSec === seccionActiva
     })
-    // Apply "solo ofertas" filter
+    // When soloOfertas is active, show only promo products within the family
     if (soloOfertas) {
       return base.filter((p) => !!productoPromociones[p.id])
     }
     return base
-  }, [productos, familiaActiva, seccionActiva, soloOfertas, productoPromociones, productosSeccion])
+  }, [productos, familiaActiva, seccionActiva, soloOfertas, productoPromociones])
 
   const productosVisibles = useMemo(() => {
     return productosFamilia.slice(0, visibleCount)
@@ -416,9 +410,15 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   }, [])
 
   // Filter out families with no products
+  // When soloOfertas is active, also filter out families with no promos
   const familiasVisibles = useMemo(
-    () => familias.filter((f) => familiaData[f.nombre]?.hasProducts),
-    [familias, familiaData]
+    () => familias.filter((f) => {
+      const data = familiaData[f.nombre]
+      if (!data?.hasProducts) return false
+      if (soloOfertas && !data.hasPromos) return false
+      return true
+    }),
+    [familias, familiaData, soloOfertas]
   )
 
   // Get promos for the active section (across ALL flour types, not just current filter)
@@ -750,12 +750,36 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                     className="object-cover w-full h-full"
                   />
                 </div>
-                <h3 className="text-xl font-bold text-marron mb-2">
-                  Próximamente {seccionConfig.label.toLowerCase()}
-                </h3>
-                <p className="text-muted-foreground max-w-sm mx-auto">
-                  Estamos trabajando para traerte los mejores {seccionConfig.label.toLowerCase()}. ¡Volvé pronto!
-                </p>
+                {soloOfertas ? (
+                  <>
+                    <h3 className="text-xl font-bold text-marron mb-2">
+                      No hay productos en oferta
+                    </h3>
+                    <p className="text-muted-foreground max-w-sm mx-auto">
+                      No hay productos con promoción activa en esta sección actualmente.
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setSoloOfertas(false)
+                        setFiltro('con_gluten')
+                        onFiltroChange?.('con_gluten')
+                      }}
+                      className="border-mostaza text-marron hover:bg-mostaza hover:text-marron mt-4"
+                    >
+                      Ver todos los productos
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-xl font-bold text-marron mb-2">
+                      Próximamente {seccionConfig.label.toLowerCase()}
+                    </h3>
+                    <p className="text-muted-foreground max-w-sm mx-auto">
+                      Estamos trabajando para traerte los mejores {seccionConfig.label.toLowerCase()}. ¡Volvé pronto!
+                    </p>
+                  </>
+                )}
               </div>
             ) : (
               <>
@@ -764,6 +788,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                   {familiasVisibles.map((familia) => {
                     const data = familiaData[familia.nombre]
                     const count = data?.count ?? 0
+                    const promoCount = data?.promoCount ?? 0
                     const isActive = familiaActiva === familia.nombre
                     const hasPromos = data?.hasPromos
 
@@ -812,8 +837,11 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                         </p>
 
                         {/* Badge */}
-                        <span className="bg-mostaza/20 text-marron text-xs rounded-full px-2 py-0.5 font-semibold flex-shrink-0">
-                          {count} {count === 1 ? 'variedad' : 'variedades'}
+                        <span className={`text-xs rounded-full px-2 py-0.5 font-semibold flex-shrink-0 ${soloOfertas ? 'bg-rojo/10 text-rojo' : 'bg-mostaza/20 text-marron'}`}>
+                          {soloOfertas
+                            ? `${promoCount} ${promoCount === 1 ? 'en oferta' : 'en oferta'}`
+                            : `${count} ${count === 1 ? 'variedad' : 'variedades'}`
+                          }
                         </span>
 
                         {/* Active indicator */}
@@ -824,63 +852,6 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                     )
                   })}
                 </div>
-
-                {/* ══════ Solo Ofertas: All promo products in section (when no family selected) ══════ */}
-                {soloOfertas && !familiaActiva && (
-                  <div ref={productosGridRef} className="bg-crema/50 rounded-2xl p-6 mt-6">
-                    {/* Header */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-8 h-8 rounded-full bg-rojo/10 flex items-center justify-center flex-shrink-0">
-                        <Flame className="h-4 w-4 text-rojo" />
-                      </div>
-                      <h3 className="text-xl font-bold text-marron">
-                        Ofertas en {seccionConfig.label}
-                      </h3>
-                      <span className="text-sm text-muted-foreground">
-                        — {productosFamilia.length} {productosFamilia.length === 1 ? 'producto en oferta' : 'productos en oferta'}
-                      </span>
-                    </div>
-
-                    {/* Products Grid — paginated */}
-                    {productosFamilia.length === 0 ? (
-                      <div className="text-center py-8">
-                        <PackageOpen className="h-12 w-12 mx-auto text-muted-foreground/40 mb-3" />
-                        <p className="text-muted-foreground">
-                          No hay productos en oferta para este filtro en esta sección
-                        </p>
-                        <Button
-                          variant="link"
-                          onClick={() => setSoloOfertas(false)}
-                          className="text-rojo mt-2"
-                        >
-                          Ver todos los productos
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                          {productosVisibles.map((producto) => (
-                            <ProductCard key={producto.id} producto={producto} promocion={productoPromociones[producto.id] || null} />
-                          ))}
-                        </div>
-
-                        {/* "Ver más" button */}
-                        {hasMore && (
-                          <div className="flex justify-center mt-8">
-                            <Button
-                              variant="outline"
-                              onClick={handleLoadMore}
-                              className="border-mostaza text-marron hover:bg-mostaza hover:text-marron gap-2"
-                            >
-                              <ChevronDown className="h-4 w-4" />
-                              Ver más ofertas ({productosFamilia.length - visibleCount} restantes)
-                            </Button>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
 
                 {/* Expanded Family Products — paginated with "Ver más" */}
                 {familiaActiva && (() => {
