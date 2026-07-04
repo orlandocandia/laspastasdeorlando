@@ -222,6 +222,20 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     }
   }, [filtroActivo, filtro])
 
+  // Ref for the filter bar area — scroll target when filters change
+  const filterBarRef = useRef<HTMLDivElement>(null)
+
+  // Smooth scroll to filter area when any filter or soloOfertas changes
+  useEffect(() => {
+    if (!seccionActiva || !filterBarRef.current) return
+    const yOffset = -20
+    const y = filterBarRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset
+    // Only scroll if the filter bar is not already visible near the top of the viewport
+    if (y < window.pageYOffset - 50 || y > window.pageYOffset + window.innerHeight - 200) {
+      window.scrollTo({ top: y, behavior: 'smooth' })
+    }
+  }, [filtro, soloOfertas, seccionActiva])
+
   const handleFiltroChange = useCallback((nuevoFiltro: FiltroHarina) => {
     setFiltro(nuevoFiltro)
     setFamiliaActiva(null)
@@ -393,27 +407,27 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
     [familias, familiaData]
   )
 
-  // Get promos for the active section
+  // Get promos for the active section (across ALL flour types, not just current filter)
   const promosForSection = useMemo(() => {
     if (!seccionActiva) return []
-    // Get product IDs in this section
-    const sectionProductIds = new Set(
-      productos
-        .filter((p) => {
-          const effSec = p.seccion ?? p.categoria.seccion
-          return effSec === seccionActiva
-        })
-        .map((p) => p.id)
-    )
+    // Get product IDs in this section across ALL flour types
+    const sectionProductIds = new Set<number>()
+    for (const tipo of TODOS_FILTROS) {
+      for (const p of cache[tipo]) {
+        const effSec = p.seccion ?? p.categoria.seccion
+        if (effSec === seccionActiva) {
+          sectionProductIds.add(p.id)
+        }
+      }
+    }
     // Filter promos that have products in this section
     return promociones.filter((promo) => {
-      // Check if any product with this promo is in this section
       return Object.entries(productoPromociones).some(
         ([productId, pInfo]) =>
           pInfo.promocionId === promo.id && sectionProductIds.has(Number(productId))
       )
     })
-  }, [seccionActiva, productos, promociones, productoPromociones])
+  }, [seccionActiva, cache, promociones, productoPromociones])
 
   // How many products have promos in the active family
   const promoCountInFamily = useMemo(() => {
@@ -427,10 +441,27 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
   }, [productos, familiaActiva, seccionActiva, productoPromociones])
 
   // How many products have promos in the entire active section (across all families)
+  // Uses ALL flour types' caches — not just the current filter — so the Solo Ofertas
+  // button stays visible regardless of which flour filter is active
   const promoCountInSection = useMemo(() => {
     if (!seccionActiva) return 0
+    let count = 0
+    for (const tipo of TODOS_FILTROS) {
+      for (const p of cache[tipo]) {
+        const effSec = p.seccion ?? p.categoria.seccion
+        if (effSec === seccionActiva && productoPromociones[p.id]) {
+          count++
+        }
+      }
+    }
+    return count
+  }, [cache, seccionActiva, productoPromociones])
+
+  // How many promo products for the CURRENT flour filter in the active section
+  // Used for the button count label to show relevant number
+  const promoCountForCurrentFilter = useMemo(() => {
     return productosSeccion.filter((p) => !!productoPromociones[p.id]).length
-  }, [productosSeccion, seccionActiva, productoPromociones])
+  }, [productosSeccion, productoPromociones])
 
   // Retry: re-fetch all
   const handleRetry = useCallback(async () => {
@@ -614,7 +645,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
             )}
 
             {/* Filter Buttons — Con Gluten / Integrales / Sin Gluten + Solo Ofertas */}
-            <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-8">
+            <div ref={filterBarRef} className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-8">
               {FILTROS.map((f) => (
                 <button
                   key={f.key}
@@ -651,7 +682,7 @@ export default function Productos({ filtroActivo = 'con_gluten', onFiltroChange 
                   `}
                 >
                   <Tag className="h-3.5 w-3.5" />
-                  {soloOfertas ? `Solo Ofertas (${promoCountInSection})` : `Solo Ofertas`}
+                  {soloOfertas ? `Solo Ofertas (${promoCountForCurrentFilter})` : `Solo Ofertas`}
                 </button>
               )}
             </div>
