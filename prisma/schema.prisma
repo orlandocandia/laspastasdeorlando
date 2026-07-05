@@ -1237,3 +1237,39 @@ model Consulta {
   @@index([fecha])
   @@index([leido])
 }
+
+// ============================================
+// DESCUENTOS POR VOLUMEN / CANTIDAD (MAYORISTAS)
+// ============================================
+
+model DescuentoVolumen {
+  id            Int                      @id @default(autoincrement())
+  nombre        String
+  descripcion   String?
+  tipo_item     String                   // "producto" | "categoria" | "todos"
+  item_id       Int?                     // ID del producto o categoría (NULL si aplica a todos)
+  unidad_medida String                   // "kg", "u", "bandeja", "docena", "l"
+  activo        Boolean                  @default(true)
+  fecha_inicio  DateTime?
+  fecha_fin     DateTime?
+  rangos        DescuentoVolumenRango[]
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+
+  @@index([tipo_item])
+  @@index([activo])
+  @@index([fecha_inicio, fecha_fin])
+}
+
+model DescuentoVolumenRango {
+  id             Int              @id @default(autoincrement())
+  id_descuento   Int
+  cantidad_desde Float            // 0, 5, 10, 20, etc.
+  cantidad_hasta Float?           // NULL = sin límite superior (∞)
+  tipo_descuento String           // "porcentaje" | "fijo"
+  valor          Float            // 5 (para 5%) o 100 (para $100)
+  descripcion    String?
+  descuento      DescuentoVolumen @relation(fields: [id_descuento], references: [id], onDelete: Cascade)
+
+  @@index([id_descuento])
+}

@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Loader2, LogOut, LayoutDashboard, Package, MessageSquare, BarChart3, Users, UserCircle, Leaf, PackageOpen, UtensilsCrossed, FolderTree, Tag, Ruler, ChevronDown, ChevronRight, ShoppingCart, ClipboardList, ArrowLeftRight, Settings, Receipt, CalendarCheck, BookOpen, Factory, Shield, FileBarChart, KeyRound, FileSearch, MonitorSmartphone, Truck, MapPin, Map, Bell, History, AlertTriangle, Send, FileText, AlertCircle, Mail, Printer, HelpCircle, Database } from 'lucide-react'
+import { Loader2, LogOut, LayoutDashboard, Package, MessageSquare, BarChart3, Users, UserCircle, Leaf, PackageOpen, UtensilsCrossed, FolderTree, Tag, Ruler, ChevronDown, ChevronRight, ShoppingCart, ClipboardList, ArrowLeftRight, Settings, Receipt, CalendarCheck, BookOpen, Factory, Shield, FileBarChart, KeyRound, FileSearch, MonitorSmartphone, Truck, MapPin, Map, Bell, History, AlertTriangle, Send, FileText, AlertCircle, Mail, Printer, HelpCircle, Database, Layers } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -102,6 +102,11 @@ const ventasItems = [
     title: 'Promociones',
     href: '/admin/promociones',
     icon: Tag,
+  },
+  {
+    title: 'Descuentos x Volumen',
+    href: '/admin/descuentos-volumen',
+    icon: Layers,
   },
   {
     title: 'Ventas',

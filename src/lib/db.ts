@@ -99,6 +99,37 @@ async function autoMigrateTurso(client: Client) {
     )`, desc: 'PromocionProducto table' },
     { sql: 'CREATE INDEX IF NOT EXISTS "PromocionProducto_id_promocion_idx" ON "PromocionProducto"("id_promocion")', desc: 'PromocionProducto_id_promocion_idx' },
     { sql: 'CREATE INDEX IF NOT EXISTS "PromocionProducto_id_producto_terminado_idx" ON "PromocionProducto"("id_producto_terminado")', desc: 'PromocionProducto_id_producto_terminado_idx' },
+
+    // ── CREATE TABLE DescuentoVolumen (if not exists) ──────
+    { sql: `CREATE TABLE IF NOT EXISTS "DescuentoVolumen" (
+      "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "nombre" TEXT NOT NULL,
+      "descripcion" TEXT,
+      "tipo_item" TEXT NOT NULL,
+      "item_id" INTEGER,
+      "unidad_medida" TEXT NOT NULL,
+      "activo" BOOLEAN NOT NULL DEFAULT 1,
+      "fecha_inicio" DATETIME,
+      "fecha_fin" DATETIME,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME
+    )`, desc: 'DescuentoVolumen table' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "DescuentoVolumen_tipo_item_idx" ON "DescuentoVolumen"("tipo_item")', desc: 'DescuentoVolumen_tipo_item_idx' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "DescuentoVolumen_activo_idx" ON "DescuentoVolumen"("activo")', desc: 'DescuentoVolumen_activo_idx' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "DescuentoVolumen_fecha_idx" ON "DescuentoVolumen"("fecha_inicio","fecha_fin")', desc: 'DescuentoVolumen_fecha_idx' },
+
+    // ── CREATE TABLE DescuentoVolumenRango (if not exists) ──────
+    { sql: `CREATE TABLE IF NOT EXISTS "DescuentoVolumenRango" (
+      "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "id_descuento" INTEGER NOT NULL,
+      "cantidad_desde" REAL NOT NULL,
+      "cantidad_hasta" REAL,
+      "tipo_descuento" TEXT NOT NULL,
+      "valor" REAL NOT NULL,
+      "descripcion" TEXT,
+      FOREIGN KEY ("id_descuento") REFERENCES "DescuentoVolumen"("id") ON DELETE CASCADE
+    )`, desc: 'DescuentoVolumenRango table' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "DescuentoVolumenRango_id_descuento_idx" ON "DescuentoVolumenRango"("id_descuento")', desc: 'DescuentoVolumenRango_id_descuento_idx' },
   ]
 
   // Data migrations: set seccion for known categories (idempotent — WHERE seccion IS NULL)

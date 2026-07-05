@@ -4,7 +4,7 @@ import type { NextConfig } from "next";
 // We need DATABASE_URL_FILE to always be a valid file: URL for Prisma
 // The actual Turso connection URL is in DATABASE_URL (runtime) or TURSO_DATABASE_URL
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // output: "standalone", // Temporarily disabled for testing
   typescript: {
     ignoreBuildErrors: true,
   },
