@@ -1,0 +1,1276 @@
+     1→// Pastas Orlando - Esquema de base de datos (Fase 13)
+     2→
+     3→generator client {
+     4→  provider = "prisma-client-js"
+     5→}
+     6→
+     7→datasource db {
+     8→  provider = "sqlite"
+     9→  url      = "file:./dev.db"
+    10→}
+    11→
+    12→// ============================================
+    13→// MODELOS ORIGINALES (FASE 1)
+    14→// ============================================
+    15→
+    16→model Producto {
+    17→  id          Int      @id @default(autoincrement())
+    18→  nombre      String
+    19→  descripcion String?
+    20→  categoria   String
+    21→  precio      Float
+    22→  peso        String   @default("500g")
+    23→  imagen      String?
+    24→  stock       Boolean  @default(true)
+    25→  destacado   Boolean  @default(false)
+    26→  orden       Int      @default(0)
+    27→  createdAt   DateTime @default(now())
+    28→  updatedAt   DateTime @updatedAt
+    29→}
+    30→
+    31→model Opinion {
+    32→  id              Int       @id @default(autoincrement())
+    33→  nombre          String
+    34→  email           String?
+    35→  calificacion    Int
+    36→  comentario      String
+    37→  estado          String    @default("pending")
+    38→  ip              String?
+    39→  fecha           DateTime  @default(now())
+    40→  fecha_aprobacion DateTime?
+    41→  id_aprobador    Int?
+    42→  respuesta       String?
+    43→  fecha_respuesta DateTime?
+    44→  destacado       Boolean   @default(false)
+    45→  orden           Int       @default(0)
+    46→}
+    47→
+    48→model InteraccionWhatsApp {
+    49→  id              Int      @id @default(autoincrement())
+    50→  tipo            String
+    51→  mensaje_enviado String
+    52→  ip              String?
+    53→  fecha           DateTime @default(now())
+    54→}
+    55→
+    56→// ============================================
+    57→// MÓDULO GEOGRÁFICO (base para direcciones)
+    58→// ============================================
+    59→
+    60→model Pais {
+    61→  id         Int         @id @default(autoincrement())
+    62→  nombre     String      @unique
+    63→  provincias Provincia[]
+    64→  createdAt  DateTime    @default(now())
+    65→}
+    66→
+    67→model Provincia {
+    68→  id            Int          @id @default(autoincrement())
+    69→  id_pais       Int
+    70→  nombre        String
+    71→  pais          Pais         @relation(fields: [id_pais], references: [id])
+    72→  departamentos Departamento[]
+    73→  createdAt     DateTime     @default(now())
+    74→
+    75→  @@unique([id_pais, nombre])
+    76→}
+    77→
+    78→model Departamento {
+    79→  id           Int       @id @default(autoincrement())
+    80→  id_provincia Int
+    81→  nombre       String
+    82→  provincia    Provincia @relation(fields: [id_provincia], references: [id])
+    83→  municipios   Municipio[]
+    84→  createdAt    DateTime  @default(now())
+    85→
+    86→  @@unique([id_provincia, nombre])
+    87→}
+    88→
+    89→model Municipio {
+    90→  id              Int          @id @default(autoincrement())
+    91→  id_departamento Int
+    92→  nombre          String
+    93→  departamento    Departamento @relation(fields: [id_departamento], references: [id])
+    94→  direcciones     Direccion[]
+    95→  personas        Persona[]
+    96→  createdAt       DateTime     @default(now())
+    97→
+    98→  @@unique([id_departamento, nombre])
+    99→}
+   100→
+   101→// ============================================
+   102→// MÓDULO PERSONAS (con tipos)
+   103→// ============================================
+   104→
+   105→model TipoPersona {
+   106→  id        Int      @id @default(autoincrement())
+   107→  nombre    String   @unique
+   108→  createdAt DateTime @default(now())
+   109→}
+   110→
+   111→model Persona {
+   112→  id               Int       @id @default(autoincrement())
+   113→  id_municipio     Int?
+   114→  nombre           String
+   115→  apellido         String
+   116→  numero_documento String    @unique
+   117→  fecha_nacimiento DateTime?
+   118→  observaciones    String?
+   119→  tipo_persona     String
+   120→  razon_social     String?
+   121→  cuit             String?
+   122→  condicion_iva    String?
+   123→  imagen           String?
+   124→  fecha_registro   DateTime  @default(now())
+   125→  fecha_actualizacion DateTime? @updatedAt
+   126→
+   127→  // Ubicación en mapa (FASE 12)
+   128→  latitud          Float?
+   129→  longitud         Float?
+   130→  direccion_mapa   String?
+   131→  ubicacion_valida Boolean   @default(false)
+   132→
+   133→  // Relaciones
+   134→  municipio        Municipio?  @relation(fields: [id_municipio], references: [id])
+   135→  contactos        Contacto[]
+   136→  direcciones      Direccion[]
+   137→  usuario          Usuario?
+   138→  compras          Compra[]
+   139→  pedidosProveedor PedidoProveedor[]
+   140→  pedidosCliente   PedidoCliente[]
+   141→  reservasCliente  ReservaCliente[]
+   142→  ventas           Venta[]
+   143→  produccionesSupervisadas Produccion[] @relation("SupervisorProduccion")
+   144→  presupuestos     Presupuesto[]
+   145→
+   146→  @@index([tipo_persona])
+   147→  @@index([numero_documento])
+   148→}
+   149→
+   150→// ============================================
+   151→// CONTACTOS (múltiples por persona)
+   152→// ============================================
+   153→
+   154→model TipoContacto {
+   155→  id        Int      @id @default(autoincrement())
+   156→  nombre    String   @unique
+   157→  contactos Contacto[]
+   158→}
+   159→
+   160→model Contacto {
+   161→  id              Int          @id @default(autoincrement())
+   162→  id_persona      Int
+   163→  id_tipo_contacto Int
+   164→  valor           String
+   165→  es_principal    Boolean      @default(false)
+   166→  verificado      Boolean      @default(false)
+   167→  persona         Persona      @relation(fields: [id_persona], references: [id], onDelete: Cascade)
+   168→  tipo            TipoContacto @relation(fields: [id_tipo_contacto], references: [id])
+   169→  createdAt       DateTime     @default(now())
+   170→  updatedAt       DateTime?    @updatedAt
+   171→}
+   172→
+   173→// ============================================
+   174→// DIRECCIONES (múltiples por persona)
+   175→// ============================================
+   176→
+   177→model TipoDireccion {
+   178→  id         Int        @id @default(autoincrement())
+   179→  nombre     String     @unique
+   180→  direcciones Direccion[]
+   181→}
+   182→
+   183→model Direccion {
+   184→  id              Int           @id @default(autoincrement())
+   185→  id_persona      Int
+   186→  id_tipo_direccion Int
+   187→  id_municipio    Int?
+   188→  direccion       String
+   189→  referencia      String?
+   190→  latitud         Float?
+   191→  longitud        Float?
+   192→  es_principal    Boolean       @default(false)
+   193→  persona         Persona       @relation(fields: [id_persona], references: [id], onDelete: Cascade)
+   194→  tipo            TipoDireccion @relation(fields: [id_tipo_direccion], references: [id])
+   195→  municipio       Municipio?    @relation(fields: [id_municipio], references: [id])
+   196→  createdAt       DateTime      @default(now())
+   197→  updatedAt       DateTime?     @updatedAt
+   198→}
+   199→
+   200→// ============================================
+   201→// USUARIOS (vinculados a Persona)
+   202→// ============================================
+   203→
+   204→model Usuario {
+   205→  id               Int      @id @default(autoincrement())
+   206→  id_persona       Int      @unique
+   207→  email            String   @unique
+   208→  password         String
+   209→  estado           Boolean  @default(true)
+   210→  imagen           String?
+   211→  fecha_registro   DateTime @default(now())
+   212→  fecha_actualizacion DateTime? @updatedAt
+   213→
+   214→  // Relaciones
+   215→  persona          Persona       @relation(fields: [id_persona], references: [id])
+   216→  roles            UsuarioRol[]
+   217→  sesiones         Sesion[]
+   218→  stockMovements   StockMovement[]
+   219→  ventas           Venta[]
+   220→  auditorias       Auditoria[]
+   221→  twoFactor        Usuario2FA?
+   222→  logsAcceso       LogAcceso[]
+   223→  sesionesActivas  SesionActiva[]
+   224→
+   225→  @@index([email])
+   226→}
+   227→
+   228→// ============================================
+   229→// ROLES Y PERMISOS
+   230→// ============================================
+   231→
+   232→model Rol {
+   233→  id          Int          @id @default(autoincrement())
+   234→  nombre      String       @unique  // admin, produccion, ventas, lectura
+   235→  descripcion String?
+   236→  es_default  Boolean      @default(false)
+   237→  usuarios    UsuarioRol[]
+   238→  permisos    RolPermiso[]
+   239→  createdAt   DateTime     @default(now())
+   240→  updatedAt   DateTime     @default(now()) @updatedAt
+   241→}
+   242→
+   243→model UsuarioRol {
+   244→  id_usuario Int
+   245→  id_rol     Int
+   246→  usuario    Usuario @relation(fields: [id_usuario], references: [id], onDelete: Cascade)
+   247→  rol        Rol     @relation(fields: [id_rol], references: [id])
+   248→
+   249→  @@id([id_usuario, id_rol])
+   250→}
+   251→
+   252→model Permiso {
+   253→  id          Int         @id @default(autoincrement())
+   254→  nombre      String      @unique  // formato: modulo.accion (ej: productos.ver)
+   255→  descripcion String?
+   256→  modulo      String      @default("general") // productos, compras, ventas, produccion, usuarios, auditoria, reportes, seguridad
+   257→  roles       RolPermiso[]
+   258→  createdAt   DateTime    @default(now())
+   259→
+   260→  @@index([modulo])
+   261→}
+   262→
+   263→model RolPermiso {
+   264→  id_rol     Int
+   265→  id_permiso Int
+   266→  rol        Rol     @relation(fields: [id_rol], references: [id], onDelete: Cascade)
+   267→  permiso    Permiso @relation(fields: [id_permiso], references: [id], onDelete: Cascade)
+   268→
+   269→  @@id([id_rol, id_permiso])
+   270→}
+   271→
+   272→// ============================================
+   273→// SESIONES (auditoría)
+   274→// ============================================
+   275→
+   276→model Sesion {
+   277→  id         Int      @id @default(autoincrement())
+   278→  id_usuario Int
+   279→  token      String
+   280→  ip         String?
+   281→  dispositivo String?
+   282→  fecha_inicio DateTime @default(now())
+   283→  fecha_fin  DateTime?
+   284→  usuario    Usuario  @relation(fields: [id_usuario], references: [id])
+   285→}
+   286→
+   287→// ============================================
+   288→// UNIDADES DE MEDIDA (FASE 3)
+   289→// ============================================
+   290→
+   291→model UnidadMedida {
+   292→  id              Int       @id @default(autoincrement())
+   293→  codigo          String    @unique
+   294→  nombre          String
+   295→  conversion_a_base Float   @default(1.0)
+   296→  tipo_medida     String    // peso, volumen, longitud, unidad
+   297→  createdAt       DateTime  @default(now())
+   298→  updatedAt       DateTime? @updatedAt
+   299→
+   300→  // Relaciones
+   301→  materiasPrimas        MateriaPrima[]
+   302→  insumos               Insumo[]
+   303→  detalleRecetas        DetalleReceta[]
+   304→  detalleCompras        DetalleCompra[]
+   305→  detallePedidosProveedor DetallePedidoProveedor[]
+   306→  stockMovements        StockMovement[]
+   307→  detalleProduccionConsumo DetalleProduccionConsumo[]
+   308→}
+   309→
+   310→// ============================================
+   311→// CATEGORÍAS DE MATERIAS PRIMAS (FASE 3)
+   312→// ============================================
+   313→
+   314→model CategoriaMateriaPrima {
+   315→  id          Int       @id @default(autoincrement())
+   316→  nombre      String    @unique
+   317→  descripcion String?
+   318→  createdAt   DateTime  @default(now())
+   319→  updatedAt   DateTime? @updatedAt
+   320→
+   321→  // Relaciones
+   322→  materiasPrimas MateriaPrima[]
+   323→}
+   324→
+   325→// ============================================
+   326→// MATERIAS PRIMAS (FASE 3)
+   327→// ============================================
+   328→
+   329→model MateriaPrima {
+   330→  id                     Int       @id @default(autoincrement())
+   331→  codigo                 String?   @unique
+   332→  nombre                 String
+   333→  descripcion            String?
+   334→  id_categoria           Int
+   335→  id_unidad_base         Int
+   336→  stock_actual           Float     @default(0)
+   337→  stock_minimo           Float     @default(0)
+   338→  precio_compra_referencia Float   @default(0)
+   339→  imagen                 String?
+   340→  estado                 Boolean   @default(true)
+   341→  createdAt              DateTime  @default(now())
+   342→  updatedAt              DateTime? @updatedAt
+   343→
+   344→  // Relaciones
+   345→  categoria       CategoriaMateriaPrima @relation(fields: [id_categoria], references: [id])
+   346→  unidadBase      UnidadMedida         @relation(fields: [id_unidad_base], references: [id])
+   347→  detalleRecetas  DetalleReceta[]
+   348→  detalleCompras  DetalleCompra[]
+   349→  detallePedidosProveedor DetallePedidoProveedor[]
+   350→  stockMovements  StockMovement[]
+   351→  detalleProduccionConsumo DetalleProduccionConsumo[]
+   352→
+   353→  @@index([codigo])
+   354→  @@index([nombre])
+   355→}
+   356→
+   357→// ============================================
+   358→// TIPOS DE INSUMOS (FASE 3)
+   359→// ============================================
+   360→
+   361→model TipoInsumo {
+   362→  id          Int       @id @default(autoincrement())
+   363→  nombre      String    @unique
+   364→  descripcion String?
+   365→  createdAt   DateTime  @default(now())
+   366→  updatedAt   DateTime? @updatedAt
+   367→
+   368→  // Relaciones
+   369→  insumos Insumo[]
+   370→}
+   371→
+   372→// ============================================
+   373→// INSUMOS (FASE 3)
+   374→// ============================================
+   375→
+   376→model Insumo {
+   377→  id                     Int       @id @default(autoincrement())
+   378→  codigo                 String?   @unique
+   379→  nombre                 String
+   380→  descripcion            String?
+   381→  id_tipo_insumo         Int
+   382→  id_unidad_base         Int
+   383→  stock_actual           Float     @default(0)
+   384→  stock_minimo           Float     @default(0)
+   385→  precio_compra_referencia Float   @default(0)
+   386→  imagen                 String?
+   387→  estado                 Boolean   @default(true)
+   388→  createdAt              DateTime  @default(now())
+   389→  updatedAt              DateTime? @updatedAt
+   390→
+   391→  // Relaciones
+   392→  tipoInsumo      TipoInsumo   @relation(fields: [id_tipo_insumo], references: [id])
+   393→  unidadBase      UnidadMedida @relation(fields: [id_unidad_base], references: [id])
+   394→  detalleRecetas  DetalleReceta[]
+   395→  detalleCompras  DetalleCompra[]
+   396→  detallePedidosProveedor DetallePedidoProveedor[]
+   397→  stockMovements  StockMovement[]
+   398→  detalleProduccionConsumo DetalleProduccionConsumo[]
+   399→
+   400→  @@index([codigo])
+   401→  @@index([nombre])
+   402→}
+   403→
+   404→// ============================================
+   405→// MARCAS (FASE 3)
+   406→// ============================================
+   407→
+   408→model Marca {
+   409→  id          Int       @id @default(autoincrement())
+   410→  nombre      String    @unique
+   411→  descripcion String?
+   412→  createdAt   DateTime  @default(now())
+   413→  updatedAt   DateTime? @updatedAt
+   414→
+   415→  // Relaciones
+   416→  detalleCompras DetalleCompra[]
+   417→}
+   418→
+   419→// ============================================
+   420→// CATEGORÍAS DE PRODUCTOS TERMINADOS (FASE 3)
+   421→// ============================================
+   422→
+   423→model CategoriaProductoTerminado {
+   424→  id                Int       @id @default(autoincrement())
+   425→  nombre            String    @unique
+   426→  descripcion       String?
+   427→  seccion           String?   @map("seccion")  // "pastas" | "horneados" | null
+   428→  imagen            String?
+   429→  imagen_integral   String?
+   430→  imagen_sin_gluten String?
+   431→  createdAt         DateTime  @default(now())
+   432→  updatedAt         DateTime? @updatedAt
+   433→
+   434→  // Relaciones
+   435→  productosTerminados ProductoTerminado[]
+   436→  promociones         PromocionProducto[]
+   437→}
+   438→
+   439→// ============================================
+   440→// PRODUCTOS TERMINADOS (FASE 3)
+   441→// ============================================
+   442→
+   443→model ProductoTerminado {
+   444→  id                  Int       @id @default(autoincrement())
+   445→  codigo              String?   @unique
+   446→  codigo_barras       String?   @unique
+   447→  nombre              String
+   448→  descripcion         String?
+   449→  id_categoria        Int
+   450→  tipo_harina         String?   // "con_gluten", "integral", "sin_gluten"
+   451→  seccion             String?   @map("seccion")  // "pastas" | "horneados" | null — prioridad sobre categoria.seccion
+   452→  peso_unitario_aprox Float     @default(0)
+   453→  unidades            Int?      // Cantidad de unidades por paquete (ej: 12 empanadas, 24 pastelitos)
+   454→  precio_venta        Float     @default(0)
+   455→  stock_actual        Float     @default(0)
+   456→  stock_minimo        Float     @default(0)
+   457→  destacado           Boolean   @default(false)
+   458→  orden               Int       @default(0)
+   459→  visible_en_landing  Boolean   @default(true)
+   460→  imagen              String?
+   461→  modo_coccion        String?
+   462→  texto_frente        String?   @map("texto_frente")   // Texto personalizado en hover del frente
+   463→  texto_reverso       String?   @map("texto_reverso")  // Título personalizado en el reverso
+   464→  estado              Boolean   @default(true)
+   465→  createdAt           DateTime  @default(now())
+   466→  updatedAt           DateTime? @updatedAt
+   467→
+   468→  // Relaciones
+   469→  categoria       CategoriaProductoTerminado @relation(fields: [id_categoria], references: [id])
+   470→  recetas         Receta[]
+   471→  stockMovements  StockMovement[]
+   472→  detallePedidosCliente DetallePedidoCliente[]
+   473→  detalleReservas ReservaCliente[]
+   474→  detalleVentas   DetalleVenta[]
+   475→  detalleProduccionGenerado DetalleProduccionGenerado[]
+   476→  detallePresupuesto DetallePresupuesto[]
+   477→  promociones         PromocionProducto[]
+   478→
+   479→  @@index([codigo])
+   480→  @@index([codigo_barras])
+   481→  @@index([nombre])
+   482→}
+   483→
+   484→// ============================================
+   485→// RECETAS (FASE 3 / FASE 6)
+   486→// ============================================
+   487→
+   488→model Receta {
+   489→  id                    Int       @id @default(autoincrement())
+   490→  id_producto_terminado Int
+   491→  nombre_receta         String
+   492→  rendimiento_unidades  Int       @default(1)
+   493→  activo                Boolean   @default(true)
+   494→  createdAt             DateTime  @default(now())
+   495→  updatedAt             DateTime? @updatedAt
+   496→
+   497→  // Relaciones
+   498→  productoTerminado ProductoTerminado @relation(fields: [id_producto_terminado], references: [id])
+   499→  detalleRecetas    DetalleReceta[]
+   500→  producciones      Produccion[]
+   501→}
+   502→
+   503→model DetalleReceta {
+   504→  id                  Int      @id @default(autoincrement())
+   505→  id_receta           Int
+   506→  id_materia_prima    Int?
+   507→  id_insumo           Int?
+   508→  cantidad_necesaria  Float
+   509→  id_unidad           Int
+   510→  costo_estimado      Float    @default(0)
+   511→  createdAt           DateTime @default(now())
+   512→
+   513→  // Relaciones
+   514→  receta       Receta        @relation(fields: [id_receta], references: [id])
+   515→  materiaPrima MateriaPrima? @relation(fields: [id_materia_prima], references: [id])
+   516→  insumo       Insumo?       @relation(fields: [id_insumo], references: [id])
+   517→  unidad       UnidadMedida  @relation(fields: [id_unidad], references: [id])
+   518→}
+   519→
+   520→// ============================================
+   521→// FORMAS DE PAGO (FASE 4)
+   522→// ============================================
+   523→
+   524→model FormaPago {
+   525→  id                      Int      @id @default(autoincrement())
+   526→  nombre_forma            String   @unique
+   527→  requiere_identificacion Boolean  @default(false)
+   528→  requiere_cuenta         Boolean  @default(false)
+   529→  createdAt               DateTime @default(now())
+   530→  updatedAt               DateTime? @updatedAt
+   531→
+   532→  // Relaciones
+   533→  compras Compra[]
+   534→  ventas  Venta[]
+   535→}
+   536→
+   537→// ============================================
+   538→// ESTADOS GENERALES (FASE 4)
+   539→// ============================================
+   540→
+   541→model EstadoGeneral {
+   542→  id                Int      @id @default(autoincrement())
+   543→  nombre_estado     String   @unique
+   544→  entidad_aplicable String?
+   545→  es_final          Boolean  @default(false)
+   546→  createdAt         DateTime @default(now())
+   547→  updatedAt         DateTime? @updatedAt
+   548→
+   549→  // Relaciones
+   550→  compras             Compra[]
+   551→  pedidosProveedor    PedidoProveedor[]
+   552→  pedidosCliente      PedidoCliente[]
+   553→  reservasCliente     ReservaCliente[]
+   554→  ventas              Venta[]
+   555→  producciones        Produccion[]
+   556→}
+   557→
+   558→// ============================================
+   559→// COMPRAS A PROVEEDORES (FASE 4)
+   560→// ============================================
+   561→
+   562→model Compra {
+   563→  id              Int      @id @default(autoincrement())
+   564→  id_proveedor    Int
+   565→  id_forma_pago   Int
+   566→  numero_factura  String?
+   567→  fecha_compra    DateTime
+   568→  subtotal        Float    @default(0)
+   569→  iva             Float    @default(0)
+   570→  total           Float    @default(0)
+   571→  id_estado       Int
+   572→  observaciones   String?
+   573→  createdAt       DateTime @default(now())
+   574→  updatedAt       DateTime? @updatedAt
+   575→
+   576→  // Relaciones
+   577→  proveedor   Persona       @relation(fields: [id_proveedor], references: [id])
+   578→  formaPago   FormaPago     @relation(fields: [id_forma_pago], references: [id])
+   579→  estado      EstadoGeneral @relation(fields: [id_estado], references: [id])
+   580→  detalle     DetalleCompra[]
+   581→
+   582→  @@index([fecha_compra])
+   583→  @@index([id_proveedor])
+   584→}
+   585→
+   586→model DetalleCompra {
+   587→  id                      Int      @id @default(autoincrement())
+   588→  id_compra               Int
+   589→  id_materia_prima        Int?
+   590→  id_insumo               Int?
+   591→  id_marca                Int?
+   592→  cantidad_comprada       Float
+   593→  id_unidad_compra        Int
+   594→  precio_unitario         Float
+   595→  precio_total            Float
+   596→  fecha_vencimiento       DateTime?
+   597→  lote                    String?
+   598→  cantidad_base           Float    @default(0)
+   599→  precio_por_unidad_base  Float    @default(0)
+   600→  codigo_barras_escaner   String?
+   601→  createdAt               DateTime @default(now())
+   602→
+   603→  // Relaciones
+   604→  compra        Compra        @relation(fields: [id_compra], references: [id], onDelete: Cascade)
+   605→  materiaPrima  MateriaPrima? @relation(fields: [id_materia_prima], references: [id])
+   606→  insumo        Insumo?       @relation(fields: [id_insumo], references: [id])
+   607→  marca         Marca?        @relation(fields: [id_marca], references: [id])
+   608→  unidadCompra  UnidadMedida  @relation(fields: [id_unidad_compra], references: [id])
+   609→
+   610→  @@index([id_compra])
+   611→}
+   612→
+   613→// ============================================
+   614→// PEDIDOS A PROVEEDORES (FASE 4)
+   615→// ============================================
+   616→
+   617→model PedidoProveedor {
+   618→  id                    Int       @id @default(autoincrement())
+   619→  id_proveedor          Int
+   620→  fecha_pedido          DateTime
+   621→  fecha_entrega_estimada DateTime?
+   622→  fecha_entrega_real    DateTime?
+   623→  observaciones         String?
+   624→  id_estado             Int
+   625→  total_estimado        Float     @default(0)
+   626→  createdAt             DateTime  @default(now())
+   627→  updatedAt             DateTime? @updatedAt
+   628→
+   629→  // Relaciones
+   630→  proveedor Persona         @relation(fields: [id_proveedor], references: [id])
+   631→  estado    EstadoGeneral   @relation(fields: [id_estado], references: [id])
+   632→  detalle   DetallePedidoProveedor[]
+   633→
+   634→  @@index([fecha_pedido])
+   635→  @@index([id_proveedor])
+   636→}
+   637→
+   638→model DetallePedidoProveedor {
+   639→  id              Int      @id @default(autoincrement())
+   640→  id_pedido       Int
+   641→  id_materia_prima Int?
+   642→  id_insumo       Int?
+   643→  cantidad_pedida Float
+   644→  id_unidad       Int
+   645→  precio_estimado Float   @default(0)
+   646→  createdAt       DateTime @default(now())
+   647→
+   648→  // Relaciones
+   649→  pedido       PedidoProveedor @relation(fields: [id_pedido], references: [id], onDelete: Cascade)
+   650→  materiaPrima MateriaPrima?   @relation(fields: [id_materia_prima], references: [id])
+   651→  insumo       Insumo?         @relation(fields: [id_insumo], references: [id])
+   652→  unidad       UnidadMedida    @relation(fields: [id_unidad], references: [id])
+   653→}
+   654→
+   655→// ============================================
+   656→// PEDIDOS DE CLIENTES (FASE 5)
+   657→// ============================================
+   658→
+   659→model PedidoCliente {
+   660→  id                      Int      @id @default(autoincrement())
+   661→  id_cliente              Int
+   662→  fecha_pedido            DateTime
+   663→  fecha_entrega_solicitada DateTime
+   664→  fecha_entrega_real      DateTime?
+   665→  subtotal                Float    @default(0)
+   666→  total                   Float    @default(0)
+   667→  senia                   Float    @default(0)
+   668→  id_estado               Int
+   669→  observaciones           String?
+   670→  createdAt               DateTime @default(now())
+   671→  updatedAt               DateTime? @updatedAt
+   672→
+   673→  // Relaciones
+   674→  cliente    Persona              @relation(fields: [id_cliente], references: [id])
+   675→  estado     EstadoGeneral        @relation(fields: [id_estado], references: [id])
+   676→  detalle    DetallePedidoCliente[]
+   677→  reservas   ReservaCliente[]
+   678→  venta      Venta?
+   679→  entregas   Entrega[]
+   680→  presupuesto Presupuesto?
+   681→
+   682→  @@index([fecha_pedido])
+   683→  @@index([id_cliente])
+   684→}
+   685→
+   686→model DetallePedidoCliente {
+   687→  id                    Int      @id @default(autoincrement())
+   688→  id_pedido             Int
+   689→  id_producto_terminado Int
+   690→  cantidad              Float
+   691→  precio_unitario       Float
+   692→  subtotal              Float
+   693→  codigo_barras_escaner String?
+   694→  createdAt             DateTime @default(now())
+   695→
+   696→  // Relaciones
+   697→  pedido            PedidoCliente     @relation(fields: [id_pedido], references: [id], onDelete: Cascade)
+   698→  productoTerminado ProductoTerminado @relation(fields: [id_producto_terminado], references: [id])
+   699→
+   700→  @@index([id_pedido])
+   701→}
+   702→
+   703→// ============================================
+   704→// RESERVAS DE CLIENTES (FASE 5)
+   705→// ============================================
+   706→
+   707→model ReservaCliente {
+   708→  id                    Int      @id @default(autoincrement())
+   709→  id_cliente            Int
+   710→  id_pedido             Int?
+   711→  fecha_reserva         DateTime
+   712→  fecha_validez_hasta   DateTime
+   713→  id_producto_terminado Int
+   714→  cantidad_reservada    Float
+   715→  cantidad_confirmada   Float    @default(0)
+   716→  senia                 Float    @default(0)
+   717→  id_estado             Int
+   718→  createdAt             DateTime @default(now())
+   719→  updatedAt             DateTime? @updatedAt
+   720→
+   721→  // Relaciones
+   722→  cliente           Persona           @relation(fields: [id_cliente], references: [id])
+   723→  pedido            PedidoCliente?    @relation(fields: [id_pedido], references: [id])
+   724→  productoTerminado ProductoTerminado @relation(fields: [id_producto_terminado], references: [id])
+   725→  estado            EstadoGeneral     @relation(fields: [id_estado], references: [id])
+   726→
+   727→  @@index([fecha_reserva])
+   728→  @@index([id_cliente])
+   729→}
+   730→
+   731→// ============================================
+   732→// VENTAS (FASE 5)
+   733→// ============================================
+   734→
+   735→model Venta {
+   736→  id                 Int      @id @default(autoincrement())
+   737→  id_cliente         Int
+   738→  id_vendedor        Int
+   739→  id_forma_pago      Int
+   740→  id_pedido          Int?      @unique
+   741→  numero_comprobante String?
+   742→  fecha_venta        DateTime
+   743→  subtotal           Float    @default(0)
+   744→  iva                Float    @default(0)
+   745→  total              Float    @default(0)
+   746→  id_estado          Int
+   747→  createdAt          DateTime @default(now())
+   748→  updatedAt          DateTime? @updatedAt
+   749→
+   750→  // Relaciones
+   751→  cliente   Persona        @relation(fields: [id_cliente], references: [id])
+   752→  vendedor  Usuario        @relation(fields: [id_vendedor], references: [id])
+   753→  formaPago FormaPago      @relation(fields: [id_forma_pago], references: [id])
+   754→  pedido    PedidoCliente? @relation(fields: [id_pedido], references: [id])
+   755→  estado    EstadoGeneral  @relation(fields: [id_estado], references: [id])
+   756→  detalle   DetalleVenta[]
+   757→
+   758→  @@index([fecha_venta])
+   759→  @@index([id_cliente])
+   760→}
+   761→
+   762→model DetalleVenta {
+   763→  id                    Int      @id @default(autoincrement())
+   764→  id_venta              Int
+   765→  id_producto_terminado Int
+   766→  cantidad              Float
+   767→  precio_unitario       Float
+   768→  subtotal              Float
+   769→  codigo_barras_escaner String?
+   770→  createdAt             DateTime @default(now())
+   771→
+   772→  // Relaciones
+   773→  venta            Venta           @relation(fields: [id_venta], references: [id], onDelete: Cascade)
+   774→  productoTerminado ProductoTerminado @relation(fields: [id_producto_terminado], references: [id])
+   775→
+   776→  @@index([id_venta])
+   777→}
+   778→
+   779→// ============================================
+   780→// PRODUCCIÓN (FASE 6)
+   781→// ============================================
+   782→
+   783→model Produccion {
+   784→  id                    Int      @id @default(autoincrement())
+   785→  id_receta             Int
+   786→  id_supervisor         Int?
+   787→  cantidad_producida    Int
+   788→  fecha_produccion      DateTime
+   789→  costo_total_materias_primas Float @default(0)
+   790→  costo_total_insumos   Float    @default(0)
+   791→  costo_total           Float    @default(0)
+   792→  id_estado             Int
+   793→  observaciones         String?
+   794→  createdAt             DateTime @default(now())
+   795→  updatedAt             DateTime? @updatedAt
+   796→
+   797→  // Relaciones
+   798→  receta                Receta         @relation(fields: [id_receta], references: [id])
+   799→  supervisor            Persona?       @relation("SupervisorProduccion", fields: [id_supervisor], references: [id])
+   800→  estado                EstadoGeneral  @relation(fields: [id_estado], references: [id])
+   801→  detalleConsumos       DetalleProduccionConsumo[]
+   802→  detalleGenerados      DetalleProduccionGenerado[]
+   803→
+   804→  @@index([fecha_produccion])
+   805→  @@index([id_receta])
+   806→}
+   807→
+   808→model DetalleProduccionConsumo {
+   809→  id                    Int      @id @default(autoincrement())
+   810→  id_produccion         Int
+   811→  id_materia_prima      Int?
+   812→  id_insumo             Int?
+   813→  cantidad_consumida    Float
+   814→  id_unidad             Int
+   815→  costo_unitario        Float
+   816→  costo_total           Float
+   817→  createdAt             DateTime @default(now())
+   818→
+   819→  // Relaciones
+   820→  produccion            Produccion     @relation(fields: [id_produccion], references: [id], onDelete: Cascade)
+   821→  materiaPrima          MateriaPrima?  @relation(fields: [id_materia_prima], references: [id])
+   822→  insumo                Insumo?        @relation(fields: [id_insumo], references: [id])
+   823→  unidad                UnidadMedida   @relation(fields: [id_unidad], references: [id])
+   824→
+   825→  @@index([id_produccion])
+   826→}
+   827→
+   828→model DetalleProduccionGenerado {
+   829→  id                    Int      @id @default(autoincrement())
+   830→  id_produccion         Int
+   831→  id_producto_terminado Int
+   832→  cantidad_generada     Float
+   833→  costo_unitario        Float
+   834→  costo_total           Float
+   835→  createdAt             DateTime @default(now())
+   836→
+   837→  // Relaciones
+   838→  produccion            Produccion        @relation(fields: [id_produccion], references: [id], onDelete: Cascade)
+   839→  productoTerminado     ProductoTerminado @relation(fields: [id_producto_terminado], references: [id])
+   840→
+   841→  @@index([id_produccion])
+   842→}
+   843→
+   844→// ============================================
+   845→// STOCK MOVEMENTS / AUDITORÍA (FASE 3)
+   846→// ============================================
+   847→
+   848→model StockMovement {
+   849→  id                    Int      @id @default(autoincrement())
+   850→  tipo_movimiento       String   // compra, venta, produccion_consumo, produccion_genera, ajuste_in, ajuste_out, devolucion
+   851→  id_materia_prima      Int?
+   852→  id_insumo             Int?
+   853→  id_producto_terminado Int?
+   854→  cantidad              Float
+   855→  id_unidad             Int
+   856→  stock_antes           Float
+   857→  stock_despues         Float
+   858→  referencia_id         Int?
+   859→  referencia_tabla      String?
+   860→  observacion           String?
+   861→  id_usuario            Int?
+   862→  fecha_movimiento      DateTime @default(now())
+   863→
+   864→  // Relaciones
+   865→  materiaPrima       MateriaPrima?     @relation(fields: [id_materia_prima], references: [id])
+   866→  insumo             Insumo?           @relation(fields: [id_insumo], references: [id])
+   867→  productoTerminado  ProductoTerminado? @relation(fields: [id_producto_terminado], references: [id])
+   868→  unidad             UnidadMedida      @relation(fields: [id_unidad], references: [id])
+   869→  usuario            Usuario?          @relation(fields: [id_usuario], references: [id])
+   870→}
+   871→
+   872→// ============================================
+   873→// AUTENTICACIÓN 2FA (FASE 9)
+   874→// ============================================
+   875→
+   876→model Usuario2FA {
+   877→  id               Int       @id @default(autoincrement())
+   878→  id_usuario       Int       @unique
+   879→  secret_2fa       String?   // secreto TOTP (null si no está activado)
+   880→  activado         Boolean   @default(false)
+   881→  codigos_respaldo String?   // códigos de respaldo (JSON array string)
+   882→  fecha_activacion DateTime?
+   883→  fecha_ultimo_uso DateTime?
+   884→
+   885→  usuario          Usuario   @relation(fields: [id_usuario], references: [id], onDelete: Cascade)
+   886→}
+   887→
+   888→// ============================================
+   889→// LOGS DE ACCESO (FASE 9)
+   890→// ============================================
+   891→
+   892→model LogAcceso {
+   893→  id                Int      @id @default(autoincrement())
+   894→  id_usuario        Int?
+   895→  email_intento     String?
+   896→  resultado         String   // OK, FAIL, BLOCKED, 2FA_REQUIRED, 2FA_OK, 2FA_FAIL
+   897→  ip                String?
+   898→  user_agent        String?
+   899→  navegador         String?
+   900→  sistema_operativo String?
+   901→  dispositivo       String?
+   902→  pais              String?
+   903→  ciudad            String?
+   904→  motivo            String?
+   905→  fecha             DateTime @default(now())
+   906→
+   907→  usuario           Usuario? @relation(fields: [id_usuario], references: [id])
+   908→
+   909→  @@index([fecha])
+   910→  @@index([email_intento])
+   911→  @@index([resultado])
+   912→}
+   913→
+   914→// ============================================
+   915→// SESIONES ACTIVAS (FASE 9)
+   916→// ============================================
+   917→
+   918→model SesionActiva {
+   919→  id_sesion        String   @id
+   920→  id_usuario       Int
+   921→  ip               String?
+   922→  user_agent       String?
+   923→  fecha_inicio     DateTime @default(now())
+   924→  fecha_expiracion DateTime
+   925→  fecha_fin        DateTime?
+   926→  estado           String   @default("active") // active, expired, revoked
+   927→
+   928→  usuario          Usuario  @relation(fields: [id_usuario], references: [id], onDelete: Cascade)
+   929→
+   930→  @@index([id_usuario])
+   931→  @@index([estado])
+   932→}
+   933→
+   934→// ============================================
+   935→// AUDITORÍA (FASE 8)
+   936→// ============================================
+   937→
+   938→model Auditoria {
+   939→  id              Int      @id @default(autoincrement())
+   940→  id_usuario      Int?
+   941→  accion          String   // CREATE, UPDATE, DELETE, LOGIN_OK, LOGIN_FAIL, LOGOUT, EXPORT, VIEW
+   942→  modulo          String   // productos, compras, ventas, produccion, usuarios, reportes, login
+   943→  entidad_id      Int?
+   944→  entidad_nombre  String?
+   945→  detalles        String?  // JSON string con cambios antes/después
+   946→  ip              String?
+   947→  user_agent      String?
+   948→  fecha           DateTime @default(now())
+   949→
+   950→  usuario         Usuario? @relation(fields: [id_usuario], references: [id])
+   951→
+   952→  @@index([fecha])
+   953→  @@index([modulo])
+   954→  @@index([accion])
+   955→  @@index([id_usuario])
+   956→}
+   957→
+   958→// ============================================
+   959→// ENVÍOS Y LOGÍSTICA (FASE 10)
+   960→// ============================================
+   961→
+   962→model PuntoEncuentro {
+   963→  id          Int      @id @default(autoincrement())
+   964→  nombre      String
+   965→  direccion   String
+   966→  latitud     Float?
+   967→  longitud    Float?
+   968→  horarios    String?  // JSON con horarios disponibles
+   969→  activo      Boolean  @default(true)
+   970→  createdAt   DateTime @default(now())
+   971→  updatedAt   DateTime @updatedAt
+   972→
+   973→  entregas    Entrega[]
+   974→}
+   975→
+   976→model Entrega {
+   977→  id                  Int      @id @default(autoincrement())
+   978→  id_pedido           Int
+   979→  id_punto_encuentro  Int?
+   980→  direccion_alternativa String?
+   981→  fecha_programada    DateTime
+   982→  fecha_realizada     DateTime?
+   983→  hora_desde          String?
+   984→  hora_hasta          String?
+   985→  nombre_recibe       String?
+   986→  telefono_recibe     String?
+   987→  estado              String   @default("programado") // programado, en_camino, entregado, cancelado, reagendado
+   988→  observaciones       String?
+   989→  latitud_entrega     Float?
+   990→  longitud_entrega    Float?
+   991→  createdAt           DateTime @default(now())
+   992→  updatedAt           DateTime @updatedAt
+   993→
+   994→  pedido              PedidoCliente   @relation(fields: [id_pedido], references: [id])
+   995→  puntoEncuentro      PuntoEncuentro? @relation(fields: [id_punto_encuentro], references: [id])
+   996→  notificaciones      NotificacionEntrega[]
+   997→
+   998→  @@index([fecha_programada])
+   999→  @@index([estado])
+  1000→}
+  1001→
+  1002→model NotificacionEntrega {
+  1003→  id           Int      @id @default(autoincrement())
+  1004→  id_entrega   Int
+  1005→  tipo         String   // recordatorio, confirmacion, retraso, completado
+  1006→  canal        String   // whatsapp, email
+  1007→  destinatario String
+  1008→  mensaje      String
+  1009→  estado       String   // pendiente, enviado, error
+  1010→  fecha_envio  DateTime?
+  1011→  error        String?
+  1012→  createdAt    DateTime @default(now())
+  1013→
+  1014→  entrega      Entrega  @relation(fields: [id_entrega], references: [id], onDelete: Cascade)
+  1015→
+  1016→  @@index([id_entrega])
+  1017→}
+  1018→
+  1019→// ============================================
+  1020→// NOTIFICACIONES (FASE 11)
+  1021→// ============================================
+  1022→
+  1023→model PlantillaNotificacion {
+  1024→  id          Int      @id @default(autoincrement())
+  1025→  nombre      String   @unique  // pedido_confirmado, stock_bajo, entrega_recordatorio, etc.
+  1026→  canal       String   // email, whatsapp, ambos
+  1027→  asunto      String?  // para email
+  1028→  mensaje     String   // plantilla con variables {{nombre}}, {{pedido}}, etc.
+  1029→  activo      Boolean  @default(true)
+  1030→  createdAt   DateTime @default(now())
+  1031→  updatedAt   DateTime @updatedAt
+  1032→
+  1033→  notificaciones Notificacion[]
+  1034→}
+  1035→
+  1036→model Notificacion {
+  1037→  id               Int      @id @default(autoincrement())
+  1038→  id_plantilla     Int?
+  1039→  tipo             String   // email, whatsapp
+  1040→  destinatario     String
+  1041→  asunto           String?
+  1042→  mensaje          String
+  1043→  estado           String   @default("pendiente") // pendiente, enviado, error, cancelado
+  1044→  fecha_programada DateTime?
+  1045→  fecha_envio      DateTime?
+  1046→  error            String?
+  1047→  metadata         String?  // JSON string con datos adicionales (pedido_id, producto_id, etc.)
+  1048→  createdAt        DateTime @default(now())
+  1049→
+  1050→  plantilla        PlantillaNotificacion? @relation(fields: [id_plantilla], references: [id])
+  1051→
+  1052→  @@index([estado])
+  1053→  @@index([tipo])
+  1054→  @@index([createdAt])
+  1055→}
+  1056→
+  1057→model AlertaConfiguracion {
+  1058→  id              Int      @id @default(autoincrement())
+  1059→  tipo            String   @unique // stock_bajo, pedido_pendiente, produccion_atrasada, entrega_proxima
+  1060→  activo          Boolean  @default(true)
+  1061→  umbral          Int?     // para stock: porcentaje o cantidad mínima
+  1062→  destinatarios   String?  // emails o teléfonos (JSON array string)
+  1063→  frecuencia      String?  // inmediato, diario, semanal
+  1064→  ultimo_envio    DateTime?
+  1065→  createdAt       DateTime @default(now())
+  1066→  updatedAt       DateTime @updatedAt
+  1067→}
+  1068→
+  1069→// ============================================
+  1070→// TABLAS DE REFERENCIA ADICIONALES
+  1071→// ============================================
+  1072→
+  1073→model EmpresaTelefonica {
+  1074→  id        Int      @id @default(autoincrement())
+  1075→  nombre    String   @unique
+  1076→  codigo    String?  @unique
+  1077→  activo    Boolean  @default(true)
+  1078→  createdAt DateTime @default(now())
+  1079→  updatedAt DateTime? @updatedAt
+  1080→}
+  1081→
+  1082→model ServicioCorreoElectronico {
+  1083→  id        Int      @id @default(autoincrement())
+  1084→  nombre    String   @unique
+  1085→  dominio   String?  @unique
+  1086→  activo    Boolean  @default(true)
+  1087→  createdAt DateTime @default(now())
+  1088→  updatedAt DateTime? @updatedAt
+  1089→}
+  1090→
+  1091→model TipoPlataforma {
+  1092→  id        Int      @id @default(autoincrement())
+  1093→  nombre    String   @unique
+  1094→  descripcion String?
+  1095→  activo    Boolean  @default(true)
+  1096→  createdAt DateTime @default(now())
+  1097→  updatedAt DateTime? @updatedAt
+  1098→}
+  1099→
+  1100→model TipoEntidad {
+  1101→  id        Int      @id @default(autoincrement())
+  1102→  nombre    String   @unique
+  1103→  descripcion String?
+  1104→  activo    Boolean  @default(true)
+  1105→  createdAt DateTime @default(now())
+  1106→  updatedAt DateTime? @updatedAt
+  1107→}
+  1108→
+  1109→model EstadoSesion {
+  1110→  id        Int      @id @default(autoincrement())
+  1111→  nombre    String   @unique
+  1112→  descripcion String?
+  1113→  createdAt DateTime @default(now())
+  1114→  updatedAt DateTime? @updatedAt
+  1115→}
+  1116→
+  1117→// ============================================
+  1118→// PRESUPUESTOS / COTIZACIONES (FASE 13)
+  1119→// ============================================
+  1120→
+  1121→model Presupuesto {
+  1122→  id              Int      @id @default(autoincrement())
+  1123→  id_cliente      Int
+  1124→  numero          String   @unique
+  1125→  fecha_creacion  DateTime @default(now())
+  1126→  fecha_validez   DateTime
+  1127→  subtotal        Float    @default(0)
+  1128→  iva             Float    @default(0)
+  1129→  total           Float    @default(0)
+  1130→  observaciones   String?
+  1131→  estado          String   @default("pendiente") // pendiente, aprobado, rechazado, expirado, convertido
+  1132→  id_pedido       Int?     @unique
+  1133→  createdAt       DateTime @default(now())
+  1134→  updatedAt       DateTime @updatedAt
+  1135→
+  1136→  // Relaciones
+  1137→  cliente         Persona         @relation(fields: [id_cliente], references: [id])
+  1138→  pedido          PedidoCliente?  @relation(fields: [id_pedido], references: [id])
+  1139→  detalle         DetallePresupuesto[]
+  1140→
+  1141→  @@index([numero])
+  1142→  @@index([id_cliente])
+  1143→  @@index([estado])
+  1144→}
+  1145→
+  1146→model DetallePresupuesto {
+  1147→  id                    Int      @id @default(autoincrement())
+  1148→  id_presupuesto        Int
+  1149→  id_producto_terminado Int
+  1150→  cantidad              Float
+  1151→  precio_unitario       Float
+  1152→  subtotal              Float
+  1153→  observaciones         String?
+  1154→  createdAt             DateTime @default(now())
+  1155→
+  1156→  // Relaciones
+  1157→  presupuesto           Presupuesto       @relation(fields: [id_presupuesto], references: [id], onDelete: Cascade)
+  1158→  productoTerminado     ProductoTerminado @relation(fields: [id_producto_terminado], references: [id])
+  1159→
+  1160→  @@index([id_presupuesto])
+  1161→}
+  1162→
+  1163→// ============================================
+  1164→// RECUPERACIÓN DE CONTRASEÑA
+  1165→// ============================================
+  1166→
+  1167→model PasswordReset {
+  1168→  id         Int       @id @default(autoincrement())
+  1169→  email      String
+  1170→  token      String    @unique
+  1171→  usado      Boolean   @default(false)
+  1172→  fecha_expiracion DateTime
+  1173→  ip         String?
+  1174→  createdAt  DateTime  @default(now())
+  1175→
+  1176→  @@index([token])
+  1177→  @@index([email])
+  1178→  @@index([fecha_expiracion])
+  1179→}
+  1180→
+  1181→// ============================================
+  1182→// PROMOCIONES (FASE 14)
+  1183→// ============================================
+  1184→
+  1185→model Promocion {
+  1186→  id                Int       @id @default(autoincrement())
+  1187→  nombre            String
+  1188→  descripcion       String?
+  1189→  tipo              String    // "porcentual", "fijo", "2x1", "tiempo_limitado"
+  1190→  valor_descuento   Float     @default(0) // Porcentaje (ej: 15) o monto fijo (ej: 500)
+  1191→  fecha_inicio      DateTime
+  1192→  fecha_fin         DateTime?
+  1193→  activo            Boolean   @default(true)
+  1194→  aplicar_auto      Boolean   @default(false) // Aplicar automáticamente en ventas
+  1195→  createdAt         DateTime  @default(now())
+  1196→  updatedAt         DateTime? @updatedAt
+  1197→
+  1198→  // Relaciones
+  1199→  productos         PromocionProducto[]
+  1200→
+  1201→  @@index([fecha_inicio])
+  1202→  @@index([activo])
+  1203→  @@index([tipo])
+  1204→}
+  1205→
+  1206→model PromocionProducto {
+  1207→  id                    Int       @id @default(autoincrement())
+  1208→  id_promocion          Int
+  1209→  id_producto_terminado Int
+  1210→  id_categoria          Int?      // Si se aplica a toda una categoría
+  1211→  createdAt             DateTime  @default(now())
+  1212→
+  1213→  // Relaciones
+  1214→  promocion             Promocion           @relation(fields: [id_promocion], references: [id], onDelete: Cascade)
+  1215→  productoTerminado     ProductoTerminado   @relation(fields: [id_producto_terminado], references: [id])
+  1216→  categoria            CategoriaProductoTerminado? @relation(fields: [id_categoria], references: [id])
+  1217→
+  1218→  @@index([id_promocion])
+  1219→  @@index([id_producto_terminado])
+  1220→}
+  1221→
+  1222→// ============================================
+  1223→// CONSULTAS DESDE LA WEB (FORMULARIO DE CONTACTO)
+  1224→// ============================================
+  1225→
+  1226→model Consulta {
+  1227→  id          Int      @id @default(autoincrement())
+  1228→  nombre      String
+  1229→  email       String
+  1230→  telefono    String
+  1231→  mensaje     String
+  1232→  leido       Boolean  @default(false)
+  1233→  respondido  Boolean  @default(false)
+  1234→  fecha       DateTime @default(now())
+  1235→  createdAt   DateTime @default(now())
+  1236→
+  1237→  @@index([fecha])
+  1238→  @@index([leido])
+  1239→}
+  1240→
+  1241→// ============================================
+  1242→// DESCUENTOS POR VOLUMEN / CANTIDAD (MAYORISTAS)
+  1243→// ============================================
+  1244→
+  1245→model DescuentoVolumen {
+  1246→  id            Int                      @id @default(autoincrement())
+  1247→  nombre        String
+  1248→  descripcion   String?
+  1249→  tipo_item     String                   // "producto" | "categoria" | "todos"
+  1250→  item_id       Int?                     // ID del producto o categoría (NULL si aplica a todos)
+  1251→  unidad_medida String                   // "kg", "u", "bandeja", "docena", "l"
+  1252→  activo        Boolean                  @default(true)
+  1253→  fecha_inicio  DateTime?
+  1254→  fecha_fin     DateTime?
+  1255→  rangos        DescuentoVolumenRango[]
+  1256→  createdAt     DateTime                 @default(now())
+  1257→  updatedAt     DateTime                 @updatedAt
+  1258→
+  1259→  @@index([tipo_item])
+  1260→  @@index([activo])
+  1261→  @@index([fecha_inicio, fecha_fin])
+  1262→}
+  1263→
+  1264→model DescuentoVolumenRango {
+  1265→  id             Int              @id @default(autoincrement())
+  1266→  id_descuento   Int
+  1267→  cantidad_desde Float            // 0, 5, 10, 20, etc.
+  1268→  cantidad_hasta Float?           // NULL = sin límite superior (∞)
+  1269→  tipo_descuento String           // "porcentaje" | "fijo"
+  1270→  valor          Float            // 5 (para 5%) o 100 (para $100)
+  1271→  descripcion    String?
+  1272→  descuento      DescuentoVolumen @relation(fields: [id_descuento], references: [id], onDelete: Cascade)
+  1273→
+  1274→  @@index([id_descuento])
+  1275→}
+  1276→
