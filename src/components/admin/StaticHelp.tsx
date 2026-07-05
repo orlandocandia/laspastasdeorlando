@@ -1734,7 +1734,101 @@ const helpSections: HelpSection[] = [
     ),
   },
 
-  // ─── 13. Backup y Restauración ───────────────────────────────────────
+  // ─── 13. Descuentos por Volumen ───────────────────────────────────────
+  {
+    id: 'descuentos-volumen',
+    title: 'Descuentos por Volumen',
+    iconComponent: Layers,
+    summary: 'Descuentos escalonados por cantidad para ventas mayoristas.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El módulo de <strong className="text-marron">Descuentos por Volumen</strong> te permite crear
+          descuentos escalonados según la cantidad comprada, ideal para ventas mayoristas y clientes
+          que compran en gran volumen.
+        </p>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Layers className="h-4 w-4 text-mostaza" />
+            ¿Cómo funciona?
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Definís rangos de cantidad (ej: de 5 a 9.9 kg, de 10 kg en adelante) y un descuento
+            para cada rango. Cuando un cliente compra una cantidad que cae en un rango, se aplica
+            automáticamente el descuento correspondiente.
+          </p>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Tag className="h-4 w-4 text-mostaza" />
+            Tipos de descuento por rango
+          </h4>
+          <div className="space-y-2">
+            <div className="flex items-start gap-3 bg-mostaza/5 border border-mostaza/15 rounded-lg p-3">
+              <Badge className="bg-mostaza/10 text-mostaza">%</Badge>
+              <div>
+                <p className="font-medium text-sm">Porcentaje</p>
+                <p className="text-xs text-muted-foreground">Ej: 5% de descuento al comprar 5 kg o más. Se calcula sobre el precio de venta.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-oliva/5 border border-oliva/15 rounded-lg p-3">
+              <Badge className="bg-oliva/10 text-oliva">$</Badge>
+              <div>
+                <p className="font-medium text-sm">Monto fijo</p>
+                <p className="text-xs text-muted-foreground">Ej: $100 de descuento por unidad al comprar 10 o más. Se resta directamente del precio.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CircleDot className="h-4 w-4 text-mostaza" />
+            Ámbito de aplicación
+          </h4>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Todos los productos:</strong> el descuento aplica a cualquier producto</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Producto específico:</strong> solo aplica al producto seleccionado</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span><strong>Categoría:</strong> aplica a todos los productos de una categoría</span>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Ruler className="h-4 w-4 text-mostaza" />
+            Unidades de medida
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Cada descuento define su unidad de medida (kg, unidades, bandejas, docenas, litros).
+            Los rangos de cantidad se interpretan según esta unidad.
+          </p>
+        </div>
+
+        <InfoBox type="tip">
+          Si un producto tiene tanto una <strong>promoción</strong> como un <strong>descuento por volumen</strong>,
+          se aplica el que otorgue el mayor beneficio al cliente. Podés combinar ambos tipos sin conflicto.
+        </InfoBox>
+
+        <InfoBox type="info">
+          Los descuentos por volumen son de uso interno (panel de administración) y no se muestran
+          en la tienda pública. Se aplican al crear ventas o presupuestos desde el panel.
+        </InfoBox>
+      </div>
+    ),
+  },
+
+  // ─── 14. Backup y Restauración ───────────────────────────────────────
   {
     id: 'backup',
     title: 'Backup y Restauración',
