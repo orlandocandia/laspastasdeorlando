@@ -664,10 +664,13 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
         </div>
       )}
 
-      {/* Main fields */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Main fields
+          Layout: 3 columnas en desktop (lg), 2 en tablet (sm), 1 en móvil.
+          Fila 1: Cliente | Forma de Pago | Nº Comprobante
+          Fila 2: Fecha Venta | Vendedor | Estado (solo edición) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Cliente - searchable combobox */}
-        <div>
+        <div className="min-w-0">
           <Label className="text-sm font-medium text-marron mb-1 block">Cliente *</Label>
           {isEditing || fromPedido ? (
             <Input
@@ -703,7 +706,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-full p-0" align="start">
+              <PopoverContent className="w-[--radix-popover-trigger-width] min-w-[16rem] p-0" align="start">
                 <Command>
                   <CommandInput placeholder="Buscar cliente..." />
                   <CommandList>
@@ -735,19 +738,8 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
           )}
         </div>
 
-        {/* Fecha venta */}
-        <div>
-          <Label className="text-sm font-medium text-marron mb-1 block">Fecha Venta *</Label>
-          <Input
-            type="date"
-            value={fechaVenta}
-            onChange={(e) => setFechaVenta(e.target.value)}
-            disabled={isEditing}
-          />
-        </div>
-
         {/* Forma de pago */}
-        <div>
+        <div className="min-w-0">
           <Label className="text-sm font-medium text-marron mb-1 block">Forma de Pago *</Label>
           {isEditing ? (
             <Input
@@ -757,7 +749,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
             />
           ) : (
             <Select value={idFormaPago} onValueChange={setIdFormaPago}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Seleccionar..." />
               </SelectTrigger>
               <SelectContent>
@@ -771,8 +763,29 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
           )}
         </div>
 
+        {/* Nº Comprobante (mostrado en alta y edición) */}
+        <div className="min-w-0">
+          <Label className="text-sm font-medium text-marron mb-1 block">Nº Comprobante</Label>
+          <Input
+            placeholder="Ej: 0001-12345678"
+            value={numeroComprobante}
+            onChange={(e) => setNumeroComprobante(e.target.value)}
+          />
+        </div>
+
+        {/* Fecha venta */}
+        <div className="min-w-0">
+          <Label className="text-sm font-medium text-marron mb-1 block">Fecha Venta *</Label>
+          <Input
+            type="date"
+            value={fechaVenta}
+            onChange={(e) => setFechaVenta(e.target.value)}
+            disabled={isEditing}
+          />
+        </div>
+
         {/* Vendedor */}
-        <div>
+        <div className="min-w-0">
           <Label className="text-sm font-medium text-marron mb-1 block">Vendedor *</Label>
           {isEditing ? (
             <Input
@@ -782,7 +795,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
             />
           ) : (
             <Select value={idVendedor} onValueChange={setIdVendedor}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <SelectValue placeholder="Seleccionar..." />
               </SelectTrigger>
               <SelectContent>
@@ -796,45 +809,23 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
           )}
         </div>
 
-        {/* Numero comprobante */}
-        {!isEditing && (
-          <div>
-            <Label className="text-sm font-medium text-marron mb-1 block">Nº Comprobante</Label>
-            <Input
-              placeholder="Ej: 0001-12345678"
-              value={numeroComprobante}
-              onChange={(e) => setNumeroComprobante(e.target.value)}
-            />
-          </div>
-        )}
-
-        {/* Estado (only in edit mode) */}
+        {/* Estado (solo en edición) */}
         {isEditing && (
-          <>
-            <div>
-              <Label className="text-sm font-medium text-marron mb-1 block">Nº Comprobante</Label>
-              <Input
-                placeholder="Ej: 0001-12345678"
-                value={numeroComprobante}
-                onChange={(e) => setNumeroComprobante(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-marron mb-1 block">Estado</Label>
-              <Select value={idEstado} onValueChange={setIdEstado}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {estados.map((est) => (
-                    <SelectItem key={est.id} value={est.id.toString()}>
-                      {est.nombre_estado}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </>
+          <div className="min-w-0">
+            <Label className="text-sm font-medium text-marron mb-1 block">Estado</Label>
+            <Select value={idEstado} onValueChange={setIdEstado}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleccionar..." />
+              </SelectTrigger>
+              <SelectContent>
+                {estados.map((est) => (
+                  <SelectItem key={est.id} value={est.id.toString()}>
+                    {est.nombre_estado}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         )}
       </div>
 
@@ -865,7 +856,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
         <>
           <Separator />
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-5">
               <Label className="text-sm font-semibold text-marron">Detalle de la Venta</Label>
               <Button
                 type="button"
@@ -902,15 +893,15 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {/* Producto Terminado */}
-                    <div className="col-span-2 sm:col-span-1">
+                    <div className="min-w-0 sm:col-span-2 lg:col-span-1">
                       <Label className="text-xs text-muted-foreground">Producto Terminado</Label>
                       <Select
                         value={detalle.idProductoTerminado}
                         onValueChange={(v) => updateDetalle(detalle.key, 'idProductoTerminado', v)}
                       >
-                        <SelectTrigger className="h-9">
+                        <SelectTrigger className="h-9 w-full">
                           <SelectValue placeholder="Seleccionar..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -924,28 +915,28 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                     </div>
 
                     {/* Cantidad */}
-                    <div>
+                    <div className="min-w-0">
                       <Label className="text-xs text-muted-foreground">Cantidad</Label>
                       <Input
                         type="number"
                         step="0.01"
                         min="0"
                         placeholder="0"
-                        className="h-9"
+                        className="h-9 w-full"
                         value={detalle.cantidad}
                         onChange={(e) => updateDetalle(detalle.key, 'cantidad', e.target.value)}
                       />
                     </div>
 
                     {/* Precio Unitario */}
-                    <div>
+                    <div className="min-w-0">
                       <Label className="text-xs text-muted-foreground">Precio Unit.</Label>
                       <Input
                         type="number"
                         step="0.01"
                         min="0"
                         placeholder="0.00"
-                        className="h-9"
+                        className="h-9 w-full"
                         value={detalle.precioUnitario}
                         onChange={(e) => updateDetalle(detalle.key, 'precioUnitario', e.target.value)}
                       />
@@ -967,10 +958,10 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                     </div>
 
                     {/* Subtotal (auto-calculated) */}
-                    <div>
+                    <div className="min-w-0">
                       <Label className="text-xs text-muted-foreground">Subtotal</Label>
                       <Input
-                        className="h-9 bg-muted/50 font-semibold"
+                        className="h-9 w-full bg-muted/50 font-semibold"
                         value={detalle.subtotal ? formatCurrency(parseFloat(detalle.subtotal)) : ''}
                         disabled
                       />
