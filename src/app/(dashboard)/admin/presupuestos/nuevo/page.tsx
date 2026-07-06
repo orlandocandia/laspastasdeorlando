@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
@@ -79,6 +79,13 @@ interface DetalleItem {
   cantidad: number
   precio_unitario: number
   subtotal: number
+  // Snapshot del descuento por volumen aplicado
+  descuento_volumen_id?: number | null
+  descuento_volumen_valor?: number | null
+  descuento_volumen_tipo?: string | null  // "porcentaje" | "fijo"
+  precio_unitario_original?: number | null
+  descuento_unitario?: number | null
+  descuento_nombre?: string | null
 }
 
 export default function NuevoPresupuestoPage() {
@@ -100,6 +107,95 @@ export default function NuevoPresupuestoPage() {
 
   // Detalles
   const [detalles, setDetalles] = useState<DetalleItem[]>([])
+
+  // Descuento por volumen — guard anti-race-condition y debounce por fila
+  const recalcSeqRef = useRef<Map<number, number>>(new Map())
+  const recalcTimersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map())
+
+  // Recalcular descuento por volumen para un producto del detalle
+  const recalcularDescuento = useCallback(async (idProducto: number, cantidad: number) => {
+    const seq = (recalcSeqRef.current.get(idProducto) ?? 0) + 1
+    recalcSeqRef.current.set(idProducto, seq)
+
+    // Sin cantidad válida → limpiar descuento y volver al precio original del producto
+    if (!idProducto || !cantidad || cantidad <= 0) {
+      setDetalles(prev => prev.map(d => {
+        if (d.id_producto_terminado !== idProducto) return d
+        if (recalcSeqRef.current.get(idProducto) !== seq) return d
+        // Buscar precio original del producto en la lista cargada
+        const prod = productos.find(p => p.id === idProducto)
+        const precioOriginal = prod?.precio_venta ?? d.precio_unitario
+        return {
+          ...d,
+          precio_unitario: precioOriginal,
+          subtotal: d.cantidad * precioOriginal,
+          descuento_volumen_id: null,
+          descuento_volumen_valor: null,
+          descuento_volumen_tipo: null,
+          precio_unitario_original: null,
+          descuento_unitario: null,
+          descuento_nombre: null,
+        }
+      }))
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/descuentos-volumen/calcular?producto_id=${encodeURIComponent(idProducto)}&cantidad=${encodeURIComponent(cantidad)}`)
+      if (!res.ok) return
+      const data = await res.json()
+
+      if (recalcSeqRef.current.get(idProducto) !== seq) return
+
+      setDetalles(prev => prev.map(d => {
+        if (d.id_producto_terminado !== idProducto) return d
+        // Si el usuario cambió la cantidad mientras esperábamos la API, no pisar
+        if (d.cantidad !== cantidad) return d
+
+        if (data.descuento && data.precio_final != null) {
+          const precioFinal = data.precio_final
+          return {
+            ...d,
+            precio_unitario: precioFinal,
+            subtotal: d.cantidad * precioFinal,
+            descuento_volumen_id: data.descuento.id ?? null,
+            descuento_volumen_valor: data.descuento.valor ?? null,
+            descuento_volumen_tipo: data.descuento.tipo_descuento ?? null,
+            precio_unitario_original: data.precio_original ?? null,
+            descuento_unitario: data.descuento_aplicado ?? null,
+            descuento_nombre: data.descuento.nombre ?? null,
+          }
+        } else {
+          // Sin descuento → volver al precio original del producto
+          const precioOriginal = data.precio_original ?? d.precio_unitario
+          return {
+            ...d,
+            precio_unitario: precioOriginal,
+            subtotal: d.cantidad * precioOriginal,
+            descuento_volumen_id: null,
+            descuento_volumen_valor: null,
+            descuento_volumen_tipo: null,
+            precio_unitario_original: null,
+            descuento_unitario: null,
+            descuento_nombre: null,
+          }
+        }
+      }))
+    } catch {
+      // Best-effort: si falla el cálculo, el formulario sigue funcionando sin descuento
+    }
+  }, [productos])
+
+  // Programar recálculo con debounce (350ms)
+  const programarRecalcDescuento = useCallback((idProducto: number, cantidad: number) => {
+    const existing = recalcTimersRef.current.get(idProducto)
+    if (existing) clearTimeout(existing)
+    const timer = setTimeout(() => {
+      recalcTimersRef.current.delete(idProducto)
+      void recalcularDescuento(idProducto, cantidad)
+    }, 350)
+    recalcTimersRef.current.set(idProducto, timer)
+  }, [recalcularDescuento])
 
   // Form
   const [fechaValidez, setFechaValidez] = useState('')
@@ -168,6 +264,8 @@ export default function NuevoPresupuestoPage() {
           ? { ...d, cantidad: nuevaCantidad, subtotal: nuevaCantidad * d.precio_unitario }
           : d
       ))
+      // Recalcular descuento con la nueva cantidad
+      programarRecalcDescuento(producto.id, nuevaCantidad)
     } else {
       setDetalles([...detalles, {
         id_producto_terminado: producto.id,
@@ -176,6 +274,8 @@ export default function NuevoPresupuestoPage() {
         precio_unitario: producto.precio_venta,
         subtotal: producto.precio_venta,
       }])
+      // Recalcular descuento (cantidad = 1)
+      programarRecalcDescuento(producto.id, 1)
     }
     setProductoDialogOpen(false)
   }
@@ -188,6 +288,8 @@ export default function NuevoPresupuestoPage() {
         ? { ...d, cantidad, subtotal: cantidad * d.precio_unitario }
         : d
     ))
+    // Recalcular descuento por volumen con la nueva cantidad
+    programarRecalcDescuento(idProducto, cantidad)
   }
 
   // Actualizar precio
@@ -195,7 +297,18 @@ export default function NuevoPresupuestoPage() {
     if (precio < 0) return
     setDetalles(detalles.map(d =>
       d.id_producto_terminado === idProducto
-        ? { ...d, precio_unitario: precio, subtotal: d.cantidad * precio }
+        ? {
+            ...d,
+            precio_unitario: precio,
+            subtotal: d.cantidad * precio,
+            // Edición manual de precio → el usuario overridea, limpiar descuento
+            descuento_volumen_id: null,
+            descuento_volumen_valor: null,
+            descuento_volumen_tipo: null,
+            precio_unitario_original: null,
+            descuento_unitario: null,
+            descuento_nombre: null,
+          }
         : d
     ))
   }
@@ -237,6 +350,12 @@ export default function NuevoPresupuestoPage() {
           id_producto_terminado: d.id_producto_terminado,
           cantidad: d.cantidad,
           precio_unitario: d.precio_unitario,
+          descuento_volumen_id: d.descuento_volumen_id ?? null,
+          descuento_volumen_valor: d.descuento_volumen_valor ?? null,
+          descuento_volumen_tipo: d.descuento_volumen_tipo ?? null,
+          precio_unitario_original: d.precio_unitario_original ?? null,
+          descuento_unitario: d.descuento_unitario ?? null,
+          descuento_nombre: d.descuento_nombre ?? null,
         })),
       }
 
@@ -356,7 +475,7 @@ export default function NuevoPresupuestoPage() {
                     <TableRow>
                       <TableHead>Producto</TableHead>
                       <TableHead className="text-center w-24">Cantidad</TableHead>
-                      <TableHead className="text-right w-32">Precio Unit.</TableHead>
+                      <TableHead className="text-right w-40">Precio Unit.</TableHead>
                       <TableHead className="text-right w-32">Subtotal</TableHead>
                       <TableHead className="w-10"></TableHead>
                     </TableRow>
@@ -375,14 +494,31 @@ export default function NuevoPresupuestoPage() {
                           />
                         </TableCell>
                         <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={d.precio_unitario}
-                            onChange={(e) => actualizarPrecio(d.id_producto_terminado, parseFloat(e.target.value) || 0)}
-                            className="text-right h-8"
-                          />
+                          <div className="flex flex-col items-end gap-0.5">
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={d.precio_unitario}
+                              onChange={(e) => actualizarPrecio(d.id_producto_terminado, parseFloat(e.target.value) || 0)}
+                              className="text-right h-8"
+                            />
+                            {d.descuento_volumen_id && d.precio_unitario_original ? (
+                              <div className="flex items-center gap-1 text-xs">
+                                <span className="text-muted-foreground line-through">
+                                  {formatCurrency(d.precio_unitario_original)}
+                                </span>
+                                <span className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-700">
+                                  −{d.descuento_volumen_tipo === 'porcentaje'
+                                    ? `${d.descuento_volumen_valor}%`
+                                    : formatCurrency(d.descuento_unitario || 0)}
+                                </span>
+                              </div>
+                            ) : null}
+                            {d.descuento_nombre && (
+                              <span className="text-xs text-muted-foreground">{d.descuento_nombre}</span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-right font-semibold">{formatCurrency(d.subtotal)}</TableCell>
                         <TableCell>

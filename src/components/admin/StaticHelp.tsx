@@ -2198,15 +2198,19 @@ const helpSections: HelpSection[] = [
           combinarlos sin conflicto.
         </InfoBox>
 
-        <InfoBox type="info">
+        <InfoBox type="tip">
           Los descuentos por volumen son de <strong>uso interno del panel</strong> y no se muestran
-          en la tienda pública. El cálculo del mejor descuento está disponible mediante el endpoint{' '}
+          en la tienda pública. <strong>La aplicación es automática</strong> en los formularios de
+          Venta y Presupuesto: al ingresar la cantidad, el sistema consulta{' '}
           <code className="bg-marron/10 px-1 py-0.5 rounded text-xs">/api/descuentos-volumen/calcular</code>{' '}
-          (recibe <code className="bg-marron/10 px-1 py-0.5 rounded text-xs">producto_id</code>,{' '}
-          <code className="bg-marron/10 px-1 py-0.5 rounded text-xs">cantidad</code> y{' '}
-          <code className="bg-marron/10 px-1 py-0.5 rounded text-xs">unidad</code>). La aplicación
-          automática dentro de los formularios de Venta y Presupuesto está pendiente de integración
-          en la interfaz.
+          (recibe <code className="bg-marron/10 px-1 py-0.5 rounded text-xs">producto_id</code> y{' '}
+          <code className="bg-marron/10 px-1 py-0.5 rounded text-xs">cantidad</code>) y aplica el
+          mejor descuento. Se muestra el <strong>precio original tachado</strong>, el{' '}
+          <strong>% o monto de descuento</strong> y el <strong>precio final</strong>. El descuento se
+          persiste en el detalle (<code className="bg-marron/10 px-1 py-0.5 rounded text-xs">descuento_volumen_id</code>,{' '}
+          <code className="bg-marron/10 px-1 py-0.5 rounded text-xs">descuento_volumen_valor</code>,{' '}
+          <code className="bg-marron/10 px-1 py-0.5 rounded text-xs">descuento_volumen_tipo</code>).
+          Si editás el precio manualmente, el descuento se limpia (override).
         </InfoBox>
       </div>
     ),

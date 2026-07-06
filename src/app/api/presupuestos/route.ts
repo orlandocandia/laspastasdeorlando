@@ -100,10 +100,32 @@ export async function POST(request: NextRequest) {
 
     // Calcular subtotales
     let subtotal = 0
-    const detallesData = []
+    interface DetalleData {
+      id_producto_terminado: number
+      cantidad: number
+      precio_unitario: number
+      subtotal: number
+      descuento_volumen_id: number | null
+      descuento_volumen_valor: number | null
+      descuento_volumen_tipo: string | null
+      precio_unitario_original: number | null
+      descuento_unitario: number | null
+      descuento_nombre: string | null
+    }
+    const detallesData: DetalleData[] = []
 
     for (const detalle of detalles) {
-      const { id_producto_terminado, cantidad, precio_unitario } = detalle
+      const {
+        id_producto_terminado,
+        cantidad,
+        precio_unitario,
+        descuento_volumen_id,
+        descuento_volumen_valor,
+        descuento_volumen_tipo,
+        precio_unitario_original,
+        descuento_unitario,
+        descuento_nombre,
+      } = detalle
 
       if (!id_producto_terminado || !cantidad || precio_unitario === undefined) {
         return NextResponse.json(
@@ -117,11 +139,34 @@ export async function POST(request: NextRequest) {
       const subtotalLinea = cantidadNum * precioNum
       subtotal += subtotalLinea
 
+      // Snapshot del descuento por volumen aplicado (si vino del formulario)
+      const descuentoVolumenId = descuento_volumen_id ? parseInt(descuento_volumen_id) : null
+      const descuentoVolumenValor =
+        descuento_volumen_valor !== undefined && descuento_volumen_valor !== null
+          ? parseFloat(descuento_volumen_valor)
+          : null
+      const descuentoVolumenTipo = descuento_volumen_tipo || null
+      const precioUnitarioOriginal =
+        precio_unitario_original !== undefined && precio_unitario_original !== null
+          ? parseFloat(precio_unitario_original)
+          : null
+      const descuentoUnitario =
+        descuento_unitario !== undefined && descuento_unitario !== null
+          ? parseFloat(descuento_unitario)
+          : null
+      const descuentoNombre = descuento_nombre || null
+
       detallesData.push({
         id_producto_terminado: parseInt(id_producto_terminado),
         cantidad: cantidadNum,
         precio_unitario: precioNum,
         subtotal: subtotalLinea,
+        descuento_volumen_id: descuentoVolumenId,
+        descuento_volumen_valor: descuentoVolumenValor,
+        descuento_volumen_tipo: descuentoVolumenTipo,
+        precio_unitario_original: precioUnitarioOriginal,
+        descuento_unitario: descuentoUnitario,
+        descuento_nombre: descuentoNombre,
       })
     }
 

@@ -144,7 +144,7 @@ MÓDULOS DEL SISTEMA:
 - Cálculo: si varios descuentos coinciden para un producto, el sistema aplica el que otorgue el MAYOR beneficio económico. precio_final = máximo(0, precio_original − descuento_aplicado).
 - Ejemplo: sorrentinos $2.000/kg. Rango 1: 5 a 9,9 kg → 5% (= $1.900/kg). Rango 2: 10 kg en adelante → 10% (= $1.800/kg).
 - El cálculo está disponible vía API: /api/descuentos-volumen/calcular?producto_id=X&cantidad=Y&unidad=kg.
-- IMPORTANTE: son de USO INTERNO del panel (no se muestran en la tienda pública). La aplicación automática dentro de los formularios de Venta y Presupuesto está pendiente de integración en la interfaz.
+- IMPORTANTE: son de USO INTERNO del panel (no se muestran en la tienda pública). La aplicación es AUTOMÁTICA en los formularios de Venta y Presupuesto: al ingresar la cantidad, el sistema consulta /api/descuentos-volumen/calcular y aplica el mejor descuento, mostrando precio original tachado, % o monto de descuento, y precio final. El descuento se guarda en el detalle (descuento_volumen_id, descuento_volumen_valor, descuento_volumen_tipo). Si el usuario edita el precio manualmente, el descuento se limpia (override).
 
 23. MARGEN DE GANANCIA (visible en /admin/productos-terminados)
 - El margen es la diferencia entre el precio de venta y el costo de producción.
@@ -545,7 +545,7 @@ Permiten ofrecer descuentos escalonados según la cantidad comprada, ideal para 
 
 **Cálculo:** si varios descuentos coinciden, se aplica el que dé **mayor beneficio** al cliente. El precio nunca queda negativo.
 
-⚠️ **Importante:** son de **uso interno del panel** (no se ven en la tienda pública). El cálculo está disponible vía API \`/api/descuentos-volumen/calcular\`; la aplicación automática en los formularios de Venta y Presupuesto está pendiente de integración.`,
+✅ **Integrado:** son de **uso interno del panel** (no se ven en la tienda pública). La aplicación es AUTOMÁTICA en los formularios de Venta y Presupuesto: al ingresar la cantidad, el sistema consulta \`/api/descuentos-volumen/calcular\` y aplica el mejor descuento, mostrando precio original tachado, % o monto de descuento, y precio final. El descuento se persiste en el detalle (\`descuento_volumen_id\`, \`descuento_volumen_valor\`, \`descuento_volumen_tipo\`). Si el usuario edita el precio manualmente, el descuento se limpia (override).`,
   },
   {
     keywords: ['promoción', 'promocion', 'oferta', 'descuento publico', '2x1', 'badge oferta', 'solo ofertas', 'tienda pública', 'landing'],

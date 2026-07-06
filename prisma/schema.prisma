@@ -767,6 +767,13 @@ model DetalleVenta {
   precio_unitario       Float
   subtotal              Float
   codigo_barras_escaner String?
+  // Snapshot del descuento por volumen aplicado (auditoría)
+  descuento_volumen_id    Int?     // ID del DescuentoVolumen que aplicó
+  descuento_volumen_valor Float?   // valor del rango (5 para 5%, 100 para $100 fijo)
+  descuento_volumen_tipo  String?  // "porcentaje" | "fijo"
+  precio_unitario_original Float?  // precio antes del descuento
+  descuento_unitario      Float?   // monto descontado por unidad
+  descuento_nombre        String?  // nombre del descuento (para display histórico)
   createdAt             DateTime @default(now())
 
   // Relaciones
@@ -1151,6 +1158,13 @@ model DetallePresupuesto {
   precio_unitario       Float
   subtotal              Float
   observaciones         String?
+  // Snapshot del descuento por volumen aplicado (auditoría)
+  descuento_volumen_id    Int?
+  descuento_volumen_valor Float?
+  descuento_volumen_tipo  String?
+  precio_unitario_original Float?
+  descuento_unitario      Float?
+  descuento_nombre        String?
   createdAt             DateTime @default(now())
 
   // Relaciones

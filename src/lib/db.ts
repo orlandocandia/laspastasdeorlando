@@ -71,6 +71,22 @@ async function autoMigrateTurso(client: Client) {
     { sql: 'ALTER TABLE "CategoriaProductoTerminado" ADD COLUMN "seccion" TEXT', desc: 'CategoriaProductoTerminado.seccion' },
     { sql: 'ALTER TABLE "ProductoTerminado" ADD COLUMN "seccion" TEXT', desc: 'ProductoTerminado.seccion' },
 
+    // ── Descuentos por Volumen: snapshot fields on DetalleVenta ──
+    { sql: 'ALTER TABLE "DetalleVenta" ADD COLUMN "descuento_volumen_id" INTEGER', desc: 'DetalleVenta.descuento_volumen_id' },
+    { sql: 'ALTER TABLE "DetalleVenta" ADD COLUMN "descuento_volumen_valor" REAL', desc: 'DetalleVenta.descuento_volumen_valor' },
+    { sql: 'ALTER TABLE "DetalleVenta" ADD COLUMN "descuento_volumen_tipo" TEXT', desc: 'DetalleVenta.descuento_volumen_tipo' },
+    { sql: 'ALTER TABLE "DetalleVenta" ADD COLUMN "precio_unitario_original" REAL', desc: 'DetalleVenta.precio_unitario_original' },
+    { sql: 'ALTER TABLE "DetalleVenta" ADD COLUMN "descuento_unitario" REAL', desc: 'DetalleVenta.descuento_unitario' },
+    { sql: 'ALTER TABLE "DetalleVenta" ADD COLUMN "descuento_nombre" TEXT', desc: 'DetalleVenta.descuento_nombre' },
+
+    // ── Descuentos por Volumen: snapshot fields on DetallePresupuesto ──
+    { sql: 'ALTER TABLE "DetallePresupuesto" ADD COLUMN "descuento_volumen_id" INTEGER', desc: 'DetallePresupuesto.descuento_volumen_id' },
+    { sql: 'ALTER TABLE "DetallePresupuesto" ADD COLUMN "descuento_volumen_valor" REAL', desc: 'DetallePresupuesto.descuento_volumen_valor' },
+    { sql: 'ALTER TABLE "DetallePresupuesto" ADD COLUMN "descuento_volumen_tipo" TEXT', desc: 'DetallePresupuesto.descuento_volumen_tipo' },
+    { sql: 'ALTER TABLE "DetallePresupuesto" ADD COLUMN "precio_unitario_original" REAL', desc: 'DetallePresupuesto.precio_unitario_original' },
+    { sql: 'ALTER TABLE "DetallePresupuesto" ADD COLUMN "descuento_unitario" REAL', desc: 'DetallePresupuesto.descuento_unitario' },
+    { sql: 'ALTER TABLE "DetallePresupuesto" ADD COLUMN "descuento_nombre" TEXT', desc: 'DetallePresupuesto.descuento_nombre' },
+
     // ── CREATE TABLE Promocion (if not exists) ──────────────
     { sql: `CREATE TABLE IF NOT EXISTS "Promocion" (
       "id" INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { toast } from 'sonner'
 import { Loader2, Plus, Trash2, Check, ChevronsUpDown, ScanBarcode } from 'lucide-react'
 
@@ -74,6 +74,13 @@ interface DetalleRow {
   cantidad: string
   precioUnitario: string
   subtotal: string
+  // Snapshot del descuento por volumen aplicado (strings para coincidir con el resto de la fila)
+  descuentoVolumenId?: string
+  descuentoVolumenValor?: string
+  descuentoVolumenTipo?: string  // "porcentaje" | "fijo"
+  precioUnitarioOriginal?: string
+  descuentoUnitario?: string
+  descuentoNombre?: string
 }
 
 interface VentaFormProps {
@@ -117,6 +124,100 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
   // Combobox open states
   const [clienteOpen, setClienteOpen] = useState(false)
   const [pedidoOpen, setPedidoOpen] = useState(false)
+
+  // Descuento por volumen — guard anti-race-condition y debounce por fila
+  const recalcSeqRef = useRef<Map<string, number>>(new Map())
+  const recalcTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+
+  // Recalcular descuento por volumen para una fila (consulta a la API)
+  const recalcularDescuento = useCallback(async (key: string, idProducto: string, cantidad: string) => {
+    const seq = (recalcSeqRef.current.get(key) ?? 0) + 1
+    recalcSeqRef.current.set(key, seq)
+
+    const cantNum = parseFloat(cantidad)
+    // Sin producto o cantidad inválida → limpiar descuento y volver al precio original
+    if (!idProducto || !cantidad || isNaN(cantNum) || cantNum <= 0) {
+      setDetalles(prev => prev.map(d => {
+        if (d.key !== key) return d
+        if (recalcSeqRef.current.get(key) !== seq) return d
+        const product = productosTerminados.find(p => p.id.toString() === d.idProductoTerminado)
+        const precioOriginal = product?.precio_venta?.toString() || d.precioUnitario
+        const cant = parseFloat(d.cantidad)
+        const precio = parseFloat(precioOriginal)
+        return {
+          ...d,
+          precioUnitario: precioOriginal,
+          precioUnitarioOriginal: undefined,
+          descuentoUnitario: undefined,
+          descuentoVolumenId: undefined,
+          descuentoVolumenValor: undefined,
+          descuentoVolumenTipo: undefined,
+          descuentoNombre: undefined,
+          subtotal: (!isNaN(cant) && !isNaN(precio)) ? (cant * precio).toFixed(2) : '',
+        }
+      }))
+      return
+    }
+
+    try {
+      const res = await fetch(`/api/descuentos-volumen/calcular?producto_id=${encodeURIComponent(idProducto)}&cantidad=${encodeURIComponent(cantidad)}`)
+      if (!res.ok) return
+      const data = await res.json()
+
+      // Guard anti-race: si otra request más nueva llegó, ignorar este resultado
+      if (recalcSeqRef.current.get(key) !== seq) return
+
+      setDetalles(prev => prev.map(d => {
+        if (d.key !== key) return d
+        // Si el usuario cambió la fila mientras esperábamos la API, no pisar
+        if (d.idProductoTerminado !== idProducto || d.cantidad !== cantidad) return d
+
+        const cant = parseFloat(d.cantidad)
+        if (data.descuento && data.precio_final != null) {
+          const precioFinal = data.precio_final
+          return {
+            ...d,
+            precioUnitario: precioFinal.toString(),
+            precioUnitarioOriginal: data.precio_original?.toString() || undefined,
+            descuentoUnitario: data.descuento_aplicado?.toString() || undefined,
+            descuentoVolumenId: data.descuento.id?.toString() || undefined,
+            descuentoVolumenValor: data.descuento.valor?.toString() || undefined,
+            descuentoVolumenTipo: data.descuento.tipo_descuento || undefined,
+            descuentoNombre: data.descuento.nombre || undefined,
+            subtotal: !isNaN(cant) ? (cant * precioFinal).toFixed(2) : '',
+          }
+        } else {
+          // Sin descuento → volver al precio original del producto
+          const precioOriginal = data.precio_original?.toString() || d.precioUnitario
+          const precio = parseFloat(precioOriginal)
+          return {
+            ...d,
+            precioUnitario: precioOriginal,
+            precioUnitarioOriginal: undefined,
+            descuentoUnitario: undefined,
+            descuentoVolumenId: undefined,
+            descuentoVolumenValor: undefined,
+            descuentoVolumenTipo: undefined,
+            descuentoNombre: undefined,
+            subtotal: (!isNaN(cant) && !isNaN(precio)) ? (cant * precio).toFixed(2) : '',
+          }
+        }
+      }))
+    } catch {
+      // Best-effort: si falla el cálculo, el formulario sigue funcionando sin descuento
+    }
+  }, [productosTerminados])
+
+  // Programar recálculo con debounce (350ms) para no spammear la API en cada keystroke
+  const programarRecalcDescuento = useCallback((key: string, idProducto: string, cantidad: string) => {
+    const existing = recalcTimersRef.current.get(key)
+    if (existing) clearTimeout(existing)
+    const timer = setTimeout(() => {
+      recalcTimersRef.current.delete(key)
+      void recalcularDescuento(key, idProducto, cantidad)
+    }, 350)
+    recalcTimersRef.current.set(key, timer)
+  }, [recalcularDescuento])
 
   // Load data
   useEffect(() => {
@@ -199,15 +300,20 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
     const pedido = pedidosPendientes.find((p) => p.id.toString() === pedidoId)
     if (pedido) {
       setIdCliente(pedido.cliente?.id?.toString() || '')
-      setDetalles(
-        pedido.detalle.map((d: any) => ({
-          key: `row-${d.id || Date.now() + Math.random()}`,
-          idProductoTerminado: d.id_producto_terminado?.toString() || '',
-          cantidad: d.cantidad?.toString() || '',
-          precioUnitario: d.precio_unitario?.toString() || d.productoTerminado?.precio_venta?.toString() || '',
-          subtotal: (d.cantidad * (d.precio_unitario || d.productoTerminado?.precio_venta || 0)).toFixed(2),
-        }))
-      )
+      const nuevasFilas: DetalleRow[] = pedido.detalle.map((d: any) => ({
+        key: `row-${d.id || Date.now() + Math.random()}`,
+        idProductoTerminado: d.id_producto_terminado?.toString() || '',
+        cantidad: d.cantidad?.toString() || '',
+        precioUnitario: d.precio_unitario?.toString() || d.productoTerminado?.precio_venta?.toString() || '',
+        subtotal: (d.cantidad * (d.precio_unitario || d.productoTerminado?.precio_venta || 0)).toFixed(2),
+      }))
+      setDetalles(nuevasFilas)
+      // Disparar recálculo de descuento por volumen para cada fila cargada
+      nuevasFilas.forEach(fila => {
+        if (fila.idProductoTerminado && fila.cantidad) {
+          programarRecalcDescuento(fila.key, fila.idProductoTerminado, fila.cantidad)
+        }
+      })
     }
   }
 
@@ -247,6 +353,8 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
         newDetalles[existingIndex].subtotal = (newCantidad * parseFloat(existing.precioUnitario)).toFixed(2)
         setDetalles(newDetalles)
         toast.success(`${data.nombre} - cantidad actualizada`)
+        // Recalcular descuento por volumen con la nueva cantidad
+        programarRecalcDescuento(existing.key, existing.idProductoTerminado, newCantidad.toString())
       } else {
         // Add new row
         const newKey = `row-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
@@ -258,6 +366,8 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
           subtotal: data.precio_venta?.toString() || '',
         }])
         toast.success(`${data.nombre} agregado`)
+        // Recalcular descuento por volumen (cantidad = 1)
+        programarRecalcDescuento(newKey, data.id.toString(), '1')
       }
 
       // Clear and refocus
@@ -291,34 +401,67 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
 
   // Update detail row
   const updateDetalle = (key: string, field: keyof DetalleRow, value: string) => {
-    setDetalles((prev) =>
-      prev.map((d) => {
+    const currentRow = detalles.find(d => d.key === key)
+    if (!currentRow) return
+
+    // Calcular valores post-cambio para programar el recálculo
+    let newIdProducto = currentRow.idProductoTerminado
+    let newCantidad = currentRow.cantidad
+    let newPrecio = currentRow.precioUnitario
+
+    if (field === 'idProductoTerminado') {
+      newIdProducto = value
+      const product = findProducto(value)
+      if (product) newPrecio = product.precio_venta?.toString() || ''
+    } else if (field === 'cantidad') {
+      newCantidad = value
+    } else if (field === 'precioUnitario') {
+      newPrecio = value
+    }
+
+    // Edición manual de precio → el usuario overridea, limpiar descuento
+    if (field === 'precioUnitario') {
+      setDetalles(prev => prev.map(d => {
         if (d.key !== key) return d
-
-        const updated = { ...d, [field]: value }
-
-        // When product changes, auto-fill precio_venta
-        if (field === 'idProductoTerminado' && value) {
-          const product = findProducto(value)
-          if (product) {
-            updated.precioUnitario = product.precio_venta?.toString() || ''
-          }
+        const cant = parseFloat(newCantidad)
+        const precio = parseFloat(value)
+        return {
+          ...d,
+          precioUnitario: value,
+          precioUnitarioOriginal: undefined,
+          descuentoUnitario: undefined,
+          descuentoVolumenId: undefined,
+          descuentoVolumenValor: undefined,
+          descuentoVolumenTipo: undefined,
+          descuentoNombre: undefined,
+          subtotal: (!isNaN(cant) && !isNaN(precio)) ? (cant * precio).toFixed(2) : '',
         }
+      }))
+      return
+    }
 
-        // Auto-calculate subtotal when cantidad or precio_unitario changes
-        if (field === 'cantidad' || field === 'precioUnitario') {
-          const cant = parseFloat(field === 'cantidad' ? value : updated.cantidad)
-          const precio = parseFloat(field === 'precioUnitario' ? value : updated.precioUnitario)
-          if (!isNaN(cant) && !isNaN(precio)) {
-            updated.subtotal = (cant * precio).toFixed(2)
-          } else {
-            updated.subtotal = ''
-          }
-        }
+    // Cambio de producto o cantidad → actualizar y programar recálculo de descuento
+    setDetalles(prev => prev.map(d => {
+      if (d.key !== key) return d
+      const updated: DetalleRow = { ...d, [field]: value }
+      if (field === 'idProductoTerminado') {
+        updated.precioUnitario = newPrecio
+        // Limpiar descuento anterior (el recálculo lo volverá a aplicar si corresponde)
+        updated.precioUnitarioOriginal = undefined
+        updated.descuentoUnitario = undefined
+        updated.descuentoVolumenId = undefined
+        updated.descuentoVolumenValor = undefined
+        updated.descuentoVolumenTipo = undefined
+        updated.descuentoNombre = undefined
+      }
+      const cant = parseFloat(newCantidad)
+      const precio = parseFloat(newPrecio)
+      updated.subtotal = (!isNaN(cant) && !isNaN(precio)) ? (cant * precio).toFixed(2) : ''
+      return updated
+    }))
 
-        return updated
-      })
-    )
+    // Programar recálculo de descuento por volumen (debounced)
+    programarRecalcDescuento(key, newIdProducto, newCantidad)
   }
 
   // Calculate totals
@@ -400,11 +543,17 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
             iva,
             total,
             observaciones: observaciones.trim() || null,
-            detalle: detalles.map((d) => ({
+            detalles: detalles.map((d) => ({
               id_producto_terminado: parseInt(d.idProductoTerminado),
               cantidad: parseFloat(d.cantidad),
               precio_unitario: parseFloat(d.precioUnitario),
               subtotal: parseFloat(d.subtotal),
+              descuento_volumen_id: d.descuentoVolumenId ? parseInt(d.descuentoVolumenId) : null,
+              descuento_volumen_valor: d.descuentoVolumenValor ? parseFloat(d.descuentoVolumenValor) : null,
+              descuento_volumen_tipo: d.descuentoVolumenTipo || null,
+              precio_unitario_original: d.precioUnitarioOriginal ? parseFloat(d.precioUnitarioOriginal) : null,
+              descuento_unitario: d.descuentoUnitario ? parseFloat(d.descuentoUnitario) : null,
+              descuento_nombre: d.descuentoNombre || null,
             })),
           }
 
@@ -800,6 +949,21 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                         value={detalle.precioUnitario}
                         onChange={(e) => updateDetalle(detalle.key, 'precioUnitario', e.target.value)}
                       />
+                      {detalle.descuentoVolumenId && detalle.precioUnitarioOriginal && (
+                        <div className="mt-1 flex flex-wrap items-center gap-1 text-xs">
+                          <span className="text-muted-foreground line-through">
+                            {formatCurrency(parseFloat(detalle.precioUnitarioOriginal))}
+                          </span>
+                          <span className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-700">
+                            −{detalle.descuentoVolumenTipo === 'porcentaje'
+                              ? `${detalle.descuentoVolumenValor}%`
+                              : formatCurrency(parseFloat(detalle.descuentoUnitario || '0'))}
+                          </span>
+                          {detalle.descuentoNombre && (
+                            <span className="text-muted-foreground">{detalle.descuentoNombre}</span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Subtotal (auto-calculated) */}
@@ -849,12 +1013,13 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
             </Label>
             <div className="rounded-lg border border-marron/10 overflow-hidden">
               <div className="overflow-x-auto">
-              <table className="w-full min-w-[500px] text-sm">
+              <table className="w-full min-w-[640px] text-sm">
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left p-2 text-muted-foreground font-medium">Producto</th>
                     <th className="text-right p-2 text-muted-foreground font-medium">Cantidad</th>
                     <th className="text-right p-2 text-muted-foreground font-medium">P. Unit.</th>
+                    <th className="text-center p-2 text-muted-foreground font-medium">Descuento</th>
                     <th className="text-right p-2 text-muted-foreground font-medium">Subtotal</th>
                   </tr>
                 </thead>
@@ -865,7 +1030,29 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                         {d.productoTerminado?.nombre || '-'}
                       </td>
                       <td className="p-2 text-right">{d.cantidad}</td>
-                      <td className="p-2 text-right">{formatCurrency(d.precio_unitario)}</td>
+                      <td className="p-2 text-right">
+                        {d.descuento_volumen_id && d.precio_unitario_original ? (
+                          <div className="flex flex-col items-end">
+                            <span className="text-muted-foreground line-through text-xs">
+                              {formatCurrency(d.precio_unitario_original)}
+                            </span>
+                            <span>{formatCurrency(d.precio_unitario)}</span>
+                          </div>
+                        ) : (
+                          formatCurrency(d.precio_unitario)
+                        )}
+                      </td>
+                      <td className="p-2 text-center">
+                        {d.descuento_volumen_id ? (
+                          <span className="inline-flex items-center rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-700">
+                            −{d.descuento_volumen_tipo === 'porcentaje'
+                              ? `${d.descuento_volumen_valor}%`
+                              : formatCurrency(d.descuento_unitario || 0)}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
                       <td className="p-2 text-right font-medium text-marron">
                         {formatCurrency(d.subtotal)}
                       </td>
