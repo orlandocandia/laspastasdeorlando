@@ -226,6 +226,107 @@ const helpSections: HelpSection[] = [
     ),
   },
 
+  // ─── 1b. Navegación y Menú Lateral ─────────────────────────────────────
+  {
+    id: 'navegacion-menu',
+    title: 'Navegación y Menú Lateral',
+    iconComponent: BookMarked,
+    summary: 'Cómo moverse por el panel: colapsar/expandir secciones del menú lateral, buscar y usar la tabla de contenidos.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El menú lateral izquierdo organiza todos los módulos del sistema en{' '}
+          <strong className="text-marron">secciones colapsables</strong>. Entender cómo navegarlo te
+          ahorrará tiempo.
+        </p>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
+            <ChevronDown className="h-4 w-4 text-mostaza" />
+            Colapsar y expandir secciones
+          </h4>
+          <p className="text-sm text-muted-foreground mb-3">
+            El menú está agrupado en secciones (cada una con un título en mayúsculas y un icono):
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4 mb-3">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Stock &amp; Producción</strong></span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Compras</strong></span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Ventas</strong></span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Stock</strong> (movimientos)</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Envíos y Logística</strong></span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Notificaciones</strong></span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Configuración</strong></span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Auditoría &amp; Reportes</strong></span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Seguridad</strong></span></li>
+          </ul>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <StepCircle n={1} />
+              <div>
+                <p className="font-medium text-sm">Hacé clic en el título de la sección</p>
+                <p className="text-xs text-muted-foreground">
+                  Un clic sobre el encabezado (ej: “Ventas”) <strong>abre</strong> la sección y muestra
+                  sus sub-módulos. La flecha cambia de <ChevronRight className="inline h-3 w-3" /> a <ChevronDown className="inline h-3 w-3" />.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={2} />
+              <div>
+                <p className="font-medium text-sm">Otro clic la cierra</p>
+                <p className="text-xs text-muted-foreground">
+                  Un segundo clic sobre el mismo encabezado <strong>cierra</strong> la sección. Podés
+                  tener varias secciones abiertas a la vez, o ninguna.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={3} />
+              <div>
+                <p className="font-medium text-sm">Apertura automática al navegar</p>
+                <p className="text-xs text-muted-foreground">
+                  Cuando entrás a una página (ej: <strong>/admin/ventas</strong>), la sección que la
+                  contiene se <strong>abre automáticamente</strong> para que veas dónde estás. Igual,
+                  después podés cerrarla manualmente con un clic.
+                </p>
+              </div>
+            </div>
+          </div>
+          <InfoBox type="info">
+            El menú se puede ocultar por completo con el botón <strong>SidebarTrigger</strong> (icono
+            de menú en la barra superior izquierda) para ganar espacio de pantalla, especialmente útil
+            en dispositivos móviles.
+          </InfoBox>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Search className="h-4 w-4 text-mostaza" />
+            Buscador de la ayuda
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            En el panel de ayuda (botón <strong>“Ayuda”</strong> de la barra superior) hay un{' '}
+            <strong>buscador</strong> que filtra las secciones por título o contenido. Escribí una
+            palabra clave y te mostrará solo las secciones relevantes, con la tabla de contenidos a la
+            izquierda para saltar entre ellas.
+          </p>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-mostaza" />
+            Atajos útiles
+          </h4>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>El <strong>Dashboard</strong> siempre es el primer ítem del menú y el punto de partida.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>En <strong>Personas → Consultas</strong> un badge rojo muestra la cantidad de consultas no leídas.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>El <strong>asistente virtual</strong> (botón flotante abajo a la derecha) responde dudas sin abrir la ayuda.</span></li>
+          </ul>
+        </div>
+      </div>
+    ),
+  },
+
   // ─── 2. Productos ─────────────────────────────────────────────────────
   {
     id: 'productos',
@@ -1595,6 +1696,13 @@ const helpSections: HelpSection[] = [
             Margen de ganancia
           </h4>
           <p className="text-sm text-muted-foreground mb-2">
+            El <strong>margen</strong> es la diferencia entre el precio de venta y el costo de
+            producción, expresada en pesos ($) y en porcentaje (%). El porcentaje se calcula así:
+          </p>
+          <p className="text-sm text-muted-foreground ml-4 mb-3">
+            <code className="bg-marron/10 px-1 py-0.5 rounded text-xs">margen_% = (precio_venta − costo_produccion) / precio_venta × 100</code>
+          </p>
+          <p className="text-sm text-muted-foreground mb-2">
             El margen se muestra con un código de colores para identificar rápidamente la rentabilidad:
           </p>
           <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
@@ -1611,6 +1719,25 @@ const helpSections: HelpSection[] = [
               <span>Margen bajo — posiblemente pierde dinero</span>
             </li>
           </ul>
+        </div>
+
+        <div className="bg-crema/60 rounded-lg p-4 border border-mostaza/10">
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-mostaza" />
+            Ejemplo práctico de cálculo de margen
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Supongamos sorrentinos con estos datos:
+          </p>
+          <ul className="space-y-1 text-sm text-muted-foreground ml-4 mb-3">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>Receta activa: costo total de ingredientes = <strong>$1.200</strong> para <strong>4 unidades</strong></span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>Rendimiento: 4 unidades → <strong>costo por unidad = $1.200 / 4 = $300</strong></span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>Precio de venta: <strong>$800</strong></span></li>
+          </ul>
+          <p className="text-sm text-muted-foreground">
+            <strong>Margen $</strong> = $800 − $300 = <strong>$500</strong> por unidad.<br />
+            <strong>Margen %</strong> = ($500 / $800) × 100 = <strong className="text-oliva">62,5%</strong> → 🟢 Margen saludable.
+          </p>
         </div>
 
         <div>
@@ -1726,9 +1853,173 @@ const helpSections: HelpSection[] = [
           </ul>
         </div>
 
+        <div>
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
+            <ArrowRight className="h-4 w-4 text-mostaza" />
+            Cómo crear una promoción (paso a paso)
+          </h4>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <StepCircle n={1} />
+              <div>
+                <p className="font-medium text-sm">Abrir el módulo</p>
+                <p className="text-xs text-muted-foreground">
+                  Menú lateral → <strong>Ventas → Promociones</strong>. Hacé clic en <strong>“Nueva Promoción”</strong>.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={2} />
+              <div>
+                <p className="font-medium text-sm">Elegir el tipo de descuento</p>
+                <p className="text-xs text-muted-foreground">
+                  Porcentual (%), Monto fijo ($), 2x1 (50% sobre el total) o Tiempo Limitado (con vigencia).
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={3} />
+              <div>
+                <p className="font-medium text-sm">Seleccionar productos participantes</p>
+                <p className="text-xs text-muted-foreground">
+                  Elegí qué productos terminados incluyen la promoción. Podés seleccionar varios.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={4} />
+              <div>
+                <p className="font-medium text-sm">Definir vigencia</p>
+                <p className="text-xs text-muted-foreground">
+                  Fecha de inicio y fin. Al vencer, la promoción se desactiva automáticamente.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={5} />
+              <div>
+                <p className="font-medium text-sm">Activar y guardar</p>
+                <p className="text-xs text-muted-foreground">
+                  Activá la promoción y guardá. Aparecerá automáticamente en la <strong>tienda pública</strong>{' '}
+                  (ver sección <ModuleRef name="Promociones en la Tienda Pública" />) y se aplica en ventas.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <InfoBox type="tip">
-          Combiná promociones con el reporte de Rentabilidad para identificar productos con alto margen
-          donde podés ofrecer descuentos sin perder rentabilidad.
+          Combiná promociones con el reporte de <ModuleRef name="Rentabilidad" /> para identificar
+          productos con alto margen donde podés ofrecer descuentos sin perder rentabilidad.
+        </InfoBox>
+
+        <InfoBox type="info">
+          Las promociones <strong>sí se muestran en la tienda pública</strong> (badges de oferta,
+          precio tachado y filtro “Solo Ofertas”). Esto las diferencia de los descuentos por volumen,
+          que son internos del panel.
+        </InfoBox>
+      </div>
+    ),
+  },
+
+  // ─── 12b. Promociones en la Tienda Pública ────────────────────────────
+  {
+    id: 'promociones-landing',
+    title: 'Promociones en la Tienda Pública',
+    iconComponent: Eye,
+    summary: 'Cómo se ven las promociones en la landing page: badges de oferta, precio tachado y filtro “Solo Ofertas”.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          Las promociones que creás en <ModuleRef name="Promociones" /> se reflejan automáticamente
+          en la <strong className="text-marron">tienda pública</strong> (la landing page que ven los
+          clientes). Acá te explicamos cómo se ven y cómo interactúan con la sección de productos.
+        </p>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
+            <Tag className="h-4 w-4 text-mostaza" />
+            Badge de oferta en las tarjetas de producto
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Cuando un producto tiene una promoción activa, su tarjeta en la tienda muestra:
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Un <strong>badge rojo “🔥 XX%”</strong> (o el monto) en la esquina superior derecha de la imagen, con animación pulsante.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>El <strong>precio original tachado</strong> en color gris.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>El <strong>precio final en rojo</strong> y en negrita, justo debajo.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Al dar vuelta la tarjeta (clic/tap), se repite el detalle de la promoción con su nombre.</span>
+            </li>
+          </ul>
+          <InfoBox type="info">
+            El badge de promoción tiene <strong>prioridad</strong> sobre el badge “⭐ Destacado”:
+            si un producto está destacado y además tiene promoción, solo se muestra el de promoción.
+          </InfoBox>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
+            <Eye className="h-4 w-4 text-mostaza" />
+            Filtro “Solo Ofertas”
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            En la sección de productos de la landing, junto a los filtros de harina (Con Gluten /
+            Integrales / Sin Gluten), hay un botón <strong>“Solo Ofertas”</strong>.
+          </p>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Al activarlo, se <strong>desactivan los filtros de harina</strong> (son mutuamente excluyentes) y se muestran únicamente los productos con promoción, sin importar el tipo de harina.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>El botón muestra el <strong>contador de productos en oferta</strong>: “Solo Ofertas (N)”.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Si una <strong>familia</strong> no tiene productos en oferta, se oculta automáticamente cuando el filtro está activo.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Si no hay productos en oferta para el filtro actual, se muestra un mensaje “No hay productos en oferta” con un botón para desactivar el filtro.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <span>Dentro de una familia, aparece un <strong>sub-filtro “Ver solo ofertas (N)”</strong> para acotar todavía más.</span>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Layers className="h-4 w-4 text-mostaza" />
+            Integración con la sección de productos
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            La información de promociones se obtiene del endpoint{' '}
+            <code className="bg-marron/10 px-1 py-0.5 rounded text-xs">/api/promociones/public</code>,
+            que devuelve las promociones activas y, para cada producto, el{' '}
+            <strong>precio original</strong>, <strong>precio final</strong> y una{' '}
+            <strong>etiqueta de descuento</strong> legible (ej: “15% OFF”). Este endpoint alimenta
+            tanto las tarjetas de producto como el filtro “Solo Ofertas”.
+          </p>
+        </div>
+
+        <InfoBox type="tip">
+          Para que una promoción se vea en la tienda, debe estar <strong>activa</strong> y dentro
+          de su <strong>período de vigencia</strong>. Si la desactivás o venció, el producto vuelve
+          a mostrar su precio normal automáticamente.
         </InfoBox>
       </div>
     ),
@@ -1739,29 +2030,106 @@ const helpSections: HelpSection[] = [
     id: 'descuentos-volumen',
     title: 'Descuentos por Volumen',
     iconComponent: Layers,
-    summary: 'Descuentos escalonados por cantidad para ventas mayoristas.',
+    summary: 'Descuentos escalonados por cantidad para ventas mayoristas: cómo crear rangos y cómo se calculan.',
     content: (
       <div className="space-y-5">
         <p className="text-muted-foreground">
           El módulo de <strong className="text-marron">Descuentos por Volumen</strong> te permite crear
           descuentos escalonados según la cantidad comprada, ideal para ventas mayoristas y clientes
-          que compran en gran volumen.
+          que compran en gran volumen. Se accede desde el menú lateral:{' '}
+          <ModuleRef name="Ventas → Descuentos por Volumen" />.
         </p>
 
         <div>
-          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
             <Layers className="h-4 w-4 text-mostaza" />
             ¿Cómo funciona?
           </h4>
+          <p className="text-sm text-muted-foreground mb-3">
+            Definís uno o más <strong>descuentos</strong>, y dentro de cada uno definís{' '}
+            <strong>rangos de cantidad</strong> con su respectivo descuento. Cuando un cliente
+            compra una cantidad que cae en un rango, se aplica el descuento correspondiente.
+            Si varios descuentos coinciden para el mismo producto, el sistema elige el que otorgue
+            el <strong>mayor beneficio económico</strong> al cliente.
+          </p>
           <p className="text-sm text-muted-foreground">
-            Definís rangos de cantidad (ej: de 5 a 9.9 kg, de 10 kg en adelante) y un descuento
-            para cada rango. Cuando un cliente compra una cantidad que cae en un rango, se aplica
-            automáticamente el descuento correspondiente.
+            La fórmula del precio final es: <code className="bg-marron/10 px-1 py-0.5 rounded text-xs">precio_final = máximo(0, precio_original − descuento_aplicado)</code>.
+            Es decir, el precio nunca queda negativo.
           </p>
         </div>
 
         <div>
-          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
+            <ArrowRight className="h-4 w-4 text-mostaza" />
+            Cómo crear un descuento por volumen (paso a paso)
+          </h4>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <StepCircle n={1} />
+              <div>
+                <p className="font-medium text-sm">Abrir el módulo</p>
+                <p className="text-xs text-muted-foreground">
+                  Menú lateral → <strong>Ventas → Descuentos por Volumen</strong>. Hacé clic en{' '}
+                  <strong>“Nuevo Descuento”</strong>.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={2} />
+              <div>
+                <p className="font-medium text-sm">Definir los datos generales</p>
+                <p className="text-xs text-muted-foreground">
+                  Nombre (ej: “Mayorista Sorrentinos”), descripción opcional, ámbito de aplicación
+                  y unidad de medida.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={3} />
+              <div>
+                <p className="font-medium text-sm">Elegir el ámbito de aplicación</p>
+                <p className="text-xs text-muted-foreground">
+                  <strong>Todos los productos</strong> · <strong>Producto específico</strong> ·{' '}
+                  <strong>Categoría</strong> (ej: todos los sorrentinos).
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={4} />
+              <div>
+                <p className="font-medium text-sm">Seleccionar la unidad de medida</p>
+                <p className="text-xs text-muted-foreground">
+                  Kilogramos (kg), Unidades (u), Bandejas, Docenas o Litros (l). Los rangos se
+                  interpretan según esta unidad.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={5} />
+              <div>
+                <p className="font-medium text-sm">Definir los rangos escalonados</p>
+                <p className="text-xs text-muted-foreground">
+                  Para cada rango indicás: <strong>cantidad desde</strong>, <strong>cantidad hasta</strong>{' '}
+                  (vacío = “en adelante”), <strong>tipo</strong> (porcentaje o monto fijo) y{' '}
+                  <strong>valor</strong> del descuento.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={6} />
+              <div>
+                <p className="font-medium text-sm">Vigencia y estado</p>
+                <p className="text-xs text-muted-foreground">
+                  Opcionalmente definí <strong>fecha de inicio y fin</strong>. Activá el descuento
+                  con el switch <strong>“Activo”</strong> y guardá.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
             <Tag className="h-4 w-4 text-mostaza" />
             Tipos de descuento por rango
           </h4>
@@ -1770,59 +2138,75 @@ const helpSections: HelpSection[] = [
               <Badge className="bg-mostaza/10 text-mostaza">%</Badge>
               <div>
                 <p className="font-medium text-sm">Porcentaje</p>
-                <p className="text-xs text-muted-foreground">Ej: 5% de descuento al comprar 5 kg o más. Se calcula sobre el precio de venta.</p>
+                <p className="text-xs text-muted-foreground">Se calcula sobre el precio de venta. Ej: 10% sobre $2.000 = $200 de descuento.</p>
               </div>
             </div>
             <div className="flex items-start gap-3 bg-oliva/5 border border-oliva/15 rounded-lg p-3">
               <Badge className="bg-oliva/10 text-oliva">$</Badge>
               <div>
                 <p className="font-medium text-sm">Monto fijo</p>
-                <p className="text-xs text-muted-foreground">Ej: $100 de descuento por unidad al comprar 10 o más. Se resta directamente del precio.</p>
+                <p className="text-xs text-muted-foreground">Se resta directamente del precio. Ej: $100 por unidad al comprar 10 o más.</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div>
+        <div className="bg-crema/60 rounded-lg p-4 border border-mostaza/10">
           <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
-            <CircleDot className="h-4 w-4 text-mostaza" />
-            Ámbito de aplicación
+            <Lightbulb className="h-4 w-4 text-mostaza" />
+            Ejemplo práctico: descuento escalonado en sorrentinos
           </h4>
-          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
-            <li className="flex gap-2">
-              <span className="text-mostaza shrink-0">•</span>
-              <span><strong>Todos los productos:</strong> el descuento aplica a cualquier producto</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-mostaza shrink-0">•</span>
-              <span><strong>Producto específico:</strong> solo aplica al producto seleccionado</span>
-            </li>
-            <li className="flex gap-2">
-              <span className="text-mostaza shrink-0">•</span>
-              <span><strong>Categoría:</strong> aplica a todos los productos de una categoría</span>
-            </li>
-          </ul>
-        </div>
-
-        <div>
-          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
-            <Ruler className="h-4 w-4 text-mostaza" />
-            Unidades de medida
-          </h4>
-          <p className="text-sm text-muted-foreground">
-            Cada descuento define su unidad de medida (kg, unidades, bandejas, docenas, litros).
-            Los rangos de cantidad se interpretan según esta unidad.
+          <p className="text-sm text-muted-foreground mb-3">
+            Supongamos sorrentinos a <strong>$2.000/kg</strong>. Creamos un descuento con unidad{' '}
+            <strong>kg</strong> y dos rangos:
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border border-border rounded-lg">
+              <thead className="bg-mostaza/10">
+                <tr>
+                  <th className="text-left p-2 font-semibold">Rango</th>
+                  <th className="text-left p-2 font-semibold">Cantidad (kg)</th>
+                  <th className="text-left p-2 font-semibold">Descuento</th>
+                  <th className="text-left p-2 font-semibold">Precio final/kg</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t border-border">
+                  <td className="p-2">1</td>
+                  <td className="p-2">5 a 9,9</td>
+                  <td className="p-2">5% (= $100)</td>
+                  <td className="p-2 font-semibold text-oliva">$1.900</td>
+                </tr>
+                <tr className="border-t border-border">
+                  <td className="p-2">2</td>
+                  <td className="p-2">10 en adelante</td>
+                  <td className="p-2">10% (= $200)</td>
+                  <td className="p-2 font-semibold text-oliva">$1.800</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-muted-foreground mt-3">
+            Si un cliente compra <strong>7 kg</strong>, cae en el rango 1 → paga $1.900/kg. Si
+            compra <strong>15 kg</strong>, cae en el rango 2 → paga $1.800/kg.
           </p>
         </div>
 
         <InfoBox type="tip">
           Si un producto tiene tanto una <strong>promoción</strong> como un <strong>descuento por volumen</strong>,
-          se aplica el que otorgue el mayor beneficio al cliente. Podés combinar ambos tipos sin conflicto.
+          el sistema compara ambos y aplica el que otorgue el mayor beneficio al cliente. Podés
+          combinarlos sin conflicto.
         </InfoBox>
 
         <InfoBox type="info">
-          Los descuentos por volumen son de uso interno (panel de administración) y no se muestran
-          en la tienda pública. Se aplican al crear ventas o presupuestos desde el panel.
+          Los descuentos por volumen son de <strong>uso interno del panel</strong> y no se muestran
+          en la tienda pública. El cálculo del mejor descuento está disponible mediante el endpoint{' '}
+          <code className="bg-marron/10 px-1 py-0.5 rounded text-xs">/api/descuentos-volumen/calcular</code>{' '}
+          (recibe <code className="bg-marron/10 px-1 py-0.5 rounded text-xs">producto_id</code>,{' '}
+          <code className="bg-marron/10 px-1 py-0.5 rounded text-xs">cantidad</code> y{' '}
+          <code className="bg-marron/10 px-1 py-0.5 rounded text-xs">unidad</code>). La aplicación
+          automática dentro de los formularios de Venta y Presupuesto está pendiente de integración
+          en la interfaz.
         </InfoBox>
       </div>
     ),

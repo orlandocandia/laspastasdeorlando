@@ -25,6 +25,10 @@ const SUGGESTED_QUESTIONS = [
   '¿Qué significa stock crítico?',
   '¿Cómo creo una receta?',
   '¿Cómo registro una producción?',
+  '¿Cómo creo un descuento por volumen?',
+  '¿Cómo funcionan las promociones en la tienda?',
+  '¿Qué significa el color del margen?',
+  '¿Cómo colapso el menú lateral?',
 ]
 
 // ─── Simple Markdown Renderer ────────────────────────────────────────────────

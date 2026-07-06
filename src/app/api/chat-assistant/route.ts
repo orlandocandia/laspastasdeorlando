@@ -129,6 +129,42 @@ MÓDULOS DEL SISTEMA:
 - Alertas de stock visible al ingresar
 - Guía rápida de uso del sistema
 
+21. PROMOCIONES (/admin/promociones)
+- Descuentos y ofertas para productos terminados: porcentual (%), monto fijo ($), 2x1 (50% sobre el total) y tiempo limitado (con vigencia).
+- Se eligen los productos participantes y la fecha de inicio/fin.
+- Las promociones ACTIVAS y dentro de vigencia se muestran AUTOMÁTICAMENTE en la tienda pública (landing page): badge rojo "🔥 XX%" en la tarjeta, precio original tachado y precio final en rojo.
+- En la landing hay un filtro "Solo Ofertas" (mutuamente excluyente con los filtros de harina) que muestra solo productos con promoción y oculta las familias sin ofertas.
+- El endpoint /api/promociones/public alimenta las tarjetas y el filtro.
+- Diferencia clave con Descuentos por Volumen: las PROMOCIONES son públicas (se ven en la web), los DESCUENTOS POR VOLUMEN son internos del panel.
+
+22. DESCUENTOS POR VOLUMEN (/admin/descuentos-volumen)
+- Descuentos escalonados por cantidad comprada, ideales para ventas mayoristas.
+- Cada descuento define: nombre, ámbito (todos los productos / producto específico / categoría), unidad de medida (kg, u, bandeja, docena, l), rangos de cantidad y vigencia.
+- Cada RANGO define: cantidad_desde, cantidad_hasta (null = "en adelante"), tipo (porcentaje o monto fijo) y valor.
+- Cálculo: si varios descuentos coinciden para un producto, el sistema aplica el que otorgue el MAYOR beneficio económico. precio_final = máximo(0, precio_original − descuento_aplicado).
+- Ejemplo: sorrentinos $2.000/kg. Rango 1: 5 a 9,9 kg → 5% (= $1.900/kg). Rango 2: 10 kg en adelante → 10% (= $1.800/kg).
+- El cálculo está disponible vía API: /api/descuentos-volumen/calcular?producto_id=X&cantidad=Y&unidad=kg.
+- IMPORTANTE: son de USO INTERNO del panel (no se muestran en la tienda pública). La aplicación automática dentro de los formularios de Venta y Presupuesto está pendiente de integración en la interfaz.
+
+23. MARGEN DE GANANCIA (visible en /admin/productos-terminados)
+- El margen es la diferencia entre el precio de venta y el costo de producción.
+- costo_produccion = (suma de costos de ingredientes de la receta activa) / rendimiento (unidades que produce).
+- margen_$ = precio_venta − costo_produccion.
+- margen_% = (precio_venta − costo_produccion) / precio_venta × 100.
+- Código de colores en la tabla de Productos Terminados, columna "Margen":
+  - 🟢 Verde > 50%: margen saludable (buena rentabilidad).
+  - 🟠 Naranja 30-50%: margen moderado (revisar costos o precio).
+  - 🔴 Rojo < 30%: margen bajo (posiblemente pierde dinero).
+- Si el producto NO tiene receta activa, el costo se muestra como $0 y el margen como 100% (no es real; hay que asignar una receta).
+- Reporte completo en Reportes → Rentabilidad (exportable a Excel/PDF).
+
+24. NAVEGACIÓN Y MENÚ LATERAL
+- El menú lateral agrupa los módulos en SECCIONES COLAPSABLES: Stock & Producción, Compras, Ventas, Stock (movimientos), Envíos y Logística, Notificaciones, Configuración, Auditoría & Reportes, Seguridad.
+- Un clic en el título de la sección la ABRE (muestra sub-módulos). Otro clic la CIERRA. La flecha cambia de ► a ▼.
+- Al navegar a una página, la sección que la contiene se abre automáticamente, pero después se puede cerrar manualmente con un clic.
+- El botón SidebarTrigger (icono de menú en la barra superior) oculta/muestra el menú completo.
+- El panel de Ayuda (botón "Ayuda" en la barra superior) tiene un buscador que filtra secciones por palabra clave.
+
 FLUJO DE TRABAJO RECOMENDADO:
 1. Cargar materias primas e insumos con su stock
 2. Crear productos terminados
@@ -485,6 +521,99 @@ El Dashboard es la pantalla principal del sistema. Al ingresar ves:
 
 Es el punto de partida para ver el estado general del negocio.`,
   },
+  {
+    keywords: ['descuento por volumen', 'descuentos por volumen', 'mayorista', 'rango', 'cantidad', 'volumen', 'escalona'],
+    response: `📊 **Descuentos por Volumen** (menú: Ventas → Descuentos por Volumen)
+
+Permiten ofrecer descuentos escalonados según la cantidad comprada, ideal para mayoristas.
+
+**Cómo crear uno (paso a paso):**
+1. Ir a **Ventas → Descuentos por Volumen** → clic en **"Nuevo Descuento"**
+2. Nombre (ej: "Mayorista Sorrentinos") y descripción opcional
+3. Elegir **ámbito**: todos los productos / producto específico / categoría
+4. Elegir **unidad de medida**: kg, unidades, bandejas, docenas o litros
+5. Definir los **rangos** (cantidad desde, cantidad hasta, tipo y valor)
+6. Opcional: fecha de inicio/fin. Activar y guardar
+
+**Ejemplo con 2 rangos** (sorrentinos $2.000/kg):
+- Rango 1: 5 a 9,9 kg → 5% OFF → pagás $1.900/kg
+- Rango 2: 10 kg en adelante → 10% OFF → pagás $1.800/kg
+
+**Tipos de descuento por rango:**
+- **Porcentaje (%)**: se calcula sobre el precio de venta
+- **Monto fijo ($)**: se resta directamente del precio
+
+**Cálculo:** si varios descuentos coinciden, se aplica el que dé **mayor beneficio** al cliente. El precio nunca queda negativo.
+
+⚠️ **Importante:** son de **uso interno del panel** (no se ven en la tienda pública). El cálculo está disponible vía API \`/api/descuentos-volumen/calcular\`; la aplicación automática en los formularios de Venta y Presupuesto está pendiente de integración.`,
+  },
+  {
+    keywords: ['promoción', 'promocion', 'oferta', 'descuento publico', '2x1', 'badge oferta', 'solo ofertas', 'tienda pública', 'landing'],
+    response: `🏷️ **Promociones** (menú: Ventas → Promociones)
+
+Permiten crear descuentos y ofertas para tus productos terminados.
+
+**Tipos:**
+- **Porcentual (%)**: ej. 15% OFF en sorrentinos
+- **Monto fijo ($)**: ej. $500 OFF en ravioles
+- **2x1**: 50% de descuento sobre el total
+- **Tiempo limitado**: con fecha de inicio y fin
+
+**Cómo crear una (paso a paso):**
+1. Ir a **Ventas → Promociones** → clic en **"Nueva Promoción"**
+2. Elegir tipo de descuento y valor
+3. Seleccionar los productos participantes
+4. Definir vigencia (fecha inicio/fin)
+5. Activar y guardar
+
+**En la tienda pública (landing) se ve así:**
+- Badge rojo "🔥 XX%" en la esquina de la tarjeta del producto (con animación)
+- Precio original **tachado** en gris
+- Precio final en **rojo** y negrita
+- Hay un filtro **"Solo Ofertas"** que muestra solo productos con promoción (es mutuamente excluyente con los filtros de harina)
+
+💡 **Diferencia clave:** las promociones son **públicas** (se ven en la web), los descuentos por volumen son **internos** del panel.`,
+  },
+  {
+    keywords: ['margen', 'ganancia', 'rentabilidad', 'costo de producción', 'margen de ganancia', 'color margen'],
+    response: `💰 **Margen de Ganancia** (visible en Productos Terminados)
+
+El margen es la diferencia entre el precio de venta y el costo de producción.
+
+**Cálculo:**
+- **Costo de producción** = (costo total de ingredientes de la receta activa) ÷ rendimiento (unidades que produce)
+- **Margen $** = precio_venta − costo_produccion
+- **Margen %** = (precio_venta − costo_produccion) ÷ precio_venta × 100
+
+**Código de colores** en la columna "Margen" de la tabla de Productos Terminados:
+- 🟢 **Verde > 50%**: margen saludable — buena rentabilidad
+- 🟠 **Naranja 30-50%**: margen moderado — revisar costos o precio
+- 🔴 **Rojo < 30%**: margen bajo — posiblemente pierde dinero
+
+**Ejemplo:** sorrentinos, receta con costo total $1.200 para 4 unidades → costo unitario $300. Precio de venta $800.
+- Margen $ = $800 − $300 = **$500**
+- Margen % = ($500 ÷ $800) × 100 = **62,5%** → 🟢 saludable
+
+⚠️ Si el producto **no tiene receta activa**, el costo se muestra como $0 y el margen como 100% (no es real; asigná una receta para ver datos correctos).
+
+📊 Para un análisis completo de todos los productos, usá **Reportes → Rentabilidad** (exportable a Excel/PDF).`,
+  },
+  {
+    keywords: ['menú lateral', 'menu lateral', 'colapsar', 'expandir', 'abrir sección', 'cerrar sección', 'navegar', 'sidebar', 'sección del menú', 'seccion del menu'],
+    response: `📂 **Navegación y Menú Lateral**
+
+El menú lateral agrupa los módulos en **secciones colapsables**: Stock & Producción, Compras, Ventas, Stock (movimientos), Envíos y Logística, Notificaciones, Configuración, Auditoría & Reportes, Seguridad.
+
+**Cómo usarlo:**
+1. **Un clic** en el título de la sección (ej: "Ventas") → la **abre** y muestra sus sub-módulos. La flecha cambia de ► a ▼.
+2. **Otro clic** en el mismo título → la **cierra**.
+3. Podés tener varias secciones abiertas a la vez, o ninguna.
+4. Al navegar a una página, la sección que la contiene se **abre automáticamente** — pero después la podés cerrar con un clic.
+
+💡 **Ocultar el menú completo:** usá el botón **SidebarTrigger** (icono de menú en la barra superior izquierda). Útil en pantallas chicas.
+
+🔍 **Buscador de ayuda:** el botón "Ayuda" (barra superior) abre un panel con buscador que filtra las secciones por palabra clave.`,
+  },
 ]
 
 // ─── FAQ Matching Engine ─────────────────────────────────────────────────────
@@ -536,6 +665,10 @@ function getFallbackResponse(userMessage: string): string {
 - **Stock**: movimientos, alertas, carga manual
 - **Pedidos**: de clientes y a proveedores
 - **Presupuestos**: crear y convertir en pedidos
+- **Promociones**: ofertas, 2x1, cómo se ven en la tienda pública
+- **Descuentos por Volumen**: descuentos escalonados por cantidad
+- **Margen de Ganancia**: cómo se calcula y código de colores
+- **Menú lateral**: colapsar/expandir secciones
 - **Reportes**: generar y exportar
 
 Probá preguntar sobre alguno de estos temas y te guío paso a paso. 📋`
