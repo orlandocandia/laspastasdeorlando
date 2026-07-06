@@ -349,16 +349,32 @@ export default function DashboardLayout({
     }
   }
 
-  // Auto-open active sections based on current pathname
-  const effectiveStockOpen = stockOpen || isStockActive
-  const effectiveComprasOpen = comprasOpen || isComprasActive
-  const effectiveVentasOpen = ventasOpen || isVentasActive
-  const effectiveStockMovOpen = stockMovOpen || isStockMovActive
-  const effectiveLogisticaOpen = logisticaOpen || isLogisticaActive
-  const effectiveNotificacionesOpen = notificacionesOpen || isNotificacionesActive
-  const effectiveConfigOpen = configOpen || isConfigActive
-  const effectiveAuditoriaOpen = auditoriaOpen || isAuditoriaActive
-  const effectiveSeguridadOpen = seguridadOpen || isSeguridadActive
+  // Auto-open the section that contains the current route on navigation.
+  //
+  // The previous implementation used `effectiveXOpen = xOpen || isXActive`,
+  // which recomputed on every render. That made it impossible to close a
+  // section while sitting on one of its subpages: even after the click set
+  // `xOpen` to false, `isXActive` stayed true and forced the menu open.
+  // ("Ventas no se cierra" — and Compras had the same latent bug, it just
+  // wasn't noticed because it was tested from a non-compras page.)
+  //
+  // Fix: adjust state during render when the route changes (the pattern
+  // endorsed by the React docs to avoid useEffect + setState). We only
+  // ever OPEN the active section here — never close — so the user's
+  // explicit toggle is always respected afterwards.
+  const [prevPathname, setPrevPathname] = useState(pathname)
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname)
+    if (isStockActive) setStockOpen(true)
+    if (isComprasActive) setComprasOpen(true)
+    if (isVentasActive) setVentasOpen(true)
+    if (isStockMovActive) setStockMovOpen(true)
+    if (isLogisticaActive) setLogisticaOpen(true)
+    if (isNotificacionesActive) setNotificacionesOpen(true)
+    if (isConfigActive) setConfigOpen(true)
+    if (isAuditoriaActive) setAuditoriaOpen(true)
+    if (isSeguridadActive) setSeguridadOpen(true)
+  }
 
   if (status === 'loading') {
     return (
@@ -475,7 +491,7 @@ export default function DashboardLayout({
             'Stock & Producción',
             <Package className="h-3.5 w-3.5" />,
             stockItems,
-            effectiveStockOpen,
+            stockOpen,
             () => toggleSection('stock', stockOpen),
             isStockActive
           )}
@@ -485,7 +501,7 @@ export default function DashboardLayout({
             'Compras',
             <ShoppingCart className="h-3.5 w-3.5" />,
             comprasItems,
-            effectiveComprasOpen,
+            comprasOpen,
             () => toggleSection('compras', comprasOpen),
             isComprasActive
           )}
@@ -495,7 +511,7 @@ export default function DashboardLayout({
             'Ventas',
             <Receipt className="h-3.5 w-3.5" />,
             ventasItems,
-            effectiveVentasOpen,
+            ventasOpen,
             () => toggleSection('ventas', ventasOpen),
             isVentasActive
           )}
@@ -505,7 +521,7 @@ export default function DashboardLayout({
             'Stock',
             <ArrowLeftRight className="h-3.5 w-3.5" />,
             stockMovimientoItems,
-            effectiveStockMovOpen,
+            stockMovOpen,
             () => toggleSection('stockMov', stockMovOpen),
             isStockMovActive
           )}
@@ -515,7 +531,7 @@ export default function DashboardLayout({
             'Envíos y Logística',
             <Truck className="h-3.5 w-3.5" />,
             logisticaItems,
-            effectiveLogisticaOpen,
+            logisticaOpen,
             () => toggleSection('logistica', logisticaOpen),
             isLogisticaActive
           )}
@@ -525,7 +541,7 @@ export default function DashboardLayout({
             'Notificaciones',
             <Bell className="h-3.5 w-3.5" />,
             notificacionesItems,
-            effectiveNotificacionesOpen,
+            notificacionesOpen,
             () => toggleSection('notificaciones', notificacionesOpen),
             isNotificacionesActive
           )}
@@ -535,7 +551,7 @@ export default function DashboardLayout({
             'Configuración',
             <Settings className="h-3.5 w-3.5" />,
             configItems,
-            effectiveConfigOpen,
+            configOpen,
             () => toggleSection('config', configOpen),
             isConfigActive
           )}
@@ -547,7 +563,7 @@ export default function DashboardLayout({
             'Auditoría & Reportes',
             <Shield className="h-3.5 w-3.5" />,
             auditoriaItems,
-            effectiveAuditoriaOpen,
+            auditoriaOpen,
             () => toggleSection('auditoria', auditoriaOpen),
             isAuditoriaActive
           )}
@@ -557,7 +573,7 @@ export default function DashboardLayout({
             'Seguridad',
             <KeyRound className="h-3.5 w-3.5" />,
             seguridadItems,
-            effectiveSeguridadOpen,
+            seguridadOpen,
             () => toggleSection('seguridad', seguridadOpen),
             isSeguridadActive
           )}
