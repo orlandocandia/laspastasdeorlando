@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Documentación Técnica — Sistema Pastas Orlando</title>
+  <title>Documentación Técnica — Sistema Las Pastas de Orlando</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
@@ -399,6 +399,20 @@
       font-size: 11px;
     }
 
+    /* Note / callout box */
+    .note {
+      background: #fef3c7;
+      border-left: 4px solid #d97706;
+      padding: 16px 20px;
+      margin: 16px 0;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .note strong {
+      color: #92400e;
+    }
+
     /* Footer */
     .doc-footer {
       text-align: center;
@@ -416,23 +430,23 @@
 <div class="cover">
   <div class="cover-icon">🍝</div>
   <h1>Documentación Técnica Completa</h1>
-  <h2>Sistema Pastas Orlando — ERP + E-commerce</h2>
+  <h2>Sistema Las Pastas de Orlando — ERP + E-commerce</h2>
   <div class="cover-meta">
     <div class="cover-meta-item">
       <div class="label">Versión</div>
-      <div class="value">Fase 13</div>
+      <div class="value">Fase 14</div>
     </div>
     <div class="cover-meta-item">
       <div class="label">Fecha</div>
-      <div class="value">Marzo 2026</div>
+      <div class="value">Julio 2026</div>
     </div>
     <div class="cover-meta-item">
       <div class="label">Modelos</div>
-      <div class="value">40</div>
+      <div class="value">67</div>
     </div>
     <div class="cover-meta-item">
       <div class="label">Endpoints</div>
-      <div class="value">91+</div>
+      <div class="value">100+</div>
     </div>
     <div class="cover-meta-item">
       <div class="label">Stack</div>
@@ -449,6 +463,14 @@
     <li><a href="#stack-tecnologico">Stack Tecnológico</a></li>
     <li><a href="#modelo-de-datos">Modelo de Datos</a></li>
     <li><a href="#modulos-principales">Módulos Principales</a></li>
+    <li><a href="#promociones">Promociones</a></li>
+    <li><a href="#descuentos-volumen">Descuentos por Volumen</a></li>
+    <li><a href="#margen-ganancia">Margen de Ganancia</a></li>
+    <li><a href="#navegacion-menu">Navegación y Menú Lateral</a></li>
+    <li><a href="#asistente-ia">Asistente IA</a></li>
+    <li><a href="#ayuda-estatica">Ayuda Estática</a></li>
+    <li><a href="#backup-restauracion">Backup y Restauración</a></li>
+    <li><a href="#auditoria-reportes">Auditoría y Reportes</a></li>
     <li><a href="#reglas-de-negocio">Reglas de Negocio</a></li>
     <li><a href="#flujos-principales">Flujos Principales</a></li>
     <li><a href="#endpoints-de-api">Endpoints de API</a></li>
@@ -466,11 +488,11 @@
 <!-- 1. Visión General -->
 <h1 id="vision-general">1. Visión General</h1>
 
-<p><strong>Pastas Orlando</strong> es un sistema ERP + E-commerce diseñado para la gestión integral de una fábrica de pastas artesanales. El sistema cubre todo el ciclo operativo del negocio:</p>
+<p><strong>Las Pastas de Orlando</strong> es un sistema ERP + E-commerce diseñado para la gestión integral de una fábrica de pastas artesanales. El sistema cubre todo el ciclo operativo del negocio:</p>
 
 <ul>
-  <li><strong>E-commerce público</strong>: Catálogo de productos, carrito de compras, formulario de contacto, opiniones de clientes, integración con WhatsApp.</li>
-  <li><strong>Backoffice administrativo</strong>: Gestión de productos, materias primas, insumos, recetas, producción, compras, ventas, clientes, proveedores, pedidos, reservas, presupuestos, logística, notificaciones y seguridad.</li>
+  <li><strong>E-commerce público</strong>: Catálogo de productos, carrito de compras, formulario de contacto, opiniones de clientes, promociones en la tienda pública, integración con WhatsApp.</li>
+  <li><strong>Backoffice administrativo</strong>: Gestión de productos, materias primas, insumos, recetas, producción, compras, ventas, clientes, proveedores, pedidos, reservas, presupuestos, logística, notificaciones, promociones, descuentos por volumen, margen de ganancia, backup, auditoría, reportes y seguridad.</li>
 </ul>
 
 <h3>Características destacadas</h3>
@@ -478,15 +500,15 @@
 <div class="feature-grid">
   <div class="feature-card">
     <h4>🏭 ERP Completo</h4>
-    <p>13 fases de desarrollo con 40 modelos de datos y 91+ endpoints API</p>
+    <p>14 fases de desarrollo con 67 modelos de datos y 100+ endpoints API</p>
   </div>
   <div class="feature-card">
     <h4>🛒 E-commerce Integrado</h4>
-    <p>Catálogo público con carrito, WhatsApp y formulario de contacto</p>
+    <p>Catálogo público con carrito, promociones, WhatsApp y formulario de contacto</p>
   </div>
   <div class="feature-card">
     <h4>📋 Gestión de Producción</h4>
-    <p>Recetas, órdenes de producción, consumo de materias primas e insumos</p>
+    <p>Recetas, órdenes de producción, consumo de materias primas, cálculo de costos</p>
   </div>
   <div class="feature-card">
     <h4>🗺️ Logística con Mapas</h4>
@@ -497,12 +519,40 @@
     <p>Generación, aprobación, conversión a pedido, exportación PDF/WhatsApp</p>
   </div>
   <div class="feature-card">
+    <h4>🏷️ Promociones</h4>
+    <p>4 tipos (porcentual, fijo, 2x1, tiempo limitado), badges y filtros en la landing</p>
+  </div>
+  <div class="feature-card">
+    <h4>📊 Descuentos por Volumen</h4>
+    <p>Rangos escalonados por cantidad y unidad de medida (mayorista)</p>
+  </div>
+  <div class="feature-card">
+    <h4>💰 Margen de Ganancia</h4>
+    <p>Cálculo en vivo desde la receta activa, con código de colores</p>
+  </div>
+  <div class="feature-card">
     <h4>🔒 Seguridad Avanzada</h4>
     <p>2FA TOTP, RBAC, auditoría completa, detección de intrusos</p>
   </div>
   <div class="feature-card">
     <h4>🔔 Notificaciones</h4>
     <p>Email, WhatsApp, plantillas configurables, alertas automáticas</p>
+  </div>
+  <div class="feature-card">
+    <h4>🤖 Asistente IA</h4>
+    <p>Chat con base de conocimiento del sistema + fallback FAQ</p>
+  </div>
+  <div class="feature-card">
+    <h4>📖 Ayuda Estática</h4>
+    <p>Manual offline con 16 secciones buscables</p>
+  </div>
+  <div class="feature-card">
+    <h4>💾 Backup y Restauración</h4>
+    <p>Backups .db y .sql con safety backup previo a restaurar</p>
+  </div>
+  <div class="feature-card">
+    <h4>📈 Auditoría y Reportes</h4>
+    <p>8 reportes con exportación Excel/PDF/CSV y trazado de auditoría</p>
   </div>
   <div class="feature-card">
     <h4>📊 Código de Barras</h4>
@@ -604,12 +654,12 @@
 │   ├── providers.tsx           # Providers de la app
 │   └── utils.ts                # Utilidades generales
 └── prisma/
-    └── schema.prisma           # 40 modelos de datos</code></pre>
+    └── schema.prisma           # 67 modelos de datos</code></pre>
 
 <!-- 3. Modelo de Datos -->
 <h1 id="modelo-de-datos" class="page-break">3. Modelo de Datos</h1>
 
-<p>El esquema de Prisma contiene <strong>40 modelos</strong> organizados por módulos funcionales:</p>
+<p>El esquema de Prisma contiene <strong>67 modelos</strong> organizados por módulos funcionales:</p>
 
 <h2>3.1 Modelos Originales (Fase 1)</h2>
 
@@ -911,8 +961,597 @@
   <li>Reintentos automáticos en caso de error</li>
 </ul>
 
-<!-- 5. Reglas de Negocio -->
-<h1 id="reglas-de-negocio" class="page-break">5. Reglas de Negocio</h1>
+<!-- 5. Promociones -->
+<h1 id="promociones" class="page-break">5. Promociones</h1>
+
+<p>Las promociones permiten ofrecer descuentos en la tienda pública (landing) y, opcionalmente, aplicarlos automáticamente en las ventas.</p>
+
+<h2>5.1 Tipos de promoción</h2>
+
+<table>
+  <thead><tr><th>Tipo</th><th>Etiqueta</th><th>Comportamiento</th></tr></thead>
+  <tbody>
+    <tr><td><code>porcentual</code></td><td>% de descuento</td><td>precio_final = precio × (1 − valor/100)</td></tr>
+    <tr><td><code>fijo</code></td><td>$ de descuento</td><td>precio_final = precio − valor</td></tr>
+    <tr><td><code>2x1</code></td><td>50% off</td><td>Equivalente a 50% en la unidad</td></tr>
+    <tr><td><code>tiempo_limitado</code></td><td>% con vencimiento</td><td>Igual que porcentual pero obliga a definir fecha_fin</td></tr>
+  </tbody>
+</table>
+
+<h2>5.2 Alcance</h2>
+
+<p>Una promoción puede aplicarse a:</p>
+<ul>
+  <li><strong>Productos específicos</strong> — tabla <code>PromocionProducto</code> con <code>id_producto_terminado</code>.</li>
+  <li><strong>Toda una categoría</strong> — <code>PromocionProducto</code> con <code>id_categoria</code> (se expande a todos los productos visibles).</li>
+</ul>
+
+<h2>5.3 Endpoints de API</h2>
+
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td>GET, POST</td><td><code>/api/promociones</code></td><td>Listar (filtros activo, tipo) / Crear</td></tr>
+    <tr><td>GET, PUT, DELETE</td><td><code>/api/promociones/[id]</code></td><td>Ver / Editar / Desactivar (soft delete)</td></tr>
+    <tr><td>GET</td><td><code>/api/promociones/public</code></td><td>Endpoint público (sin auth) — devuelve promociones + mapa productoPromociones</td></tr>
+  </tbody>
+</table>
+
+<p>El endpoint público filtra por ventana de vigencia (<code>fecha_inicio &lt;= now AND (fecha_fin IS NULL OR fecha_fin &gt;= now)</code>) y, cuando múltiples promociones aplican a un producto, devuelve la de <strong>menor precio final</strong>.</p>
+
+<h2>5.4 Panel de administración</h2>
+
+<p><strong>Ruta:</strong> <code>/admin/promociones</code> — Componente: <code>PromocionesManager.tsx</code></p>
+
+<ol>
+  <li><strong>Filtros</strong> — por tipo (4 opciones) y estado (Activos / Inactivos / Todos).</li>
+  <li><strong>Tabla</strong> — Nombre, Tipo (badge colorido), Descuento, Inicio, Fin, Estado, Acciones.</li>
+  <li><strong>Crear / Editar</strong> (Dialog): nombre, descripción, tipo, valor, fecha inicio (obligatoria), fecha fin (opcional), switch <code>aplicar_auto</code>, selector de productos con búsqueda y chips removibles.</li>
+  <li><strong>Desactivar</strong> — soft delete (<code>activo = false</code>), con confirmación.</li>
+</ol>
+
+<div class="note">
+  <strong>Nota:</strong> el flag <code>aplicar_auto</code> está diseñado para aplicarse automáticamente en <code>VentaForm</code>, pero esa integración aún no está conectada. La integración automática en ventas corresponde hoy al módulo de Descuentos por Volumen.
+</div>
+
+<h2>5.5 Visualización en la landing</h2>
+
+<ul>
+  <li><strong>Productos.tsx</strong> — consulta <code>/api/promociones/public</code>, implementa el toggle "Solo Ofertas" (mutuamente excluyente con filtros de harina) y muestra conteos <code>(N en oferta)</code>.</li>
+  <li><strong>ProductCard.tsx</strong> — acepta prop <code>promocion</code> y renderiza badge <code>🔥 {descuento_label}</code>, precio original tachado, precio final en rojo.</li>
+  <li><strong>OfertasEspeciales.tsx</strong> — carrusel horizontal de productos en oferta (disponible, no importado por HomeContent actualmente).</li>
+</ul>
+
+<h2>5.6 Flujo de uso</h2>
+
+<ol>
+  <li>Ir a <strong>Ventas → Promociones</strong> en el menú lateral.</li>
+  <li>Clic en <strong>"Nueva Promoción"</strong>.</li>
+  <li>Completar nombre, tipo, valor, fechas y seleccionar productos.</li>
+  <li>Guardar. La promoción aparece automáticamente en la tienda pública si está vigente y activa.</li>
+  <li>Para desactivar, usar el botón de acciones → "Desactivar".</li>
+</ol>
+
+<!-- 6. Descuentos por Volumen -->
+<h1 id="descuentos-volumen" class="page-break">6. Descuentos por Volumen</h1>
+
+<p>Los descuentos por volumen (descuentos mayoristas) aplican descuentos escalonados según la cantidad comprada y la unidad de medida. A diferencia de las promociones, <strong>sí se aplican automáticamente</strong> en <code>VentaForm</code> y <code>PresupuestoForm</code>.</p>
+
+<h2>6.1 Modelo de datos</h2>
+
+<ul>
+  <li><strong>DescuentoVolumen</strong> — tipo_item (producto/categoria/todos), item_id, unidad_medida (kg/u/bandeja/docena/l), fecha_inicio, fecha_fin, activo.</li>
+  <li><strong>DescuentoVolumenRango</strong> — cantidad_desde, cantidad_hasta (NULL = ∞), tipo_descuento (porcentaje/fijo), valor, descripcion.</li>
+</ul>
+
+<h2>6.2 Alcance</h2>
+
+<table>
+  <thead><tr><th>tipo_item</th><th>Significado</th></tr></thead>
+  <tbody>
+    <tr><td><code>todos</code></td><td>Aplica a cualquier producto (filtrado por unidad de medida)</td></tr>
+    <tr><td><code>producto</code></td><td>Aplica a un <code>item_id = id_producto_terminado</code> específico</td></tr>
+    <tr><td><code>categoria</code></td><td>Aplica a todos los productos de <code>item_id = id_categoria</code></td></tr>
+  </tbody>
+</table>
+
+<h2>6.3 Endpoint de cálculo</h2>
+
+<p><strong><code>GET /api/descuentos-volumen/calcular</code></strong></p>
+
+<p>Parámetros: <code>producto_id</code> (obligatorio), <code>cantidad</code> (obligatorio, positivo), <code>unidad</code> (opcional).</p>
+
+<p>Algoritmo:</p>
+<ol>
+  <li>Carga el producto para obtener <code>precio_venta</code> e <code>id_categoria</code>.</li>
+  <li>Busca todos los <code>DescuentoVolumen</code> activos que coincidan por <code>tipo_item</code> y ventana de fechas.</li>
+  <li>Filtra por <code>unidad_medida</code> si se pasó <code>unidad</code>.</li>
+  <li>Para cada coincidencia, encuentra el primer rango donde <code>cantidad_desde &lt;= cantidad AND (cantidad_hasta IS NULL OR cantidad_hasta &gt;= cantidad)</code>.</li>
+  <li>Calcula <code>descuento_aplicado</code> (porcentaje → precio × valor/100; fijo → valor).</li>
+  <li>Devuelve el <strong>mejor descuento</strong> (mayor monto monetario).</li>
+</ol>
+
+<h2>6.4 Otros endpoints</h2>
+
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td>GET, POST</td><td><code>/api/descuentos-volumen</code></td><td>Listar (filtros activo, tipo_item) / Crear con rangos anidados</td></tr>
+    <tr><td>GET, PUT, DELETE</td><td><code>/api/descuentos-volumen/[id]</code></td><td>Ver / Editar (reemplaza rangos) / Desactivar (soft delete)</td></tr>
+  </tbody>
+</table>
+
+<h2>6.5 Panel de administración</h2>
+
+<p><strong>Ruta:</strong> <code>/admin/descuentos-volumen</code> — Componente: <code>DescuentosVolumenManager.tsx</code></p>
+
+<ol>
+  <li><strong>Filtro</strong> por estado (Activos / Inactivos / Todos).</li>
+  <li><strong>Tabla</strong> — Nombre, Tipo item (badge), Unidad, Rangos (resumen), Estado, Acciones.</li>
+  <li><strong>Crear / Editar</strong> (Dialog) con editor dinámico de rangos:
+    <ul>
+      <li>Tipo item (todos / producto / categoría) — al elegir, aparece un Select cargado desde la API correspondiente.</li>
+      <li>Unidad de medida (kg / u / bandeja / docena / l).</li>
+      <li>Fechas de inicio y fin (opcionales).</li>
+      <li>Switch Activo.</li>
+      <li><strong>Editor de rangos</strong>: cada rango tiene cantidad_desde, cantidad_hasta (o ∞), tipo_descuento, valor y descripción. Botones para agregar/quitar rangos; sugiere automáticamente el siguiente cantidad_desde.</li>
+    </ul>
+  </li>
+</ol>
+
+<h2>6.6 Integración en Ventas y Presupuestos</h2>
+
+<p><strong>VentaForm.tsx</strong> y <strong>PresupuestoForm</strong> (<code>/admin/presupuestos/nuevo</code>):</p>
+
+<ol>
+  <li>Al cambiar el producto o la cantidad en una fila, se llama (con <strong>debounce de 300 ms</strong> y <strong>guard anti-race-condition</strong>) a <code>/api/descuentos-volumen/calcular</code>.</li>
+  <li>Si hay descuento, se actualiza <code>precioUnitario</code> al <code>precio_final</code> y se guarda el snapshot:
+    <ul>
+      <li><code>descuentoVolumenId</code>, <code>descuentoVolumenValor</code>, <code>descuentoVolumenTipo</code></li>
+      <li><code>descuentoUnitario</code>, <code>descuentoNombre</code>, <code>precioUnitarioOriginal</code></li>
+    </ul>
+  </li>
+  <li>Visualmente, bajo el input de Precio Unit. se muestra:
+    <ul>
+      <li>Precio original <strong>tachado</strong>.</li>
+      <li>Badge verde <code>−{valor}%</code> o <code>−${amount}</code>.</li>
+      <li>Nombre del descuento.</li>
+    </ul>
+  </li>
+  <li>Si el usuario edita manualmente el precio, se limpia el snapshot (override manual).</li>
+  <li>Al guardar, el snapshot se persiste en <code>DetalleVenta</code> / <code>DetallePresupuesto</code>.</li>
+</ol>
+
+<h2>6.7 Ejemplo práctico</h2>
+
+<p><strong>Configuración:</strong></p>
+<ul>
+  <li>Descuento "Mayorista 10kg+" — tipo_item: producto, unidad: kg.</li>
+  <li>Rango 1: cantidad_desde=5, cantidad_hasta=9, tipo=porcentaje, valor=3.</li>
+  <li>Rango 2: cantidad_desde=10, cantidad_hasta=NULL, tipo=porcentaje, valor=5.</li>
+</ul>
+
+<p><strong>Venta:</strong></p>
+<ul>
+  <li>Producto "Ñoquis de papa" — precio $1200/kg.</li>
+  <li>Cantidad: 12 kg.</li>
+  <li>El endpoint devuelve: precio_original=1200, descuento_aplicado=60, precio_final=1140.</li>
+  <li>La fila muestra: ~~$1200~~ −5% Mayorista 10kg+, input de precio queda en 1140.</li>
+  <li>Subtotal: 12 × 1140 = $13.680.</li>
+</ul>
+
+<!-- 7. Margen de Ganancia -->
+<h1 id="margen-ganancia" class="page-break">7. Margen de Ganancia</h1>
+
+<p>El margen de ganancia se <strong>calcula en vivo</strong> desde la receta activa del producto. No existe un campo <code>margen</code> almacenado; el margen es siempre <code>precio_venta − costo_produccion</code>.</p>
+
+<h2>7.1 Endpoint de costos</h2>
+
+<p><strong><code>GET /api/productos-terminados/costos</code></strong></p>
+
+<p>Para cada producto con <code>estado=true</code>:</p>
+<ol>
+  <li>Carga la receta activa y sus <code>DetalleReceta</code>.</li>
+  <li>Calcula:
+    <ul>
+      <li><code>costoMP = Σ detalleReceta.costo_estimado</code> (materias primas).</li>
+      <li><code>costoInsumos = Σ detalleReceta.costo_estimado</code> (insumos).</li>
+      <li><code>costo_produccion = (costoMP + costoInsumos) / rendimiento_unidades</code>.</li>
+      <li><code>margen = precio_venta − costo_produccion</code>.</li>
+      <li><code>margen_porcentaje = (margen / precio_venta) × 100</code>.</li>
+    </ul>
+  </li>
+</ol>
+
+<h2>7.2 Código de colores</h2>
+
+<table>
+  <thead><tr><th>Margen</th><th>Color</th><th>Significado</th></tr></thead>
+  <tbody>
+    <tr><td>&gt; 50%</td><td>🟢 Oliva</td><td>Saludable</td></tr>
+    <tr><td>30% – 50%</td><td>🟠 Mostaza</td><td>Moderado</td></tr>
+    <tr><td>&lt; 30%</td><td>🔴 Rojo</td><td>Bajo</td></tr>
+  </tbody>
+</table>
+
+<p>Los umbrales (50% y 30%) están definidos en los componentes y son consistentes entre la tabla y el formulario.</p>
+
+<h2>7.3 Visualización</h2>
+
+<p><strong>Tabla de productos</strong> (<code>ProductosTerminadosTable.tsx</code>):</p>
+<ul>
+  <li>Consulta <code>/api/productos-terminados/costos</code> en paralelo con la lista.</li>
+  <li>Cada fila muestra un badge <code>% margen</code> con color, y <code>Costo: $X</code> bajo el precio (solo si tiene receta activa).</li>
+</ul>
+
+<p><strong>Formulario de producto</strong> (<code>ProductoTerminadoForm.tsx</code>, solo en edición):</p>
+<ul>
+  <li>Panel "Margen de Ganancia" (icono TrendingUp) con 4 tiles: Costo Producción, Precio Venta, Margen ($), Margen (%) — color-coded.</li>
+  <li>Si no tiene receta activa: "Sin receta asignada — no se puede calcular el costo".</li>
+  <li>Footer: <code>Basado en receta: {nombre} (rinde {N} u.)</code>.</li>
+</ul>
+
+<h2>7.4 Reporte de Rentabilidad</h2>
+
+<p><strong>/admin/reportes</strong> → pestaña <strong>Rentabilidad</strong>:</p>
+<ul>
+  <li>Usa el mismo endpoint <code>/api/productos-terminados/costos</code>.</li>
+  <li>Tabla con todos los productos, sus costos y márgenes.</li>
+  <li>Exportable a Excel/PDF/CSV.</li>
+</ul>
+
+<p>El reporte de <strong>Finanzas</strong> (<code>/api/reportes/finanzas</code>) agrega el margen por producto en un rango de fechas usando <code>Produccion.costo_total</code> y <code>DetalleVenta.subtotal</code>, y calcula un <code>margenPromedio</code> global.</p>
+
+<h2>7.5 Ejemplo práctico</h2>
+
+<ol>
+  <li>Ir a <strong>Stock & Producción → Productos Terminados</strong>.</li>
+  <li>Editar un producto que tenga receta activa.</li>
+  <li>En el panel "Margen de Ganancia" se ve:
+    <ul>
+      <li>Costo Producción: $450.</li>
+      <li>Precio Venta: $1200.</li>
+      <li>Margen: $750.</li>
+      <li>Margen %: 62.5% (verde oliva — saludable).</li>
+    </ul>
+  </li>
+  <li>Para ajustar el margen, cambiar el <code>precio_venta</code> y guardar.</li>
+</ol>
+
+<!-- 8. Navegación y Menú Lateral -->
+<h1 id="navegacion-menu" class="page-break">8. Navegación y Menú Lateral</h1>
+
+<p><strong>Archivo:</strong> <code>src/app/(dashboard)/layout.tsx</code></p>
+
+<h2>8.1 Secciones colapsables (9)</h2>
+
+<table>
+  <thead><tr><th>#</th><th>Sección</th><th>Icono</th><th>Items</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Stock &amp; Producción</td><td>Package</td><td>Materias Primas, Insumos, Productos Terminados, Recetas, Producción, Etiquetas</td></tr>
+    <tr><td>2</td><td>Compras</td><td>ShoppingCart</td><td>Compras, Pedidos a Proveedores</td></tr>
+    <tr><td>3</td><td>Ventas</td><td>Receipt</td><td>Pedidos de Clientes, Presupuestos, Promociones, Descuentos por Volumen, Ventas, Reservas</td></tr>
+    <tr><td>4</td><td>Stock (movimientos)</td><td>ArrowLeftRight</td><td>Stock (movimientos)</td></tr>
+    <tr><td>5</td><td>Envíos y Logística</td><td>Truck</td><td>Entregas, Puntos de Encuentro, Mapa de Entregas, Mapa de Proveedores</td></tr>
+    <tr><td>6</td><td>Notificaciones</td><td>Bell</td><td>Plantillas, Historial, Alertas, Enviar</td></tr>
+    <tr><td>7</td><td>Configuración</td><td>Settings</td><td>Categorías, Marcas, Unidades de Medida, Configuración</td></tr>
+    <tr><td>8</td><td>Auditoría &amp; Reportes</td><td>Shield</td><td>Auditoría, Backup, Reportes, Compras Pendientes, Hoja de Ruta, Pedidos del Día</td></tr>
+    <tr><td>9</td><td>Seguridad</td><td>KeyRound</td><td>Permisos, 2FA, Logs de Acceso, Sesiones</td></tr>
+  </tbody>
+</table>
+
+<p>Además, dos grupos <strong>no colapsables</strong> (siempre visibles):</p>
+<ul>
+  <li><strong>Navegación principal</strong>: Dashboard, Productos.</li>
+  <li><strong>Otros</strong> (con badge de notificaciones en Consultas): Personas, Usuarios, Opiniones, Consultas, Estadísticas.</li>
+</ul>
+
+<h2>8.2 Comportamiento de colapso — patrón <code>prevPathname</code></h2>
+
+<p>Cada sección tiene su propio <code>useState</code> boolean. <code>stockOpen</code> inicia en <code>true</code>; las demás en <code>false</code>.</p>
+
+<p>El colapso funciona con el patrón "ajustar estado durante el render" recomendado por React 19 (en lugar de <code>useEffect + setState</code>, que viola la regla <code>react-hooks/set-state-in-effect</code>):</p>
+
+<pre><code>const [prevPathname, setPrevPathname] = useState(pathname)
+if (pathname !== prevPathname) {
+  setPrevPathname(pathname)
+  if (isStockActive) setStockOpen(true)
+  if (isComprasActive) setComprasOpen(true)
+  // … etc para las 9 secciones
+}</code></pre>
+
+<p><strong>Reglas:</strong></p>
+<ul>
+  <li>Al navegar a una subpágina, la sección que la contiene se <strong>abre automáticamente</strong>.</li>
+  <li>El bloque <strong>solo abre, nunca cierra</strong> — respeta el cierre manual del usuario aunque esté en una subpágina activa.</li>
+  <li>No hay modo acordeón (múltiples secciones pueden estar abiertas a la vez).</li>
+  <li><strong>No hay persistencia en localStorage</strong> — el estado se resetea al recargar la página.</li>
+</ul>
+
+<h2>8.3 Otros comportamientos del layout</h2>
+
+<ul>
+  <li><strong>Guard de auth</strong>: <code>useSession()</code>; si no autenticado, redirige a <code>/admin/login</code>.</li>
+  <li><strong>Header</strong>: <code>SidebarTrigger</code>, botón <strong>"Ayuda"</strong> (abre <code>StaticHelp</code>), nombre del usuario actual.</li>
+  <li><strong>Footer del sidebar</strong>: nombre + email del usuario + botón "Cerrar sesión".</li>
+  <li><strong>Sidebar</strong>: variante <code>collapsible="offcanvas"</code> de shadcn.</li>
+  <li><strong>Asistente IA</strong>: <code>&lt;ChatAssistant/&gt;</code> montado una vez (botón flotante).</li>
+  <li><strong>Paleta</strong>: marron (texto), mostaza (acento primario), oliva, rojo, crema (fondo).</li>
+</ul>
+
+<h2>8.4 Solución de problemas</h2>
+
+<div class="note">
+  <strong>"La sección Ventas no se cierra"</strong> — Corregido en commit <code>2e494f1</code>. El bug era el patrón <code>effectiveXOpen = xOpen || isXActive</code> que forzaba <code>true</code> siempre que la ruta activa estuviera dentro de la sección. Reemplazado por el patrón <code>prevPathname</code> descrito arriba, aplicado a las 9 secciones.
+</div>
+
+<!-- 9. Asistente IA -->
+<h1 id="asistente-ia" class="page-break">9. Asistente IA</h1>
+
+<p>Asistente virtual conversacional que responde dudas sobre el uso del sistema.</p>
+
+<h2>9.1 Endpoint</h2>
+
+<p><strong><code>POST /api/chat-assistant</code></strong></p>
+
+<ul>
+  <li><strong>Body:</strong> <code>{ messages: Array&lt;{ role: 'user' | 'assistant', content: string }&gt; }</code>.</li>
+  <li>Valida role/content; recorta el historial a las últimas 20 mensajes.</li>
+  <li>Usa <strong>z-ai-web-dev-sdk</strong> (<code>ZAI.create()</code> → <code>zai.chat.completions.create({ messages, thinking: { type: 'disabled' } })</code>).</li>
+  <li>El system prompt se envía como mensaje <code>assistant</code> (restricción del SDK).</li>
+  <li><strong>Fallback</strong>: si el SDK falla, usa un motor de matching FAQ local que siempre devuelve una respuesta — el chat nunca se rompe.</li>
+</ul>
+
+<h2>9.2 Base de conocimiento (system prompt)</h2>
+
+<p>El system prompt declara <strong>24 módulos</strong> que el asistente conoce, más procedimientos paso a paso para los flujos principales. Reglas estrictas:</p>
+<ul>
+  <li>Solo responde sobre el ERP.</li>
+  <li>Nunca revela datos privados.</li>
+  <li>Siempre responde en español.</li>
+  <li>Explica paso a paso.</li>
+</ul>
+
+<h2>9.3 Motor de FAQ (fallback)</h2>
+
+<p>27 entradas <code>FAQ_ENTRIES</code> con <code>keywords[]</code> y <code>response</code> (Markdown). Cubren: crear producto, cargar stock, vender, stock crítico, receta, producción, compra, pedido cliente, presupuesto, reserva, movimiento, reporte, usuario/permiso/2fa, notificación/alerta, categoría/marca/unidad, materia prima, insumo, flujo de trabajo, logística/entrega, opinión, dashboard, descuento por volumen, promoción/oferta/2x1/landing, margen de ganancia/rentabilidad/código de colores, menú lateral/colapsar/expandir/sidebar.</p>
+
+<p>El matching normaliza acentos, calcula <code>matchedKeywords / keywords.length</code> por entrada, requiere ≥20% de match y ≥1 keyword, y devuelve la de mayor score. Si nada matchea, <code>getFallbackResponse</code> lista todos los temas disponibles.</p>
+
+<h2>9.4 Componente frontend</h2>
+
+<p><strong><code>src/components/admin/ChatAssistant.tsx</code></strong> (montado en el layout):</p>
+<ul>
+  <li><strong>Botón flotante</strong> (<code>fixed bottom-20 right-6 z-[9999]</code>) — <code>bg-mostaza</code>, icono <code>MessageCircle</code>, punto pulsante <code>bg-rojo</code>.</li>
+  <li><strong>Panel de chat</strong>:
+    <ul>
+      <li>Header marrón con avatar <code>Bot</code> y título "Asistente Virtual — Pastas Orlando".</li>
+      <li>En móvil: pantalla completa (<code>h-[100dvh]</code>). En <code>sm+</code>: panel flotante 380×520 px.</li>
+      <li>Mensaje de bienvenida.</li>
+      <li><strong>10 preguntas sugeridas</strong> inicialmente.</li>
+      <li>Renderer Markdown liviano (bold, inline code, listas numeradas y con viñetas).</li>
+      <li>Auto-scroll, auto-focus, animación de loading.</li>
+    </ul>
+  </li>
+  <li>Envía el historial (excluyendo el welcome) a <code>/api/chat-assistant</code>.</li>
+</ul>
+
+<h2>9.5 Configuración</h2>
+
+<p>No hay página de configuración. El system prompt y las FAQ están hardcodeados en <code>route.ts</code>.</p>
+
+<!-- 10. Ayuda Estática -->
+<h1 id="ayuda-estatica" class="page-break">10. Ayuda Estática</h1>
+
+<p>Manual offline completo del sistema, accesible sin conexión a la API.</p>
+
+<h2>10.1 Componente</h2>
+
+<p><strong><code>src/components/admin/StaticHelp.tsx</code></strong> (2,617 líneas).</p>
+<ul>
+  <li>Renderizado por <code>(dashboard)/layout.tsx</code> como <code>&lt;StaticHelp open={helpOpen} onOpenChange={setHelpOpen} /&gt;</code>.</li>
+  <li>Se abre con el botón <strong>"Ayuda"</strong> del header (icono <code>HelpCircle</code>).</li>
+  <li>Usa <code>Dialog</code> de shadcn (full-screen en móvil, centrado en desktop).</li>
+  <li>Header sticky con <strong>input de búsqueda</strong> y contador de secciones coincidentes.</li>
+  <li><code>filteredSections</code> filtra por título, resumen y contenido (case-insensitive).</li>
+  <li>En desktop: TOC lateral + contenido; en móvil: acordeón de una columna.</li>
+  <li>Scrollspy con <code>IntersectionObserver</code> para resaltar la sección activa en el TOC.</li>
+</ul>
+
+<h2>10.2 Secciones documentadas (16)</h2>
+
+<table>
+  <thead><tr><th>#</th><th>id</th><th>Título</th><th>Icono</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td><code>introduccion</code></td><td>Introducción</td><td>LayoutDashboard</td></tr>
+    <tr><td>2</td><td><code>navegacion-menu</code></td><td>Navegación y Menú Lateral</td><td>Menu</td></tr>
+    <tr><td>3</td><td><code>productos</code></td><td>Productos</td><td>Package</td></tr>
+    <tr><td>4</td><td><code>stock</code></td><td>Stock</td><td>Boxes</td></tr>
+    <tr><td>5</td><td><code>recetas</code></td><td>Recetas</td><td>BookOpen</td></tr>
+    <tr><td>6</td><td><code>produccion</code></td><td>Producción</td><td>Factory</td></tr>
+    <tr><td>7</td><td><code>ventas</code></td><td>Ventas</td><td>Receipt</td></tr>
+    <tr><td>8</td><td><code>compras</code></td><td>Compras</td><td>ShoppingCart</td></tr>
+    <tr><td>9</td><td><code>clientes-proveedores</code></td><td>Clientes y Proveedores</td><td>Users</td></tr>
+    <tr><td>10</td><td><code>configuracion</code></td><td>Configuración</td><td>Settings</td></tr>
+    <tr><td>11</td><td><code>reportes</code></td><td>Reportes</td><td>FileBarChart</td></tr>
+    <tr><td>12</td><td><code>costos-rentabilidad</code></td><td>Costos y Rentabilidad</td><td>TrendingUp</td></tr>
+    <tr><td>13</td><td><code>promociones</code></td><td>Promociones</td><td>Tag</td></tr>
+    <tr><td>14</td><td><code>promociones-landing</code></td><td>Promociones en la Tienda Pública</td><td>Tag</td></tr>
+    <tr><td>15</td><td><code>descuentos-volumen</code></td><td>Descuentos por Volumen</td><td>Layers</td></tr>
+    <tr><td>16</td><td><code>backup</code></td><td>Backup y Restauración</td><td>Database</td></tr>
+  </tbody>
+</table>
+
+<p>Cada sección tiene contenido JSX con pasos numerados, badges, callouts (<code>Info</code>, <code>Lightbulb</code>, <code>AlertTriangle</code>), referencias cruzadas (<code>ModuleRef</code>) y marcadores numerados (<code>StepCircle</code>).</p>
+
+<h2>10.3 Configuración</h2>
+
+<p>No hay página de configuración. El contenido está hardcodeado en el componente.</p>
+
+<!-- 11. Backup y Restauración -->
+<h1 id="backup-restauracion" class="page-break">11. Backup y Restauración</h1>
+
+<p>Copia de seguridad y restauración de la base de datos SQLite.</p>
+
+<h2>11.1 Endpoints de API</h2>
+
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td>GET, POST</td><td><code>/api/backup</code></td><td>Listar backups / Crear (tipo: completo | sql)</td></tr>
+    <tr><td>POST</td><td><code>/api/backup/restore</code></td><td>Restaurar (archivo) — crea safety backup previo</td></tr>
+    <tr><td>GET</td><td><code>/api/backup/download?archivo=</code></td><td>Descargar un backup</td></tr>
+    <tr><td>DELETE</td><td><code>/api/backup/[filename]</code></td><td>Eliminar un backup</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Detalles:</strong></p>
+<ul>
+  <li>Los backups se guardan en <code>&lt;project_root&gt;/backups/</code>.</li>
+  <li><code>POST /api/backup</code> con <code>tipo=completo</code> → copia binaria de <code>prisma/dev.db</code> a <code>backups/backup-&lt;timestamp&gt;.db</code>.</li>
+  <li>Con <code>tipo=sql</code> → ejecuta <code>sqlite3 "&lt;db&gt;" .dump &gt; "&lt;backup&gt;.sql"</code>; si sqlite3 CLI no está, cae a .db.</li>
+  <li><code>POST /api/backup/restore</code> <strong>sanitiza</strong> el nombre de archivo, rechaza rutas fuera de <code>backups/</code>, y crea un <strong>safety backup</strong> <code>pre-restore-&lt;timestamp&gt;.db</code> antes de restaurar. Para .sql, copia <code>dev.db → dev.db.bak</code> y revierte si falla.</li>
+  <li><code>GET /api/backup/download</code> stream el archivo con <code>Content-Disposition: attachment</code>.</li>
+</ul>
+
+<h2>11.2 Panel de administración</h2>
+
+<p><strong>Ruta:</strong> <code>/admin/backup</code></p>
+
+<ol>
+  <li><strong>Header</strong> con dos botones:
+    <ul>
+      <li><strong>"Backup Completo (.db)"</strong> — <code>bg-mostaza</code>, crea backup binario.</li>
+      <li><strong>"Backup SQL (.sql)"</strong> — outline oliva, crea dump SQL.</li>
+    </ul>
+  </li>
+  <li><strong>Tres tarjetas resumen</strong>: Total Backups, Último Backup (fecha + nombre), Espacio Utilizado.</li>
+  <li><strong>Tabla de backups</strong>: Nombre, Tipo (badge SQL/DB), Tamaño, Fecha, Acciones (Download / Restore / Delete).</li>
+  <li><strong>Restore AlertDialog</strong>: advierte "reemplazará la BD actual… se creará un backup de seguridad automático antes". Botón confirmar en <code>bg-rojo</code>.</li>
+  <li><strong>Delete AlertDialog</strong>: advertencia de irreversible.</li>
+  <li><strong>Tarjeta "Configuración de Backup Automático"</strong> (informativa): recomienda backup diario, política de retención, nota de safety pre-restore, explicación .db vs .sql.</li>
+</ol>
+
+<h2>11.3 Notas importantes</h2>
+
+<ul>
+  <li><strong>No hay cron/scheduling</strong> — los backups son manuales. La "configuración automática" es solo informativa.</li>
+  <li>Protección contra path traversal en restore, download y delete.</li>
+  <li>Safety backup automático antes de cada restauración.</li>
+  <li>En producción (Vercel + Turso) el filesystem es efímero — los backups deben descargarse o integrarse con almacenamiento externo (S3, etc.) para persistencia real.</li>
+</ul>
+
+<h2>11.4 Flujo de uso</h2>
+
+<ol>
+  <li>Ir a <strong>Auditoría &amp; Reportes → Backup</strong>.</li>
+  <li>Clic en <strong>"Backup Completo (.db)"</strong> (recomendado para restauración rápida).</li>
+  <li>El backup aparece en la tabla. Clic en <strong>Download</strong> para guardarlo localmente.</li>
+  <li>Para restaurar: clic en el icono Restore de un backup → confirmar → el sistema crea un safety backup y restaura.</li>
+  <li>Para eliminar un backup viejo: clic en el icono Delete → confirmar.</li>
+</ol>
+
+<!-- 12. Auditoría y Reportes -->
+<h1 id="auditoria-reportes" class="page-break">12. Auditoría y Reportes</h1>
+
+<p>Combina (1) trazado de auditoría de acciones de usuario y (2) reportes de negocio con exportación multi-formato.</p>
+
+<h2>12.1 Auditoría</h2>
+
+<h3>Modelo y servicio</h3>
+
+<ul>
+  <li><strong>Modelo <code>Auditoria</code></strong>: <code>id, id_usuario?, accion, modulo, entidad_id?, entidad_nombre?, detalles? (JSON), ip?, user_agent?, fecha</code>.</li>
+  <li><strong><code>src/lib/auditoria-service.ts</code></strong>:
+    <ul>
+      <li><code>enum ModuloAuditoria</code>: PRODUCTOS, COMPRAS, VENTAS, PRODUCCION, USUARIOS, REPORTES, LOGIN, STOCK, RECETAS.</li>
+      <li><code>enum AccionAuditoria</code>: CREATE, UPDATE, DELETE, LOGIN_OK, LOGIN_FAIL, LOGOUT, EXPORT, VIEW.</li>
+      <li><code>registrarAuditoria({...})</code> — best-effort (catch silencioso). Se llama desde handlers de API y botones de exportación.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3>Endpoints</h3>
+
+<table>
+  <thead><tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr></thead>
+  <tbody>
+    <tr><td>GET</td><td><code>/api/auditoria</code></td><td>Listar con filtros: buscar, modulo, accion, id_usuario, fecha_desde, fecha_hasta, pagina, limite</td></tr>
+    <tr><td>GET</td><td><code>/api/auditoria/[id]</code></td><td>Detalle de un evento</td></tr>
+  </tbody>
+</table>
+
+<h3>Panel</h3>
+
+<p><strong>Ruta:</strong> <code>/admin/auditoria</code></p>
+<ul>
+  <li>Filtros: búsqueda libre, módulo (9 opciones), acción (8 opciones), fecha desde/hasta.</li>
+  <li>Botones de exportación <strong>Excel</strong> y <strong>CSV</strong> (de la página actual).</li>
+  <li>Tabla: Fecha, Usuario, Acción (badge colorido), Módulo, Entidad, IP, Detalle (botón ojo).</li>
+  <li>Paginación.</li>
+  <li>Dialog de detalle con JSON pretty-printed de <code>detalles</code>.</li>
+</ul>
+
+<p><strong>Colores de acción:</strong></p>
+<table>
+  <thead><tr><th>Acción</th><th>Color</th></tr></thead>
+  <tbody>
+    <tr><td>CREATE</td><td>Oliva</td></tr>
+    <tr><td>UPDATE</td><td>Mostaza</td></tr>
+    <tr><td>DELETE, LOGIN_FAIL</td><td>Rojo</td></tr>
+    <tr><td>LOGIN_OK</td><td>Oliva</td></tr>
+    <tr><td>LOGOUT, VIEW</td><td>Muted</td></tr>
+    <tr><td>EXPORT</td><td>Marron</td></tr>
+  </tbody>
+</table>
+
+<h2>12.2 Reportes</h2>
+
+<h3>Endpoints (8)</h3>
+
+<table>
+  <thead><tr><th>Ruta</th><th>Filtros</th><th>Contenido</th></tr></thead>
+  <tbody>
+    <tr><td><code>/api/reportes/ventas</code></td><td>fecha_desde, fecha_hasta</td><td>Resumen, ventasPorDia, productosMásVendidos (top 10), clientesMásFrecuentes (top 10), listado</td></tr>
+    <tr><td><code>/api/reportes/compras</code></td><td>fecha_desde, fecha_hasta</td><td>Resumen, proveedoresMásUtilizados (top 10), productosMásComprados (top 10), listado</td></tr>
+    <tr><td><code>/api/reportes/stock</code></td><td>—</td><td>Resumen (totales + alertas + valorización), alertasStock, listas por tipo</td></tr>
+    <tr><td><code>/api/reportes/produccion</code></td><td>fecha_desde, fecha_hasta</td><td>Resumen, costosPorProducto, listado</td></tr>
+    <tr><td><code>/api/reportes/finanzas</code></td><td>fecha_desde, fecha_hasta</td><td>Resumen (ingresos, egresos, resultado, margenPromedio), datosPorMes, margenesPorProducto</td></tr>
+    <tr><td><code>/api/reportes/compras-pendientes</code></td><td>—</td><td>MP/insumos/PT con stock ≤ mínimo, con cantidad_sugerida (déficit + 50% buffer)</td></tr>
+    <tr><td><code>/api/reportes/hoja-ruta</code></td><td>fecha (default hoy)</td><td>Entregas del día en estado programado/en_camino</td></tr>
+    <tr><td><code>/api/reportes/pedidos-dia</code></td><td>fecha (default hoy)</td><td>Pedidos del día con resumen, productosMásPedidos (top 10), listado</td></tr>
+  </tbody>
+</table>
+
+<h3>Páginas de administración</h3>
+
+<table>
+  <thead><tr><th>Página</th><th>Ruta</th></tr></thead>
+  <tbody>
+    <tr><td>Reportes Generales (6 pestañas)</td><td><code>/admin/reportes</code></td></tr>
+    <tr><td>Compras Pendientes</td><td><code>/admin/reportes/compras-pendientes</code></td></tr>
+    <tr><td>Hoja de Ruta</td><td><code>/admin/reportes/hoja-ruta</code></td></tr>
+    <tr><td>Pedidos del Día</td><td><code>/admin/reportes/pedidos-dia</code></td></tr>
+  </tbody>
+</table>
+
+<p><strong>Reportes Generales</strong> usa <code>Tabs</code> con 6 pestañas: Ventas, Compras, Stock, Producción, Finanzas, Rentabilidad. Cada pestaña tiene filtros de rango de fechas, tarjetas KPI, tablas de detalle y botones de exportación. La pestaña Rentabilidad usa <code>/api/productos-terminados/costos</code>.</p>
+
+<h3>Componentes de exportación (3)</h3>
+
+<table>
+  <thead><tr><th>Componente</th><th>Formato</th><th>Librería</th><th>Auditoría</th></tr></thead>
+  <tbody>
+    <tr><td><code>ExportadorExcel</code></td><td>.xlsx</td><td>xlsx</td><td>Registra EXPORT con format:'excel'</td></tr>
+    <tr><td><code>ExportadorPDF</code></td><td>.pdf</td><td>jspdf (landscape)</td><td>Registra EXPORT con format:'pdf'</td></tr>
+    <tr><td><code>ExportadorCSV</code></td><td>.csv</td><td>Blob nativo (BOM UTF-8)</td><td>Registra EXPORT con format:'csv'</td></tr>
+  </tbody>
+</table>
+
+<p>Los tres aceptan <code>{data, filename, columns?, modulo?, disabled?}</code> y renderizan un botón outline (Excel=oliva, PDF=rojo, CSV=mostaza). <strong>Cada exportación queda registrada en Auditoría</strong>.</p>
+
+<!-- 13. Reglas de Negocio -->
+<h1 id="reglas-de-negocio" class="page-break">13. Reglas de Negocio</h1>
 
 <h2>5.1 Cálculo de Costos</h2>
 
@@ -992,7 +1631,7 @@ precio_venta = definido manualmente (sugiere: costo_unitario × margen)</code></
 </ul>
 
 <!-- 6. Flujos Principales -->
-<h1 id="flujos-principales" class="page-break">6. Flujos Principales</h1>
+<h1 id="flujos-principales" class="page-break">14. Flujos Principales</h1>
 
 <h2>6.1 Flujo de Compra a Proveedor</h2>
 
@@ -1069,7 +1708,7 @@ precio_venta = definido manualmente (sugiere: costo_unitario × margen)</code></
 </div>
 
 <!-- 7. Endpoints de API -->
-<h1 id="endpoints-de-api" class="page-break">7. Endpoints de API</h1>
+<h1 id="endpoints-de-api" class="page-break">15. Endpoints de API</h1>
 
 <h2>7.1 Autenticación (4 endpoints)</h2>
 <table>
@@ -1357,7 +1996,7 @@ precio_venta = definido manualmente (sugiere: costo_unitario × margen)</code></
 </table>
 
 <!-- 8. Librerías de Lógica de Negocio -->
-<h1 id="librerias-de-logica" class="page-break">8. Librerías de Lógica de Negocio</h1>
+<h1 id="librerias-de-logica" class="page-break">16. Librerías de Lógica de Negocio</h1>
 
 <h2>8.1 <code>auditoria-service.ts</code></h2>
 <p>Servicio centralizado de auditoría. Registra todas las acciones del sistema.</p>
@@ -1482,7 +2121,7 @@ precio_venta = definido manualmente (sugiere: costo_unitario × margen)</code></
 export const db = new PrismaClient()</code></pre>
 
 <!-- 9. Componentes de UI -->
-<h1 id="componentes-de-ui" class="page-break">9. Componentes de UI</h1>
+<h1 id="componentes-de-ui" class="page-break">17. Componentes de UI</h1>
 
 <h2>9.1 Formularios (13 formularios principales)</h2>
 
@@ -1593,7 +2232,7 @@ export const db = new PrismaClient()</code></pre>
 </table>
 
 <!-- 10. Seguridad -->
-<h1 id="seguridad" class="page-break">10. Seguridad</h1>
+<h1 id="seguridad" class="page-break">18. Seguridad</h1>
 
 <h2>10.1 Autenticación 2FA (TOTP)</h2>
 
@@ -1654,7 +2293,7 @@ export const db = new PrismaClient()</code></pre>
 </ul>
 
 <!-- 11. Despliegue -->
-<h1 id="despliegue" class="page-break">11. Despliegue</h1>
+<h1 id="despliegue" class="page-break">19. Despliegue</h1>
 
 <h2>11.1 Plataformas</h2>
 
@@ -1719,7 +2358,7 @@ bun run start</code></pre>
 </ol>
 
 <!-- 12. Diagrama de Relaciones -->
-<h1 id="diagrama-de-relaciones" class="page-break">12. Diagrama de Relaciones (ERD)</h1>
+<h1 id="diagrama-de-relaciones" class="page-break">20. Diagrama de Relaciones (ERD)</h1>
 
 <div class="mermaid-container">
   <p><strong>Diagrama Entidad-Relación (Mermaid)</strong></p>
@@ -1825,8 +2464,8 @@ erDiagram
 
 <!-- Footer -->
 <div class="doc-footer">
-  <p><strong>Nota:</strong> Esta documentación refleja el estado del sistema en la Fase 13 (Presupuestos/Cotizaciones). El sistema está en desarrollo activo y puede haber cambios posteriores.</p>
-  <p>Documentación generada automáticamente — Pastas Orlando &copy; 2026</p>
+  <p><strong>Nota:</strong> Esta documentación refleja el estado del sistema en la Fase 14 (Promociones, Descuentos por Volumen, Margen de Ganancia, Asistente IA, Ayuda Estática, Backup y Auditoría/Reportes). El sistema está en desarrollo activo y puede haber cambios posteriores.</p>
+  <p>Documentación del Sistema Las Pastas de Orlando &copy; 2026</p>
 </div>
 
 </div><!-- /content -->
