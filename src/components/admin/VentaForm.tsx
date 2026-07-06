@@ -664,13 +664,10 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
         </div>
       )}
 
-      {/* Main fields
-          Layout: 3 columnas en desktop (lg), 2 en tablet (sm), 1 en móvil.
-          Fila 1: Cliente | Forma de Pago | Nº Comprobante
-          Fila 2: Fecha Venta | Vendedor | Estado (solo edición) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {/* Main fields — misma estructura que PedidoClienteForm (2 columnas) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Cliente - searchable combobox */}
-        <div className="min-w-0">
+        <div>
           <Label className="text-sm font-medium text-marron mb-1 block">Cliente *</Label>
           {isEditing || fromPedido ? (
             <Input
@@ -706,7 +703,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] min-w-[16rem] p-0" align="start">
+              <PopoverContent className="w-full p-0" align="start">
                 <Command>
                   <CommandInput placeholder="Buscar cliente..." />
                   <CommandList>
@@ -739,7 +736,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
         </div>
 
         {/* Forma de pago */}
-        <div className="min-w-0">
+        <div>
           <Label className="text-sm font-medium text-marron mb-1 block">Forma de Pago *</Label>
           {isEditing ? (
             <Input
@@ -764,7 +761,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
         </div>
 
         {/* Nº Comprobante (mostrado en alta y edición) */}
-        <div className="min-w-0">
+        <div>
           <Label className="text-sm font-medium text-marron mb-1 block">Nº Comprobante</Label>
           <Input
             placeholder="Ej: 0001-12345678"
@@ -774,7 +771,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
         </div>
 
         {/* Fecha venta */}
-        <div className="min-w-0">
+        <div>
           <Label className="text-sm font-medium text-marron mb-1 block">Fecha Venta *</Label>
           <Input
             type="date"
@@ -785,7 +782,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
         </div>
 
         {/* Vendedor */}
-        <div className="min-w-0">
+        <div>
           <Label className="text-sm font-medium text-marron mb-1 block">Vendedor *</Label>
           {isEditing ? (
             <Input
@@ -811,7 +808,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
 
         {/* Estado (solo en edición) */}
         {isEditing && (
-          <div className="min-w-0">
+          <div>
             <Label className="text-sm font-medium text-marron mb-1 block">Estado</Label>
             <Select value={idEstado} onValueChange={setIdEstado}>
               <SelectTrigger className="w-full">
@@ -827,6 +824,18 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
             </Select>
           </div>
         )}
+      </div>
+
+      {/* Observaciones — igual que PedidoClienteForm */}
+      <div>
+        <Label className="text-sm font-medium text-marron mb-1 block">Observaciones</Label>
+        <Textarea
+          placeholder="Observaciones sobre la venta..."
+          className="resize-none"
+          rows={2}
+          value={observaciones}
+          onChange={(e) => setObservaciones(e.target.value)}
+        />
       </div>
 
       {/* Barcode scanner input - only in create mode */}
@@ -851,52 +860,34 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
         </div>
       )}
 
-      {/* Detail rows - only in create mode */}
+      {/* Detail rows - only in create mode — misma estructura que PedidoClienteForm */}
       {!isEditing && (
         <>
           <Separator />
-          <div>
-            <div className="flex flex-wrap items-center justify-between gap-2 mb-5">
-              <Label className="text-sm font-semibold text-marron">Detalle de la Venta</Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addDetailRow}
-                className="border-mostaza/30 text-mostaza hover:bg-mostaza/10"
-              >
-                <Plus className="mr-1 h-4 w-4" />
-                Agregar Fila
-              </Button>
-            </div>
+          <div className="space-y-4">
+            <Label className="text-sm font-semibold text-marron block">Detalle de la Venta</Label>
 
+            {/* Detail rows - fills 100% width, no horizontal scroll */}
             <div className="space-y-3">
-              {detalles.map((detalle, index) => (
+              {/* Desktop column headers (aligned with rows) */}
+              <div className="hidden lg:grid lg:grid-cols-[3fr_1fr_1.2fr_1.3fr_44px] gap-3 px-3">
+                <div className="text-xs font-semibold text-muted-foreground">Producto Terminado</div>
+                <div className="text-xs font-semibold text-muted-foreground">Cantidad</div>
+                <div className="text-xs font-semibold text-muted-foreground">Precio Unit.</div>
+                <div className="text-xs font-semibold text-muted-foreground">Subtotal</div>
+                <div></div>
+              </div>
+
+              {/* Detail rows */}
+              {detalles.map((detalle) => (
                 <div
                   key={detalle.key}
-                  className="p-3 rounded-lg border border-marron/10 bg-muted/20 space-y-3"
+                  className="p-3 rounded-lg border border-marron/10 bg-muted/20"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-muted-foreground">
-                      Fila {index + 1}
-                    </span>
-                    {detalles.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-9 w-9 hover:bg-rojo/10"
-                        onClick={() => removeDetailRow(detalle.key)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5 text-rojo" />
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {/* Producto Terminado */}
-                    <div className="min-w-0 sm:col-span-2 lg:col-span-1">
-                      <Label className="text-xs text-muted-foreground">Producto Terminado</Label>
+                  <div className="grid grid-cols-2 lg:grid-cols-[3fr_1fr_1.2fr_1.3fr_44px] gap-3 items-start">
+                    {/* Producto Terminado - full width on mobile */}
+                    <div className="col-span-2 lg:col-span-1">
+                      <Label htmlFor={`prod-${detalle.key}`} className="text-xs text-muted-foreground mb-1 block lg:sr-only">Producto Terminado</Label>
                       <Select
                         value={detalle.idProductoTerminado}
                         onValueChange={(v) => updateDetalle(detalle.key, 'idProductoTerminado', v)}
@@ -915,9 +906,10 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                     </div>
 
                     {/* Cantidad */}
-                    <div className="min-w-0">
-                      <Label className="text-xs text-muted-foreground">Cantidad</Label>
+                    <div>
+                      <Label htmlFor={`cant-${detalle.key}`} className="text-xs text-muted-foreground mb-1 block lg:sr-only">Cantidad</Label>
                       <Input
+                        id={`cant-${detalle.key}`}
                         type="number"
                         step="0.01"
                         min="0"
@@ -928,10 +920,11 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                       />
                     </div>
 
-                    {/* Precio Unitario */}
-                    <div className="min-w-0">
-                      <Label className="text-xs text-muted-foreground">Precio Unit.</Label>
+                    {/* Precio Unitario (con badge de descuento por volumen) */}
+                    <div>
+                      <Label htmlFor={`precio-${detalle.key}`} className="text-xs text-muted-foreground mb-1 block lg:sr-only">Precio Unit.</Label>
                       <Input
+                        id={`precio-${detalle.key}`}
                         type="number"
                         step="0.01"
                         min="0"
@@ -958,24 +951,55 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                     </div>
 
                     {/* Subtotal (auto-calculated) */}
-                    <div className="min-w-0">
-                      <Label className="text-xs text-muted-foreground">Subtotal</Label>
+                    <div>
+                      <Label htmlFor={`sub-${detalle.key}`} className="text-xs text-muted-foreground mb-1 block lg:sr-only">Subtotal</Label>
                       <Input
+                        id={`sub-${detalle.key}`}
                         className="h-9 w-full bg-muted/50 font-semibold"
                         value={detalle.subtotal ? formatCurrency(parseFloat(detalle.subtotal)) : ''}
                         disabled
                       />
                     </div>
+
+                    {/* Delete */}
+                    <div className="flex justify-center">
+                      {detalles.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 hover:bg-rojo/10"
+                          onClick={() => removeDetailRow(detalle.key)}
+                          aria-label="Eliminar fila"
+                        >
+                          <Trash2 className="h-4 w-4 text-rojo" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* Add row button - clearly separated from the table */}
+            <div className="pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addDetailRow}
+                className="border-mostaza/30 text-mostaza hover:bg-mostaza/10"
+              >
+                <Plus className="mr-1 h-4 w-4" />
+                Agregar Fila
+              </Button>
             </div>
           </div>
 
           {/* Totals */}
           <Separator />
           <div className="flex justify-end">
-            <div className="w-full sm:w-72 space-y-2">
+            <div className="w-full sm:w-64 space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
                 <span className="font-medium text-marron">{formatCurrency(subtotal)}</span>

@@ -427,7 +427,7 @@ export default function VentasTable() {
           if (!open) setSelectedVenta(null)
         }}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-5xl w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-marron">
               {selectedVenta ? 'Editar Venta' : 'Nueva Venta'}
@@ -451,7 +451,7 @@ export default function VentasTable() {
           setPedidoVentaOpen(open)
         }}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-5xl w-full max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-marron">Vender desde Pedido</DialogTitle>
           </DialogHeader>
