@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3000 -H :: 2>&1 | tee dev.log",
     "build": "DATABASE_URL=file:./dev.db next build",
-    "postinstall": "DATABASE_URL_FILE=file:./dev.db DATABASE_URL=file:./dev.db prisma generate",
+    "postinstall": "prisma generate",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
     "db:push": "prisma db push",
