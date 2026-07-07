@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
-import { Loader2, Upload, X, Search, UserCircle } from 'lucide-react'
+import { Loader2, Upload, X, Search, UserCircle, Eye, EyeOff } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Button } from '@/components/ui/button'
@@ -96,6 +96,7 @@ export default function UsuarioForm({ usuario, onSuccess }: UsuarioFormProps) {
   const [imageUrl, setImageUrl] = useState(usuario?.imagen || '')
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [showPassword, setShowPassword] = useState(false)
 
   // Roles
   const [roles, setRoles] = useState<Rol[]>([])
@@ -359,7 +360,27 @@ export default function UsuarioForm({ usuario, onSuccess }: UsuarioFormProps) {
             <FormItem>
               <FormLabel>Contraseña {isEditing ? '' : '*'}</FormLabel>
               <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
+                <div className="relative">
+                  <Input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    className="pr-10"
+                    {...field}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-marron transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-mostaza/50 rounded-sm"
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    tabIndex={0}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
               </FormControl>
               {isEditing && (
                 <FormDescription>

@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import { Loader2, Mail, Lock, ArrowLeft, KeyRound } from 'lucide-react'
+import { Loader2, Mail, Lock, ArrowLeft, KeyRound, Eye, EyeOff } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -34,6 +34,7 @@ type LoginForm = z.infer<typeof loginSchema>
 export default function LoginPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   const form = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -131,11 +132,24 @@ export default function LoginPage() {
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
-                        type="password"
+                        type={showPassword ? 'text' : 'password'}
                         placeholder="••••••••"
-                        className="pl-10 border-marron/20 focus:border-mostaza"
+                        className="pl-10 pr-10 border-marron/20 focus:border-mostaza"
                         {...field}
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-marron transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-mostaza/50 rounded-sm"
+                        aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                        tabIndex={0}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
                   </FormControl>
                   <FormMessage />
