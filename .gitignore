@@ -79,3 +79,35 @@ laspastasdeorlando-local/
 # Tarballs de distribucion (generados por build-local-package.sh, distribuidos via Releases)
 laspastasdeorlando-local.tar.gz
 laspastasdeorlando-local.zip
+# =============================================================================
+# Migración de imágenes
+# =============================================================================
+# Backups de DB creados por scripts/migrar-imagenes-a-local.mjs
+prisma/dev.db.backup-*
+
+# Directorios de test del script de migración
+.test-migracion/
+.test-download/
+
+# Imágenes descargadas por la migración (se guardan en public/images/productos/)
+# Estas son imágenes de productos generadas a partir de URLs externas migradas.
+# No se commitean para no inflar el repo — cada usuario las regenera con el script.
+public/images/productos/
+
+# Imágenes de uploads descargadas desde Vercel Blob Storage
+# (cuando se usa BLOB_READ_WRITE_TOKEN, los blobs se descargan acá)
+# No se commitean — cada usuario las descarga con el script si tiene el token.
+public/images/uploads/productos-terminados/*
+!public/images/uploads/productos-terminados/.gitkeep
+public/images/uploads/productos/*
+!public/images/uploads/productos/.gitkeep
+public/images/uploads/categorias/*
+!public/images/uploads/categorias/.gitkeep
+public/images/uploads/materias-primas/*
+!public/images/uploads/materias-primas/.gitkeep
+public/images/uploads/insumos/*
+!public/images/uploads/insumos/.gitkeep
+public/images/uploads/usuarios/*
+!public/images/uploads/usuarios/.gitkeep
+public/images/uploads/personas/*
+!public/images/uploads/personas/.gitkeep

@@ -15,7 +15,11 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
-    "db:seed-notif": "npx tsx prisma/seed-notificaciones.ts"
+    "db:seed-notif": "npx tsx prisma/seed-notificaciones.ts",
+    "migrar:imagenes": "node scripts/migrar-imagenes-a-local.mjs",
+    "migrar:imagenes:dry-run": "node scripts/migrar-imagenes-a-local.mjs --dry-run",
+    "migrar:imagenes:no-download": "node scripts/migrar-imagenes-a-local.mjs --no-download",
+    "migrar:imagenes:verbose": "node scripts/migrar-imagenes-a-local.mjs --verbose"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
