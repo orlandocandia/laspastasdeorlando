@@ -46,13 +46,150 @@ Necesitás 3 valores:
    - Name: `TURSO_AUTH_TOKEN` → Value: `eyJhbGciOi...` (tu token JWT de Turso)
    - Name: `BLOB_READ_WRITE_TOKEN` → Value: `vercel_blob_rw_xxxxx...`
 
-### Paso 3: Verificar que el workflow está activo
+### Paso 3: Crear el workflow de GitHub Actions
+
+> **IMPORTANTE:** El archivo `.github/workflows/backup-turso-diario.yml` no se pudo commitear automáticamente porque el PAT usado por el bot no tiene el scope `workflow` de GitHub. Tenés que crearlo manualmente siguiendo estos pasos.
+
+#### Opción A — Crear desde la UI de GitHub (recomendada)
+
+1. Andá a: https://github.com/orlandocandia/laspastasdeorlando/new/main/.github/workflows
+2. En **"Name your file..."** escribí: `backup-turso-diario.yml`
+3. En el editor, pegá el siguiente contenido:
+
+```yaml
+# =============================================================================
+# Backup Automático Diario de Turso → Vercel Blob Storage
+# =============================================================================
+# Schedule: todos los días a las 06:00 UTC (03:00 AM hora de Buenos Aires)
+# Requisitos (configurar como GitHub Secrets):
+#   - TURSO_DATABASE_URL    ej: libsql://mi-db.turso.io
+#   - TURSO_AUTH_TOKEN      token de Turso
+#   - BLOB_READ_WRITE_TOKEN token de Vercel Blob Storage
+# =============================================================================
+
+name: Backup Turso Diario
+
+on:
+  schedule:
+    # 06:00 UTC = 03:00 AM Buenos Aires (UTC-3)
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry-run (no sube ni elimina nada)'
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: backup-turso-diario
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Backup de Turso
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Instalar dependencias
+        run: bun install --frozen-lockfile
+
+      - name: Generar prisma client
+        run: bun run db:generate
+
+      - name: Ejecutar backup
+        id: backup
+        env:
+          DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            echo "🔍 Modo dry-run activado"
+            node scripts/backup-turso.mjs --dry-run --verbose
+          else
+            node scripts/backup-turso.mjs --verbose
+          fi
+
+      - name: Crear issue si el backup falla
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const date = new Date().toISOString().substring(0, 19).replace('T', ' ')
+            const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `⚠️ Backup de Turso falló (${date})`,
+              body: [
+                `# ❌ Backup de Turso falló`,
+                ``,
+                `**Fecha:** ${date} UTC`,
+                `**Run:** [#${context.runId}](${runUrl})`,
+                ``,
+                `## Acciones a tomar`,
+                ``,
+                `1. Abrir el run de GitHub Actions para ver los logs.`,
+                `2. Verificar que los secrets estén configurados correctamente.`,
+                `3. Verificar que la DB de Turso y el Blob Store de Vercel estén activos.`,
+                `4. Si es necesario, ejecutar el backup manualmente desde local:`,
+                `   \`\`\`bash`,
+                `   node scripts/backup-turso.mjs --verbose`,
+                `   \`\`\``,
+                `5. Cerrar este issue una vez resuelto.`,
+              ].join('\n'),
+              labels: ['backup', 'failed', 'automated']
+            })
+
+      - name: Resumen
+        if: always()
+        run: |
+          echo "## Backup Status: ${{ job.status }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Fecha:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "**Dry-run:** ${{ github.event.inputs.dry_run || 'false' }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ Backup completado exitosamente." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ El backup falló. Revisar logs." >> $GITHUB_STEP_SUMMARY
+          fi
+```
+
+4. Click en **"Commit changes..."** → elegí "Commit directly to the main branch" → Click en **"Commit changes"**.
+
+#### Opción B — Crear con un PAT que tenga scope `workflow`
+
+Si tenés un PAT con el scope `workflow` habilitado:
+
+```bash
+# Desde el directorio del proyecto en tu PC
+git pull origin main
+# El archivo .github/workflows/backup-turso-diario.yml ya está en el repo local
+git push origin main
+```
+
+### Paso 4: Verificar que el workflow está activo
 
 1. Andá a: https://github.com/orlandocandia/laspastasdeorlando/actions
 2. En la lista de workflows de la izquierda, deberías ver **"Backup Turso Diario"**.
 3. Click en ese workflow → debería estar habilitado (con un botón "Enable workflow" si es la primera vez).
 
-### Paso 4: Probar el backup manualmente
+### Paso 5: Probar el backup manualmente
 
 En la misma página de Actions:
 
