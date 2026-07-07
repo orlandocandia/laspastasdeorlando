@@ -28,6 +28,8 @@ interface ProductoTerminadoSimple {
   id: number
   nombre: string
   precio_venta: number
+  codigo: string | null
+  codigo_barras: string | null
 }
 
 interface PromocionProductoItem {
@@ -136,11 +138,24 @@ export default function PromocionesManager() {
 
   const fetchProductos = useCallback(async () => {
     try {
-      const res = await fetch('/api/productos-terminados?estado=true')
+      // CORRECCIÓN: traer TODOS los productos (sin filtro de estado ni visibilidad)
+      // y con limite alto para que el buscador de promociones los muestre todos.
+      // Antes se filtraba con ?estado=true lo que ocultaba productos inactivos.
+      const res = await fetch('/api/productos-terminados?limite=500')
       if (!res.ok) return
       const data = await res.json()
       const items = data.data || data
-      setProductosDisponibles(Array.isArray(items) ? items.map((p: ProductoTerminadoSimple) => ({ id: p.id, nombre: p.nombre, precio_venta: p.precio_venta })) : [])
+      setProductosDisponibles(
+        Array.isArray(items)
+          ? items.map((p: ProductoTerminadoSimple) => ({
+              id: p.id,
+              nombre: p.nombre,
+              precio_venta: p.precio_venta,
+              codigo: (p as { codigo?: string | null }).codigo ?? null,
+              codigo_barras: (p as { codigo_barras?: string | null }).codigo_barras ?? null,
+            }))
+          : []
+      )
     } catch {
       // silently fail
     }
@@ -267,9 +282,15 @@ export default function PromocionesManager() {
     )
   }
 
-  const productosFiltrados = productosDisponibles.filter(p =>
-    p.nombre.toLowerCase().includes(busquedaProducto.toLowerCase())
-  )
+  const productosFiltrados = productosDisponibles.filter(p => {
+    const q = busquedaProducto.toLowerCase().trim()
+    if (!q) return true
+    return (
+      p.nombre.toLowerCase().includes(q) ||
+      (p.codigo ?? '').toLowerCase().includes(q) ||
+      (p.codigo_barras ?? '').toLowerCase().includes(q)
+    )
+  })
 
   const filteredPromociones = promociones
 
