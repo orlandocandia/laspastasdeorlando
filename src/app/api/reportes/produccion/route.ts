@@ -2,17 +2,28 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
 // GET /api/reportes/produccion - Datos para reporte de producción
+// Parámetros de filtro:
+//   fecha_desde, fecha_hasta — rango de fecha_produccion
+//   producto_id              — filtra por producto terminado (vía receta)
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const fecha_desde = searchParams.get('fecha_desde')
     const fecha_hasta = searchParams.get('fecha_hasta')
+    const producto_id = searchParams.get('producto_id')
 
     const where: Record<string, unknown> = {}
     if (fecha_desde || fecha_hasta) {
       where.fecha_produccion = {}
       if (fecha_desde) (where.fecha_produccion as Record<string, unknown>).gte = new Date(fecha_desde)
-      if (fecha_hasta) (where.fecha_produccion as Record<string, unknown>).lte = new Date(fecha_hasta)
+      if (fecha_hasta) {
+        const h = new Date(fecha_hasta)
+        h.setHours(23, 59, 59, 999)
+        ;(where.fecha_produccion as Record<string, unknown>).lte = h
+      }
+    }
+    if (producto_id) {
+      where.receta = { id_producto_terminado: Number(producto_id) }
     }
 
     const producciones = await db.produccion.findMany({
@@ -52,10 +63,12 @@ export async function GET(request: NextRequest) {
       existing.costoTotal += prod.costo_total
       costosMap.set(nombre, existing)
     }
-    const costosPorProducto = Array.from(costosMap.values()).map(c => ({
-      ...c,
-      costoPromedio: c.producido > 0 ? c.costoTotal / c.producido : 0,
-    })).sort((a, b) => b.costoTotal - a.costoTotal)
+    const costosPorProducto = Array.from(costosMap.values())
+      .map((c) => ({
+        ...c,
+        costoPromedio: c.producido > 0 ? c.costoTotal / c.producido : 0,
+      }))
+      .sort((a, b) => b.costoTotal - a.costoTotal)
 
     return NextResponse.json({
       resumen: {
