@@ -101,6 +101,23 @@ echo "   ✅ Build copiado"
 cp -r "$ROOT_DIR/public" "$PKG_DIR/public"
 echo "   ✅ Assets públicos copiados"
 
+# Copiar código fuente (respaldo de emergencia: permite reconstruir o correr en modo dev)
+if [ -d "$ROOT_DIR/src" ]; then
+    cp -r "$ROOT_DIR/src" "$PKG_DIR/src"
+    echo "   ✅ Código fuente copiado (src/)"
+else
+    echo "   ⚠️  No se encontró src/. El paquete no incluirá el código fuente."
+fi
+
+# Copiar config files clave para modo dev (prisma schema, next.config, tsconfig, etc.)
+for f in prisma/schema.prisma next.config.ts tsconfig.json components.json eslint.config.mjs; do
+    if [ -f "$ROOT_DIR/$f" ]; then
+        mkdir -p "$PKG_DIR/$(dirname "$f")"
+        cp "$ROOT_DIR/$f" "$PKG_DIR/$f"
+    fi
+done
+echo "   ✅ Archivos de configuración copiados"
+
 # Copiar base de datos local (con datos seed si existe)
 if [ -f "$ROOT_DIR/prisma/dev.db" ]; then
     cp "$ROOT_DIR/prisma/dev.db" "$PKG_DIR/dev.db"
@@ -127,7 +144,7 @@ for f in server.js package.json .env .env.local .env.online README.md dev.db; do
         exit 1
     fi
 done
-for d in .next node_modules public scripts data prisma; do
+for d in .next node_modules public src scripts data prisma; do
     if [ ! -d "$PKG_DIR/$d" ]; then
         echo "   ❌ Falta carpeta: $d"
         exit 1

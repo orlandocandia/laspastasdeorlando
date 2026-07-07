@@ -38,7 +38,7 @@ Abrí el navegador en 👉 **http://localhost:3000**
 8. [⚙️ Configuración inicial](#️-configuración-inicial)
 9. [🔄 Cambiar entre modo LOCAL y ONLINE](#-cambiar-entre-modo-local-y-online)
 10. [☁️ Configurar Turso (modo online)](#️-configurar-turso-modo-online)
-11. [🔄 Sincronizar datos locales a Turso](#-sincronizar-datos-locales-a-turso)
+11. [🔄 Sincronizar datos (Local ↔ Turso)](#-sincronizar-datos-local--turso)
 12. [💾 Backups](#-backups)
 13. [🚀 Uso diario](#-uso-diario)
 14. [🔐 Seguridad](#-seguridad)
@@ -62,14 +62,18 @@ Al descomprimir el paquete vas a encontrar la siguiente estructura de carpetas y
 | `dev.db` | Archivo | Base de datos **SQLite local**. Acá se guardan todos tus datos (productos, ventas, clientes, etc.). |
 | `README.md` | Archivo | Este documento. |
 | `/public` | Carpeta | Imágenes y archivos estáticos (logos, fotos de productos, etc.). |
+| `/src` | Carpeta | **Código fuente** de la aplicación (respaldo de emergencia). No es necesario para usar el sistema, pero permite reconstruirlo o correrlo en modo desarrollo si se rompe el build standalone. |
 | `/data` | Carpeta | Backups automáticos y manuales de la base de datos. |
 | `/scripts` | Carpeta | Scripts de arranque, cambio de modo y sincronización. |
 | `/scripts/start-windows.bat` | Script | Inicia el sistema en **Windows** (doble click). |
 | `/scripts/start-linux.sh` | Script | Inicia el sistema en **Linux**. |
 | `/scripts/switch-mode.bat` | Script | Cambia entre modo LOCAL y ONLINE en **Windows**. |
 | `/scripts/switch-mode.sh` | Script | Cambia entre modo LOCAL y ONLINE en **Linux**. |
-| `/scripts/sync-to-turso.bat` | Script | Sincroniza datos locales → Turso en **Windows**. |
-| `/scripts/sync-to-turso.sh` | Script | Sincroniza datos locales → Turso en **Linux**. |
+| `/scripts/sync-db.bat` | Script | **Sincronización bidireccional** en **Windows**: `push` (Local → Turso) o `pull` (Turso → Local). |
+| `/scripts/sync-db.sh` | Script | **Sincronización bidireccional** en **Linux**: `push` (Local → Turso) o `pull` (Turso → Local). |
+| `/scripts/sync-db.js` | Script | Lógica Node.js compartida por `sync-db.sh` y `sync-db.bat`. No se ejecuta directamente. |
+| `/scripts/sync-to-turso.bat` | Script | ⚠️ *Alias* backward-compat para `sync-db.bat push` (Local → Turso). |
+| `/scripts/sync-to-turso.sh` | Script | ⚠️ *Alias* backward-compat para `sync-db.sh push` (Local → Turso). |
 | `/scripts/backup-local.sh` | Script | Genera un backup manual de la base local (Linux). |
 
 > 📝 **Nota:** Los archivos `.env`, `.env.local` y `.env.online` pueden estar ocultos en algunos exploradores de archivos. En Windows, activá "Elementos ocultos" en la pestaña Ver. En Linux, usá `ls -la`.
@@ -80,12 +84,13 @@ Al descomprimir el paquete vas a encontrar la siguiente estructura de carpetas y
 
 - 🖥️ **100% offline:** funciona sin internet usando una base de datos SQLite local (`dev.db`).
 - ☁️ **Modo online opcional:** podés conectarte a una base de datos en la nube (Turso) cuando quieras.
-- 🔄 **Sincronización local → nube:** copia todos tus datos locales a Turso con un solo comando.
-- 💾 **Backups automáticos:** antes de cada sincronización se genera un backup de seguridad en `/data`.
+- 🔄 **Sincronización bidireccional:** pasá datos del local a la nube (`push`) o bajá datos de la nube al local (`pull`) con un solo comando.
+- 💾 **Backups automáticos:** antes de cada sincronización (en cualquier dirección) se genera un backup de seguridad en `/data`.
 - 🪟 **Multiplataforma:** scripts dedicados para Windows (`.bat`) y Linux (`.sh`).
 - 🚀 **Arranque simple:** un solo comando (o doble click) pone el sistema en marcha.
 - 🔄 **Detección automática de modo:** el sistema detecta si estás en LOCAL u ONLINE según la URL de la base de datos.
 - 🧩 **Sin dependencias externas:** los scripts de sincronización usan `@libsql/client` ya incluido en el paquete, no requieren instalar el CLI de Turso.
+- 🛟 **Respaldos de emergencia:** el paquete incluye el código fuente (`src/`) y la base de datos local, permitiendo reconstruir el sistema completo desde cero.
 - 🍃 **Ligero:** necesita menos de 500 MB de disco y 2 GB de RAM.
 - 🔐 **Autenticación:** el panel de administración requiere usuario y contraseña.
 
@@ -499,31 +504,40 @@ DATABASE_AUTH_TOKEN=TU-TOKEN-AQUI
 
 Cerrá el servidor (Ctrl+C) y volvé a iniciarlo con `start-linux.sh` o `start-windows.bat`.
 
-> ⚠️ **La primera vez que cambies a modo ONLINE**, es probable que la base de datos de Turso esté vacía. Necesitás sincronizar tus datos locales a Turso (ver la siguiente sección [🔄 Sincronizar datos locales a Turso](#-sincronizar-datos-locales-a-turso)).
+> ⚠️ **La primera vez que cambies a modo ONLINE**, es probable que la base de datos de Turso esté vacía. Necesitás sincronizar tus datos locales a Turso (ver la siguiente sección [🔄 Sincronizar datos (Local ↔ Turso)](#-sincronizar-datos-local--turso)).
 
 ---
 
-## 🔄 Sincronizar datos locales a Turso
+## 🔄 Sincronizar datos (Local ↔ Turso)
 
 > 🚨 **ESTA ES LA SECCIÓN MÁS IMPORTANTE.** Lela con atención antes de ejecutar cualquier comando.
 
-La sincronización **copia TODOS tus datos locales** (productos, ventas, clientes, recetas, etc.) a la base de datos de Turso en la nube. Esto te permite pasar de trabajar offline a online sin perder ningún dato.
+La sincronización copia **TODOS** los datos (productos, ventas, clientes, recetas, etc.) entre tu base local (`dev.db`) y la base de datos de Turso en la nube. Podés hacerlo en **dos direcciones**:
+
+| Dirección | Comando | Qué hace | Cuándo usarla |
+|-----------|---------|----------|---------------|
+| **`push`** | `./scripts/sync-db.sh push` | Local → Turso (sobrescribe la nube) | Cuando trabajaste offline y querés subir tus datos a la nube. Es la operación típica la primera vez que activás modo ONLINE. |
+| **`pull`** | `./scripts/sync-db.sh pull` | Turso → Local (sobrescribe el local) | Cuando trabajaron otros usuarios en la nube y querés bajar esos datos a tu PC. También para restaurar tu local desde la nube si perdiste datos. |
+
+> 💡 **Backward-compat:** si ya venías usando el script anterior `sync-to-turso.sh` (o `.bat`), seguís pudiendo usarlo: es un *alias* que ejecuta `sync-db.sh push` (mismo comportamiento de siempre).
 
 ### ⚠️ Advertencias importantes
 
-> ⚠️ **ADVERTENCIA 1:** La sincronización **SOBREESCRIBE** los datos en Turso con los datos locales. Para cada tabla, primero **BORRA** todo lo que haya en Turso y luego **INSERTA** los datos locales. Si tenías datos diferentes en Turso, se van a perder.
+> ⚠️ **ADVERTENCIA 1 — Sobrescritura total:** Tanto `push` como `pull` **SOBREESCRIBEN** completamente los datos del destino. Para cada tabla, primero **BORRA** todo lo que haya del lado destino y luego **INSERTA** los datos del lado origen. Si tenías datos diferentes del lado destino, **se van a perder**.
 
-> ⚠️ **ADVERTENCIA 2:** La sincronización es **UNIDIRECCIONAL** (local → nube). No copia datos de la nube al local. Para ir de nube → local, hay que restaurar desde un backup o volver a sembrar la base de datos.
+> ⚠️ **ADVERTENCIA 2 — No es "merge":** La sincronización **no combina** datos. Es un reemplazo completo tabla por tabla. Si alguien carga una venta en la nube y vos hacés `push` desde tu local sin esa venta, la venta de la nube **se borra**.
 
-> ⚠️ **ADVERTENCIA 3:** **NO sincronices mientras otros usuarios estén usando activamente la base de datos en la nube.** El borrado e inserción de tablas puede causar errores en sus sesiones. Avisá a todos antes de sincronizar.
+> ⚠️ **ADVERTENCIA 3 — No sincronices en uso:** **NO sincronices mientras otros usuarios estén usando activamente la base de datos del lado destino.** El borrado e inserción de tablas puede causar errores en sus sesiones. Avisá a todos antes de sincronizar.
 
-> 💡 **Antes de sincronizar, el sistema crea automáticamente un backup de tu base local** en la carpeta `data/`. Si algo sale mal, podés restaurar desde ahí.
+> ⚠️ **ADVERTENCIA 4 — `pull` pide confirmación:** Como `pull` sobrescribe tu `dev.db` local, el script te pide confirmar escribiendo `si` antes de continuar. Para omitir la confirmación (p. ej. en scripts automatizados), usá `--yes` o `-y`.
+
+> 💡 **Antes de sincronizar, el sistema crea automáticamente un backup de tu `dev.db`** en la carpeta `data/`. Si algo sale mal, podés restaurar desde ahí (ver sección [💾 Backups](#-backups)).
 
 ### 📋 Pasos para sincronizar
 
 #### 1️⃣ Asegurarte de estar en modo ONLINE
 
-La sincronización solo funciona si el sistema está configurado para usar Turso. Verificá ejecutando:
+La sincronización **solo funciona si el sistema está configurado para usar Turso** (necesita las credenciales de la nube para conectarse). Cambiá a modo ONLINE ejecutando:
 
 - **Linux:**
   ```bash
@@ -531,15 +545,47 @@ La sincronización solo funciona si el sistema está configurado para usar Turso
   ```
 - **Windows:** hacé doble click en `switch-mode.bat` y elegí `online`.
 
-> ❌ Si ejecutás el script de sincronización estando en modo LOCAL, te va a mostrar un error pidiéndote que cambies a modo ONLINE primero.
+> ❌ Si ejecutás el script de sincronización estando en modo LOCAL, te va a mostrar un error pidiéndote que cambies a modo ONLINE primero. Esto es porque en modo LOCAL no hay credenciales de Turso disponibles.
+
+> 💡 **¿Por qué hay que estar en modo ONLINE incluso para `pull`?** Porque el script necesita leer las credenciales de Turso (`DATABASE_URL` + `DATABASE_AUTH_TOKEN`) del archivo `.env` activo, y esas credenciales solo están presentes cuando estás en modo ONLINE. Una vez terminada la sincronización podés volver a modo LOCAL con `./scripts/switch-mode.sh local` si querés seguir trabajando offline.
 
 #### 2️⃣ Ejecutar el script de sincronización
 
+##### 🔄 `push` — Subir datos del local a la nube
+
 - **Linux:**
   ```bash
-  ./scripts/sync-to-turso.sh
+  ./scripts/sync-db.sh push
   ```
-- **Windows:** hacé doble click en `scripts\sync-to-turso.bat`.
+- **Windows:** hacé doble click en `scripts\sync-db.bat` y elegí `push`, o desde CMD:
+  ```bat
+  scripts\sync-db.bat push
+  ```
+
+> ℹ️ También podés usar el nombre anterior: `./scripts/sync-to-turso.sh` (Linux) o `scripts\sync-to-turso.bat` (Windows). Hacen exactamente lo mismo (`sync-db push`).
+
+##### 🔄 `pull` — Bajar datos de la nube al local
+
+- **Linux:**
+  ```bash
+  ./scripts/sync-db.sh pull
+  ```
+  Te va a pedir confirmación:
+  ```
+  ⚠️  ADVERTENCIA: pull va a SOBREESCRIBIR tu dev.db local
+  con los datos que estén en Turso. Los datos locales actuales
+  se van a borrar (antes se hace un backup automático).
+
+  ¿Confirmás que querés sobrescribir el local con Turso? (escribí 'si' para confirmar):
+  ```
+  Escribí `si` y Enter para continuar. Cualquier otra cosa cancela la operación.
+
+- **Windows:** hacé doble click en `scripts\sync-db.bat` y elegí `pull`, o desde CMD:
+  ```bat
+  scripts\sync-db.bat pull
+  ```
+
+> ⚡ Para omitir la confirmación (automatización): `./scripts/sync-db.sh pull --yes` (Linux) o `scripts\sync-db.bat pull --yes` (Windows).
 
 #### 3️⃣ ¿Qué hace el script automáticamente?
 
@@ -547,48 +593,83 @@ El script ejecuta estos pasos sin que tengas que hacer nada:
 
 1. ✅ Verifica que Node.js esté instalado y que exista `dev.db`.
 2. ✅ Verifica que estés en modo ONLINE (que `DATABASE_URL` empiece con `libsql://` o `http`).
-3. ✅ Crea un **backup automático** de `dev.db` en la carpeta `data/` con el nombre `backup-YYYYMMDD-HHMMSS.db`.
-4. ✅ Lee todas las tablas de la base local (productos, ventas, clientes, etc.).
-5. ✅ Se conecta a Turso usando las credenciales de `.env`.
-6. ✅ Para cada tabla:
-   - Borra todos los registros existentes en Turso (`DELETE FROM tabla`).
-   - Inserta los registros locales (`INSERT INTO tabla ...`).
+3. ✅ Si es `pull`, pide confirmación interactiva (salvo `--yes`).
+4. ✅ Crea un **backup automático** de `dev.db` en la carpeta `data/` con el nombre `backup-YYYYMMDD-HHMMSS.db`.
+5. ✅ Lee todas las tablas de usuario del **origen** (excluye `sqlite_%`, `_prisma_%`, `__drizzle_%`).
+6. ✅ Si es `pull` y alguna tabla no existe en el destino, la **crea automáticamente** replicando el schema original (`CREATE TABLE` + índices). Así funciona aunque el `dev.db` esté vacío.
+7. ✅ Se conecta a Turso usando las credenciales de `.env`.
+8. ✅ Para cada tabla:
+   - Borra todos los registros existentes en el **destino** (`DELETE FROM tabla`).
+   - Inserta los registros del **origen** en lotes de 100 filas (`INSERT INTO tabla ...`).
    - Muestra el progreso tabla por tabla.
-7. ✅ Verifica el resultado contando los registros en Turso y comparándolos con el local.
+9. ✅ Verifica el resultado contando los registros de `ProductoTerminado` en el destino.
 
 #### 4️⃣ Revisar el resultado
 
 Al terminar, vas a ver un mensaje de este estilo:
 
 ```
-=== Sincronización SQLite → Turso ===
+============================================
+  🔄 Sincronización bidireccional Local ↔ Turso
+============================================
+  Dirección: push
+  (Local SQLite → Turso, sobrescribe la nube)
 
-[1/15] ProductoTerminado ........... 86 registros ✅
-[2/15] Venta ....................... 1.247 registros ✅
-[3/15] Cliente ..................... 312 registros ✅
-...
+  ✅ Paso 1: Node.js detectado (v20.11.1)
+  ✅ Paso 2: Base de datos local encontrada (dev.db)
+  ✅ Paso 3: .env en modo ONLINE (Turso)
+  ✅ Paso 4: Backup creado: data/backup-20260106-153012.db
 
-✅ Sincronización completada
-   - Tablas procesadas: 15
-   - Registros totales: 8.543
-   - Backup: data/backup-20260106-153012.db
+  🔄 Paso 5: Sincronizando tablas...
+  --------------------------------------------
+  📋 Tablas encontradas en origen (local): 67
+  ✅ ProductoTerminado: 86 filas
+  ✅ Venta: 1247 filas
+  ✅ Cliente: 312 filas
+  ...
+  --------------------------------------------
+  📊 Resumen: 67 sincronizadas, 0 omitidas, 0 fallidas, 8543 filas totales.
+
+  ✅ Sincronización push completada: 67/67 tablas.
+  📦 ProductoTerminado: 86 filas en Turso.
+  --------------------------------------------
+
+============================================
+  ✅ Sincronización completada con éxito
+  Backup disponible en: data/backup-20260106-153012.db
+============================================
 ```
 
-Si ves **`✅ Sincronización completada`**, todo salió bien. Ya podés usar el sistema en modo ONLINE con todos tus datos disponibles.
+Si ves **`✅ Sincronización completada con éxito`**, todo salió bien.
 
-> 🎉 Listo. Ahora tus datos están en la nube y podés acceder desde otras PCs configuradas con las mismas credenciales de Turso.
+> 🎉 **Después de `push`:** tus datos están en la nube y podés acceder desde otras PCs configuradas con las mismas credenciales de Turso.
+>
+> 🎉 **Después de `pull`:** tu `dev.db` local tiene los datos de la nube. Podés volver a modo LOCAL con `./scripts/switch-mode.sh local` y seguir trabajando offline con los datos actualizados.
 
 ### ❌ ¿Qué hacer si la sincronización falla?
 
 Si el script muestra un error, revisá en este orden:
 
 1. **Conexión a internet:** verificá que tengas internet navegando a cualquier página web.
-2. **Credenciales de Turso en `.env.online`:** abrí el archivo y confirmá que `DATABASE_URL` y `DATABASE_AUTH_TOKEN` sean correctos. Si copiaste el token mal, vas a ver un error `unauthorized`.
+2. **Credenciales de Turso en `.env`:** abrí el archivo `.env` (o `.env.online`) y confirmá que `DATABASE_URL` y `DATABASE_AUTH_TOKEN` (o `TURSO_AUTH_TOKEN`) sean correctos. Si copiaste el token mal, vas a ver un error `unauthorized`.
 3. **Modo activo:** ejecutá `switch-mode.sh online` de nuevo para asegurarte de que el `.env` activo sea el de Turso.
-4. **Base local válida:** verificá que `dev.db` exista y tenga datos (peso mayor a algunos KB).
-5. **Backup previo:** si la sincronización se cortó a mitad de camino, los datos en Turso pueden haber quedado incompletos. Restaurá tu base local desde el último backup en `data/` (ver sección [💾 Backups](#-backups)) y volvé a intentar.
+4. **Base local válida (para `push`):** verificá que `dev.db` exista y tenga datos (peso mayor a algunos KB).
+5. **Backup previo:** si la sincronización se cortó a mitad de camino, los datos del lado destino pueden haber quedado incompletos. Para `push`, reintentá la sincronización (es idempotente). Para `pull`, restaurá tu base local desde el último backup en `data/` (ver sección [💾 Backups](#-backups)) y volvé a intentar.
 
-> 💡 El script guarda el backup **antes** de hacer cualquier modificación, así que tu base local está siempre a salvo. Lo peor que puede pasar es que Turso quede con datos parciales, pero podés reintentar la sincronización las veces que haga falta.
+> 💡 El script guarda el backup **antes** de hacer cualquier modificación, así que tu base local está siempre a salvo. Lo peor que puede pasar es:
+> - En `push`: que Turso quede con datos parciales. Solución: reintentar `push`.
+> - En `pull`: que tu `dev.db` quede con datos parciales. Solución: restaurar desde el backup de `data/` y reintentar `pull`.
+
+### 🧪 Casos de uso típicos
+
+| Situación | Qué hacer |
+|-----------|-----------|
+| **Primera vez que activás modo ONLINE** (Turso vacío) | `sync-db.sh push` — subí todos tus datos locales a la nube. |
+| **Trabajaste offline varios días y querés subir novedades** | `sync-db.sh push` — sobrescribe la nube con tus datos locales. |
+| **Otra PC cargó datos en la nube y querés tenerlos en tu local** | `sync-db.sh pull` — bajá los datos de la nube a tu `dev.db`. |
+| **Se rompió tu `dev.db` y querés restaurarlo desde la nube** | `sync-db.sh pull` — restaurá desde el último estado de Turso. |
+| **Querés migrar a una PC nueva** | 1. Instalá el paquete en la PC nueva. 2. Configurá `.env.online` con las mismas credenciales. 3. `switch-mode.sh online`. 4. `sync-db.sh pull`. 5. `switch-mode.sh local`. |
+| **Hiciste cambios en la nube y en el local, y no sabés cuál prevalece** | 🚨 Decidí cuál es la "verdad" y hacé `push` o `pull` en esa dirección. **Nunca** intentes combinar manualmente: la sincronización es reemplazo total, no merge. |
 
 ---
 
@@ -598,7 +679,7 @@ Los backups son copias de seguridad de tu base de datos local. Son tu red de seg
 
 ### 🤖 Backups automáticos
 
-El sistema genera un backup **automáticamente** antes de cada sincronización a Turso. Estos backups se guardan en la carpeta `data/` con el formato:
+El sistema genera un backup **automáticamente** antes de cada sincronización (tanto `push` como `pull`). Estos backups se guardan en la carpeta `data/` con el formato:
 
 ```
 backup-YYYYMMDD-HHMMSS.db
@@ -725,6 +806,9 @@ Seguí estas recomendaciones para mantener tu sistema seguro:
 | **Los acentos se ven mal (Ã¡, Ã©, etc.)** | Es un problema de codificación. En Windows, ejecutá `chcp 65001` antes del script. Los scripts `.bat` ya lo hacen automáticamente. |
 | **Turso devuelve `unauthorized`** | El token en `.env.online` es incorrecto o está vencido. Generá uno nuevo con `turso db tokens create pastas-orlando`. |
 | **La sincronización se corta a mitad** | Probablemente sea un problema de conexión intermitente. Tu base local está a salva (hay backup previo). Volvé a ejecutar el script. |
+| **`pull` me pide confirmación y no puedo automatizarlo** | Usá `--yes` o `-y`: `./scripts/sync-db.sh pull --yes` (Linux) o `scripts\sync-db.bat pull --yes` (Windows). |
+| **`pull` falla con "no se pudo limpiar (¿falta tabla?)"** | El schema del `dev.db` local está desactualizado respecto al de Turso. El script intenta crear las tablas faltantes automáticamente; si aún así falla, borrá `dev.db` y volvé a intentarlo (el backup previo te protege). |
+| **Hice `pull` y perdí datos locales que no estaban en la nube** | 🚨 Es el comportamiento esperado (la sincronización es reemplazo total, no merge). Restaurá desde el backup en `data/` que se creó antes del `pull` y combiná manualmente lo que necesites. |
 
 ### 🆘 Si nada de esto funciona
 

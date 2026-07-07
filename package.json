@@ -24,7 +24,8 @@
     "backup:turso:list": "node scripts/backup-turso.mjs list",
     "backup:turso:download": "node scripts/backup-turso.mjs download",
     "backup:turso:dry-run": "node scripts/backup-turso.mjs --dry-run --verbose",
-    "backup:test": "node scripts/test-backup-turso.mjs"
+    "backup:test": "node scripts/test-backup-turso.mjs",
+    "sync:test": "node scripts/test-sync-db.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
