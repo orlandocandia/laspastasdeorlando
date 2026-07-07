@@ -196,7 +196,8 @@ interface SendNotificationParams {
   tipo: 'email' | 'whatsapp'
   destinatario: string
   asunto?: string
-  mensaje: string
+  /** Requerido si no se pasa id_plantilla. Si hay plantilla, se usa el mensaje de la plantilla. */
+  mensaje?: string
   variables?: Record<string, string>
   fecha_programada?: string | null
   metadata?: Record<string, unknown> | null
@@ -226,8 +227,8 @@ export async function enviarNotificacion(
     metadata,
   } = params
 
-  let mensajeFinal = mensaje
-  let asuntoFinal = asunto || null
+  let mensajeFinal: string = mensaje || ''
+  let asuntoFinal: string | null = asunto || null
 
   // Si hay plantilla, renderizar con variables
   if (id_plantilla) {
@@ -258,7 +259,7 @@ export async function enviarNotificacion(
     }
   } else if (variables && Object.keys(variables).length > 0) {
     // Si no hay plantilla pero hay variables, renderizar el mensaje directo
-    mensajeFinal = renderPlantilla(mensaje, variables)
+    mensajeFinal = renderPlantilla(mensaje || '', variables)
     if (asuntoFinal) {
       asuntoFinal = renderPlantilla(asuntoFinal, variables)
     }
@@ -403,25 +404,75 @@ export async function procesarAlertaStockBajo(): Promise<AlertaResultado> {
       ? JSON.parse(config.destinatarios)
       : []
 
+    // Buscar la plantilla personalizada de stock_bajo (si existe y está activa)
+    const plantillaStock = await db.plantillaNotificacion.findFirst({
+      where: { nombre: 'stock_bajo', activo: true },
+    })
+
     for (const dest of destinatarios) {
       const esEmail = dest.includes('@')
-      const itemsList = [
-        ...productosStockBajo.map(p => `- ${p.nombre}: ${p.stock_actual}/${p.stock_minimo}`),
-        ...materiasPrimasStockBajo.map(m => `- ${m.nombre}: ${m.stock_actual}/${m.stock_minimo}`),
-        ...insumosStockBajo.map(i => `- ${i.nombre}: ${i.stock_actual}/${i.stock_minimo}`),
-      ].join('\n')
 
-      const mensaje = `⚠️ ALERTA DE STOCK BAJO\n\n${totalItems} items con stock bajo:\n\n${itemsList}`
+      if (plantillaStock) {
+        // Usar la plantilla personalizada (una notificación por producto)
+        for (const p of productosStockBajo) {
+          const notifResult = await enviarNotificacion({
+            id_plantilla: plantillaStock.id,
+            tipo: esEmail ? 'email' : 'whatsapp',
+            destinatario: dest,
+            variables: {
+              producto: p.nombre,
+              stock_actual: String(p.stock_actual),
+              stock_minimo: String(p.stock_minimo),
+            },
+          })
+          if (notifResult.success) resultado.notificacionesEnviadas++
+        }
+        for (const m of materiasPrimasStockBajo) {
+          const notifResult = await enviarNotificacion({
+            id_plantilla: plantillaStock.id,
+            tipo: esEmail ? 'email' : 'whatsapp',
+            destinatario: dest,
+            variables: {
+              producto: m.nombre,
+              stock_actual: String(m.stock_actual),
+              stock_minimo: String(m.stock_minimo),
+            },
+          })
+          if (notifResult.success) resultado.notificacionesEnviadas++
+        }
+        for (const i of insumosStockBajo) {
+          const notifResult = await enviarNotificacion({
+            id_plantilla: plantillaStock.id,
+            tipo: esEmail ? 'email' : 'whatsapp',
+            destinatario: dest,
+            variables: {
+              producto: i.nombre,
+              stock_actual: String(i.stock_actual),
+              stock_minimo: String(i.stock_minimo),
+            },
+          })
+          if (notifResult.success) resultado.notificacionesEnviadas++
+        }
+      } else {
+        // Fallback: mensaje hardcoded (comportamiento anterior)
+        const itemsList = [
+          ...productosStockBajo.map(p => `- ${p.nombre}: ${p.stock_actual}/${p.stock_minimo}`),
+          ...materiasPrimasStockBajo.map(m => `- ${m.nombre}: ${m.stock_actual}/${m.stock_minimo}`),
+          ...insumosStockBajo.map(i => `- ${i.nombre}: ${i.stock_actual}/${i.stock_minimo}`),
+        ].join('\n')
 
-      const notifResult = await enviarNotificacion({
-        tipo: esEmail ? 'email' : 'whatsapp',
-        destinatario: dest,
-        asunto: 'Alerta de Stock Bajo - Pastas Orlando',
-        mensaje,
-      })
+        const mensaje = `⚠️ ALERTA DE STOCK BAJO\n\n${totalItems} items con stock bajo:\n\n${itemsList}`
 
-      if (notifResult.success) {
-        resultado.notificacionesEnviadas++
+        const notifResult = await enviarNotificacion({
+          tipo: esEmail ? 'email' : 'whatsapp',
+          destinatario: dest,
+          asunto: 'Alerta de Stock Bajo - Pastas Orlando',
+          mensaje,
+        })
+
+        if (notifResult.success) {
+          resultado.notificacionesEnviadas++
+        }
       }
     }
 
@@ -498,24 +549,50 @@ export async function procesarAlertaPedidoPendiente(): Promise<AlertaResultado> 
       ? JSON.parse(config.destinatarios)
       : []
 
+    // Buscar plantilla personalizada de recordatorio (si existe y está activa)
+    const plantillaRecordatorio = await db.plantillaNotificacion.findFirst({
+      where: { nombre: 'entrega_recordatorio', activo: true },
+    })
+
     for (const dest of destinatarios) {
       const esEmail = dest.includes('@')
-      const pedidosList = pedidosPendientes
-        .slice(0, 10)
-        .map(p => `- Pedido #${p.id}: ${p.cliente.razon_social || `${p.cliente.nombre} ${p.cliente.apellido}`} - ${p.estado.nombre_estado}`)
-        .join('\n')
 
-      const mensaje = `📋 ALERTA DE PEDIDOS PENDIENTES\n\n${pedidosPendientes.length} pedidos pendientes:\n\n${pedidosList}${pedidosPendientes.length > 10 ? '\n... y más' : ''}`
+      if (plantillaRecordatorio) {
+        // Usar la plantilla personalizada (una notificación por pedido)
+        for (const p of pedidosPendientes.slice(0, 10)) {
+          const clienteNombre = p.cliente.razon_social || `${p.cliente.nombre} ${p.cliente.apellido}`
+          const notifResult = await enviarNotificacion({
+            id_plantilla: plantillaRecordatorio.id,
+            tipo: esEmail ? 'email' : 'whatsapp',
+            destinatario: dest,
+            variables: {
+              cliente: clienteNombre,
+              pedido: String(p.id),
+              estado: p.estado?.nombre_estado || 'pendiente',
+              fecha: new Date(p.fecha_pedido).toLocaleDateString('es-AR'),
+            },
+          })
+          if (notifResult.success) resultado.notificacionesEnviadas++
+        }
+      } else {
+        // Fallback: mensaje hardcoded (comportamiento anterior)
+        const pedidosList = pedidosPendientes
+          .slice(0, 10)
+          .map(p => `- Pedido #${p.id}: ${p.cliente.razon_social || `${p.cliente.nombre} ${p.cliente.apellido}`} - ${p.estado.nombre_estado}`)
+          .join('\n')
 
-      const notifResult = await enviarNotificacion({
-        tipo: esEmail ? 'email' : 'whatsapp',
-        destinatario: dest,
-        asunto: 'Alerta de Pedidos Pendientes - Pastas Orlando',
-        mensaje,
-      })
+        const mensaje = `📋 ALERTA DE PEDIDOS PENDIENTES\n\n${pedidosPendientes.length} pedidos pendientes:\n\n${pedidosList}${pedidosPendientes.length > 10 ? '\n... y más' : ''}`
 
-      if (notifResult.success) {
-        resultado.notificacionesEnviadas++
+        const notifResult = await enviarNotificacion({
+          tipo: esEmail ? 'email' : 'whatsapp',
+          destinatario: dest,
+          asunto: 'Alerta de Pedidos Pendientes - Pastas Orlando',
+          mensaje,
+        })
+
+        if (notifResult.success) {
+          resultado.notificacionesEnviadas++
+        }
       }
     }
 

@@ -8,48 +8,51 @@ async function main() {
   // ============================================
   // PLANTILLAS DE NOTIFICACIÓN
   // ============================================
+  // Variables canónicas: {cliente} {pedido} {fecha} {total} {estado} {producto}
+  // También soporta el formato heredado {{variable}} por compatibilidad.
+  // El mensaje soporta Markdown básico: **negrita**, *cursiva*, # título, - lista.
 
   const plantillas = [
     {
       nombre: 'pedido_confirmado',
       canal: 'whatsapp',
       asunto: null,
-      mensaje: '✅ ¡Hola {{nombre}}! Tu pedido N° {{pedido_id}} fue confirmado. Te avisaremos cuando esté listo para la entrega.',
+      mensaje: '✅ ¡Hola *{cliente}*! Tu pedido *N° {pedido}* fue confirmado.\n\nTotal: {total}\nEstado: {estado}\n\nTe avisaremos cuando esté listo para la entrega.',
       activo: true,
     },
     {
       nombre: 'pedido_listo',
       canal: 'whatsapp',
       asunto: null,
-      mensaje: '🍝 ¡Hola {{nombre}}! Tu pedido N° {{pedido_id}} está listo. Coordinamos la entrega para {{fecha_entrega}}.',
+      mensaje: '🍝 ¡Hola *{cliente}*! Tu pedido *N° {pedido}* está listo.\n\nCoordinamos la entrega para el *{fecha}*.',
       activo: true,
     },
     {
       nombre: 'entrega_recordatorio',
       canal: 'whatsapp',
       asunto: null,
-      mensaje: '📦 Recordatorio: tu pedido se entregará hoy {{fecha}} en {{punto_encuentro}} de {{hora_desde}} a {{hora_hasta}}.',
+      mensaje: '📦 *Recordatorio de entrega*\n\nHola {cliente}, tu pedido *N° {pedido}* se entregará hoy {fecha}.\n\nEstado actual: {estado}',
       activo: true,
     },
     {
       nombre: 'entrega_completada',
       canal: 'whatsapp',
       asunto: null,
-      mensaje: '🎉 ¡Tu pedido fue entregado! Esperamos que lo disfrutes. Dejanos tu opinión en nuestra web.',
+      mensaje: '🎉 ¡Tu pedido *N° {pedido}* fue entregado!\n\nEsperamos que lo disfrutes, {cliente}. Dejanos tu opinión en nuestra web.',
       activo: true,
     },
     {
       nombre: 'stock_bajo',
       canal: 'email',
-      asunto: '⚠️ Alerta: Stock bajo en {{producto}}',
-      mensaje: 'El producto {{producto}} tiene solo {{stock_actual}} unidades restantes. Stock mínimo: {{stock_minimo}}.',
+      asunto: '⚠️ Alerta: Stock bajo en {producto}',
+      mensaje: '# ⚠️ Alerta de Stock Bajo\n\nEl producto **{producto}** tiene stock por debajo del mínimo.\n\n- Stock actual: **{stock_actual}**\n- Stock mínimo: **{stock_minimo}**\n\nRevisá el inventario y generá una orden de producción o compra.',
       activo: true,
     },
     {
       nombre: 'bienvenida',
       canal: 'email',
       asunto: 'Bienvenido a Pastas Orlando',
-      mensaje: '¡Hola {{nombre}}! Gracias por registrarte. Tenemos las mejores pastas artesanales para vos.',
+      mensaje: '# ¡Bienvenido, {cliente}! 🍝\n\nGracias por registrarte en **Pastas Orlando**.\n\nTenemos las mejores pastas artesanales para vos. Explorá nuestro catálogo y hacé tu primer pedido.\n\n— El equipo de Pastas Orlando',
       activo: true,
     },
   ];

@@ -28,6 +28,10 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import {
+  extraerVariables,
+  renderPlantilla,
+} from '@/lib/plantillas'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -54,32 +58,11 @@ interface SendResult {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function extraerVariables(template: string): string[] {
-  const regex = /\{\{(\w+)\}\}/g
-  const variables: string[] = []
-  let match: RegExpExecArray | null
-  while ((match = regex.exec(template)) !== null) {
-    const variable = match[1]
-    if (variable && !variables.includes(variable)) {
-      variables.push(variable)
-    }
-  }
-  return variables
-}
-
-function renderPlantilla(template: string, variables: Record<string, string>): string {
-  let rendered = template
-  for (const [key, value] of Object.entries(variables)) {
-    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g')
-    rendered = rendered.replace(regex, value || `{{${key}}}`)
-  }
-  return rendered
-}
-
 function highlightVariables(text: string): React.ReactNode[] {
-  const parts = text.split(/(\{\{\w+\}\})/g)
+  // Detecta tanto {var} como {{var}}
+  const parts = text.split(/(\{\{\w+\}\}|\{\w+\})/g)
   return parts.map((part, i) => {
-    if (/^\{\{\w+\}\}$/.test(part)) {
+    if (/^\{\{\w+\}\}$/.test(part) || /^\{\w+\}$/.test(part)) {
       return (
         <span key={i} className="bg-mostaza/20 text-marron font-semibold px-1 rounded">
           {part}
