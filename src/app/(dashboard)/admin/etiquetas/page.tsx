@@ -15,9 +15,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Search, Loader2, Tag, FileDown, Package } from 'lucide-react'
+import { Search, Loader2, Tag, FileDown, Package, FileText, Printer } from 'lucide-react'
 import JsBarcode from 'jsbarcode'
 import QRCode from 'qrcode'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import ThermalLabelGenerator from '@/components/admin/ThermalLabelGenerator'
 
 interface ProductoTerminado {
   id: number
@@ -106,7 +108,7 @@ function generateBarcodeDataUrl(code: string): string | null {
   }
 }
 
-export default function EtiquetasPage() {
+function EtiquetasA4Tab() {
   const [productos, setProductos] = useState<ProductoTerminado[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
@@ -829,6 +831,33 @@ export default function EtiquetasPage() {
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+export default function EtiquetasPage() {
+  const [tab, setTab] = useState('a4')
+
+  return (
+    <div className="space-y-4">
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="a4" className="gap-1.5">
+            <FileText className="h-4 w-4" />
+            Hoja A4 (24/70 por hoja)
+          </TabsTrigger>
+          <TabsTrigger value="thermal" className="gap-1.5">
+            <Printer className="h-4 w-4" />
+            Impresora Térmica (PDF/ZPL)
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="a4">
+          <EtiquetasA4Tab />
+        </TabsContent>
+        <TabsContent value="thermal">
+          <ThermalLabelGenerator />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
