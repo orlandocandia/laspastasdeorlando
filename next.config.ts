@@ -3,10 +3,15 @@ import type { NextConfig } from "next";
 // CRITICAL: Prisma reads DATABASE_URL_FILE from schema.prisma
 // We need DATABASE_URL_FILE to always be a valid file: URL for Prisma
 // The actual Turso connection URL is in DATABASE_URL (runtime) or TURSO_DATABASE_URL
+
+// Standalone build SOLO para el paquete local (self-hosting en PC).
+// En Vercel NO se usa standalone (causa problemas de build con 111 API routes).
+// El script build-local-package.sh setea BUILD_STANDALONE=1 antes de compilar.
+const isStandaloneBuild = process.env.BUILD_STANDALONE === '1'
+
 const nextConfig: NextConfig = {
-  // Standalone build — produces a self-contained server in .next/standalone
-  // that can be deployed without node_modules (only a minimal subset is bundled).
-  output: "standalone",
+  // output: 'standalone' solo cuando se construye el paquete local
+  ...(isStandaloneBuild ? { output: "standalone" as const } : {}),
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -15,12 +20,13 @@ const nextConfig: NextConfig = {
     ".space-z.ai",
     "localhost",
   ],
-  // Ensure Prisma's generated client + query engine binaries are included
-  // in the standalone output (they are loaded dynamically and would otherwise
-  // be missed by the import tracer).
-  outputFileTracingIncludes: {
-    '/': ['./node_modules/.prisma/**/*', './node_modules/@prisma/client/**/*', './prisma/**/*'],
-  },
+  // Tracing de Prisma solo necesario en standalone (paquete local).
+  // En Vercel, Prisma se resuelve via node_modules normal.
+  ...(isStandaloneBuild ? {
+    outputFileTracingIncludes: {
+      '/': ['./node_modules/.prisma/**/*', './node_modules/@prisma/client/**/*', './prisma/**/*'],
+    },
+  } : {}),
   env: {
     // Always set DATABASE_URL_FILE to a valid file: URL for Prisma validation
     // At runtime, the Turso adapter in db.ts handles the actual connection

@@ -59,7 +59,8 @@ echo ""
 
 # --- 3. Build standalone de Next.js ---
 echo "[3/7] Compilando Next.js (standalone)... esto puede tardar 3-5 minutos"
-DATABASE_URL=file:./dev.db npx next build
+# BUILD_STANDALONE=1 activa output:'standalone' en next.config.ts (solo para paquete local)
+BUILD_STANDALONE=1 DATABASE_URL=file:./dev.db npx next build
 if [ ! -d "$STANDALONE_DIR" ]; then
     echo "❌ El build no generó .next/standalone/. Verifique next.config.ts."
     exit 1
