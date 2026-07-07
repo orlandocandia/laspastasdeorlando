@@ -69,28 +69,11 @@ worklog.md
 # =============================================================================
 # Paquete local standalone (laspastasdeorlando-local/)
 # =============================================================================
-# La regla "local-*" de arriba ignora la carpeta por defecto; la re-incluimos
-# y luego excluimos solo los artefactos pesados generados por el build.
-!laspastasdeorlando-local/
+# El paquete completo (build + node_modules + dev.db) se distribuye via GitHub
+# Releases (tag v1.0.0-local), NO se commitea al repo.
+# Para reconstruirlo desde el codigo fuente, ejecutar: ./build-local-package.sh
+laspastasdeorlando-local/
 
-# Artefactos pesados del build standalone (NO se commitean — se generan con build-local-package.sh)
-laspastasdeorlando-local/node_modules/
-laspastasdeorlando-local/.next/
-laspastasdeorlando-local/public/
-laspastasdeorlando-local/prisma/
-laspastasdeorlando-local/server.js
-laspastasdeorlando-local/package.json
-laspastasdeorlando-local/dev.db
-laspastasdeorlando-local/.env
-
-# Backups de la base local
-laspastasdeorlando-local/data/*.db
-laspastasdeorlando-local/data/*.sql
-
-# Tarballs de distribucion (demasiado grandes para GitHub)
+# Tarballs de distribucion (generados por build-local-package.sh, distribuidos via Releases)
 laspastasdeorlando-local.tar.gz
 laspastasdeorlando-local.zip
-
-# Plantillas .env del paquete local (SI se commitean como ejemplos)
-!laspastasdeorlando-local/.env.local
-!laspastasdeorlando-local/.env.online
