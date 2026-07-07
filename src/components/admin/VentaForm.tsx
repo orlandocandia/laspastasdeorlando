@@ -840,14 +840,15 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
 
       {/* Barcode scanner input - only in create mode */}
       {!venta && (
-        <div className="mb-4">
+        <div>
+          <Label className="text-sm font-medium text-marron mb-1 block">Escanear / Buscar por código</Label>
           <div className="relative">
-            <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-            <input
+            <ScanBarcode className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
               ref={codigoBarrasRef}
               type="text"
               placeholder="Escanear código de barras o buscar producto..."
-              className="w-full pl-10 pr-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-mostaza focus:border-mostaza text-sm"
+              className="pl-10"
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
@@ -884,7 +885,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                   key={detalle.key}
                   className="p-3 rounded-lg border border-marron/10 bg-muted/20"
                 >
-                  <div className="grid grid-cols-2 lg:grid-cols-[3fr_1fr_1.2fr_1.3fr_44px] gap-3 items-start">
+                  <div className="grid grid-cols-2 lg:grid-cols-[3fr_1fr_1.2fr_1.3fr_44px] gap-3 items-center">
                     {/* Producto Terminado - full width on mobile */}
                     <div className="col-span-2 lg:col-span-1">
                       <Label htmlFor={`prod-${detalle.key}`} className="text-xs text-muted-foreground mb-1 block lg:sr-only">Producto Terminado</Label>
@@ -892,7 +893,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                         value={detalle.idProductoTerminado}
                         onValueChange={(v) => updateDetalle(detalle.key, 'idProductoTerminado', v)}
                       >
-                        <SelectTrigger className="h-9 w-full">
+                        <SelectTrigger className="h-9">
                           <SelectValue placeholder="Seleccionar..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -914,7 +915,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                         step="0.01"
                         min="0"
                         placeholder="0"
-                        className="h-9 w-full"
+                        className="h-9"
                         value={detalle.cantidad}
                         onChange={(e) => updateDetalle(detalle.key, 'cantidad', e.target.value)}
                       />
@@ -929,7 +930,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                         step="0.01"
                         min="0"
                         placeholder="0.00"
-                        className="h-9 w-full"
+                        className="h-9"
                         value={detalle.precioUnitario}
                         onChange={(e) => updateDetalle(detalle.key, 'precioUnitario', e.target.value)}
                       />
@@ -955,7 +956,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                       <Label htmlFor={`sub-${detalle.key}`} className="text-xs text-muted-foreground mb-1 block lg:sr-only">Subtotal</Label>
                       <Input
                         id={`sub-${detalle.key}`}
-                        className="h-9 w-full bg-muted/50 font-semibold"
+                        className="h-9 bg-muted/50 font-semibold"
                         value={detalle.subtotal ? formatCurrency(parseFloat(detalle.subtotal)) : ''}
                         disabled
                       />
