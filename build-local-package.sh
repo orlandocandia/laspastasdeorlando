@@ -68,13 +68,24 @@ fi
 echo "   ✅ Build standalone generado"
 echo ""
 
-# --- 4. Limpiar paquete anterior (preservar scripts, README, .env templates) ---
+# --- 4. Limpiar paquete anterior y copiar archivos fuente del template ---
 echo "[4/7] Preparando carpeta del paquete..."
+TEMPLATE_DIR="$ROOT_DIR/local-package-template"
+if [ ! -d "$TEMPLATE_DIR" ]; then
+    echo "❌ No se encontró local-package-template/. Es necesario para construir el paquete."
+    exit 1
+fi
+# Limpiar paquete anterior completamente
+rm -rf "$PKG_DIR"
 mkdir -p "$PKG_DIR/scripts" "$PKG_DIR/data"
-# Limpiar artefactos pesados previos
-rm -rf "$PKG_DIR/node_modules" "$PKG_DIR/.next" "$PKG_DIR/public" "$PKG_DIR/prisma"
-rm -f "$PKG_DIR/server.js" "$PKG_DIR/package.json" "$PKG_DIR/dev.db" "$PKG_DIR/.env"
-echo "   ✅ Carpeta lista"
+# Copiar archivos fuente del template (README, .env templates, scripts)
+cp "$TEMPLATE_DIR/README.md" "$PKG_DIR/"
+cp "$TEMPLATE_DIR/.env.local" "$PKG_DIR/"
+cp "$TEMPLATE_DIR/.env.online" "$PKG_DIR/"
+cp "$TEMPLATE_DIR/scripts/"* "$PKG_DIR/scripts/"
+touch "$PKG_DIR/data/.gitkeep"
+chmod +x "$PKG_DIR/scripts/"*.sh
+echo "   ✅ Archivos fuente copiados desde local-package-template/"
 echo ""
 
 # --- 5. Copiar artefactos del build standalone ---
