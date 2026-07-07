@@ -111,3 +111,12 @@ public/images/uploads/usuarios/*
 !public/images/uploads/usuarios/.gitkeep
 public/images/uploads/personas/*
 !public/images/uploads/personas/.gitkeep
+
+# =============================================================================
+# Backups locales (generados por scripts/backup-turso.mjs con --no-upload o --local)
+# =============================================================================
+*.sql.gz
+*.sql
+!prisma/schema.sql
+!prisma/seeds/*.sql
+backups/

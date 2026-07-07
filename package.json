@@ -19,7 +19,12 @@
     "migrar:imagenes": "node scripts/migrar-imagenes-a-local.mjs",
     "migrar:imagenes:dry-run": "node scripts/migrar-imagenes-a-local.mjs --dry-run",
     "migrar:imagenes:no-download": "node scripts/migrar-imagenes-a-local.mjs --no-download",
-    "migrar:imagenes:verbose": "node scripts/migrar-imagenes-a-local.mjs --verbose"
+    "migrar:imagenes:verbose": "node scripts/migrar-imagenes-a-local.mjs --verbose",
+    "backup:turso": "node scripts/backup-turso.mjs",
+    "backup:turso:list": "node scripts/backup-turso.mjs list",
+    "backup:turso:download": "node scripts/backup-turso.mjs download",
+    "backup:turso:dry-run": "node scripts/backup-turso.mjs --dry-run --verbose",
+    "backup:test": "node scripts/test-backup-turso.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
