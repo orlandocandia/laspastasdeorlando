@@ -29,6 +29,11 @@ const SUGGESTED_QUESTIONS = [
   '¿Cómo funcionan las promociones en la tienda?',
   '¿Qué significa el color del margen?',
   '¿Cómo colapso el menú lateral?',
+  '¿Cómo imprimo etiquetas térmicas?',
+  '¿Cómo personalizo las plantillas de notificación?',
+  '¿Cómo filtro un reporte por fecha y cliente?',
+  '¿Puedo ver la contraseña mientras la escribo?',
+  '¿Por qué no veo todos los productos en el buscador de promociones?',
 ]
 
 // ─── Simple Markdown Renderer ────────────────────────────────────────────────

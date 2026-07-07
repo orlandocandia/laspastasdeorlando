@@ -132,6 +132,7 @@ MÓDULOS DEL SISTEMA:
 21. PROMOCIONES (/admin/promociones)
 - Descuentos y ofertas para productos terminados: porcentual (%), monto fijo ($), 2x1 (50% sobre el total) y tiempo limitado (con vigencia).
 - Se eligen los productos participantes y la fecha de inicio/fin.
+- IMPORTANTE: el BUSCADOR DE PRODUCTOS dentro de Promociones muestra TODOS los productos terminados (activos, inactivos, visibles y no visibles en la landing, con o sin categoría). La búsqueda encuentra coincidencias por NOMBRE, CÓDIGO y CÓDIGO DE BARRAS. Se cargan hasta 500 productos en una sola consulta.
 - Las promociones ACTIVAS y dentro de vigencia se muestran AUTOMÁTICAMENTE en la tienda pública (landing page): badge rojo "🔥 XX%" en la tarjeta, precio original tachado y precio final en rojo.
 - En la landing hay un filtro "Solo Ofertas" (mutuamente excluyente con los filtros de harina) que muestra solo productos con promoción y oculta las familias sin ofertas.
 - El endpoint /api/promociones/public alimenta las tarjetas y el filtro.
@@ -164,6 +165,41 @@ MÓDULOS DEL SISTEMA:
 - Al navegar a una página, la sección que la contiene se abre automáticamente, pero después se puede cerrar manualmente con un clic.
 - El botón SidebarTrigger (icono de menú en la barra superior) oculta/muestra el menú completo.
 - El panel de Ayuda (botón "Ayuda" en la barra superior) tiene un buscador que filtra secciones por palabra clave.
+
+25. IMPRESIÓN TÉRMICA DE ETIQUETAS (/admin/etiquetas)
+- Generación de etiquetas para impresoras de rollo (Zebra, Brother, etc.) en dos formatos: PDF (una etiqueta por página, tamaño exacto en mm) y ZPL (código nativo Zebra Programming Language para USB/Bluetooth/red).
+- 6 tamaños predefinidos: 40x30, 50x30, 60x40, 70x40, 80x50, 100x60 mm.
+- Campos configurables: nombre, precio, peso, código de barras (EAN-13 o CODE128), fecha elaboración, fecha vencimiento, categoría.
+- Vista previa a escala real antes de generar.
+- Impresión por LOTE: múltiples productos con cantidad de copias cada uno.
+- Generación 100% client-side (@react-pdf/renderer + jsbarcode), no carga al servidor.
+- Botones: Descargar PDF, Descargar .zpl, Copiar al portapapeles.
+
+26. PLANTILLAS DE NOTIFICACIONES (/admin/notificaciones/plantillas)
+- Editor de plantillas con MARKDOWN para email y WhatsApp.
+- Variables canónicas entre llaves: {cliente}, {pedido}, {fecha}, {total}, {estado}, {producto} (y {stock_actual}, {stock_minimo} para alertas de stock). Compatible con {var} y {{var}}.
+- Panel lateral de variables: click para insertar en la posición del cursor; las variables presentes se marcan con ✓.
+- Previsualización con datos de ejemplo (estilo email y estilo WhatsApp).
+- Envío de PRUEBA a destinatario real antes de activar.
+- Activar/desactivar plantillas desde la lista sin borrarlas.
+- Las alertas automáticas (stock bajo, recordatorio de entrega) usan las plantillas guardadas; si están desactivadas o no existen, usan un mensaje fallback hardcoded.
+
+27. REPORTES CON FILTROS PERSONALIZADOS (/admin/reportes)
+- Componente FiltrosReportes reutilizable: filtro de PERÍODO con presets (Hoy, Ayer, Últimos 7 días, Últimos 30 días, Este mes, Mes anterior, Este año, Personalizado) + filtros específicos por reporte.
+- Reporte de VENTAS: filtros por producto, cliente, vendedor + detalle de ventas + ranking por vendedor.
+- Reporte de STOCK: filtros por categoría de PT, categoría de MP, proveedor, "solo stock bajo".
+- Reporte de PRODUCCIÓN: filtro por producto + detalle de producciones.
+- COMPRAS y FINANZAS: filtro de período compartido.
+- Exportación a Excel/CSV/PDF respeta los filtros aplicados.
+- Endpoint /api/reportes/filtros-opciones: devuelve todas las opciones de selectores en una sola consulta.
+- Los filtros se aplican del lado del servidor (la consulta a la BD ya filtra), así el panel es rápido incluso con períodos largos.
+
+28. ACCESO Y CONTRASEÑAS (visibilidad de contraseña)
+- En la pantalla de LOGIN (/admin/login) y en el formulario de USUARIOS (crear/editar), el campo de contraseña tiene un TOGGLE DE VISIBILIDAD (ícono de ojo).
+- Por defecto la contraseña se oculta; al clic se muestra como texto plano; otro clic la vuelve a ocultar.
+- Accesible: aria-label dinámico (Mostrar/Ocultar contraseña), type="button", focus-visible ring.
+- Combinar con 2FA (Security → Mi 2FA) para cuentas de administrador.
+- Ver también: logs de acceso, sesiones activas, roles y permisos en /admin/seguridad.
 
 FLUJO DE TRABAJO RECOMENDADO:
 1. Cargar materias primas e insumos con su stock
@@ -614,6 +650,128 @@ El menú lateral agrupa los módulos en **secciones colapsables**: Stock & Produ
 
 🔍 **Buscador de ayuda:** el botón "Ayuda" (barra superior) abre un panel con buscador que filtra las secciones por palabra clave.`,
   },
+  {
+    keywords: ['etiqueta', 'etiquetas', 'impresora térmica', 'zebra', 'zpl', 'codigo zpl', 'rollo', 'etiqueta pdf', 'termica', 'termicas', 'imprimir etiqueta', 'etiqueta producto'],
+    response: `🏷️ **Impresión Térmica de Etiquetas** (menú: Configuración → Etiquetas)
+
+Permite generar etiquetas para impresoras de rollo (Zebra, Brother, etc.) directamente desde el panel.
+
+**Dos formatos de salida:**
+- **PDF**: una etiqueta por página, tamaño exacto en mm. Listo para imprimir desde cualquier PC.
+- **ZPL**: código nativo Zebra Programming Language para envío directo por USB/Bluetooth/red.
+
+**6 tamaños predefinidos:** 40×30, 50×30, 60×40, 70×40, 80×50, 100×60 mm.
+
+**Campos configurables** (elegís cuáles incluir):
+- Nombre, precio, peso, código de barras (EAN-13 o CODE128), fecha elaboración, fecha vencimiento, categoría.
+
+**Cómo generar (paso a paso):**
+1. Ir a **Configuración → Etiquetas** (o desde la fila de un producto)
+2. Elegir el tamaño según el rollo cargado en la impresora
+3. Marcar los campos a incluir
+4. Agregar productos al lote (uno o varios, con cantidad de copias cada uno)
+5. Revisar la **vista previa a escala real**
+6. Elegir **Descargar PDF** (imprimir desde cualquier PC) o **Descargar ZPL / Copiar al portapapeles** (envío directo a Zebra)
+
+💡 La generación es **100 % client-side** (no carga al servidor). Usa \`@react-pdf/renderer\` para PDF y \`jsbarcode\` para los códigos de barras.`,
+  },
+  {
+    keywords: ['plantilla', 'plantillas', 'plantilla notificación', 'plantilla notificacion', 'plantilla email', 'plantilla whatsapp', 'markdown notificación', 'variable plantilla', 'personalizar mensaje', 'personalizar notificación', 'editar plantilla'],
+    response: `🔔 **Plantillas de Notificaciones** (menú: Notificaciones → Plantillas)
+
+Permiten personalizar los mensajes que el sistema envía por email y WhatsApp, con **Markdown** y **variables canónicas**.
+
+**Características del editor:**
+- Toggle **Editar / Vista Markdown** (renderiza títulos, negritas, listas)
+- **Panel de variables** con click para insertar en la posición del cursor
+- Variables detectadas marcadas con ✓
+- Previsualización con datos de ejemplo (estilo email y WhatsApp)
+- Envío de **prueba** a un destinatario real
+- Activar/desactivar plantillas desde la lista sin borrarlas
+
+**Variables canónicas** (entre llaves):
+\`{cliente}\`, \`{pedido}\`, \`{fecha}\`, \`{total}\`, \`{estado}\`, \`{producto}\`
+Para alertas de stock además: \`{stock_actual}\`, \`{stock_minimo}\`.
+Compatible con \`{var}\` y \`{{var}}\`.
+
+**Cómo personalizar (paso a paso):**
+1. Ir a **Notificaciones → Plantillas**
+2. Clic en la plantilla a editar (stock bajo, recordatorio de entrega, etc.)
+3. Escribir el mensaje en Markdown, insertando variables desde el panel lateral
+4. Previsualizar (vista Markdown y vista con datos de ejemplo)
+5. Opcional: enviar prueba a un destinatario real
+6. Guardar y **activar**
+
+⚠️ Si una plantilla está desactivada o no existe, el sistema usa un mensaje predeterminado (fallback). Desactivar nunca rompe el envío.`,
+  },
+  {
+    keywords: ['filtro reporte', 'filtros reporte', 'filtro personalizado', 'periodo reporte', 'período reporte', 'filtrar ventas', 'filtrar stock', 'filtrar produccion', 'filtrar producción', 'reporte por fecha', 'reporte por cliente', 'reporte por vendedor', 'reporte por producto', 'presets reporte'],
+    response: `📊 **Filtros Personalizados en Reportes** (menú: Auditoría & Reportes → Reportes Generales)
+
+Los reportes ahora incluyen un componente de filtros potente para acotar la información.
+
+**Filtro de período con presets** (un clic):
+Hoy, Ayer, Últimos 7 días, Últimos 30 días, Este mes, Mes anterior, Este año, **Personalizado** (calendarios desde/hasta).
+
+**Filtros por reporte:**
+- **Ventas**: producto, cliente, vendedor + detalle + ranking por vendedor
+- **Stock**: categoría de PT, categoría de MP, proveedor, "solo stock bajo"
+- **Producción**: producto + detalle de producciones
+- **Compras / Finanzas**: filtro de período compartido
+
+**Cómo usarlos (paso a paso):**
+1. Ir a **Reportes Generales** y elegir la pestaña (Ventas, Stock, Producción, etc.)
+2. Aplicar el **período** (preset o personalizado)
+3. Aplicar **filtros específicos** (producto, cliente, vendedor, categoría, proveedor) — combinables
+4. Ver resultados y **exportar** a Excel/CSV/PDF (la exportación respeta los filtros)
+
+💡 Los filtros se aplican **del lado del servidor** en la consulta a la base de datos, así el panel es rápido incluso con períodos largos. El endpoint \`/api/reportes/filtros-opciones\` carga todas las opciones de los selectores en una sola consulta.`,
+  },
+  {
+    keywords: ['ver contraseña', 'mostrar contraseña', 'ojo contraseña', 'toggle contraseña', 'ocultar contraseña', 'ver password', 'no veo la contraseña', 'contraseña login', 'contraseña usuario', 'ícono ojo', 'icono ojo'],
+    response: `👁️ **Visibilidad de Contraseña**
+
+En la pantalla de **login** y en el formulario de **creación/edición de usuarios**, el campo de contraseña tiene un **toggle de visibilidad** (ícono de ojo) que te deja ver el texto que estás escribiendo.
+
+**Cómo funciona:**
+- Por defecto la contraseña se **oculta** (puntos)
+- Clic en el ojo → se **muestra** como texto plano
+- Otro clic → se vuelve a **ocultar**
+- \`aria-label\` dinámico (Mostrar/Ocultar contraseña) para lectores de pantalla
+
+**Dónde aparece:**
+- **Login** (\`/admin/login\`): campo de contraseña, ojo a la derecha
+- **Usuarios** (Personas → Usuarios → Nuevo/Editar): en el campo de contraseña y en el de confirmación
+
+💡 **Tip móvil:** los teclados predictivos suelen autocorregir o capitalizar la primera letra. Mostrar la contraseña momentáneamente ayuda a detectar estos problemas antes de quedar bloqueado por intentos fallidos.
+
+🔐 Para más seguridad, activá **2FA** en Seguridad → Mi 2FA (recomendado para administradores).`,
+  },
+  {
+    keywords: ['buscador promociones', 'buscar producto promocion', 'no aparecen todos los productos', 'productos inactivos promocion', 'producto sin categoria promocion', 'producto no visible promocion', 'promocion todos los productos', 'buscador no muestra', 'codigo de barras promocion'],
+    response: `🔍 **Buscador de Promociones** (muestra TODOS los productos)
+
+Al crear o editar una promoción, el selector de productos ahora lista **TODOS** los productos terminados, sin filtrar por estado, visibilidad o categoría.
+
+**Qué incluye:**
+- Productos **activos** e **inactivos**
+- Productos **visibles** y **no visibles** en la landing
+- Productos **con y sin categoría**
+- Productos **con y sin código de barras**
+
+**Búsqueda:** encuentra coincidencias por **nombre**, **código** y **código de barras**. Se cargan hasta 500 productos en una sola consulta.
+
+**Cómo usarlo:**
+1. Ir a **Ventas → Promociones → Nueva Promoción** (o editar una existente)
+2. En el campo de búsqueda, tipear nombre, código o código de barras
+3. Seleccionar los productos participantes
+4. Completar tipo de descuento, valor y vigencia
+5. Activar y guardar
+
+⚠️ **Antes** el buscador solo mostraba productos activos (filtraba con \`?estado=true\`), lo que ocultaba inactivos, no visibles y sin categoría. **Ahora está corregido** y muestra todos.
+
+💡 Diferencia clave: las **promociones** son públicas (se ven en la tienda), los **descuentos por volumen** son internos del panel.`,
+  },
 ]
 
 // ─── FAQ Matching Engine ─────────────────────────────────────────────────────
@@ -665,11 +823,14 @@ function getFallbackResponse(userMessage: string): string {
 - **Stock**: movimientos, alertas, carga manual
 - **Pedidos**: de clientes y a proveedores
 - **Presupuestos**: crear y convertir en pedidos
-- **Promociones**: ofertas, 2x1, cómo se ven en la tienda pública
+- **Promociones**: ofertas, 2x1, cómo se ven en la tienda pública, buscador que muestra todos los productos
 - **Descuentos por Volumen**: descuentos escalonados por cantidad
 - **Margen de Ganancia**: cómo se calcula y código de colores
 - **Menú lateral**: colapsar/expandir secciones
-- **Reportes**: generar y exportar
+- **Reportes**: generar, exportar y filtros personalizados por período/cliente/vendedor/producto
+- **Etiquetas térmicas**: PDF y ZPL para impresoras de rollo
+- **Plantillas de notificaciones**: Markdown y variables canónicas
+- **Visibilidad de contraseña**: ojo en login y usuarios
 
 Probá preguntar sobre alguno de estos temas y te guío paso a paso. 📋`
 }

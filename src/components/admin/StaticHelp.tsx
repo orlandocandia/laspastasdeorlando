@@ -1918,6 +1918,13 @@ const helpSections: HelpSection[] = [
           precio tachado y filtro “Solo Ofertas”). Esto las diferencia de los descuentos por volumen,
           que son internos del panel.
         </InfoBox>
+
+        <InfoBox type="tip">
+          El <strong>buscador de productos</strong> al crear/editar una promoción muestra <strong>TODOS</strong>{' '}
+          los productos terminados (activos, inactivos, visibles y no visibles en la landing, con o sin
+          categoría). La búsqueda encuentra coincidencias por <strong>nombre</strong>, <strong>código</strong>{' '}
+          y <strong>código de barras</strong>. Ver sección <ModuleRef name="Novedades y Mejoras Recientes" />.
+        </InfoBox>
       </div>
     ),
   },
@@ -2292,6 +2299,534 @@ const helpSections: HelpSection[] = [
             </li>
           </ul>
         </div>
+      </div>
+    ),
+  },
+
+  // ─── 15. Impresión Térmica de Etiquetas ──────────────────────────────
+  {
+    id: 'etiquetas-termicas',
+    title: 'Impresión Térmica de Etiquetas',
+    iconComponent: FileText,
+    summary: 'Generación de etiquetas para impresoras de rollo (Zebra, Brother) en formato PDF y ZPL, con tamaños configurables y vista previa a escala real.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El módulo de <strong className="text-marron">Impresión Térmica</strong> permite generar etiquetas
+          para impresoras de rollo (Zebra, Brother, etc.) directamente desde el panel, sin necesidad de
+          software de terceros. Se generan dos formatos: <strong>PDF</strong> (una etiqueta por página,
+          listo para imprimir desde cualquier PC) y <strong>ZPL</strong> (código nativo Zebra Programming
+          Language para envío directo por USB/Bluetooth/red).
+        </p>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <FileText className="h-4 w-4 text-mostaza" />
+            Formatos de salida
+          </h4>
+          <div className="space-y-2">
+            <div className="flex items-start gap-3 bg-oliva/5 border border-oliva/15 rounded-lg p-3">
+              <Badge className="bg-oliva/10 text-oliva">PDF</Badge>
+              <div>
+                <p className="font-medium text-sm">PDF (una etiqueta por página)</p>
+                <p className="text-xs text-muted-foreground">
+                  Tamaño exacto en milímetros, listo para imprimir desde cualquier PC con lector de PDF.
+                  Ideal cuando no se dispone de la impresora térmica conectada o se quiere imprimir en otra máquina.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-marron/5 border border-marron/15 rounded-lg p-3">
+              <Badge className="bg-marron/10 text-marron">ZPL</Badge>
+              <div>
+                <p className="font-medium text-sm">ZPL (Zebra Programming Language)</p>
+                <p className="text-xs text-muted-foreground">
+                  Código nativo para impresoras Zebra. Se envía directamente por USB, Bluetooth o red.
+                  Incluye comandos <code className="bg-marron/10 px-1 rounded text-xs">^XA</code>,{' '}
+                  <code className="bg-marron/10 px-1 rounded text-xs">^PW</code>,{' '}
+                  <code className="bg-marron/10 px-1 rounded text-xs">^FO</code>,{' '}
+                  <code className="bg-marron/10 px-1 rounded text-xs">^FD</code> y generación de código
+                  de barras con <code className="bg-marron/10 px-1 rounded text-xs">^BY/^BE</code> (EAN-13)
+                  o <code className="bg-marron/10 px-1 rounded text-xs">^BC</code> (CODE128).
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Layers className="h-4 w-4 text-mostaza" />
+            Tamaños predefinidos (6)
+          </h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {['40 × 30 mm', '50 × 30 mm', '60 × 40 mm', '70 × 40 mm', '80 × 50 mm', '100 × 60 mm'].map((s) => (
+              <div key={s} className="bg-crema/60 border border-mostaza/10 rounded-lg p-2 text-center">
+                <p className="text-sm font-medium text-marron">{s}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Settings className="h-4 w-4 text-mostaza" />
+            Campos configurables
+          </h4>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Nombre del producto</strong> (texto principal)</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Precio</strong> (con formato de moneda)</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Peso</strong> (para productos por kilo)</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Código de barras</strong> (EAN-13 o CODE128 según corresponda)</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Fecha de elaboración</strong> y <strong>fecha de vencimiento</strong></span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Categoría</strong> del producto</span></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
+            <ArrowRight className="h-4 w-4 text-mostaza" />
+            Cómo generar etiquetas (paso a paso)
+          </h4>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <StepCircle n={1} />
+              <div>
+                <p className="font-medium text-sm">Abrir el módulo</p>
+                <p className="text-xs text-muted-foreground">Menú lateral → <strong>Configuración → Etiquetas</strong> (o desde la fila de un producto terminado).</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={2} />
+              <div>
+                <p className="font-medium text-sm">Elegir el tamaño de etiqueta</p>
+                <p className="text-xs text-muted-foreground">Seleccioná uno de los 6 tamaños predefinidos según el rollo que tengas cargado en la impresora.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={3} />
+              <div>
+                <p className="font-medium text-sm">Marcar los campos a incluir</p>
+                <p className="text-xs text-muted-foreground">Activá qué información aparece en la etiqueta: nombre, precio, peso, código de barras, fechas, categoría.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={4} />
+              <div>
+                <p className="font-medium text-sm">Agregar productos al lote</p>
+                <p className="text-xs text-muted-foreground">Podés imprimir una etiqueta sola o un lote: agregá varios productos indicando la cantidad de copias de cada uno.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={5} />
+              <div>
+                <p className="font-medium text-sm">Vista previa y generar</p>
+                <p className="text-xs text-muted-foreground">
+                  Revisá la vista previa a escala real. Luego elegí <strong>Descargar PDF</strong> (para imprimir desde cualquier PC)
+                  o <strong>Descargar ZPL</strong> / <strong>Copiar al portapapeles</strong> (para envío directo a la impresora Zebra).
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <InfoBox type="tip">
+          La generación es <strong>100 % client-side</strong> (no carga al servidor): usa{' '}
+          <code className="bg-marron/10 px-1 rounded text-xs">@react-pdf/renderer</code> para PDF y{' '}
+          <code className="bg-marron/10 px-1 rounded text-xs">jsbarcode</code> para los códigos de barras.
+        </InfoBox>
+
+        <InfoBox type="info">
+          Para enviar ZPL por USB a una Zebra podés usar herramientas como <strong>Zebra Setup Utility</strong>,
+          <strong> ZebraPrinterUtils</strong> o un script de Python con <code className="bg-marron/10 px-1 rounded text-xs">pyusb</code>.
+          Por Bluetooth o red, copiá el código y pegalo en el puerto configurado de la impresora.
+        </InfoBox>
+      </div>
+    ),
+  },
+
+  // ─── 16. Plantillas de Notificaciones ────────────────────────────────
+  {
+    id: 'plantillas-notificaciones',
+    title: 'Plantillas de Notificaciones',
+    iconComponent: Bell,
+    summary: 'Editor de plantillas con Markdown y variables canónicas ({cliente}, {pedido}, {total}), vista previa y envío de prueba.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El módulo de <strong className="text-marron">Plantillas de Notificaciones</strong> te permite
+          personalizar los mensajes que el sistema envía automáticamente (alertas de stock bajo,
+          recordatorios de entrega, etc.) o manualmente por email y WhatsApp. Las plantillas soportan{' '}
+          <strong>Markdown</strong> y <strong>variables canónicas</strong> que se reemplazan con datos
+          reales al enviar.
+        </p>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Bell className="h-4 w-4 text-mostaza" />
+            Características del editor
+          </h4>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Editor con toggle Editar / Vista Markdown:</strong> escribí en Markdown y previsualizá cómo se renderiza (títulos, negritas, listas, etc.).</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Panel de variables canónicas:</strong> lista de todas las variables disponibles con su descripción y contexto de uso.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Click para insertar:</strong> al hacer clic en una variable del panel, se inserta en la posición del cursor del editor.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Variables detectadas:</strong> las variables presentes en la plantilla se marcan con ✓ en el panel.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Previsualización con datos de ejemplo:</strong> vista previa estilo email y estilo WhatsApp con datos simulados.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Envío de prueba:</strong> enviá una notificación de prueba a un destinatario real antes de activar la plantilla.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Activar/desactivar:</strong> desde la lista de plantillas, prendé o apagá cada una sin borrarla.</span></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Layers className="h-4 w-4 text-mostaza" />
+            Variables canónicas
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Las variables se escriben entre llaves, ej. <code className="bg-marron/10 px-1 rounded text-xs">{'{cliente}'}</code>.
+            El sistema soporta tanto <code className="bg-marron/10 px-1 rounded text-xs">{'{var}'}</code> como{' '}
+            <code className="bg-marron/10 px-1 rounded text-xs">{'{{var}}'}</code> por compatibilidad.
+          </p>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {[
+              '{cliente}', '{pedido}', '{fecha}', '{total}', '{estado}', '{producto}',
+            ].map((v) => (
+              <div key={v} className="bg-crema/60 border border-mostaza/10 rounded-lg p-2 text-center">
+                <code className="text-xs text-marron">{v}</code>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Las alertas de stock bajo además exponen <code className="bg-marron/10 px-1 rounded text-xs">{'{stock_actual}'}</code>{' '}
+            y <code className="bg-marron/10 px-1 rounded text-xs">{'{stock_minimo}'}</code>.
+          </p>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
+            <ArrowRight className="h-4 w-4 text-mostaza" />
+            Cómo personalizar una plantilla (paso a paso)
+          </h4>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <StepCircle n={1} />
+              <div>
+                <p className="font-medium text-sm">Abrir el módulo</p>
+                <p className="text-xs text-muted-foreground">Menú lateral → <strong>Notificaciones → Plantillas</strong>.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={2} />
+              <div>
+                <p className="font-medium text-sm">Elegir la plantilla a editar</p>
+                <p className="text-xs text-muted-foreground">
+                  El sistema incluye plantillas predefinidas (stock bajo, recordatorio de entrega, etc.).
+                  Hacé clic en la plantilla que querés personalizar.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={3} />
+              <div>
+                <p className="font-medium text-sm">Editar el contenido en Markdown</p>
+                <p className="text-xs text-muted-foreground">
+                  Escribí el mensaje usando Markdown para formato. Insertá variables desde el panel lateral
+                  con un clic, o tipealas a mano entre llaves.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={4} />
+              <div>
+                <p className="font-medium text-sm">Previsualizar</p>
+                <p className="text-xs text-muted-foreground">
+                  Cambiá a la vista de Markdown para ver el renderizado, y a la previsualización con datos
+                  de ejemplo para ver cómo llegaría al destinatario (estilo email y WhatsApp).
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={5} />
+              <div>
+                <p className="font-medium text-sm">Enviar prueba y activar</p>
+                <p className="text-xs text-muted-foreground">
+                  Opcional: enviá una prueba a un destinatario real. Cuando estés conforme, guardá y activá
+                  la plantilla. A partir de ese momento, las alertas automáticas la usarán.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <InfoBox type="info">
+          Si una plantilla está <strong>desactivada</strong> o no existe, el sistema usa un mensaje
+          predeterminado (<em>fallback</em>) hardcoded. Por eso, desactivar una plantilla nunca rompe el
+          envío de notificaciones.
+        </InfoBox>
+
+        <InfoBox type="tip">
+          Combiná plantillas personalizadas con el módulo de <ModuleRef name="Reportes" /> para enviar
+          resúmenes periódicos a clientes o proveedores con un toque profesional.
+        </InfoBox>
+      </div>
+    ),
+  },
+
+  // ─── 17. Filtros Personalizados en Reportes ──────────────────────────
+  {
+    id: 'filtros-reportes',
+    title: 'Filtros Personalizados en Reportes',
+    iconComponent: BarChart3,
+    summary: 'Filtros por período con presets, producto, cliente, vendedor, categoría y proveedor en reportes de Ventas, Stock y Producción.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          Los <strong className="text-marron">Reportes</strong> ahora incluyen un componente de filtros
+          reutilizable y potente que te permite acotar la información por <strong>período</strong> (con
+          presets rápidos), <strong>producto</strong>, <strong>cliente</strong>, <strong>vendedor</strong>,
+          <strong> categoría</strong> y <strong>proveedor</strong>, según el reporte. La exportación a
+          Excel/CSV/PDF respeta los filtros aplicados.
+        </p>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Clock className="h-4 w-4 text-mostaza" />
+            Filtro de período con presets
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Todos los reportes comparten un selector de período con presets de un clic:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {['Hoy', 'Ayer', 'Últimos 7 días', 'Últimos 30 días', 'Este mes', 'Mes anterior', 'Este año', 'Personalizado'].map((p) => (
+              <Badge key={p} variant="outline" className="border-mostaza/30 text-marron">{p}</Badge>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            El preset <strong>Personalizado</strong> habilita dos calendarios para elegir fecha desde y
+            fecha hasta con precisión de día.
+          </p>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-mostaza" />
+            Filtros por reporte
+          </h4>
+          <div className="space-y-2">
+            <div className="bg-crema/60 border border-mostaza/10 rounded-lg p-3">
+              <p className="font-medium text-sm text-marron">Reporte de Ventas</p>
+              <p className="text-xs text-muted-foreground">Filtros: <strong>producto</strong>, <strong>cliente</strong>, <strong>vendedor</strong>. Incluye detalle de ventas y ranking por vendedor.</p>
+            </div>
+            <div className="bg-crema/60 border border-mostaza/10 rounded-lg p-3">
+              <p className="font-medium text-sm text-marron">Reporte de Stock</p>
+              <p className="text-xs text-muted-foreground">Filtros: <strong>categoría de producto terminado</strong>, <strong>categoría de materia prima</strong>, <strong>proveedor</strong>, <strong>solo stock bajo</strong>.</p>
+            </div>
+            <div className="bg-crema/60 border border-mostaza/10 rounded-lg p-3">
+              <p className="font-medium text-sm text-marron">Reporte de Producción</p>
+              <p className="text-xs text-muted-foreground">Filtros: <strong>producto</strong>. Incluye detalle de producciones del período.</p>
+            </div>
+            <div className="bg-crema/60 border border-mostaza/10 rounded-lg p-3">
+              <p className="font-medium text-sm text-marron">Compras y Finanzas</p>
+              <p className="text-xs text-muted-foreground">Filtro de período compartido (presets + personalizado).</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
+            <ArrowRight className="h-4 w-4 text-mostaza" />
+            Cómo usar los filtros (paso a paso)
+          </h4>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <StepCircle n={1} />
+              <div>
+                <p className="font-medium text-sm">Abrir Reportes</p>
+                <p className="text-xs text-muted-foreground">Menú lateral → <strong>Auditoría & Reportes → Reportes Generales</strong>.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={2} />
+              <div>
+                <p className="font-medium text-sm">Elegir el reporte</p>
+                <p className="text-xs text-muted-foreground">Seleccioná Ventas, Stock, Producción, Compras o Finanzas en las pestañas superiores.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={3} />
+              <div>
+                <p className="font-medium text-sm">Aplicar el período</p>
+                <p className="text-xs text-muted-foreground">Elegí un preset (Hoy, Últimos 7 días, etc.) o Personalizado para definir fechas exactas.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={4} />
+              <div>
+                <p className="font-medium text-sm">Aplicar filtros específicos</p>
+                <p className="text-xs text-muted-foreground">Según el reporte, elegí producto, cliente, vendedor, categoría o proveedor. Podés combinar varios.</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={5} />
+              <div>
+                <p className="font-medium text-sm">Ver resultados y exportar</p>
+                <p className="text-xs text-muted-foreground">
+                  El reporte se actualiza con los filtros aplicados. Exportá a <strong>Excel</strong>,{' '}
+                  <strong>CSV</strong> o <strong>PDF</strong> — la exportación respeta los filtros.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <InfoBox type="tip">
+          El endpoint <code className="bg-marron/10 px-1 rounded text-xs">/api/reportes/filtros-opciones</code>{' '}
+          devuelve en una sola consulta todas las opciones disponibles (productos, clientes, vendedores,
+          categorías, proveedores), así el panel carga los selectores sin demoras.
+        </InfoBox>
+
+        <InfoBox type="info">
+          Los filtros se aplican <strong>del lado del servidor</strong> en la consulta a la base de datos,
+          así que aunque el período abarque años, el panel sigue siendo rápido porque solo recibe los
+          registros filtrados.
+        </InfoBox>
+      </div>
+    ),
+  },
+
+  // ─── 18. Acceso y Contraseñas ────────────────────────────────────────
+  {
+    id: 'acceso-contrasenas',
+    title: 'Acceso y Contraseñas',
+    iconComponent: Lock,
+    summary: 'Toggle de visibilidad de contraseña (ícono de ojo) en login y creación de usuarios, 2FA y buenas prácticas de acceso.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          La pantalla de <strong className="text-marron">inicio de sesión</strong> y el formulario de{' '}
+          <strong className="text-marron">creación/edición de usuarios</strong> incluyen un{' '}
+          <strong>toggle de visibilidad de contraseña</strong> (ícono de ojo 👁) que te permite ver el texto
+          que estás escribiendo, para evitar errores de tipeo al ingresar o configurar contraseñas.
+        </p>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Eye className="h-4 w-4 text-mostaza" />
+            Toggle de visibilidad (ícono de ojo)
+          </h4>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>Por defecto, la contraseña se <strong>oculta</strong> (puntos negros).</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>Al hacer clic en el ícono del ojo, la contraseña se <strong>muestra</strong> como texto plano.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>Otro clic la vuelve a ocultar.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>El botón es <strong>accesible</strong>: <code className="bg-marron/10 px-1 rounded text-xs">aria-label</code> dinámico (“Mostrar contraseña” / “Ocultar contraseña”), <code className="bg-marron/10 px-1 rounded text-xs">type=&quot;button&quot;</code> para no submitir el form, y foco visible con ring.</span></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-mostaza" />
+            Dónde aparece
+          </h4>
+          <div className="space-y-2">
+            <div className="bg-crema/60 border border-mostaza/10 rounded-lg p-3">
+              <p className="font-medium text-sm text-marron">Pantalla de Login</p>
+              <p className="text-xs text-muted-foreground">En <strong>/admin/login</strong>, el campo de contraseña tiene el ojo a la derecha. Útil para verificar la contraseña antes de enviar, especialmente en móviles donde el teclado autocorrige.</p>
+            </div>
+            <div className="bg-crema/60 border border-mostaza/10 rounded-lg p-3">
+              <p className="font-medium text-sm text-marron">Formulario de Usuarios</p>
+              <p className="text-xs text-muted-foreground">En <strong>Personas → Usuarios → Nuevo/Editar</strong>, tanto el campo de contraseña como el de confirmación tienen el toggle. Al crear un usuario nuevo, el admin puede ver qué contraseña le está asignando.</p>
+            </div>
+          </div>
+        </div>
+
+        <InfoBox type="tip">
+          En móviles, los teclados predictivos suelen autocorregir o capitalizar la primera letra de la
+          contraseña. Mostrarla momentáneamente con el ojo te ayuda a detectar estos problemas antes de
+          quedar bloqueado por intentos fallidos.
+        </InfoBox>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Shield className="h-4 w-4 text-mostaza" />
+            Buenas prácticas de acceso
+          </h4>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-oliva shrink-0 mt-0.5" /><span>Activá <strong>2FA (doble factor)</strong> en cuentas de administrador (Menú → Seguridad → Mi 2FA).</span></li>
+            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-oliva shrink-0 mt-0.5" /><span>Usá contraseñas largas (12+ caracteres) con letras, números y símbolos.</span></li>
+            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-oliva shrink-0 mt-0.5" /><span>Revisá los <strong>logs de acceso</strong> y las <strong>sesiones activas</strong> periódicamente.</span></li>
+            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-oliva shrink-0 mt-0.5" /><span>No compartas contraseñas; creá un usuario por persona.</span></li>
+            <li className="flex gap-2"><CheckCircle2 className="h-4 w-4 text-oliva shrink-0 mt-0.5" /><span>Volvé a ocultar la contraseña después de verificarla, especialmente en pantallas compartidas.</span></li>
+          </ul>
+        </div>
+      </div>
+    ),
+  },
+
+  // ─── 19. Novedades y Mejoras Recientes ───────────────────────────────
+  {
+    id: 'novedades',
+    title: 'Novedades y Mejoras Recientes',
+    iconComponent: CheckCircle2,
+    summary: 'Buscador de promociones que muestra TODOS los productos, alineación del formulario de ventas y otras mejoras.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          Esta sección agrupa las <strong className="text-marron">mejoras y correcciones</strong> más
+          recientes del sistema para que las tengas a mano. Si venís usando el sistema desde antes, acá
+          encontrás qué cambió.
+        </p>
+
+        <div className="bg-oliva/5 border border-oliva/20 rounded-lg p-4">
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-oliva" />
+            Buscador de Promociones: muestra TODOS los productos
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Al crear o editar una promoción, el selector de productos ahora lista <strong>todos</strong> los
+            productos terminados, sin filtrar por estado, visibilidad o categoría.
+          </p>
+          <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>Antes solo se veían los productos <em>activos</em>; ahora también aparecen los inactivos, los no visibles en la landing y los que no tienen categoría asignada.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>La búsqueda ahora encuentra coincidencias por <strong>nombre</strong>, <strong>código</strong> y <strong>código de barras</strong>.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>Se cargan hasta 500 productos en una sola consulta para que el buscador los muestre sin paginación lenta.</span></li>
+          </ul>
+          <p className="text-xs text-muted-foreground mt-2">
+            Ver sección <ModuleRef name="Promociones" /> para el flujo completo.
+          </p>
+        </div>
+
+        <div className="bg-crema/60 border border-mostaza/15 rounded-lg p-4">
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-oliva" />
+            Formulario de Ventas: mejor alineación
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Las filas de detalle del <strong>VentaForm</strong> ahora alinean verticalmente todos los campos
+            (producto, cantidad, precio, descuento), incluso cuando aparece el badge de descuento por
+            volumen. El escáner de código de barras pasó a usar el componente <code className="bg-marron/10 px-1 rounded text-xs">Input</code>{' '}
+            de shadcn/ui, así comparte altura, bordes y radio con el resto del formulario. Resultado: filas
+            claras, sin superposición, consistentes con <code className="bg-marron/10 px-1 rounded text-xs">PedidoClienteForm</code>.
+          </p>
+        </div>
+
+        <div className="bg-mostaza/5 border border-mostaza/15 rounded-lg p-4">
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-oliva" />
+            Más mejoras en esta versión
+          </h4>
+          <ul className="space-y-1.5 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Impresión térmica de etiquetas</strong> en PDF y ZPL (ver sección dedicada).</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Plantillas de notificaciones</strong> con Markdown y variables canónicas (ver sección dedicada).</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Filtros personalizados</strong> en reportes de Ventas, Stock y Producción (ver sección dedicada).</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Visibilidad de contraseña</strong> en login y creación de usuarios (ver sección dedicada).</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Paquete standalone</strong> para uso local sin internet, con sincronización bidireccional a Turso.</span></li>
+          </ul>
+        </div>
+
+        <InfoBox type="info">
+          ¿No encontrás una funcionalidad donde esperabas? Usá el <strong>buscador de este manual</strong>{' '}
+          (arriba a la izquierda) o abrí el <strong>asistente virtual</strong> (botón flotante abajo a la
+          derecha) y preguntá en lenguaje natural.
+        </InfoBox>
       </div>
     ),
   },

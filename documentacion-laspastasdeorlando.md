@@ -1,6 +1,6 @@
 # Documentación Técnica Completa — Sistema Las Pastas de Orlando
 
-> **Versión:** 14 (Fase 14 — Promociones, Descuentos por Volumen, Margen de Ganancia, Ayuda IA y Backup)
+> **Versión:** 15 (Fase 15 — Impresión Térmica, Plantillas Markdown, Filtros de Reportes, Visibilidad de Contraseñas, Buscador de Promociones corregido)
 > **Fecha:** Julio 2026
 > **Autores:** Equipo de Desarrollo Las Pastas de Orlando
 > **Repositorio:** [github.com/orlandocandia/laspastasdeorlando](https://github.com/orlandocandia/laspastasdeorlando)
@@ -29,6 +29,8 @@
 18. [Seguridad](#18-seguridad)
 19. [Despliegue](#19-despliegue)
 20. [Diagrama de Relaciones (ERD)](#20-diagrama-de-relaciones-erd)
+21. [Impresión Térmica de Etiquetas](#21-impresión-térmica-de-etiquetas)
+22. [Novedades de la Versión 15](#22-novedades-de-la-versión-15)
 
 ---
 
@@ -58,6 +60,10 @@
 | Backup y restauración | Backups `.db` y `.sql` con safety backup previo a restaurar |
 | Auditoría y reportes | 8 reportes con exportación Excel/PDF/CSV y trazado de auditoría |
 | Código de barras | Generación EAN-13, etiquetas, impresión PDF |
+| Impresión térmica | Etiquetas en PDF y ZPL para impresoras de rollo (Zebra, Brother) |
+| Plantillas de notificaciones | Editor con Markdown y variables canónicas, vista previa y envío de prueba |
+| Filtros de reportes | Presets de período + filtros por producto/cliente/vendedor/categoría/proveedor |
+| Visibilidad de contraseña | Toggle de ojo en login y formulario de usuarios |
 
 ---
 
@@ -370,6 +376,8 @@ El esquema de Prisma contiene **67 modelos** organizados por módulos funcionale
 - **Descuentos por volumen aplicados automáticamente** (ver sección 6)
 - Snapshot del descuento guardado en `DetalleVenta` (id, valor, tipo, unitario, nombre, precio original)
 
+> **Mejora v15:** el `VentaForm` unifica la alineación y tamaño de campos. Las filas de detalle usan `items-center` para alinear verticalmente (incluso con el badge de descuento por volumen). El escáner de código de barras usa el componente `Input` de shadcn/ui (misma altura `h-9`, bordes y radio que el resto del formulario). Ver **sección 22.6**.
+
 ### 4.6 Compras
 
 **Funcionalidades:**
@@ -425,6 +433,8 @@ El esquema de Prisma contiene **67 modelos** organizados por módulos funcionale
 - Alertas automáticas configurables (stock bajo, pedidos pendientes, etc.)
 - Programación de envíos
 - Reintentos automáticos en caso de error
+
+> **Mejora v15 — Plantillas con Markdown y variables canónicas:** el editor de plantillas (`PlantillasNotificaciones.tsx`) soporta ahora formato Markdown, un panel de variables canónicas (`{cliente}`, `{pedido}`, `{fecha}`, `{total}`, `{estado}`, `{producto}`) con click para insertar, previsualización con datos de ejemplo y envío de prueba. Las alertas automáticas usan las plantillas guardadas; si están desactivadas o no existen, usan un *fallback* hardcoded. Compatible con `{var}` y `{{var}}`. Ver **sección 22.2**.
 
 ---
 
@@ -491,6 +501,16 @@ El endpoint público filtra por ventana de vigencia (`fecha_inicio <= now AND (f
 3. Completar nombre, tipo, valor, fechas y seleccionar productos.
 4. Guardar. La promoción aparece automáticamente en la tienda pública si está vigente y activa.
 5. Para desactivar, usar el botón de acciones → "Desactivar".
+
+### 5.7 Buscador de Productos (muestra TODOS)
+
+El `PromocionesManager` incluye un buscador para seleccionar los productos participantes al crear/editar una promoción. Desde la **versión 15** este buscador:
+
+- Lista **TODOS** los productos terminados: activos, inactivos, visibles y no visibles en la landing, con o sin categoría, con o sin código de barras.
+- Realiza la consulta a `/api/productos-terminados?limite=500` (sin filtro de `estado`, con límite alto).
+- La búsqueda en cliente encuentra coincidencias por **nombre**, **código** y **código de barras**.
+
+> **Corrección v15:** antes el buscador filtraba con `?estado=true`, lo que ocultaba productos inactivos, no visibles, sin categoría y sin código de barras, y la búsqueda en cliente solo filtraba por nombre. Ver **sección 22.5** para el detalle de la corrección.
 
 ---
 
@@ -959,6 +979,19 @@ Combina (1) trazado de auditoría de acciones de usuario y (2) reportes de negoc
 | `ExportadorCSV` | `.csv` | Blob nativo (BOM UTF-8) | Registra `EXPORT` con `format:'csv'` |
 
 Los tres aceptan `{data, filename, columns?, modulo?, disabled?}` y renderizan un botón outline (Excel=oliva, PDF=rojo, CSV=mostaza). **Cada exportación queda registrada en Auditoría**.
+
+#### Filtros personalizados (v15)
+
+Desde la versión 15, los reportes de Ventas, Stock y Producción incorporan el componente reutilizable `FiltrosReportes`:
+
+- **Filtro de período con presets:** Hoy, Ayer, Últimos 7 días, Últimos 30 días, Este mes, Mes anterior, Este año, Personalizado (calendarios desde/hasta).
+- **Ventas:** filtros por `producto_id`, `cliente_id`, `vendedor_id` + ranking `ventasPorVendedor`.
+- **Stock:** filtros por `categoria_pt`, `categoria_mp`, `proveedor_id`, `solo_stock_bajo`.
+- **Producción:** filtro por `producto_id`.
+- Endpoint combinado `/api/reportes/filtros-opciones` para cargar todas las opciones de selectores en una sola consulta.
+- Los filtros se aplican del lado del servidor en la consulta a la base de datos; la exportación a Excel/CSV/PDF respeta los filtros aplicados.
+
+Ver **sección 22.3** para el detalle completo.
 
 ---
 
@@ -1544,6 +1577,17 @@ Prisma Client singleton. Evita múltiples conexiones en desarrollo (hot reload).
 - Confirmación con token + nueva contraseña.
 - `PasswordReset` model rastrea tokens usados y expirados.
 
+### 18.7 Visibilidad de Contraseña (v15)
+
+La pantalla de **login** (`/admin/login`) y el formulario de **creación/edición de usuarios** (`UsuarioForm`) incluyen un **toggle de visibilidad de contraseña** (ícono de ojo):
+
+- Por defecto la contraseña se oculta (puntos); al clic se muestra como texto plano; otro clic la vuelve a ocultar.
+- Accesible: `aria-label` dinámico (Mostrar/Ocultar contraseña), `type="button"` para no submitir el form, foco visible con ring.
+
+**Motivación:** en móviles los teclados predictivos suelen autocorregir o capitalizar la primera letra de la contraseña; poder verla momentáneamente evita bloqueos por intentos fallidos. En la creación de usuarios, el administrador puede verificar la contraseña que está asignando.
+
+Ver **sección 22.4**.
+
 ---
 
 ## 19. Despliegue
@@ -1727,8 +1771,120 @@ erDiagram
 
 ---
 
-> **Nota:** Esta documentación refleja el estado del sistema en la Fase 14 (Promociones, Descuentos por Volumen, Margen de Ganancia, Asistente IA, Ayuda Estática, Backup y Auditoría/Reportes). El sistema está en desarrollo activo y puede haber cambios posteriores.
+## 21. Impresión Térmica de Etiquetas
+
+El módulo de **Impresión Térmica** permite generar etiquetas para impresoras de rollo (Zebra, Brother, etc.) directamente desde el panel, en dos formatos de salida: **PDF** (una etiqueta por página, tamaño exacto en mm) y **ZPL** (código nativo Zebra Programming Language para envío directo por USB/Bluetooth/red).
+
+### 21.1 Características
+
+- **6 tamaños predefinidos:** 40×30, 50×30, 60×40, 70×40, 80×50, 100×60 mm.
+- **Campos configurables:** nombre, precio, peso, código de barras (EAN-13 o CODE128), fecha elaboración, fecha vencimiento, categoría.
+- **Vista previa a escala real** antes de generar.
+- **Impresión por lote:** múltiples productos con cantidad de copias cada uno.
+- **Generación 100 % client-side** (no carga al servidor): `@react-pdf/renderer` para PDF y `jsbarcode` para los códigos de barras.
+- **ZPL nativo:** comandos `^XA`/`^XZ`, `^PW`, `^LL`, `^FO`, `^FD`, `^BY`/`^BE` (EAN-13) / `^BC` (CODE128).
+- **Botones:** Descargar PDF, Descargar `.zpl`, Copiar al portapapeles.
+
+### 21.2 Archivos
+
+| Archivo | Rol |
+|---|---|
+| `src/app/(dashboard)/admin/etiquetas/page.tsx` | Página del módulo |
+| `src/components/admin/ThermalLabelGenerator.tsx` | Componente principal (UI + generación PDF/ZPL) |
+| `docs/IMPRESION-TERMICA.md` | Documentación detallada |
+
+### 21.3 Flujo de uso
+
+1. Ir a **Configuración → Etiquetas** (o desde la fila de un producto terminado).
+2. Elegir el tamaño de etiqueta según el rollo cargado en la impresora.
+3. Marcar los campos a incluir.
+4. Agregar productos al lote (uno o varios, con cantidad de copias cada uno).
+5. Revisar la vista previa a escala real.
+6. Descargar PDF (imprimir desde cualquier PC) o Descargar ZPL / Copiar al portapapeles (envío directo a Zebra por USB/Bluetooth/red).
+
+### 21.4 Envío de ZPL a la impresora
+
+Para enviar ZPL por USB a una Zebra se pueden usar herramientas como **Zebra Setup Utility**, **ZebraPrinterUtils** o un script de Python con `pyusb`. Por Bluetooth o red, copiar el código y pegarlo en el puerto configurado de la impresora.
+
+---
+
+## 22. Novedades de la Versión 15
+
+Esta versión incorpora mejoras de usabilidad, nuevos módulos y correcciones importantes. A continuación se listan los cambios más relevantes, con referencia cruzada a la sección donde están descriptos en detalle.
+
+### 22.1 Impresión Térmica de Etiquetas (nuevo módulo)
+
+Generación de etiquetas para impresoras de rollo en PDF y ZPL, con 6 tamaños predefinidos y campos configurables. Ver **sección 21**.
+
+### 22.2 Plantillas de Notificaciones con Markdown (mejora)
+
+El módulo de Notificaciones ahora incluye un editor de plantillas con:
+
+- **Markdown** para formato (títulos, negritas, listas).
+- **Variables canónicas** entre llaves: `{cliente}`, `{pedido}`, `{fecha}`, `{total}`, `{estado}`, `{producto}` (y `{stock_actual}`, `{stock_minimo}` para alertas de stock). Compatible con `{var}` y `{{var}}`.
+- **Panel lateral** de variables con click para insertar en la posición del cursor; variables presentes marcadas con ✓.
+- **Previsualización** con datos de ejemplo (estilo email y estilo WhatsApp).
+- **Envío de prueba** a destinatario real antes de activar.
+- **Activar/desactivar** plantillas desde la lista sin borrarlas.
+- Las alertas automáticas (stock bajo, recordatorio de entrega) usan las plantillas guardadas; si están desactivadas o no existen, usan un mensaje *fallback* hardcoded.
+
+**Archivos:** `src/components/admin/PlantillasNotificaciones.tsx`, `src/lib/plantillas.ts`, `src/lib/notificaciones-service.ts`, `prisma/seed-notificaciones.ts`, `docs/PLANTILLAS-NOTIFICACIONES.md`.
+
+### 22.3 Filtros Personalizados en Reportes (mejora)
+
+Los reportes de Ventas, Stock y Producción incorporan el componente reutilizable `FiltrosReportes`:
+
+- **Filtro de período con presets:** Hoy, Ayer, Últimos 7 días, Últimos 30 días, Este mes, Mes anterior, Este año, **Personalizado** (calendarios desde/hasta).
+- **Reporte de Ventas:** filtros por producto, cliente y vendedor + detalle de ventas + ranking por vendedor.
+- **Reporte de Stock:** filtros por categoría de PT, categoría de MP, proveedor y "solo stock bajo".
+- **Reporte de Producción:** filtro por producto + detalle de producciones.
+- **Compras y Finanzas:** filtro de período compartido.
+- **Exportación** a Excel/CSV/PDF respetando los filtros aplicados.
+- Endpoint combinado `/api/reportes/filtros-opciones` que devuelve todas las opciones de los selectores en una sola consulta.
+- Los filtros se aplican **del lado del servidor** en la consulta a la base de datos.
+
+**Archivos:** `src/components/admin/reportes/FiltrosReportes.tsx`, `ReporteVentas.tsx`, `ReporteStock.tsx`, `ReporteProduccion.tsx`, `src/app/api/reportes/{ventas,stock,produccion,filtros-opciones}/route.ts`, `docs/FILTROS-REPORTES.md`.
+
+### 22.4 Visibilidad de Contraseña en Login y Usuarios (mejora)
+
+La pantalla de **login** (`/admin/login`) y el formulario de **creación/edición de usuarios** (`UsuarioForm`) incluyen un **toggle de visibilidad de contraseña** (ícono de ojo):
+
+- Por defecto la contraseña se oculta; al clic se muestra como texto plano; otro clic la vuelve a ocultar.
+- Accesible: `aria-label` dinámico (Mostrar/Ocultar contraseña), `type="button"`, foco visible con ring.
+
+**Archivos:** `src/app/(auth)/admin/login/page.tsx`, `src/components/admin/UsuarioForm.tsx`.
+
+### 22.5 Buscador de Promociones: muestra TODOS los productos (corrección)
+
+**Problema:** al crear o editar una promoción, el selector de productos solo mostraba los productos *activos* (filtraba con `?estado=true`), ocultando productos inactivos, no visibles en la landing, sin categoría o sin código de barras. La búsqueda en cliente solo filtraba por nombre, no por código ni código de barras.
+
+**Solución:**
+
+- El `PromocionesManager` ahora consulta `/api/productos-terminados?limite=500` (sin filtro de estado, con límite alto).
+- La búsqueda en cliente ahora busca en **nombre**, **código** y **código de barras**.
+- La interfaz `ProductoTerminadoSimple` se extendió con `codigo` y `codigo_barras`.
+
+Resultado: el buscador lista **TODOS** los productos terminados (activos, inactivos, visibles, no visibles, con o sin categoría, con o sin código de barras) y la búsqueda encuentra coincidencias por cualquiera de los tres campos. Ver **sección 5.7**.
+
+### 22.6 Alineación del Formulario de Ventas (corrección)
+
+- Las filas de detalle del `VentaForm` pasaron de `items-start` a `items-center`, alineando verticalmente todos los campos (producto, cantidad, precio, descuento) incluso cuando aparece el badge de descuento por volumen.
+- El escáner de código de barras pasó de un `<input>` crudo al componente `Input` de shadcn/ui, compartiendo altura `h-9`, bordes y radio con el resto del formulario. Se agregó `Label` descriptivo.
+- Se removió `w-full` redundante en inputs/selects de filas de detalle (los grid items ya estiran por defecto), igualando el patrón de `PedidoClienteForm`.
+
+Resultado: filas claras, sin superposición, consistentes con el resto del sistema. Ver **sección 4.5**.
+
+### 22.7 Paquete Standalone y Sincronización Bidireccional (mejora)
+
+- Paquete para uso local sin internet (`laspastasdeorlando-local`) con sincronización bidireccional SQLite ↔ Turso vía `@libsql/client` embebido.
+- El modo se controla con `DATABASE_URL` en `.env` (`file:`→local, `libsql://`→Turso).
+- Build standalone reconstruible con `build-local-package.sh`.
+
+---
+
+> **Nota:** Esta documentación refleja el estado del sistema en la **Fase 15** (Impresión Térmica de Etiquetas, Plantillas de Notificaciones con Markdown, Filtros Personalizados en Reportes, Visibilidad de Contraseñas, corrección del Buscador de Promociones y alineación del Formulario de Ventas, además de todas las funcionalidades de las fases 1-14). El sistema está en desarrollo activo y puede haber cambios posteriores.
 
 ---
 
 *Documentación del Sistema Las Pastas de Orlando © 2026*
+
