@@ -19,6 +19,10 @@ const WELCOME_MESSAGE: Message = {
 }
 
 const SUGGESTED_QUESTIONS = [
+  '¿Cómo uso el dashboard?',
+  '¿Qué significa cada alerta del dashboard?',
+  '¿Cómo completo una producción pendiente?',
+  '¿Cómo veo los productos sin stock?',
   '¿Cómo creo un producto nuevo?',
   '¿Cómo cargo stock?',
   '¿Cómo vendo un producto?',

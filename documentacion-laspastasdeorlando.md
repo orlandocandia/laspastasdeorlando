@@ -341,6 +341,8 @@ El esquema de Prisma contiene **67 modelos** organizados por módulos funcionale
 - Alertas de stock mínimo
 - Historial completo de movimientos
 
+> **Flujo de trabajo (v16):** el stock es la **cuarta etapa** del Flujo de Trabajo del Dashboard (Materias Primas → Recetas → Producción → **Stock** → Ventas). Los productos sin stock o con stock bajo aparecen como **Pasos Pendientes** en la pantalla principal, con botones directos a la lista filtrada. La etapa se marca como 🔴 Crítico (agotados) o ⚠️ Pendiente (stock bajo). Ver **sección 4.11** y **sección 22**.
+
 ### 4.3 Recetas
 
 **Funcionalidades:**
@@ -363,6 +365,8 @@ El esquema de Prisma contiene **67 modelos** organizados por módulos funcionale
 - Estados: pendiente, en_proceso, completada, cancelada
 - Impresión de orden de producción en PDF
 
+> **Flujo de trabajo (v16):** la producción es la **tercera etapa** del Flujo de Trabajo del Dashboard (Materias Primas → Recetas → **Producción** → Stock → Ventas). Las producciones pendientes hace más de 2 días aparecen como **Pasos Pendientes** (⚠️ Media) con el botón "Completar producción". La etapa se marca como ⚠️ Pendiente si hay producciones atrasadas. Ver **sección 4.11** y **sección 22**.
+
 ### 4.5 Ventas
 
 **Funcionalidades:**
@@ -376,7 +380,9 @@ El esquema de Prisma contiene **67 modelos** organizados por módulos funcionale
 - **Descuentos por volumen aplicados automáticamente** (ver sección 6)
 - Snapshot del descuento guardado en `DetalleVenta` (id, valor, tipo, unitario, nombre, precio original)
 
-> **Mejora v15:** el `VentaForm` unifica la alineación y tamaño de campos. Las filas de detalle usan `items-center` para alinear verticalmente (incluso con el badge de descuento por volumen). El escáner de código de barras usa el componente `Input` de shadcn/ui (misma altura `h-9`, bordes y radio que el resto del formulario). Ver **sección 22.6**.
+> **Flujo de trabajo (v16):** las ventas son la **quinta y última etapa** del Flujo de Trabajo del Dashboard (Materias Primas → Recetas → Producción → Stock → **Ventas**). El "Indicador Clave" Ventas del Mes muestra el total facturado con tendencia vs mes anterior (↑ sube / ↓ baja). La etapa se marca como ✅ En orden (hubo ventas) o ⚠️ Pendiente (sin ventas este mes). El botón "Registrar venta" está en Acciones Directas. Ver **sección 4.11** y **sección 22**.
+
+> **Mejora v15:** el `VentaForm` unifica la alineación y tamaño de campos. Las filas de detalle usan `items-center` para alinear verticalmente (incluso con el badge de descuento por volumen). El escáner de código de barras usa el componente `Input` de shadcn/ui (misma altura `h-9`, bordes y radio que el resto del formulario). Ver **sección 23.6**.
 
 ### 4.6 Compras
 
@@ -434,7 +440,43 @@ El esquema de Prisma contiene **67 modelos** organizados por módulos funcionale
 - Programación de envíos
 - Reintentos automáticos en caso de error
 
-> **Mejora v15 — Plantillas con Markdown y variables canónicas:** el editor de plantillas (`PlantillasNotificaciones.tsx`) soporta ahora formato Markdown, un panel de variables canónicas (`{cliente}`, `{pedido}`, `{fecha}`, `{total}`, `{estado}`, `{producto}`) con click para insertar, previsualización con datos de ejemplo y envío de prueba. Las alertas automáticas usan las plantillas guardadas; si están desactivadas o no existen, usan un *fallback* hardcoded. Compatible con `{var}` y `{{var}}`. Ver **sección 22.2**.
+> **Mejora v15 — Plantillas con Markdown y variables canónicas:** el editor de plantillas (`PlantillasNotificaciones.tsx`) soporta ahora formato Markdown, un panel de variables canónicas (`{cliente}`, `{pedido}`, `{fecha}`, `{total}`, `{estado}`, `{producto}`) con click para insertar, previsualización con datos de ejemplo y envío de prueba. Las alertas automáticas usan las plantillas guardadas; si están desactivadas o no existen, usan un *fallback* hardcoded. Compatible con `{var}` y `{{var}}`. Ver **sección 23.2**.
+
+### 4.11 Dashboard (rediseñado con flujo de trabajo)
+
+> **Mejora v16:** el Dashboard fue rediseñado por completo con un enfoque en flujo de trabajo. En lugar de mostrar solo estadísticas, guía al usuario sobre **qué hacer** con esa información y en qué orden.
+
+**Las 4 secciones del Dashboard:**
+
+1. **Pasos Pendientes** (prioridad alta): muestra solo las alertas que requieren acción, ordenadas por severidad (críticas primero). Cada paso tiene un botón directo a la acción correspondiente ("Ver productos sin stock", "Cargar materias primas", "Completar producción", etc.). Si no hay pendientes, muestra "✅ Todo está en orden".
+
+2. **Indicadores Clave**: 6 métricas con contexto y **tendencia vs mes anterior** (flecha verde ↑ si subió, roja ↓ si bajó):
+   - Ventas del Mes ($), Producción del Mes (unidades), Pedidos Pendientes, Reservas Activas, Compras del Mes ($), Stock Crítico (items agotados).
+
+3. **Flujo de Trabajo**: pipeline visual de 5 etapas: **Materias Primas → Recetas → Producción → Stock → Ventas**. Cada etapa muestra su estado:
+   - ✅ **En orden** (oliva): no hay pendientes.
+   - ⚠️ **Pendiente** (mostaza): stock bajo, producción atrasada, recetas vacías.
+   - 🔴 **Crítico** (rojo): items agotados, productos sin receta.
+   - Header con badge "Flujo: X/5 etapas OK".
+
+4. **Acciones Directas**: 8 botones grandes de acceso rápido (Ver productos sin stock, Completar producción, Cargar materias primas, Registrar venta, Gestionar pedidos, Editar recetas, Ver reservas, Generar reporte) + fila de botones compactos para accesos secundarios.
+
+**Tipos de alertas (Pasos Pendientes):**
+
+| Severidad | Alerta | Acción |
+|---|---|---|
+| 🔴 Crítica | PT sin stock (stock=0) | Producir más |
+| 🔴 Crítica | MP agotadas (stock=0) | Registrar compra |
+| 🔴 Crítica | Insumos agotados (stock=0) | Registrar compra |
+| 🔴 Crítica | PT sin receta asociada | Crear receta |
+| ⚠️ Media | Producción pendiente >2 días | Completar/cancelar |
+| ⚠️ Media | MP con stock bajo (≤ mínimo) | Programar compra |
+| ⚠️ Media | PT con stock bajo (≤ mínimo) | Programar producción |
+| ⚠️ Media | Recetas sin ingredientes | Editar receta |
+
+**Endpoint:** `/api/dashboard` agrega todos los datos en una sola consulta (reemplaza los 16 fetches paralelos del diseño anterior). Calcula tendencias comparando el mes actual con el mes anterior para ventas y producción.
+
+**Archivos:** `src/app/(dashboard)/admin/dashboard/page.tsx`, `src/app/api/dashboard/route.ts`.
 
 ---
 
@@ -510,7 +552,7 @@ El `PromocionesManager` incluye un buscador para seleccionar los productos parti
 - Realiza la consulta a `/api/productos-terminados?limite=500` (sin filtro de `estado`, con límite alto).
 - La búsqueda en cliente encuentra coincidencias por **nombre**, **código** y **código de barras**.
 
-> **Corrección v15:** antes el buscador filtraba con `?estado=true`, lo que ocultaba productos inactivos, no visibles, sin categoría y sin código de barras, y la búsqueda en cliente solo filtraba por nombre. Ver **sección 22.5** para el detalle de la corrección.
+> **Corrección v15:** antes el buscador filtraba con `?estado=true`, lo que ocultaba productos inactivos, no visibles, sin categoría y sin código de barras, y la búsqueda en cliente solo filtraba por nombre. Ver **sección 23.5** para el detalle de la corrección.
 
 ---
 
@@ -776,7 +818,7 @@ Asistente virtual conversacional que responde dudas sobre el uso del sistema.
 
 ### 9.2 Base de conocimiento (system prompt)
 
-El system prompt declara **24 módulos** que el asistente conoce, más procedimientos paso a paso para los flujos principales (crear producto, cargar stock, registrar venta, crear receta, producción, compra, pedido, presupuesto, reserva, movimientos, reportes, usuarios, notificaciones, configuración, materias primas, insumos, logística, opiniones, descuentos por volumen, promociones, margen de ganancia, menú lateral).
+El system prompt declara **28 módulos** que el asistente conoce, más procedimientos paso a paso para los flujos principales (crear producto, cargar stock, registrar venta, crear receta, producción, compra, pedido, presupuesto, reserva, movimientos, reportes, usuarios, notificaciones, configuración, materias primas, insumos, logística, opiniones, descuentos por volumen, promociones, margen de ganancia, menú lateral, impresión térmica, plantillas de notificaciones, filtros de reportes, acceso y contraseñas, **dashboard con flujo de trabajo**). El módulo 20 (Dashboard) documenta las 4 secciones (Pasos Pendientes, Indicadores Clave, Flujo de Trabajo, Acciones Directas), los tipos de alertas y los estados del flujo.
 
 Reglas estrictas:
 - Solo responde sobre el ERP.
@@ -786,7 +828,7 @@ Reglas estrictas:
 
 ### 9.3 Motor de FAQ (fallback)
 
-27 entradas `FAQ_ENTRIES` con `keywords[]` y `response` (Markdown). Cubren: crear producto, cargar stock, vender, stock crítico, receta, producción, compra, pedido cliente, presupuesto, reserva, movimiento, reporte, usuario/permiso/2fa, notificación/alerta, categoría/marca/unidad, materia prima, insumo, flujo de trabajo, logística/entrega, opinión, dashboard, descuento por volumen, promoción/oferta/2x1/landing, margen de ganancia/rentabilidad/código de colores, menú lateral/colapsar/expandir/sidebar.
+31 entradas `FAQ_ENTRIES` con `keywords[]` y `response` (Markdown). Cubren: crear producto, cargar stock, vender, stock crítico, receta, producción, compra, pedido cliente, presupuesto, reserva, movimiento, reporte, usuario/permiso/2fa, notificación/alerta, categoría/marca/unidad, materia prima, insumo, flujo de trabajo, logística/entrega, opinión, **dashboard (cómo usarlo, tipos de alertas, completar producción, ver productos sin stock, flujo de trabajo)**, descuento por volumen, promoción/oferta/2x1/landing, margen de ganancia/rentabilidad/código de colores, menú lateral/colapsar/expandir/sidebar, etiquetas térmicas/ZPL, plantillas de notificaciones, filtros de reporte, visibilidad de contraseña.
 
 El matching normaliza acentos, calcula `matchedKeywords / keywords.length` por entrada, requiere ≥20% de match y ≥1 keyword, y devuelve la de mayor score. Si nada matchea, `getFallbackResponse` lista todos los temas disponibles.
 
@@ -798,7 +840,7 @@ El matching normaliza acentos, calcula `matchedKeywords / keywords.length` por e
   - Header marrón con avatar `Bot` y título "Asistente Virtual — Pastas Orlando".
   - En móvil: pantalla completa (`h-[100dvh]`). En `sm+`: panel flotante 380×520 px.
   - Mensaje de bienvenida.
-  - **10 preguntas sugeridas** inicialmente.
+  - **19 preguntas sugeridas** inicialmente (incluye 4 sobre el dashboard: cómo usarlo, qué significa cada alerta, cómo completar producción, cómo ver productos sin stock).
   - Renderer Markdown liviano (bold, inline code, listas numeradas y con viñetas).
   - Auto-scroll, auto-focus, animación de loading.
 - Envía el historial (excluyendo el welcome) a `/api/chat-assistant`.
@@ -815,7 +857,7 @@ Manual offline completo del sistema, accesible sin conexión a la API.
 
 ### 10.1 Componente
 
-**`src/components/admin/StaticHelp.tsx`** (2,617 líneas).
+**`src/components/admin/StaticHelp.tsx`** (3,431 líneas).
 - Renderizado por `(dashboard)/layout.tsx` como `<StaticHelp open={helpOpen} onOpenChange={setHelpOpen} />`.
 - Se abre con el botón **"Ayuda"** del header (icono `HelpCircle`).
 - Usa `Dialog` de shadcn (full-screen en móvil, centrado en desktop).
@@ -824,12 +866,12 @@ Manual offline completo del sistema, accesible sin conexión a la API.
 - En desktop: TOC lateral + contenido; en móvil: acordeón de una columna.
 - Scrollspy con `IntersectionObserver` para resaltar la sección activa en el TOC.
 
-### 10.2 Secciones documentadas (16)
+### 10.2 Secciones documentadas (22)
 
 | # | id | Título | Icono |
 |---|---|---|---|
 | 1 | `introduccion` | Introducción | LayoutDashboard |
-| 2 | `navegacion-menu` | Navegación y Menú Lateral | Menu |
+| 2 | `navegacion-menu` | Navegación y Menú Lateral | BookMarked |
 | 3 | `productos` | Productos | Package |
 | 4 | `stock` | Stock | Boxes |
 | 5 | `recetas` | Recetas | BookOpen |
@@ -841,9 +883,15 @@ Manual offline completo del sistema, accesible sin conexión a la API.
 | 11 | `reportes` | Reportes | FileBarChart |
 | 12 | `costos-rentabilidad` | Costos y Rentabilidad | TrendingUp |
 | 13 | `promociones` | Promociones | Tag |
-| 14 | `promociones-landing` | Promociones en la Tienda Pública | Tag |
+| 14 | `promociones-landing` | Promociones en la Tienda Pública | Eye |
 | 15 | `descuentos-volumen` | Descuentos por Volumen | Layers |
-| 16 | `backup` | Backup y Restauración | Database |
+| 16 | `backup` | Backup y Restauración | Shield |
+| 17 | `etiquetas-termicas` | Impresión Térmica de Etiquetas | FileText |
+| 18 | `plantillas-notificaciones` | Plantillas de Notificaciones | Bell |
+| 19 | `filtros-reportes` | Filtros Personalizados en Reportes | BarChart3 |
+| 20 | `acceso-contrasenas` | Acceso y Contraseñas | Lock |
+| 21 | `dashboard-flujo` | Dashboard y Flujo de Trabajo | LayoutDashboard |
+| 22 | `novedades` | Novedades y Mejoras Recientes | CheckCircle2 |
 
 Cada sección tiene contenido JSX con pasos numerados, badges, callouts (`Info`, `Lightbulb`, `AlertTriangle`), referencias cruzadas (`ModuleRef`) y marcadores numerados (`StepCircle`).
 
@@ -991,7 +1039,7 @@ Desde la versión 15, los reportes de Ventas, Stock y Producción incorporan el 
 - Endpoint combinado `/api/reportes/filtros-opciones` para cargar todas las opciones de selectores en una sola consulta.
 - Los filtros se aplican del lado del servidor en la consulta a la base de datos; la exportación a Excel/CSV/PDF respeta los filtros aplicados.
 
-Ver **sección 22.3** para el detalle completo.
+Ver **sección 23.3** para el detalle completo.
 
 ---
 
@@ -1586,7 +1634,7 @@ La pantalla de **login** (`/admin/login`) y el formulario de **creación/edició
 
 **Motivación:** en móviles los teclados predictivos suelen autocorregir o capitalizar la primera letra de la contraseña; poder verla momentáneamente evita bloqueos por intentos fallidos. En la creación de usuarios, el administrador puede verificar la contraseña que está asignando.
 
-Ver **sección 22.4**.
+Ver **sección 23.4**.
 
 ---
 
@@ -1808,15 +1856,156 @@ Para enviar ZPL por USB a una Zebra se pueden usar herramientas como **Zebra Set
 
 ---
 
-## 22. Novedades de la Versión 15
+## 22. Dashboard con Flujo de Trabajo
 
-Esta versión incorpora mejoras de usabilidad, nuevos módulos y correcciones importantes. A continuación se listan los cambios más relevantes, con referencia cruzada a la sección donde están descriptos en detalle.
+> **Novedad v16:** el Dashboard (`/admin/dashboard`) fue rediseñado por completo con un enfoque en flujo de trabajo. En lugar de mostrar solo estadísticas planas, guía al usuario sobre **qué hacer** con esa información y en qué orden, mediante 4 secciones jerárquicas.
 
-### 22.1 Impresión Térmica de Etiquetas (nuevo módulo)
+### 22.1 Arquitectura
 
-Generación de etiquetas para impresoras de rollo en PDF y ZPL, con 6 tamaños predefinidos y campos configurables. Ver **sección 21**.
+El dashboard anterior realizaba 16 fetches paralelos a distintos endpoints de la API para recolectar estadísticas. El nuevo diseño consulta un **único endpoint agregado** (`/api/dashboard`) que retorna toda la información en una sola respuesta JSON estructurada:
 
-### 22.2 Plantillas de Notificaciones con Markdown (mejora)
+```
+{
+  "pasosPendientes": [...],      // alertas accionables con botones
+  "indicadoresClave": [...],     // 6 métricas con tendencia
+  "flujoTrabajo": {              // 5 etapas del proceso
+    "materias_primas": {...},
+    "recetas": {...},
+    "produccion": {...},
+    "stock": {...},
+    "ventas": {...}
+  },
+  "resumen": {                   // conteos para el header
+    "totalPasos": N,
+    "criticas": N,
+    "flujoCompletado": N,        // cuántas etapas en "ok"
+    "flujoTotal": 5
+  }
+}
+```
+
+### 22.2 Sección 1: Pasos Pendientes
+
+Muestra **solo las alertas que requieren acción**, ordenadas por severidad (críticas primero, luego medias). Cada paso incluye:
+
+- **Título y descripción** del problema.
+- **Badge con la cantidad** de items afectados.
+- **Botón directo** a la acción correspondiente (ej: "Ver productos sin stock" → `/admin/productos-terminados?stock=sin_stock`).
+
+Si no hay pendientes, se muestra un mensaje "✅ Todo está en orden — No hay alertas activas".
+
+**Tipos de alertas detectadas:**
+
+| Severidad | Alerta | Condición | Acción |
+|---|---|---|---|
+| 🔴 Crítica | Productos sin stock | `stock_actual <= 0` (PT activos) | Ver productos sin stock |
+| 🔴 Crítica | Materias primas agotadas | `stock_actual <= 0` (MP activas) | Cargar materias primas (compras) |
+| 🔴 Crítica | Insumos agotados | `stock_actual <= 0` (insumos activos) | Ver insumos sin stock |
+| 🔴 Crítica | Productos sin receta | PT activo sin receta asociada | Crear recetas |
+| ⚠️ Media | Producción pendiente | Producción en planificado/en_curso >2 días | Completar producción |
+| ⚠️ Media | MP con stock bajo | `0 < stock_actual <= stock_minimo` | Ver stock bajo |
+| ⚠️ Media | PT con stock bajo | `0 < stock_actual <= stock_minimo` | Ver stock bajo |
+| ⚠️ Media | Recetas sin ingredientes | Receta activa con 0 detalles | Editar recetas |
+
+### 22.3 Sección 2: Indicadores Clave (con tendencias)
+
+Seis métricas en una grilla responsive (2/3/6 columnas según el ancho). Cada indicador muestra:
+
+- **Valor grande** (formateado como moneda ARS o número).
+- **Tendencia** comparada con el mes anterior: flecha verde ↑ (+X%), roja ↓ (-X%), o "sin datos".
+- **Contexto** (ej: "vs $365.000 mes anterior").
+
+| Indicador | Qué mide | Tendencia |
+|---|---|---|
+| Ventas del Mes | Suma de `total` de ventas del mes actual | vs mes anterior |
+| Producción del Mes | Suma de `cantidad_producida` del mes | vs mes anterior |
+| Pedidos Pendientes | Pedidos de clientes sin entregar | sin tendencia |
+| Reservas Activas | Reservas en estado pendiente/confirmada/activa | sin tendencia |
+| Compras del Mes | Suma de `total` de compras del mes | sin tendencia |
+| Stock Crítico | Items agotados (PT + MP + Insumos) | sin tendencia |
+
+El cálculo de tendencia usa: `pctVariacion = round((actual - anterior) / anterior * 100)`. Si el mes anterior fue 0 y el actual >0, se muestra +100%.
+
+### 22.4 Sección 3: Flujo de Trabajo
+
+Pipeline visual de las 5 etapas del proceso productivo, en horizontal (desktop) o vertical (mobile):
+
+```
+Materias Primas → Recetas → Producción → Stock → Ventas
+```
+
+Cada etapa muestra:
+
+- **Icono** representativo (Leaf, BookOpen, Factory, Package, DollarSign).
+- **Emoji de estado**: ✅ (ok), ⚠️ (pendiente), 🔴 (crítico).
+- **Detalle** textual (ej: "2 sin stock", "1 producto(s) sin receta").
+- **Badge de pendientes** si `pendientes > 0`.
+- **Link** a la pantalla del módulo correspondiente.
+
+**Lógica de estados por etapa:**
+
+| Etapa | 🔴 Crítico | ⚠️ Pendiente | ✅ OK |
+|---|---|---|---|
+| Materias Primas | MP agotadas >0 | MP stock bajo >0 | Sin agotadas ni bajas |
+| Recetas | PT sin receta >0 | Recetas vacías >0 | Sin PT sin receta ni vacías |
+| Producción | — | Producción pendiente >2 días | Sin pendientes atrasadas |
+| Stock PT | PT agotados >0 | PT stock bajo >0 | Sin agotados ni bajos |
+| Ventas | — | Sin ventas este mes | Hubo ventas este mes |
+
+El header muestra un badge: **"Flujo: X/5 etapas OK"**.
+
+### 22.5 Sección 4: Acciones Directas
+
+Ocho tarjetas grandes con accesos rápidos a las tareas más frecuentes. Cada tarjeta tiene un icono de color, título, descripción y flecha, con animación hover (scale 1.02).
+
+| Acción | Destino | Color |
+|---|---|---|
+| Ver productos sin stock | `/admin/productos-terminados?stock=sin_stock` | rojo |
+| Completar producción | `/admin/produccion` | marrón |
+| Cargar materias primas | `/admin/compras` | oliva |
+| Registrar venta | `/admin/ventas` | mostaza |
+| Gestionar pedidos | `/admin/pedidos-clientes` | mostaza |
+| Editar recetas | `/admin/recetas` | oliva |
+| Ver reservas | `/admin/reservas-clientes` | rojo |
+| Generar reporte | `/admin/reportes` | marrón |
+
+Debajo, una fila de botones compactos (outline) para accesos secundarios: Materias Primas, Insumos, Productos Terminados, Mov. Stock, Pedidos Proveedores, Catálogo Landing, Opiniones, WhatsApp, Usuarios, Auditoría.
+
+### 22.6 Diseño y accesibilidad
+
+- **Responsive mobile-first**: grids adaptativos (2 cols en mobile, 3-4 en tablet, 6 en desktop para indicadores).
+- **Regiones ARIA**: cada sección tiene `aria-label` (Pasos pendientes, Indicadores clave, Flujo de trabajo, Acciones directas, Más accesos).
+- **Headings semánticos**: jerarquía H1 (greeting) → H2 (títulos de sección) → H3 (items).
+- **Estados**: loading (skeletons), error (tarjeta con botón reintentar), empty (mensaje "todo en orden").
+- **Animaciones**: Framer Motion con `Variants` tipadas, entrada escalonada (delay por índice).
+- **Paleta**: marrón (primario), oliva (ok/positivo), mostaza (advertencia), rojo (crítico), crema (fondo).
+
+### 22.7 Endpoint `/api/dashboard`
+
+**Método:** `GET`
+
+**Paralelización:** usa `Promise.all` para ejecutar 15 consultas Prisma en paralelo (productos, materias primas, insumos, estados, recetas, agregaciones de ventas/producción/compras del mes actual y anterior), más 2 sub-consultas `count` para producciones pendientes y pedidos pendientes.
+
+**Cálculos clave:**
+- `pctVariacion(actual, anterior)`: porcentaje de variación mes a mes.
+- `tendencia(actual, anterior)`: 'sube' | 'baja' | 'estable' | 'sin_datos'.
+- Estados del flujo basados en conteos de items agotados/bajos/pendientes.
+
+**Archivos:** `src/app/api/dashboard/route.ts` (485 líneas), `src/app/(dashboard)/admin/dashboard/page.tsx` (691 líneas).
+
+---
+
+## 23. Novedades de la Versión 16
+
+Esta versión incorpora el rediseño del Dashboard con enfoque en flujo de trabajo, además de todas las mejoras de la versión 15. A continuación se listan los cambios más relevantes, con referencia cruzada a la sección donde están descriptos en detalle.
+
+### 23.1 Dashboard rediseñado con flujo de trabajo (nuevo diseño)
+
+El panel principal fue rediseñado por completo con 4 secciones jerárquicas: Pasos Pendientes (alertas accionables con botones directos), Indicadores Clave (con tendencias vs mes anterior), Flujo de Trabajo (5 etapas con estado visual ✅/⚠️/🔴) y Acciones Directas (8 accesos rápidos). Nuevo endpoint `/api/dashboard` agrega todos los datos en una sola consulta. Ver **sección 22** para el detalle completo.
+
+**Archivos:** `src/app/(dashboard)/admin/dashboard/page.tsx`, `src/app/api/dashboard/route.ts`.
+
+### 23.2 Plantillas de Notificaciones con Markdown (mejora v15)
 
 El módulo de Notificaciones ahora incluye un editor de plantillas con:
 
@@ -1830,7 +2019,7 @@ El módulo de Notificaciones ahora incluye un editor de plantillas con:
 
 **Archivos:** `src/components/admin/PlantillasNotificaciones.tsx`, `src/lib/plantillas.ts`, `src/lib/notificaciones-service.ts`, `prisma/seed-notificaciones.ts`, `docs/PLANTILLAS-NOTIFICACIONES.md`.
 
-### 22.3 Filtros Personalizados en Reportes (mejora)
+### 23.3 Filtros Personalizados en Reportes (mejora v15)
 
 Los reportes de Ventas, Stock y Producción incorporan el componente reutilizable `FiltrosReportes`:
 
@@ -1845,7 +2034,7 @@ Los reportes de Ventas, Stock y Producción incorporan el componente reutilizabl
 
 **Archivos:** `src/components/admin/reportes/FiltrosReportes.tsx`, `ReporteVentas.tsx`, `ReporteStock.tsx`, `ReporteProduccion.tsx`, `src/app/api/reportes/{ventas,stock,produccion,filtros-opciones}/route.ts`, `docs/FILTROS-REPORTES.md`.
 
-### 22.4 Visibilidad de Contraseña en Login y Usuarios (mejora)
+### 23.4 Visibilidad de Contraseña en Login y Usuarios (mejora v15)
 
 La pantalla de **login** (`/admin/login`) y el formulario de **creación/edición de usuarios** (`UsuarioForm`) incluyen un **toggle de visibilidad de contraseña** (ícono de ojo):
 
@@ -1854,7 +2043,7 @@ La pantalla de **login** (`/admin/login`) y el formulario de **creación/edició
 
 **Archivos:** `src/app/(auth)/admin/login/page.tsx`, `src/components/admin/UsuarioForm.tsx`.
 
-### 22.5 Buscador de Promociones: muestra TODOS los productos (corrección)
+### 23.5 Buscador de Promociones: muestra TODOS los productos (corrección v15)
 
 **Problema:** al crear o editar una promoción, el selector de productos solo mostraba los productos *activos* (filtraba con `?estado=true`), ocultando productos inactivos, no visibles en la landing, sin categoría o sin código de barras. La búsqueda en cliente solo filtraba por nombre, no por código ni código de barras.
 
@@ -1866,7 +2055,7 @@ La pantalla de **login** (`/admin/login`) y el formulario de **creación/edició
 
 Resultado: el buscador lista **TODOS** los productos terminados (activos, inactivos, visibles, no visibles, con o sin categoría, con o sin código de barras) y la búsqueda encuentra coincidencias por cualquiera de los tres campos. Ver **sección 5.7**.
 
-### 22.6 Alineación del Formulario de Ventas (corrección)
+### 23.6 Alineación del Formulario de Ventas (corrección v15)
 
 - Las filas de detalle del `VentaForm` pasaron de `items-start` a `items-center`, alineando verticalmente todos los campos (producto, cantidad, precio, descuento) incluso cuando aparece el badge de descuento por volumen.
 - El escáner de código de barras pasó de un `<input>` crudo al componente `Input` de shadcn/ui, compartiendo altura `h-9`, bordes y radio con el resto del formulario. Se agregó `Label` descriptivo.
@@ -1874,7 +2063,7 @@ Resultado: el buscador lista **TODOS** los productos terminados (activos, inacti
 
 Resultado: filas claras, sin superposición, consistentes con el resto del sistema. Ver **sección 4.5**.
 
-### 22.7 Paquete Standalone y Sincronización Bidireccional (mejora)
+### 23.7 Paquete Standalone y Sincronización Bidireccional (mejora v15)
 
 - Paquete para uso local sin internet (`laspastasdeorlando-local`) con sincronización bidireccional SQLite ↔ Turso vía `@libsql/client` embebido.
 - El modo se controla con `DATABASE_URL` en `.env` (`file:`→local, `libsql://`→Turso).
@@ -1882,7 +2071,7 @@ Resultado: filas claras, sin superposición, consistentes con el resto del siste
 
 ---
 
-> **Nota:** Esta documentación refleja el estado del sistema en la **Fase 15** (Impresión Térmica de Etiquetas, Plantillas de Notificaciones con Markdown, Filtros Personalizados en Reportes, Visibilidad de Contraseñas, corrección del Buscador de Promociones y alineación del Formulario de Ventas, además de todas las funcionalidades de las fases 1-14). El sistema está en desarrollo activo y puede haber cambios posteriores.
+> **Nota:** Esta documentación refleja el estado del sistema en la **Fase 16** (Dashboard rediseñado con flujo de trabajo, además de todas las funcionalidades de las fases 1-15: Impresión Térmica de Etiquetas, Plantillas de Notificaciones con Markdown, Filtros Personalizados en Reportes, Visibilidad de Contraseñas, corrección del Buscador de Promociones y alineación del Formulario de Ventas). El sistema está en desarrollo activo y puede haber cambios posteriores.
 
 ---
 

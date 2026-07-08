@@ -41,6 +41,9 @@ import {
   Eye,
   Database,
   Clock,
+  Gauge,
+  ListChecks,
+  Zap,
 } from 'lucide-react'
 import {
   Dialog,
@@ -219,6 +222,13 @@ const helpSections: HelpSection[] = [
         </div>
 
         <InfoBox type="info">
+          El <strong>Dashboard</strong> (pantalla principal al ingresar) resume el estado del negocio en
+          un solo vistazo: pasos pendientes que requieren tu atención, indicadores clave con tendencias,
+          el flujo de trabajo completo (Materias Primas → Recetas → Producción → Stock → Ventas) y
+          accesos directos. Ver <ModuleRef name="Dashboard y Flujo de Trabajo" /> para el detalle.
+        </InfoBox>
+
+        <InfoBox type="tip">
           Este manual cubre cada módulo del sistema en detalle. Usá la tabla de contenidos
           o el buscador para encontrar rápidamente la información que necesitás.
         </InfoBox>
@@ -662,6 +672,17 @@ const helpSections: HelpSection[] = [
             </li>
           </ul>
         </div>
+
+        <div className="bg-oliva/5 border border-oliva/20 rounded-lg p-3">
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-marron">En el flujo de trabajo del Dashboard:</strong> el stock es
+            la <strong>cuarta etapa</strong> (Materias Primas → Recetas → Producción → <strong>Stock</strong> → Ventas).
+            Los productos sin stock o con stock bajo aparecen como <strong>Pasos Pendientes</strong> en la
+            pantalla principal, con un botón directo para ver la lista filtrada. La etapa se marca como 🔴
+            Crítico si hay productos agotados, o ⚠️ Pendiente si hay stock bajo. Ver{' '}
+            <ModuleRef name="Dashboard y Flujo de Trabajo" />.
+          </p>
+        </div>
       </div>
     ),
   },
@@ -930,6 +951,16 @@ const helpSections: HelpSection[] = [
           La producción es el <strong>único mecanismo automático</strong> para agregar stock a los productos
           terminados. Las ventas y los ajustes manuales son las otras formas de modificar el stock.
         </InfoBox>
+
+        <div className="bg-marron/5 border border-marron/20 rounded-lg p-3">
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-marron">En el flujo de trabajo del Dashboard:</strong> la producción es
+            la <strong>tercera etapa</strong> (Materias Primas → Recetas → <strong>Producción</strong> → Stock → Ventas).
+            Las producciones pendientes hace más de 2 días aparecen como <strong>Pasos Pendientes</strong> con
+            el botón "Completar producción". La etapa se marca como ⚠️ Pendiente si hay producciones atrasadas,
+            o ✅ En orden si no hay pendientes. Ver <ModuleRef name="Dashboard y Flujo de Trabajo" />.
+          </p>
+        </div>
       </div>
     ),
   },
@@ -1109,6 +1140,17 @@ const helpSections: HelpSection[] = [
             Las reservas permiten a los clientes apartar productos con anticipación, generalmente con un seña
             o depósito. El sistema registra la reserva con los datos del cliente, los productos reservados
             y el monto del depósito. Al confirmar la entrega, se convierte en una venta.
+          </p>
+        </div>
+
+        <div className="bg-mostaza/5 border border-mostaza/20 rounded-lg p-3">
+          <p className="text-sm text-muted-foreground">
+            <strong className="text-marron">En el flujo de trabajo del Dashboard:</strong> las ventas son
+            la <strong>quinta y última etapa</strong> (Materias Primas → Recetas → Producción → Stock → <strong>Ventas</strong>).
+            El "Indicador Clave" Ventas del Mes muestra el total facturado con la tendencia vs mes anterior
+            (↑ sube en verde / ↓ baja en rojo). La etapa se marca como ✅ En orden si hubo ventas este mes,
+            o ⚠️ Pendiente si aún no hay ventas registradas. El botón "Registrar venta" está en la sección
+            Acciones Directas. Ver <ModuleRef name="Dashboard y Flujo de Trabajo" />.
           </p>
         </div>
       </div>
@@ -2761,12 +2803,248 @@ const helpSections: HelpSection[] = [
     ),
   },
 
-  // ─── 19. Novedades y Mejoras Recientes ───────────────────────────────
+  // ─── 19. Dashboard y Flujo de Trabajo ────────────────────────────────
+  {
+    id: 'dashboard-flujo',
+    title: 'Dashboard y Flujo de Trabajo',
+    iconComponent: LayoutDashboard,
+    summary: 'Panel principal rediseñado: Pasos Pendientes accionables, Indicadores Clave con tendencias, Flujo de Trabajo de 5 etapas y Acciones Directas.',
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          El <strong className="text-marron">Dashboard</strong> es la pantalla principal del sistema
+          (<code className="bg-marron/10 px-1 rounded text-xs">/admin/dashboard</code>). Fue rediseñado con
+          un <strong>enfoque en flujo de trabajo</strong>: en lugar de mostrar solo números, te guía sobre
+          <strong> qué hacer</strong> con esa información y en qué orden.
+        </p>
+
+        <div className="bg-crema/60 rounded-lg p-4 border border-mostaza/10">
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
+            <LayoutDashboard className="h-4 w-4 text-marron" />
+            Las 4 secciones del Dashboard
+          </h4>
+          <p className="text-sm text-muted-foreground mb-3">
+            Al ingresar al panel, ves cuatro secciones principales en orden de prioridad:
+          </p>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3 bg-rojo/5 border border-rojo/15 rounded-lg p-3">
+              <ListChecks className="h-5 w-5 text-rojo shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-marron">1. Pasos Pendientes (prioridad alta)</p>
+                <p className="text-muted-foreground text-xs mt-1">
+                  Muestra <strong>solo las alertas que requieren acción</strong>, ordenadas por severidad
+                  (críticas primero). Cada paso tiene un <strong>botón directo</strong> a la acción
+                  correspondiente: "Ver productos sin stock", "Cargar materias primas", "Completar producción",
+                  "Crear recetas", etc. Si no hay pendientes, se muestra un mensaje "Todo está en orden".
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-oliva/5 border border-oliva/15 rounded-lg p-3">
+              <Gauge className="h-5 w-5 text-oliva shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-marron">2. Indicadores Clave (con tendencias)</p>
+                <p className="text-muted-foreground text-xs mt-1">
+                  Seis métricas con <strong>contexto y tendencia</strong> comparada con el mes anterior:
+                  Ventas del Mes, Producción del Mes, Pedidos Pendientes, Reservas Activas, Compras del Mes
+                  y Stock Crítico. Cada indicador muestra una flecha{' '}
+                  <span className="text-oliva font-medium">↑ verde</span> (subió),{' '}
+                  <span className="text-rojo font-medium">↓ roja</span> (bajó) o "sin datos".
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-marron/5 border border-marron/15 rounded-lg p-3">
+              <ArrowRight className="h-5 w-5 text-marron shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-marron">3. Flujo de Trabajo (5 etapas)</p>
+                <p className="text-muted-foreground text-xs mt-1">
+                  Visualización del proceso completo:{' '}
+                  <strong>Materias Primas → Recetas → Producción → Stock → Ventas</strong>.
+                  Cada etapa muestra su estado con un código de color:
+                </p>
+                <ul className="space-y-1 text-xs text-muted-foreground mt-2 ml-4">
+                  <li className="flex gap-2"><span className="text-oliva shrink-0">✅</span><span><strong className="text-oliva">En orden</strong>: no hay pendientes en esta etapa.</span></li>
+                  <li className="flex gap-2"><span className="text-mostaza shrink-0">⚠️</span><span><strong className="text-mostaza">Pendiente</strong>: hay items que requieren atención (stock bajo, producción atrasada, etc.).</span></li>
+                  <li className="flex gap-2"><span className="text-rojo shrink-0">🔴</span><span><strong className="text-rojo">Crítico</strong>: hay items agotados o bloqueantes (sin stock, sin receta, etc.).</span></li>
+                </ul>
+                <p className="text-muted-foreground text-xs mt-2">
+                  El header muestra un badge con el progreso: "Flujo: X/5 etapas OK".
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-mostaza/5 border border-mostaza/15 rounded-lg p-3">
+              <Zap className="h-5 w-5 text-mostaza shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium text-marron">4. Acciones Directas</p>
+                <p className="text-muted-foreground text-xs mt-1">
+                  Ocho accesos rápidos grandes a las tareas más frecuentes: Ver productos sin stock,
+                  Completar producción, Cargar materias primas, Registrar venta, Gestionar pedidos,
+                  Editar recetas, Ver reservas y Generar reporte. Debajo hay una fila de botones
+                  compactos para accesos secundarios (Materias Primas, Insumos, Movimientos, etc.).
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-oliva" />
+            Cómo usar el Dashboard (paso a paso)
+          </h4>
+          <div className="space-y-3">
+            <div className="flex items-start gap-3">
+              <StepCircle n={1} />
+              <div>
+                <p className="font-medium text-sm">Revisá los Pasos Pendientes</p>
+                <p className="text-xs text-muted-foreground">
+                  Al ingresar, mirá primero esta sección. Las alertas <strong>críticas</strong> (rojo) son
+                  las más urgentes: productos sin stock, materias primas agotadas, productos sin receta.
+                  Hacé clic en el botón de cada paso para ir directo a resolverlo.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={2} />
+              <div>
+                <p className="font-medium text-sm">Consultá los Indicadores Clave</p>
+                <p className="text-xs text-muted-foreground">
+                  Revisá si las ventas y la producción suben o bajan respecto del mes anterior. Las flechas
+                  verdes indican crecimiento; las rojas, disminución. Esto te da una idea rápida de cómo
+                  va el negocio.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={3} />
+              <div>
+                <p className="font-medium text-sm">Identificá la etapa pendiente del Flujo de Trabajo</p>
+                <p className="text-xs text-muted-foreground">
+                  Mirá qué etapa del flujo tiene ⚠️ o 🔴. Esa es la siguiente acción a resolver. Por ejemplo,
+                  si "Recetas" está en 🔴, significa que hay productos sin receta y no podés producirlos.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <StepCircle n={4} />
+              <div>
+                <p className="font-medium text-sm">Usá las Acciones Directas</p>
+                <p className="text-xs text-muted-foreground">
+                  Para tareas frecuentes, usá los botones grandes de Acciones Directas en lugar de navegar
+                  por el menú lateral. Son más rápidos y te llevan directo al formulario o lista filtrada.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-mostaza" />
+            Tipos de alertas en Pasos Pendientes
+          </h4>
+          <p className="text-sm text-muted-foreground mb-3">
+            El Dashboard detecta automáticamente estas situaciones y las muestra como Pasos Pendientes:
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="bg-rojo/5 border border-rojo/20 rounded-lg p-3">
+              <p className="font-medium text-sm text-rojo mb-1">🔴 Críticas</p>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• Productos terminados sin stock (stock = 0)</li>
+                <li>• Materias primas agotadas (stock = 0)</li>
+                <li>• Insumos agotados (stock = 0)</li>
+                <li>• Productos terminados sin receta asociada</li>
+              </ul>
+            </div>
+            <div className="bg-mostaza/5 border border-mostaza/20 rounded-lg p-3">
+              <p className="font-medium text-sm text-mostaza mb-1">⚠️ Medias</p>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• Producciones pendientes hace más de 2 días</li>
+                <li>• Materias primas con stock bajo (debajo del mínimo)</li>
+                <li>• Productos con stock bajo (debajo del mínimo)</li>
+                <li>• Recetas sin ingredientes cargados</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-3 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-oliva" />
+            Indicadores Clave y sus tendencias
+          </h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border border-marron/10 rounded-lg">
+              <thead className="bg-marron/5">
+                <tr>
+                  <th className="text-left p-2 font-medium text-marron">Indicador</th>
+                  <th className="text-left p-2 font-medium text-marron">Qué muestra</th>
+                  <th className="text-left p-2 font-medium text-marron">Tendencia</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-marron/5">
+                <tr>
+                  <td className="p-2 font-medium">Ventas del Mes</td>
+                  <td className="p-2 text-muted-foreground">Total facturado ($)</td>
+                  <td className="p-2 text-muted-foreground">vs mes anterior</td>
+                </tr>
+                <tr>
+                  <td className="p-2 font-medium">Producción del Mes</td>
+                  <td className="p-2 text-muted-foreground">Unidades producidas</td>
+                  <td className="p-2 text-muted-foreground">vs mes anterior</td>
+                </tr>
+                <tr>
+                  <td className="p-2 font-medium">Pedidos Pendientes</td>
+                  <td className="p-2 text-muted-foreground">Pedidos de clientes sin entregar</td>
+                  <td className="p-2 text-muted-foreground">sin tendencia</td>
+                </tr>
+                <tr>
+                  <td className="p-2 font-medium">Reservas Activas</td>
+                  <td className="p-2 text-muted-foreground">Reservas vigentes con seña</td>
+                  <td className="p-2 text-muted-foreground">sin tendencia</td>
+                </tr>
+                <tr>
+                  <td className="p-2 font-medium">Compras del Mes</td>
+                  <td className="p-2 text-muted-foreground">Total comprado a proveedores ($)</td>
+                  <td className="p-2 text-muted-foreground">sin tendencia</td>
+                </tr>
+                <tr>
+                  <td className="p-2 font-medium">Stock Crítico</td>
+                  <td className="p-2 text-muted-foreground">Items agotados (PT + MP + Insumos)</td>
+                  <td className="p-2 text-muted-foreground">sin tendencia</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Las tendencias se calculan comparando el mes actual con el mes anterior. Una flecha{' '}
+            <span className="text-oliva font-medium">↑ verde</span> indica que el valor subió; una{' '}
+            <span className="text-rojo font-medium">↓ roja</span> que bajó. Para ventas y producción, subir
+            es positivo; para stock crítico, bajar sería positivo (pero se muestra sin tendencia).
+          </p>
+        </div>
+
+        <InfoBox type="tip">
+          El Dashboard consulta un único endpoint (<code className="bg-marron/10 px-1 rounded text-xs">/api/dashboard</code>)
+          que agrega todos los datos en una sola consulta, reemplazando los 16 fetches paralelos del diseño
+          anterior. Esto hace que la pantalla cargue más rápido.
+        </InfoBox>
+
+        <InfoBox type="info">
+          El Flujo de Trabajo sigue el orden lógico del negocio: primero necesitás materias primas (compras),
+          luego recetas que digan cómo usarlas, después producción que las transforme en productos terminados,
+          después stock disponible para vender, y finalmente ventas. Si una etapa está bloqueada, las
+          siguientes también se ven afectadas.
+        </InfoBox>
+      </div>
+    ),
+  },
+
+  // ─── 20. Novedades y Mejoras Recientes ───────────────────────────────
   {
     id: 'novedades',
     title: 'Novedades y Mejoras Recientes',
     iconComponent: CheckCircle2,
-    summary: 'Buscador de promociones que muestra TODOS los productos, alineación del formulario de ventas y otras mejoras.',
+    summary: 'Dashboard rediseñado con flujo de trabajo, buscador de promociones que muestra TODOS los productos y otras mejoras.',
     content: (
       <div className="space-y-5">
         <p className="text-muted-foreground">
@@ -2774,6 +3052,28 @@ const helpSections: HelpSection[] = [
           recientes del sistema para que las tengas a mano. Si venís usando el sistema desde antes, acá
           encontrás qué cambió.
         </p>
+
+        <div className="bg-marron/5 border border-marron/20 rounded-lg p-4">
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <LayoutDashboard className="h-4 w-4 text-marron" />
+            Dashboard rediseñado con enfoque en flujo de trabajo
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            El panel principal (<code className="bg-marron/10 px-1 rounded text-xs">/admin/dashboard</code>)
+            fue rediseñado por completo para <strong>guiar al usuario sobre qué hacer</strong> con la
+            información, en lugar de solo mostrar números.
+          </p>
+          <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Pasos Pendientes:</strong> alertas accionables con botones directos (ver stock sin stock, cargar materias primas, completar producción, etc.).</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Indicadores Clave:</strong> 6 métricas con tendencia vs mes anterior (flechas verdes/rojas).</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Flujo de Trabajo:</strong> 5 etapas (MP → Recetas → Producción → Stock → Ventas) con estado visual ✅/⚠️/🔴.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Acciones Directas:</strong> 8 accesos rápidos a las tareas más frecuentes.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>Nuevo endpoint <code className="bg-marron/10 px-1 rounded text-xs">/api/dashboard</code> que agrega todos los datos en una sola consulta (antes 16 fetches paralelos).</span></li>
+          </ul>
+          <p className="text-xs text-muted-foreground mt-2">
+            Ver sección <ModuleRef name="Dashboard y Flujo de Trabajo" /> para el detalle completo.
+          </p>
+        </div>
 
         <div className="bg-oliva/5 border border-oliva/20 rounded-lg p-4">
           <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">

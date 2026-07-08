@@ -124,10 +124,17 @@ MÓDULOS DEL SISTEMA:
 - Productos visibles al público en la landing page
 - No confundir con productos terminados (estos son para la web pública)
 
-20. DASHBOARD (/admin/dashboard)
-- Panel principal con estadísticas y métricas
-- Alertas de stock visible al ingresar
-- Guía rápida de uso del sistema
+20. DASHBOARD (/admin/dashboard) — REDISEÑADO CON FLUJO DE TRABAJO
+- Panel principal rediseñado con 4 secciones jerárquicas que guían al usuario sobre QUÉ HACER:
+- SECCIÓN 1 "Pasos Pendientes" (prioridad alta): muestra SOLO alertas que requieren acción, ordenadas por severidad (críticas primero). Cada paso tiene un BOTÓN DIRECTO a la acción: "Ver productos sin stock", "Cargar materias primas", "Completar producción", "Crear recetas", "Ver stock bajo", "Editar recetas". Si no hay pendientes, muestra "Todo está en orden".
+- SECCIÓN 2 "Indicadores Clave": 6 métricas con TENDENCIA vs mes anterior (flecha verde ↑ si subió, roja ↓ si bajó, "sin datos" si no hay comparación). Indicadores: Ventas del Mes ($), Producción del Mes (unidades), Pedidos Pendientes, Reservas Activas, Compras del Mes ($), Stock Crítico (items agotados).
+- SECCIÓN 3 "Flujo de Trabajo": 5 etapas del proceso en pipeline: Materias Primas → Recetas → Producción → Stock → Ventas. Cada etapa muestra su estado: ✅ En orden (oliva), ⚠️ Pendiente (mostaza), 🔴 Crítico (rojo). Header con badge "Flujo: X/5 etapas OK".
+- SECCIÓN 4 "Acciones Directas": 8 botones grandes de acceso rápido: Ver productos sin stock, Completar producción, Cargar materias primas, Registrar venta, Gestionar pedidos, Editar recetas, Ver reservas, Generar reporte. Debajo: fila de botones compactos para accesos secundarios.
+- TIPOS DE ALERTAS (Pasos Pendientes):
+  - 🔴 Críticas: PT sin stock, MP agotadas, Insumos agotados, PT sin receta.
+  - ⚠️ Medias: Producción pendiente >2 días, MP stock bajo, PT stock bajo, Recetas sin ingredientes.
+- Endpoint único /api/dashboard agrega todos los datos en 1 consulta (antes 16 fetches paralelos).
+- Estados del flujo: ok (sin pendientes), pendiente (stock bajo/producción atrasada), critico (sin stock/sin receta).
 
 21. PROMOCIONES (/admin/promociones)
 - Descuentos y ofertas para productos terminados: porcentual (%), monto fijo ($), 2x1 (50% sobre el total) y tiempo limitado (con vigencia).
@@ -202,13 +209,16 @@ MÓDULOS DEL SISTEMA:
 - Ver también: logs de acceso, sesiones activas, roles y permisos en /admin/seguridad.
 
 FLUJO DE TRABAJO RECOMENDADO:
-1. Cargar materias primas e insumos con su stock
+El Dashboard refleja este flujo en su sección "Flujo de Trabajo" (5 etapas con estado visual ✅/⚠️/🔴):
+1. Cargar materias primas e insumos con su stock (etapa "Materias Primas")
 2. Crear productos terminados
-3. Crear recetas vinculando productos con ingredientes
+3. Crear recetas vinculando productos con ingredientes (etapa "Recetas")
 4. Cargar stock inicial si es necesario (botón "Cargar Stock")
-5. Iniciar y completar producciones
-6. Registrar ventas
-7. Consultar reportes y movimientos
+5. Iniciar y completar producciones (etapa "Producción")
+6. Verificar stock disponible (etapa "Stock")
+7. Registrar ventas (etapa "Ventas")
+8. Consultar reportes y movimientos
+Al ingresar al Dashboard, revisar primero los "Pasos Pendientes" para ver qué requiere atención inmediata.
 
 CONCEPTOS CLAVE:
 - Stock crítico: cuando stock_actual = 0 (se muestra en rojo)
@@ -545,17 +555,122 @@ Las entregas se vinculan con los pedidos de clientes.`,
 4. Las opiniones aprobadas se muestran en la landing page pública`,
   },
   {
-    keywords: ['dashboard', 'panel', 'inicio', 'estadísticas'],
-    response: `📊 **Dashboard:**
+    keywords: ['dashboard', 'panel', 'inicio', 'estadísticas', 'cómo uso el dashboard', 'como uso el dashboard', 'pantalla principal'],
+    response: `📊 **Dashboard rediseñado con flujo de trabajo** (menú: Inicio → Dashboard, o \`/admin/dashboard\`)
 
-El Dashboard es la pantalla principal del sistema. Al ingresar ves:
+El Dashboard fue rediseñado para **guiarte sobre qué hacer**, no solo mostrar números. Tiene 4 secciones en orden de prioridad:
 
-- **Tarjetas de estadísticas**: cantidad de productos, ventas, pedidos, etc.
-- **Alertas de stock**: productos con stock 0 o bajo (en rojo/naranja)
-- **Accesos rápidos**: botones directos a los módulos más usados
-- **Guía rápida**: ayuda sobre cómo usar el sistema
+**1. Pasos Pendientes (arriba, prioridad alta)**
+Muestra solo las alertas que requieren acción, ordenadas: críticas (🔴) primero, medias (⚠️) después. Cada paso tiene un botón directo:
+- "Ver productos sin stock" → lista de PT agotados
+- "Cargar materias primas" → formulario de compras
+- "Completar producción" → producciones pendientes
+- "Crear recetas" → recetas
+Si no hay pendientes, ves "✅ Todo está en orden".
 
-Es el punto de partida para ver el estado general del negocio.`,
+**2. Indicadores Clave (al medio)**
+6 métricas con **tendencia vs mes anterior** (flecha verde ↑ si subió, roja ↓ si bajó):
+- Ventas del Mes ($), Producción del Mes (unidades), Pedidos Pendientes, Reservas Activas, Compras del Mes ($), Stock Crítico.
+
+**3. Flujo de Trabajo (al medio)**
+Pipeline de 5 etapas: **Materias Primas → Recetas → Producción → Stock → Ventas**.
+Cada etapa tiene un estado visual:
+- ✅ En orden (verde oliva) — sin pendientes
+- ⚠️ Pendiente (mostaza) — hay stock bajo o producción atrasada
+- 🔴 Crítico (rojo) — hay items agotados o sin receta
+El header muestra "Flujo: X/5 etapas OK".
+
+**4. Acciones Directas (abajo)**
+8 botones grandes: Ver productos sin stock, Completar producción, Cargar materias primas, Registrar venta, Gestionar pedidos, Editar recetas, Ver reservas, Generar reporte.
+
+💡 **Cómo usarlo paso a paso:**
+1. Revisá los **Pasos Pendientes** y resolvé las críticas primero (botones directos).
+2. Mirá los **Indicadores Clave** para ver si ventas/producción suben o bajan.
+3. Identificá qué etapa del **Flujo de Trabajo** tiene ⚠️ o 🔴 — esa es tu próxima acción.
+4. Usá las **Acciones Directas** para tareas frecuentes (más rápido que el menú lateral).`,
+  },
+  {
+    keywords: ['qué significa cada alerta', 'que significa cada alerta', 'tipos de alerta', 'alertas dashboard', 'crítica media', 'critica media', 'severidad alerta', 'colores alerta'],
+    response: `🔔 **Tipos de alertas en el Dashboard**
+
+El Dashboard muestra alertas accionables en la sección **"Pasos Pendientes"**, ordenadas por severidad:
+
+**🔴 Críticas (las más urgentes):**
+- **Productos sin stock**: producto terminado con stock = 0. Acción: producir más.
+- **Materias primas agotadas**: MP con stock = 0. No se puede producir sin reponer. Acción: registrar compra.
+- **Insumos agotados**: insumos (envases, bandejas) con stock = 0. Acción: registrar compra.
+- **Productos sin receta**: PT que no tiene receta asociada. No se puede producir. Acción: crear receta.
+
+**⚠️ Medias (importantes pero no bloqueantes):**
+- **Producción pendiente >2 días**: producciones en estado pendiente/en_curso hace más de 2 días. Acción: completar o cancelar.
+- **Materias primas con stock bajo**: MP con stock_actual ≤ stock_minimo (pero >0). Acción: programar compra.
+- **Productos con stock bajo**: PT con stock_actual ≤ stock_minimo (pero >0). Acción: programar producción.
+- **Recetas sin ingredientes**: recetas activas pero vacías (sin ingredientes cargados). Acción: editar receta.
+
+💡 **Orden de resolución recomendado:** primero las críticas (bloquean producción/venta), después las medias. Usá los botones directos de cada alerta para ir a la pantalla correspondiente.`,
+  },
+  {
+    keywords: ['completar producción', 'completar produccion', 'finalizar producción', 'finalizar produccion', 'producción pendiente', 'produccion pendiente', 'producción atrasada', 'produccion atrasada'],
+    response: `🏭 **Cómo completar una producción pendiente**
+
+1. Ir a **Producción** (menú: Stock & Producción → Producción, o botón "Completar producción" en el Dashboard → Acciones Directas)
+2. Buscar la producción con estado **Pendiente** o **En proceso** (filtro por estado)
+3. Hacer clic en la producción para ver el detalle
+4. Verificar que haya **stock suficiente** de todas las materias primas e insumos de la receta
+   - Si falta stock, el sistema te avisará y no te dejará completar
+5. Hacer clic en **"Completar"** o **"Finalizar producción"**
+6. Al completar:
+   - Se **descuenta** el stock de materias primas e insumos consumidos
+   - Se **suma** el stock de productos terminados generados
+   - Se registran los movimientos de stock automáticamente
+   - Se calcula el costo total de la producción
+
+⚠️ **En el Dashboard:** las producciones pendientes hace más de 2 días aparecen como **Pasos Pendientes** (⚠️ Media) con el botón "Completar producción". La etapa "Producción" del Flujo de Trabajo se marca como ⚠️ Pendiente si hay producciones atrasadas.
+
+💡 Si no podés completar porque falta stock, registrá una **compra** primero (botón "Cargar materias primas" en el Dashboard).`,
+  },
+  {
+    keywords: ['ver productos sin stock', 'productos sin stock', 'productos agotados', 'stock cero', 'sin stock', 'productos sin stock dashboard'],
+    response: `📦 **Cómo ver los productos sin stock**
+
+**Desde el Dashboard (más rápido):**
+1. En la sección **"Pasos Pendientes"**, buscar la alerta "Productos sin stock" (🔴 Crítica)
+2. Hacer clic en el botón **"Ver productos sin stock"**
+3. Se abre la lista de productos terminados filtrada (solo los que tienen stock = 0)
+
+**Desde el menú lateral:**
+1. Ir a **Productos Terminados** (menú: Stock & Producción → Productos Terminados)
+2. Usar el filtro rápido **"Stock = 0"** (botón en la parte superior de la tabla)
+
+**Para resolver un producto sin stock:**
+1. Verificar que el producto tenga una **receta activa** (si no, crearla primero)
+2. Verificar que haya **stock suficiente** de las materias primas e insumos de la receta
+3. Ir a **Producción** → "Nueva producción" → seleccionar la receta → cantidad → iniciar → completar
+4. Al completar la producción, el stock del producto terminado se actualiza automáticamente
+
+💡 En el Dashboard, la etapa **"Stock PT"** del Flujo de Trabajo se marca como 🔴 Crítico si hay productos agotados, o ⚠️ Pendiente si hay stock bajo.`,
+  },
+  {
+    keywords: ['flujo de trabajo dashboard', 'etapas flujo', 'materias primas recetas producción stock ventas', 'pipeline dashboard', 'estados del flujo', 'que significa cada etapa'],
+    response: `🔄 **Flujo de Trabajo del Dashboard**
+
+El Dashboard muestra el proceso completo del negocio en 5 etapas: **Materias Primas → Recetas → Producción → Stock → Ventas**
+
+Cada etapa tiene un estado visual:
+- ✅ **En orden** (verde oliva): no hay pendientes en esta etapa
+- ⚠️ **Pendiente** (mostaza): hay items que requieren atención
+- 🔴 **Crítico** (rojo): hay items agotados o bloqueantes
+
+**Qué significa cada etapa:**
+1. **Materias Primas**: stock de MP e insumos. 🔴 si hay agotados, ⚠️ si hay stock bajo.
+2. **Recetas**: PT con receta asociada. 🔴 si hay PT sin receta, ⚠️ si hay recetas vacías.
+3. **Producción**: producciones en curso. ⚠️ si hay pendientes >2 días.
+4. **Stock PT**: stock de productos terminados. 🔴 si hay agotados, ⚠️ si hay stock bajo.
+5. **Ventas**: ventas del mes. ⚠️ si no hubo ventas este mes, ✅ si hubo.
+
+El header muestra **"Flujo: X/5 etapas OK"** — cuántas etapas están en ✅.
+
+💡 **Cómo usarlo:** mirá qué etapa tiene ⚠️ o 🔴 — esa es tu próxima acción. Si "Recetas" está en 🔴, no podés producir esos productos hasta crearles receta.`,
   },
   {
     keywords: ['descuento por volumen', 'descuentos por volumen', 'mayorista', 'rango', 'cantidad', 'volumen', 'escalona'],
@@ -831,6 +946,7 @@ function getFallbackResponse(userMessage: string): string {
 - **Etiquetas térmicas**: PDF y ZPL para impresoras de rollo
 - **Plantillas de notificaciones**: Markdown y variables canónicas
 - **Visibilidad de contraseña**: ojo en login y usuarios
+- **Dashboard**: Pasos Pendientes, Indicadores Clave, Flujo de Trabajo, Acciones Directas
 
 Probá preguntar sobre alguno de estos temas y te guío paso a paso. 📋`
 }
