@@ -53,6 +53,7 @@ interface ProductoTerminado {
   id: number
   nombre: string
   precio_venta: number
+  estado?: boolean
 }
 
 interface Vendedor {
@@ -227,7 +228,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
           fetch('/api/personas?tipo=cliente&limite=100'),
           fetch('/api/formas-pago'),
           fetch('/api/estados-generales?entidad_aplicable=venta'),
-          fetch('/api/productos-terminados?limite=200&estado=true'),
+          fetch('/api/productos-terminados?limite=200&incluir_inactivos=true'),
           fetch('/api/usuarios'),
           fromPedido
             ? fetch('/api/pedidos-clientes?limite=100&id_estado=pendiente')
@@ -249,6 +250,7 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
             id: pt.id,
             nombre: pt.nombre,
             precio_venta: pt.precio_venta,
+            estado: pt.estado,
           }))
         )
         setVendedores(venData.usuarios || venData || [])
@@ -898,8 +900,15 @@ export default function VentaForm({ venta, fromPedido, onSuccess, onCancel }: Ve
                         </SelectTrigger>
                         <SelectContent>
                           {productosTerminados.map((pt) => (
-                            <SelectItem key={pt.id} value={pt.id.toString()}>
+                            <SelectItem
+                              key={pt.id}
+                              value={pt.id.toString()}
+                              className={pt.estado === false ? 'text-muted-foreground italic' : ''}
+                            >
                               {pt.nombre} — {formatCurrency(pt.precio_venta)}
+                              {pt.estado === false && (
+                                <span className="ml-1 text-xs text-rojo">(Inactivo)</span>
+                              )}
                             </SelectItem>
                           ))}
                         </SelectContent>

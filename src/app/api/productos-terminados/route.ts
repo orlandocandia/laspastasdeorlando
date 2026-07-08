@@ -77,6 +77,7 @@ export async function GET(request: NextRequest) {
     const buscar = searchParams.get('buscar')
     const id_categoria = searchParams.get('id_categoria')
     const estado = searchParams.get('estado')
+    const incluir_inactivos = searchParams.get('incluir_inactivos') === 'true'
     const tipo_harina = searchParams.get('tipo_harina')
     const stock = searchParams.get('stock')
     const pagina = parseInt(searchParams.get('pagina') || '1')
@@ -85,7 +86,13 @@ export async function GET(request: NextRequest) {
     const where: Record<string, unknown> = {}
     const parsedCategoria = parseInt(id_categoria)
     if (id_categoria && !isNaN(parsedCategoria)) where.id_categoria = parsedCategoria
-    if (estado !== null && estado !== '' && estado !== 'all') where.estado = estado === 'true'
+    // Solo aplicar el filtro de estado si NO se pidió incluir inactivos.
+    // incluir_inactivos=true tiene prioridad sobre estado=true/false y devuelve
+    // productos activos e inactivos (necesario para Ventas, Presupuestos, etc.
+    // donde se puede vender un producto discontinuado que aún tiene stock).
+    if (!incluir_inactivos && estado !== null && estado !== '' && estado !== 'all') {
+      where.estado = estado === 'true'
+    }
     if (tipo_harina && ['con_gluten', 'integral', 'sin_gluten'].includes(tipo_harina)) {
       where.tipo_harina = tipo_harina
     }
