@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { FileSearch, Search, Loader2, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react'
+import { FileSearch, Search, Loader2, ChevronLeft, ChevronRight, AlertTriangle, FileSpreadsheet } from 'lucide-react'
+import * as XLSX from 'xlsx'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -108,6 +109,51 @@ export default function LogsAccesoPage() {
   useEffect(() => { fetchLogs() }, [fetchLogs])
   useEffect(() => { setPagina(1) }, [email, resultado, fechaDesde, fechaHasta])
 
+  const [exporting, setExporting] = useState(false)
+
+  const exportExcel = async () => {
+    setExporting(true)
+    try {
+      toast.info('Generando Excel...')
+      // Fetch all logs matching current filters (sin paginacion)
+      const params = new URLSearchParams()
+      params.set('page', '1')
+      params.set('limit', '10000')
+      if (email) params.set('email', email)
+      if (resultado) params.set('resultado', resultado)
+      if (fechaDesde) params.set('fecha_desde', fechaDesde)
+      if (fechaHasta) params.set('fecha_hasta', fechaHasta)
+      const res = await fetch(`/api/seguridad/logs-acceso?${params.toString()}`)
+      if (!res.ok) throw new Error('Error al cargar logs')
+      const data: LogsResponse = await res.json()
+      const logsAll = data.data || []
+      if (logsAll.length === 0) {
+        toast.warning('No hay registros para exportar')
+        return
+      }
+      const rows = logsAll.map((l) => ({
+        'Fecha': new Date(l.fecha).toLocaleString('es-AR'),
+        'Email': l.email || '-',
+        'Resultado': resultadoLabels[l.resultado] || l.resultado,
+        'IP': l.ip || '-',
+        'Navegador': l.navegador || '-',
+        'SO': l.so || '-',
+        'Dispositivo': l.dispositivo || '-',
+        'Motivo': l.motivo || '-',
+      }))
+      const ws = XLSX.utils.json_to_sheet(rows)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Logs de Acceso')
+      XLSX.writeFile(wb, `logs-acceso-${new Date().toISOString().split('T')[0]}.xlsx`)
+      toast.success('Excel generado')
+    } catch (error) {
+      console.error('Error exporting Excel:', error)
+      toast.error('Error al generar Excel')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -194,6 +240,20 @@ export default function LogsAccesoPage() {
           className="w-full lg:w-40"
           placeholder="Hasta"
         />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportExcel}
+          disabled={exporting}
+          className="gap-1.5 border-oliva/30 text-oliva hover:bg-oliva/10"
+        >
+          {exporting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <FileSpreadsheet className="h-4 w-4" />
+          )}
+          Excel
+        </Button>
       </div>
 
       {/* Table */}

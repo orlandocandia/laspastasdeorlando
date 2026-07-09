@@ -18,6 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import DashboardPDFExport from '@/components/admin/DashboardPDFExport';
 
 // ─── Types (mirror of API response) ──────────────────────────────────────────
 
@@ -321,6 +322,9 @@ export default function DashboardPage() {
               </Badge>
             )}
           </div>
+        )}
+        {!loading && data && (
+          <DashboardPDFExport data={data} usuario={firstName} />
         )}
       </div>
 
