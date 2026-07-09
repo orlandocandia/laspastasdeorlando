@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
-import { Pencil, Trash2, Plus, Search, Loader2, ChevronLeft, ChevronRight, ShoppingCart, Printer, FileSpreadsheet } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, Loader2, ChevronLeft, ChevronRight, ShoppingCart, Printer, FileSpreadsheet, Eye } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -405,6 +406,16 @@ export default function VentasTable() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 hover:bg-mostaza/10"
+                          title="Ver detalle"
+                        >
+                          <Link href={`/admin/ventas/${venta.id}`} className="flex items-center justify-center h-full w-full">
+                            <Eye className="h-4 w-4 text-mostaza" />
+                          </Link>
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"

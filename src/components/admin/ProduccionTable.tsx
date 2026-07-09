@@ -40,6 +40,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import ProduccionForm from './ProduccionForm'
+import ProduccionPrintButton from './ProduccionPrintButton'
+import type { OrdenProduccionData } from '@/components/print/OrdenProduccionPDFDocument'
 
 interface Produccion {
   id: number
@@ -108,6 +110,39 @@ const ESTADO_BADGE_MAP: Record<string, string> = {
 function getEstadoBadgeClass(nombreEstado: string): string {
   const key = nombreEstado.toLowerCase().replace(/ /g, '_')
   return ESTADO_BADGE_MAP[key] || 'bg-muted text-muted-foreground'
+}
+
+// Transform Produccion record to OrdenProduccionData for PDF export
+function toProduccionData(prod: Produccion): OrdenProduccionData {
+  return {
+    id: prod.id,
+    producto: prod.receta?.productoTerminado?.nombre || '-',
+    cantidad_producida: prod.cantidad_producida,
+    fecha_produccion: prod.fecha_produccion,
+    estado: prod.estado?.nombre_estado || '-',
+    observaciones: prod.observaciones,
+    supervisor: prod.supervisor
+      ? (prod.supervisor.razon_social || `${prod.supervisor.nombre} ${prod.supervisor.apellido}`.trim())
+      : null,
+    receta_nombre: null,
+    consumos: (prod.detalleConsumos || []).map((d) => ({
+      tipo: d.id_materia_prima ? 'materia_prima' as const : 'insumo' as const,
+      nombre: d.materiaPrima?.nombre || d.insumo?.nombre || '-',
+      cantidad: d.cantidad_consumida,
+      unidad: d.unidad?.nombre || '-',
+      costo_unitario: d.costo_unitario,
+      costo_total: d.costo_total,
+    })),
+    generados: (prod.detalleGenerados || []).map((d) => ({
+      nombre: d.productoTerminado?.nombre || '-',
+      cantidad: d.cantidad_generada,
+      costo_unitario: d.costo_unitario,
+      costo_total: d.costo_total,
+    })),
+    costo_materias_primas: prod.costo_total_materias_primas,
+    costo_insumos: prod.costo_total_insumos,
+    costo_total: prod.costo_total,
+  }
 }
 
 export default function ProduccionTable() {
@@ -445,6 +480,7 @@ export default function ProduccionTable() {
                         >
                           <Eye className="h-4 w-4 text-mostaza" />
                         </Button>
+                        <ProduccionPrintButton orden={toProduccionData(prod)} />
                       </div>
                     </TableCell>
                   </TableRow>
@@ -512,8 +548,11 @@ export default function ProduccionTable() {
       >
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-marron">
-              Detalle Producción #{selectedProduccion?.id}
+            <DialogTitle className="text-marron flex items-center justify-between gap-3 pr-8">
+              <span>Detalle Producción #{selectedProduccion?.id}</span>
+              {selectedProduccion && (
+                <ProduccionPrintButton orden={toProduccionData(selectedProduccion)} variant="full" />
+              )}
             </DialogTitle>
           </DialogHeader>
           {selectedProduccion && (

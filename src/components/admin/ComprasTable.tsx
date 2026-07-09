@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
-import { Pencil, Trash2, Plus, Search, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, Loader2, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,6 +40,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import CompraForm from './CompraForm'
+import ComprasPrintButton from './ComprasPrintButton'
+import type { OrdenCompraData } from '@/components/print/OrdenCompraPDFDocument'
+import Link from 'next/link'
 
 interface Compra {
   id: number
@@ -96,6 +99,35 @@ const ESTADO_BADGE_MAP: Record<string, string> = {
 function getEstadoBadgeClass(nombreEstado: string): string {
   const key = nombreEstado.toLowerCase().replace(/ /g, '_')
   return ESTADO_BADGE_MAP[key] || 'bg-muted text-muted-foreground'
+}
+
+// Transform Compra record to OrdenCompraData for PDF export
+function toCompraData(compra: Compra): OrdenCompraData {
+  return {
+    id: compra.id,
+    numero_factura: compra.numero_factura,
+    fecha_compra: compra.fecha_compra,
+    subtotal: compra.subtotal,
+    iva: compra.iva,
+    total: compra.total,
+    observaciones: compra.observaciones,
+    proveedor: compra.proveedor?.razon_social
+      || `${compra.proveedor?.nombre || ''} ${compra.proveedor?.apellido || ''}`.trim()
+      || '-',
+    forma_pago: compra.formaPago?.nombre_forma || '-',
+    estado: compra.estado?.nombre_estado || '-',
+    detalle: (compra.detalle || []).map((d) => ({
+      tipo: d.id_materia_prima ? 'materia_prima' as const : 'insumo' as const,
+      nombre: d.materiaPrima?.nombre || d.insumo?.nombre || '-',
+      marca: d.marca?.nombre || null,
+      cantidad: d.cantidad_comprada,
+      unidad: d.unidadCompra?.nombre || '-',
+      precio_unitario: d.precio_unitario,
+      precio_total: d.precio_total,
+      vencimiento: d.fecha_vencimiento,
+      lote: d.lote,
+    })),
+  }
 }
 
 export default function ComprasTable() {
@@ -407,6 +439,17 @@ export default function ComprasTable() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-10 w-10 hover:bg-mostaza/10"
+                          title="Ver detalle"
+                        >
+                          <Link href={`/admin/compras/${compra.id}`} className="flex items-center justify-center h-full w-full">
+                            <Eye className="h-4 w-4 text-mostaza" />
+                          </Link>
+                        </Button>
+                        <ComprasPrintButton compra={toCompraData(compra)} />
                         <Button
                           variant="ghost"
                           size="icon"

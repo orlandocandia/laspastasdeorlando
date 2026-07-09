@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { Loader2, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import ComprasPrintButton from '@/components/admin/ComprasPrintButton'
+import type { OrdenCompraData } from '@/components/print/OrdenCompraPDFDocument'
 
 interface DetalleCompra {
   id: number
@@ -37,6 +39,35 @@ interface Compra {
   formaPago: { id: number; nombre_forma: string }
   estado: { id: number; nombre_estado: string; es_final: boolean }
   detalle: DetalleCompra[]
+}
+
+// Transform Compra record to OrdenCompraData for PDF export
+function toCompraData(compra: Compra): OrdenCompraData {
+  return {
+    id: compra.id,
+    numero_factura: compra.numero_factura,
+    fecha_compra: compra.fecha_compra,
+    subtotal: compra.subtotal,
+    iva: compra.iva,
+    total: compra.total,
+    observaciones: compra.observaciones,
+    proveedor: compra.proveedor?.razon_social
+      || `${compra.proveedor?.nombre || ''} ${compra.proveedor?.apellido || ''}`.trim()
+      || '-',
+    forma_pago: compra.formaPago?.nombre_forma || '-',
+    estado: compra.estado?.nombre_estado || '-',
+    detalle: (compra.detalle || []).map((d) => ({
+      tipo: d.id_materia_prima ? 'materia_prima' as const : 'insumo' as const,
+      nombre: d.materiaPrima?.nombre || d.insumo?.nombre || '-',
+      marca: d.marca?.nombre || null,
+      cantidad: d.cantidad_comprada,
+      unidad: d.unidadCompra?.nombre || '-',
+      precio_unitario: d.precio_unitario,
+      precio_total: d.precio_total,
+      vencimiento: d.fecha_vencimiento,
+      lote: d.lote,
+    })),
+  }
 }
 
 export default function CompraDetailPage() {
@@ -94,16 +125,19 @@ export default function CompraDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Link href="/admin/compras">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-        </Link>
-        <div>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Link href="/admin/compras">
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div className="flex-1">
           <h1 className="text-2xl font-bold text-marron">Compra #{compra.id}</h1>
           <p className="text-sm text-muted-foreground">Detalle de la compra</p>
+          </div>
         </div>
+        <ComprasPrintButton compra={toCompraData(compra)} variant="full" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
