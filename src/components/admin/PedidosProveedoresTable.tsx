@@ -40,6 +40,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import PedidoProveedorForm from './PedidoProveedorForm'
+import QuickPrintButton from './QuickPrintButton'
+import OrdenPedidoProveedorDocument from '@/components/print/OrdenPedidoProveedorPDFDocument'
 
 interface PedidoProveedor {
   id: number
@@ -310,6 +312,13 @@ export default function PedidosProveedoresTable() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <QuickPrintButton
+                          fetchUrl={`/api/pedidos-proveedores/${pedido.id}`}
+                          DocumentComponent={OrdenPedidoProveedorDocument}
+                          filename={`orden-pedido-proveedor-${pedido.id}`}
+                          label="Orden de Pedido"
+                          triggerTitle="Imprimir Orden de Pedido"
+                        />
                         <Button
                           variant="ghost"
                           size="icon"

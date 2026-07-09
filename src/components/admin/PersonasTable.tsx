@@ -28,6 +28,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import QuickPrintButton from './QuickPrintButton'
+import FichaPersonaDocument from '@/components/print/FichaPersonaPDFDocument'
 
 // ==================== Interfaces ====================
 
@@ -255,6 +257,13 @@ export default function PersonasTable({ onNewPersona }: PersonasTableProps) {
                         className="flex items-center justify-end gap-1"
                         onClick={(e) => e.stopPropagation()}
                       >
+                        <QuickPrintButton
+                          fetchUrl={`/api/personas/${persona.id}`}
+                          DocumentComponent={FichaPersonaDocument}
+                          filename={`ficha-persona-${persona.id}`}
+                          label="Ficha de Persona"
+                          triggerTitle="Imprimir Ficha de Persona"
+                        />
                         <Button
                           variant="ghost"
                           size="icon"

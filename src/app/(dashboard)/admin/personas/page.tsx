@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import PersonasTable from '@/components/admin/PersonasTable'
+import ExcelExportButton from '@/components/admin/ExcelExportButton'
 import PersonaForm from '@/components/admin/PersonaForm'
 
 export default function PersonasPage() {
@@ -27,6 +28,25 @@ export default function PersonasPage() {
             Gestión de clientes, proveedores y empleados
           </p>
         </div>
+      </div>
+
+      <div className="flex justify-end">
+        <ExcelExportButton
+          fetchUrl="/api/personas?limite=1000"
+          filename="personas"
+          sheetName="Personas"
+          label="Exportar Excel"
+          className="border-oliva/30 text-oliva hover:bg-oliva/10"
+          transform={(p) => ({
+            'Nombre': p.nombre,
+            'Apellido': p.apellido,
+            'Documento': p.numero_documento,
+            'Tipo': p.tipo_persona,
+            'Razon Social': p.razon_social || '',
+            'CUIT': p.cuit || '',
+            'Telefono': p.contactos?.find((c) => c.es_principal)?.valor || p.contactos?.[0]?.valor || '',
+          })}
+        />
       </div>
 
       <PersonasTable onNewPersona={() => setFormOpen(true)} />

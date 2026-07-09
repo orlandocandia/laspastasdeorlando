@@ -47,6 +47,8 @@ import {
 } from '@/components/ui/tooltip'
 import InsumoForm from './InsumoForm'
 import { StockAdjustDialog } from './StockAdjustDialog'
+import QuickPrintButton from './QuickPrintButton'
+import FichaInsumoDocument from '@/components/print/FichaInsumoPDFDocument'
 
 interface Insumo {
   id: number
@@ -332,6 +334,13 @@ export default function InsumosTable() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <QuickPrintButton
+                            fetchUrl={`/api/insumos/${ins.id}`}
+                            DocumentComponent={FichaInsumoDocument}
+                            filename={`ficha-insumo-${ins.id}`}
+                            label="Ficha de Insumo"
+                            triggerTitle="Imprimir Ficha de Insumo"
+                          />
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>

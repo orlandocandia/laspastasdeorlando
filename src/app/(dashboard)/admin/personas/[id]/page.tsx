@@ -46,6 +46,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import PersonaForm from '@/components/admin/PersonaForm'
+import FichaPrintMenu from '@/components/admin/FichaPrintMenu'
+import FichaPersonaDocument, { type FichaPersonaData } from '@/components/print/FichaPersonaPDFDocument'
 
 // ==================== Interfaces ====================
 
@@ -283,6 +285,28 @@ export default function PersonaDetailPage() {
               </div>
             </div>
             <div className="flex gap-2">
+              <FichaPrintMenu<FichaPersonaData>
+                data={{
+                  id: persona.id,
+                  nombre: persona.nombre,
+                  apellido: persona.apellido,
+                  numero_documento: persona.numero_documento,
+                  fecha_nacimiento: persona.fecha_nacimiento,
+                  tipo_persona: persona.tipo_persona,
+                  observaciones: persona.observaciones,
+                  razon_social: persona.razon_social,
+                  cuit: persona.cuit,
+                  condicion_iva: persona.condicion_iva,
+                  imagen: persona.imagen,
+                  municipio: persona.municipio,
+                  contactos: persona.contactos,
+                  direcciones: persona.direcciones,
+                }}
+                DocumentComponent={FichaPersonaDocument}
+                filename={`ficha-persona-${persona.id}`}
+                label="Ficha de Persona"
+                size="sm"
+              />
               <Button
                 variant="outline"
                 size="sm"

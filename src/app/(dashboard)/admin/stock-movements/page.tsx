@@ -3,6 +3,7 @@
 import { ArrowLeftRight } from 'lucide-react'
 import StockMovementsTable from '@/components/admin/StockMovementsTable'
 import ExcelExportButton from '@/components/admin/ExcelExportButton'
+import StockMovementsPDFExport from '@/components/admin/StockMovementsPDFExport'
 
 export default function StockMovementsPage() {
   return (
@@ -20,6 +21,7 @@ export default function StockMovementsPage() {
       </div>
 
       <div className="flex justify-end gap-2">
+        <StockMovementsPDFExport />
         <ExcelExportButton
           fetchUrl="/api/stock-movements?limite=1000"
           filename="movimientos-stock"

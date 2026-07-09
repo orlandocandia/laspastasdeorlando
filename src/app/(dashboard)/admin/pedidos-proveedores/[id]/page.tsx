@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import { Loader2, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import FichaPrintMenu from '@/components/admin/FichaPrintMenu'
+import OrdenPedidoProveedorDocument, { type PedidoProveedorDocData } from '@/components/print/OrdenPedidoProveedorPDFDocument'
 
 interface DetallePedido {
   id: number
@@ -25,7 +27,7 @@ interface Pedido {
   observaciones: string | null
   total_estimado: number
   createdAt: string
-  proveedor: { id: number; nombre: string; apellido: string; razon_social: string | null }
+  proveedor: { id: number; nombre: string; apellido: string; razon_social: string | null; numero_documento: string | null; tipo_persona: string | null }
   estado: { id: number; nombre_estado: string; es_final: boolean }
   detalle: DetallePedido[]
 }
@@ -94,6 +96,15 @@ export default function PedidoDetallePage() {
         <div>
           <h1 className="text-2xl font-bold text-marron">Pedido #{pedido.id}</h1>
           <p className="text-sm text-muted-foreground">Detalle del pedido a proveedor</p>
+        </div>
+        <div className="ml-auto">
+          <FichaPrintMenu<PedidoProveedorDocData>
+            data={pedido}
+            DocumentComponent={OrdenPedidoProveedorDocument}
+            filename={`orden-pedido-proveedor-${pedido.id}`}
+            label="Orden de Pedido"
+            size="sm"
+          />
         </div>
       </div>
 

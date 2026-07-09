@@ -2,6 +2,7 @@
 
 import { PackageOpen } from 'lucide-react'
 import InsumosTable from '@/components/admin/InsumosTable'
+import ExcelExportButton from '@/components/admin/ExcelExportButton'
 
 export default function InsumosPage() {
   return (
@@ -16,6 +17,26 @@ export default function InsumosPage() {
             Gestiona los insumos y materiales de empaque
           </p>
         </div>
+      </div>
+
+      <div className="flex justify-end">
+        <ExcelExportButton
+          fetchUrl="/api/insumos?limite=1000"
+          filename="insumos"
+          sheetName="Insumos"
+          label="Exportar Excel"
+          className="border-oliva/30 text-oliva hover:bg-oliva/10"
+          transform={(ins) => ({
+            'Codigo': ins.codigo || '',
+            'Nombre': ins.nombre,
+            'Tipo': ins.tipoInsumo?.nombre || '',
+            'Unidad': ins.unidadBase?.codigo || '',
+            'Stock Actual': ins.stock_actual,
+            'Stock Minimo': ins.stock_minimo,
+            'Precio Ref.': ins.precio_compra_referencia,
+            'Estado': ins.estado ? 'Activo' : 'Inactivo',
+          })}
+        />
       </div>
 
       <InsumosTable />

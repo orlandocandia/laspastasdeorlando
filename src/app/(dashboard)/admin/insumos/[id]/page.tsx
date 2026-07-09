@@ -7,6 +7,8 @@ import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
 import InsumoForm from '@/components/admin/InsumoForm'
+import FichaPrintMenu from '@/components/admin/FichaPrintMenu'
+import FichaInsumoDocument, { type FichaInsumoData } from '@/components/print/FichaInsumoPDFDocument'
 
 export default function InsumoDetallePage() {
   const params = useParams()
@@ -57,6 +59,17 @@ export default function InsumoDetallePage() {
             {insumo ? `Editar: ${insumo.nombre}` : 'Nuevo Insumo'}
           </h1>
         </div>
+        {insumo ? (
+          <div className="ml-auto">
+            <FichaPrintMenu<FichaInsumoData>
+              data={insumo}
+              DocumentComponent={FichaInsumoDocument}
+              filename={`ficha-insumo-${insumo.id}`}
+              label="Ficha de Insumo"
+              size="sm"
+            />
+          </div>
+        ) : null}
       </div>
 
       <InsumoForm
