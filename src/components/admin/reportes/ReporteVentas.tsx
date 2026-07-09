@@ -18,6 +18,7 @@ import ExportadorExcel from '@/components/admin/reportes/ExportadorExcel'
 import ExportadorPDF from '@/components/admin/reportes/ExportadorPDF'
 import ExportadorCSV from '@/components/admin/reportes/ExportadorCSV'
 import FiltrosReportes, { type FiltroExtra } from '@/components/admin/reportes/FiltrosReportes'
+import ReporteExportMenu from '@/components/admin/reportes/ReporteExportMenu'
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(price)
@@ -96,6 +97,28 @@ export default function ReporteVentas() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-end">
+        <ReporteExportMenu
+          tipo="ventas"
+          data={data ? {
+            resumen: data.resumen,
+            productosMasVendidos: data.productosMasVendidos,
+            clientesMasFrecuentes: data.clientesMasFrecuentes,
+            ventasPorVendedor: data.ventasPorVendedor,
+            ventasPorDia: data.ventasPorDia,
+            ventas: data.ventas,
+            filtros: {
+              ...(fechaDesde ? { fechaDesde } : {}),
+              ...(fechaHasta ? { fechaHasta } : {}),
+              ...(productoId && productoId !== 'todos' ? { producto: productoId } : {}),
+              ...(clienteId && clienteId !== 'todos' ? { cliente: clienteId } : {}),
+              ...(vendedorId && vendedorId !== 'todos' ? { vendedor: vendedorId } : {}),
+            },
+          } : null}
+          filename="reporte_ventas"
+          disabled={!data}
+        />
+      </div>
       <FiltrosReportes
         fechaDesde={fechaDesde}
         fechaHasta={fechaHasta}

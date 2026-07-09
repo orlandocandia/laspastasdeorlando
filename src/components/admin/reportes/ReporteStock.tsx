@@ -18,6 +18,7 @@ import ExportadorExcel from '@/components/admin/reportes/ExportadorExcel'
 import ExportadorCSV from '@/components/admin/reportes/ExportadorCSV'
 import ExportadorPDF from '@/components/admin/reportes/ExportadorPDF'
 import FiltrosReportes, { type FiltroExtra } from '@/components/admin/reportes/FiltrosReportes'
+import ReporteExportMenu from '@/components/admin/reportes/ReporteExportMenu'
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(price)
@@ -95,6 +96,26 @@ export default function ReporteStock() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-end">
+        <ReporteExportMenu
+          tipo="stock"
+          data={data ? {
+            resumen: data.resumen,
+            alertasStock: data.alertasStock,
+            productosTerminados: data.productosTerminados,
+            materiasPrimas: data.materiasPrimas,
+            insumos: data.insumos,
+            filtros: {
+              ...(categoriaPT && categoriaPT !== 'todos' ? { categoriaPT } : {}),
+              ...(categoriaMP && categoriaMP !== 'todos' ? { categoriaMP } : {}),
+              ...(proveedorId && proveedorId !== 'todos' ? { proveedor: proveedorId } : {}),
+              ...(soloStockBajo ? { soloStockBajo: true } : {}),
+            },
+          } : null}
+          filename="reporte_stock"
+          disabled={!data}
+        />
+      </div>
       <FiltrosReportes
         fechaDesde=""
         fechaHasta=""

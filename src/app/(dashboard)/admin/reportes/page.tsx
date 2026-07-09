@@ -18,6 +18,7 @@ import {
 import ExportadorExcel from '@/components/admin/reportes/ExportadorExcel'
 import ExportadorPDF from '@/components/admin/reportes/ExportadorPDF'
 import ExportadorCSV from '@/components/admin/reportes/ExportadorCSV'
+import ReporteExportMenu from '@/components/admin/reportes/ReporteExportMenu'
 import FiltrosReportes from '@/components/admin/reportes/FiltrosReportes'
 import ReporteVentas from '@/components/admin/reportes/ReporteVentas'
 import ReporteStock from '@/components/admin/reportes/ReporteStock'
@@ -119,6 +120,22 @@ export default function ReportesPage() {
 
         {/* COMPRAS — filtro de período */}
         <TabsContent value="compras" className="space-y-4">
+          <div className="flex items-center justify-end">
+            <ReporteExportMenu
+              tipo="compras"
+              data={comprasData ? {
+                resumen: comprasData.resumen,
+                proveedoresMasUtilizados: comprasData.proveedoresMasUtilizados,
+                productosMasComprados: comprasData.productosMasComprados,
+                filtros: {
+                  ...(fechaDesde ? { fechaDesde } : {}),
+                  ...(fechaHasta ? { fechaHasta } : {}),
+                },
+              } : null}
+              filename="reporte_compras"
+              disabled={!comprasData}
+            />
+          </div>
           <FiltrosReportes
             fechaDesde={fechaDesde}
             fechaHasta={fechaHasta}

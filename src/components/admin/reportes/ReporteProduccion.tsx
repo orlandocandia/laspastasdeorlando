@@ -18,6 +18,7 @@ import ExportadorExcel from '@/components/admin/reportes/ExportadorExcel'
 import ExportadorPDF from '@/components/admin/reportes/ExportadorPDF'
 import ExportadorCSV from '@/components/admin/reportes/ExportadorCSV'
 import FiltrosReportes, { type FiltroExtra } from '@/components/admin/reportes/FiltrosReportes'
+import ReporteExportMenu from '@/components/admin/reportes/ReporteExportMenu'
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(price)
@@ -80,6 +81,23 @@ export default function ReporteProduccion() {
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-end">
+        <ReporteExportMenu
+          tipo="produccion"
+          data={data ? {
+            resumen: data.resumen,
+            costosPorProducto: data.costosPorProducto,
+            producciones: data.producciones,
+            filtros: {
+              ...(fechaDesde ? { fechaDesde } : {}),
+              ...(fechaHasta ? { fechaHasta } : {}),
+              ...(productoId && productoId !== 'todos' ? { producto: productoId } : {}),
+            },
+          } : null}
+          filename="reporte_produccion"
+          disabled={!data}
+        />
+      </div>
       <FiltrosReportes
         fechaDesde={fechaDesde}
         fechaHasta={fechaHasta}

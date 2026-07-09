@@ -40,6 +40,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import PedidoClienteForm from './PedidoClienteForm'
+import PedidosClientesPrintMenu from './PedidosClientesPrintMenu'
 
 interface PedidoCliente {
   id: number
@@ -54,7 +55,7 @@ interface PedidoCliente {
   observaciones: string | null
   createdAt: string
   updatedAt: string | null
-  cliente: { id: number; nombre: string; apellido: string; razon_social: string | null }
+  cliente: { id: number; nombre: string; apellido: string; razon_social: string | null; numero_documento: string | null; tipo_persona: string | null }
   estado: { id: number; nombre_estado: string; entidad_aplicable: string | null }
   detalle: DetallePedidoCliente[]
 }
@@ -66,7 +67,7 @@ interface DetallePedidoCliente {
   cantidad: number
   precio_unitario: number
   subtotal: number
-  productoTerminado: { id: number; nombre: string; precio_venta: number }
+  productoTerminado: { id: number; codigo?: string | null; nombre: string; precio_venta: number }
 }
 
 interface Cliente {
@@ -358,6 +359,27 @@ export default function PedidosClientesTable() {
                         >
                           <Pencil className="h-4 w-4 text-mostaza" />
                         </Button>
+                        <PedidosClientesPrintMenu
+                          pedido={{
+                            id: pedido.id,
+                            fecha_pedido: pedido.fecha_pedido,
+                            fecha_entrega_solicitada: pedido.fecha_entrega_solicitada,
+                            fecha_entrega_real: pedido.fecha_entrega_real,
+                            subtotal: pedido.subtotal,
+                            total: pedido.total,
+                            senia: pedido.senia,
+                            observaciones: pedido.observaciones,
+                            cliente: pedido.cliente,
+                            estado: pedido.estado,
+                            detalle: pedido.detalle.map((d) => ({
+                              nombre: d.productoTerminado?.nombre || 'Producto',
+                              codigo: d.productoTerminado?.codigo || null,
+                              cantidad: d.cantidad,
+                              precio_unitario: d.precio_unitario,
+                              subtotal: d.subtotal,
+                            })),
+                          }}
+                        />
                         <Button
                           variant="ghost"
                           size="icon"
