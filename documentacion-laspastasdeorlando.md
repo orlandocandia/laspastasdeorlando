@@ -1,6 +1,6 @@
 # Documentación Técnica Completa — Sistema Las Pastas de Orlando
 
-> **Versión:** 15 (Fase 15 — Impresión Térmica, Plantillas Markdown, Filtros de Reportes, Visibilidad de Contraseñas, Buscador de Promociones corregido)
+> **Versión:** 17 (Fase 17 — Dashboard con jerarquía visual de 3 niveles, alertas con filtros específicos, acciones directas)
 > **Fecha:** Julio 2026
 > **Autores:** Equipo de Desarrollo Las Pastas de Orlando
 > **Repositorio:** [github.com/orlandocandia/laspastasdeorlando](https://github.com/orlandocandia/laspastasdeorlando)
@@ -30,7 +30,7 @@
 19. [Despliegue](#19-despliegue)
 20. [Diagrama de Relaciones (ERD)](#20-diagrama-de-relaciones-erd)
 21. [Impresión Térmica de Etiquetas](#21-impresión-térmica-de-etiquetas)
-22. [Novedades de la Versión 15](#22-novedades-de-la-versión-15)
+22. [Novedades de la Versión 17](#22-novedades-de-la-versión-17)
 
 ---
 
@@ -442,18 +442,23 @@ El esquema de Prisma contiene **67 modelos** organizados por módulos funcionale
 
 > **Mejora v15 — Plantillas con Markdown y variables canónicas:** el editor de plantillas (`PlantillasNotificaciones.tsx`) soporta ahora formato Markdown, un panel de variables canónicas (`{cliente}`, `{pedido}`, `{fecha}`, `{total}`, `{estado}`, `{producto}`) con click para insertar, previsualización con datos de ejemplo y envío de prueba. Las alertas automáticas usan las plantillas guardadas; si están desactivadas o no existen, usan un *fallback* hardcoded. Compatible con `{var}` y `{{var}}`. Ver **sección 23.2**.
 
-### 4.11 Dashboard (rediseñado con flujo de trabajo)
+### 4.11 Dashboard (jerarquía visual de 3 niveles)
 
-> **Mejora v16:** el Dashboard fue rediseñado por completo con un enfoque en flujo de trabajo. En lugar de mostrar solo estadísticas, guía al usuario sobre **qué hacer** con esa información y en qué orden.
+> **Mejora v17:** el Dashboard fue rediseñado con una **jerarquía visual de 3 niveles** que guía al usuario sobre **qué hacer** y en qué orden. Las alertas se ordenan por etapa del flujo de trabajo y cada una incluye un botón de acción directa con filtros específicos en la URL de destino.
 
 **Las 4 secciones del Dashboard:**
 
-1. **Pasos Pendientes** (prioridad alta): muestra solo las alertas que requieren acción, ordenadas por severidad (críticas primero). Cada paso tiene un botón directo a la acción correspondiente ("Ver productos sin stock", "Cargar materias primas", "Completar producción", etc.). Si no hay pendientes, muestra "✅ Todo está en orden".
+1. **Pasos Pendientes** (prioridad alta): muestra las alertas accionables organizadas con una **jerarquía visual de 3 niveles de severidad**:
+   - 🔴 **Crítico** (rojo): items agotados o sin receta — requieren acción inmediata.
+   - 🟡 **Importante** (ámbar/mostaza): stock bajo, producción pendiente, recetas vacías — requieren atención pronta.
+   - 🔵 **Informativo** (celeste/sky): pedidos pendientes, reservas activas — información operativa.
+
+   Las alertas se muestran **ordenadas por etapa del flujo de trabajo**: Materias Primas → Recetas → Producción → Stock → Ventas. Cada alerta incluye un **botón de acción directa** con parámetros de filtro específicos en la URL de destino. Si no hay pendientes, muestra "✅ Todo está en orden".
 
 2. **Indicadores Clave**: 6 métricas con contexto y **tendencia vs mes anterior** (flecha verde ↑ si subió, roja ↓ si bajó):
    - Ventas del Mes ($), Producción del Mes (unidades), Pedidos Pendientes, Reservas Activas, Compras del Mes ($), Stock Crítico (items agotados).
 
-3. **Flujo de Trabajo**: pipeline visual de 5 etapas: **Materias Primas → Recetas → Producción → Stock → Ventas**. Cada etapa muestra su estado:
+3. **Flujo de Trabajo**: pipeline visual de 5 etapas **clickeables**: **Materias Primas → Recetas → Producción → Stock → Ventas**. Cada etapa es un enlace que navega a la vista filtrada correspondiente. Cada etapa muestra su estado:
    - ✅ **En orden** (oliva): no hay pendientes.
    - ⚠️ **Pendiente** (mostaza): stock bajo, producción atrasada, recetas vacías.
    - 🔴 **Crítico** (rojo): items agotados, productos sin receta.
@@ -461,25 +466,53 @@ El esquema de Prisma contiene **67 modelos** organizados por módulos funcionale
 
 4. **Acciones Directas**: 8 botones grandes de acceso rápido (Ver productos sin stock, Completar producción, Cargar materias primas, Registrar venta, Gestionar pedidos, Editar recetas, Ver reservas, Generar reporte) + fila de botones compactos para accesos secundarios.
 
-**Tipos de alertas (Pasos Pendientes):**
+**Jerarquía visual de 3 niveles (severidad de alertas):**
 
-| Severidad | Alerta | Acción |
-|---|---|---|
-| 🔴 Crítica | PT sin stock (stock=0) | Producir más |
-| 🔴 Crítica | MP agotadas (stock=0) | Registrar compra |
-| 🔴 Crítica | Insumos agotados (stock=0) | Registrar compra |
-| 🔴 Crítica | PT sin receta asociada | Crear receta |
-| ⚠️ Media | Producción pendiente >2 días | Completar/cancelar |
-| ⚠️ Media | MP con stock bajo (≤ mínimo) | Programar compra |
-| ⚠️ Media | PT con stock bajo (≤ mínimo) | Programar producción |
-| ⚠️ Media | Recetas sin ingredientes | Editar receta |
+| Nivel | Color | Significado | Ejemplos |
+|---|---|---|---|
+| 🔴 Crítico | Rojo | Requiere acción inmediata | MP agotadas, Insumos agotados, PT sin stock |
+| 🟡 Importante | Ámbar/Mostaza | Requiere atención pronta | Stock bajo, Producción pendiente, PT sin receta, Recetas vacías |
+| 🔵 Informativo | Celeste/Sky | Información operativa | Pedidos pendientes, Reservas activas |
 
-**Endpoint:** `/api/dashboard` agrega todos los datos en una sola consulta (reemplaza los 16 fetches paralelos del diseño anterior). Calcula tendencias comparando el mes actual con el mes anterior para ventas y producción.
+**Ordenamiento por etapa del flujo de trabajo:**
+
+Las alertas se agrupan y ordenan siguiendo el flujo productivo del negocio:
+
+1. **Materias Primas** — MP agotadas, MP stock bajo, Insumos agotados, Insumos stock bajo.
+2. **Recetas** — PT sin receta, Recetas vacías.
+3. **Producción** — Producción pendiente.
+4. **Stock** — PT sin stock, PT stock bajo.
+5. **Ventas** — Pedidos pendientes, Reservas activas.
+
+Dentro de cada etapa, las alertas 🔴 críticas aparecen primero, luego 🟡 importantes, y finalmente 🔵 informativas.
+
+**Endpoint:** `/api/dashboard` agrega todos los datos en una sola consulta (reemplaza los 16 fetches paralelos del diseño anterior). Calcula tendencias comparando el mes actual con el mes anterior para ventas y producción. Cada alerta incluye su `href` con los parámetros de filtro específicos para la página de destino.
 
 **Archivos:** `src/app/(dashboard)/admin/dashboard/page.tsx`, `src/app/api/dashboard/route.ts`.
 
----
+#### 4.11.1 Alertas con Filtros Específicos
 
+Cada una de las **11 alertas** del Dashboard incluye un botón de acción directa cuya URL contiene parámetros de filtro específicos. Las páginas de destino detectan estos parámetros y muestran los datos pre-filtrados, eliminando la necesidad de configurar filtros manualmente.
+
+| Alerta | Severidad | Etapa | URL con filtro |
+|---|---|---|---|
+| MP agotadas | 🔴 Crítica | Materias Primas | `/admin/compras?materias-primas=agotadas` |
+| MP stock bajo | 🟡 Importante | Materias Primas | `/admin/materias-primas?stock=bajo` |
+| Insumos agotados | 🔴 Crítica | Materias Primas | `/admin/compras?insumos=agotados` |
+| Insumos stock bajo | 🟡 Importante | Materias Primas | `/admin/insumos?stock=bajo` |
+| PT sin receta | 🟡 Importante | Recetas | `/admin/recetas?filtro=sin-receta` |
+| Recetas vacías | 🟡 Importante | Recetas | `/admin/recetas?filtro=vacia` |
+| Producción pendiente | 🟡 Importante | Producción | `/admin/produccion?estado=pendiente` |
+| PT sin stock | 🔴 Crítica | Stock | `/admin/produccion?productos-sin-stock` |
+| PT stock bajo | 🟡 Importante | Stock | `/admin/productos-terminados?stock=bajo` |
+| Pedidos pendientes | 🔵 Informativo | Ventas | `/admin/pedidos-clientes?estado=pendiente` |
+| Reservas activas | 🔵 Informativo | Ventas | `/admin/reservas-clientes?estado=activa` |
+
+**Detección de parámetros URL en las páginas de destino:**
+
+Las páginas administrativas (`/admin/materias-primas`, `/admin/insumos`, `/admin/productos-terminados`, `/admin/recetas`, `/admin/produccion`, `/admin/pedidos-clientes`, `/admin/reservas-clientes`, `/admin/compras`) leen los parámetros del query string al montarse y aplican los filtros correspondientes automáticamente. Por ejemplo, al llegar a `/admin/productos-terminados?stock=bajo`, la página muestra únicamente los productos con stock bajo, sin que el usuario tenga que seleccionar el filtro manualmente.
+
+---
 ## 5. Promociones
 
 Las promociones permiten ofrecer descuentos en la tienda pública (landing) y, opcionalmente, aplicarlos automáticamente en las ventas.
@@ -1856,145 +1889,152 @@ Para enviar ZPL por USB a una Zebra se pueden usar herramientas como **Zebra Set
 
 ---
 
-## 22. Dashboard con Flujo de Trabajo
+## 22. Novedades de la Versión 17
 
-> **Novedad v16:** el Dashboard (`/admin/dashboard`) fue rediseñado por completo con un enfoque en flujo de trabajo. En lugar de mostrar solo estadísticas planas, guía al usuario sobre **qué hacer** con esa información y en qué orden, mediante 4 secciones jerárquicas.
+> **Novedad v17:** el Dashboard (`/admin/dashboard`) incorpora una **jerarquía visual de 3 niveles** para sus alertas, ordenamiento por etapa del flujo de trabajo, y **acciones directas con filtros específicos** en todas las alertas. Las etapas del flujo de trabajo son ahora clickeables y las páginas de destino detectan los parámetros URL para mostrar datos pre-filtrados.
 
-### 22.1 Arquitectura
+### 22.1 Resumen de novedades
 
-El dashboard anterior realizaba 16 fetches paralelos a distintos endpoints de la API para recolectar estadísticas. El nuevo diseño consulta un **único endpoint agregado** (`/api/dashboard`) que retorna toda la información en una sola respuesta JSON estructurada:
+| Novedad | Descripción |
+|---|---|
+| Jerarquía visual de 3 niveles | Las alertas se clasifican en 🔴 Crítico, 🟡 Importante y 🔵 Informativo, cada una con su color distintivo. |
+| Ordenamiento por flujo de trabajo | Las alertas se agrupan y ordenan siguiendo: Materias Primas → Recetas → Producción → Stock → Ventas. |
+| Acciones directas con filtros específicos | Todas las alertas (11 en total) tienen un botón cuya URL incluye parámetros de filtro para la página de destino. |
+| Etapas del flujo de trabajo clickeables | Las 5 etapas del pipeline (MP, Recetas, Producción, Stock, Ventas) son enlaces que navegan a vistas filtradas. |
+| Detección de parámetros URL | Las páginas de destino leen el query string y aplican los filtros automáticamente al montarse. |
 
-```
-{
-  "pasosPendientes": [...],      // alertas accionables con botones
-  "indicadoresClave": [...],     // 6 métricas con tendencia
-  "flujoTrabajo": {              // 5 etapas del proceso
-    "materias_primas": {...},
-    "recetas": {...},
-    "produccion": {...},
-    "stock": {...},
-    "ventas": {...}
-  },
-  "resumen": {                   // conteos para el header
-    "totalPasos": N,
-    "criticas": N,
-    "flujoCompletado": N,        // cuántas etapas en "ok"
-    "flujoTotal": 5
-  }
-}
-```
+### 22.2 Jerarquía visual de 3 niveles
 
-### 22.2 Sección 1: Pasos Pendientes
+Las alertas del Dashboard se clasifican en tres niveles de severidad, cada uno con un color distintivo que permite al usuario identificar rápidamente la urgencia de cada situación:
 
-Muestra **solo las alertas que requieren acción**, ordenadas por severidad (críticas primero, luego medias). Cada paso incluye:
-
-- **Título y descripción** del problema.
-- **Badge con la cantidad** de items afectados.
-- **Botón directo** a la acción correspondiente (ej: "Ver productos sin stock" → `/admin/productos-terminados?stock=sin_stock`).
-
-Si no hay pendientes, se muestra un mensaje "✅ Todo está en orden — No hay alertas activas".
-
-**Tipos de alertas detectadas:**
-
-| Severidad | Alerta | Condición | Acción |
+| Nivel | Color | Clase Tailwind | Significado |
 |---|---|---|---|
-| 🔴 Crítica | Productos sin stock | `stock_actual <= 0` (PT activos) | Ver productos sin stock |
-| 🔴 Crítica | Materias primas agotadas | `stock_actual <= 0` (MP activas) | Cargar materias primas (compras) |
-| 🔴 Crítica | Insumos agotados | `stock_actual <= 0` (insumos activos) | Ver insumos sin stock |
-| 🔴 Crítica | Productos sin receta | PT activo sin receta asociada | Crear recetas |
-| ⚠️ Media | Producción pendiente | Producción en planificado/en_curso >2 días | Completar producción |
-| ⚠️ Media | MP con stock bajo | `0 < stock_actual <= stock_minimo` | Ver stock bajo |
-| ⚠️ Media | PT con stock bajo | `0 < stock_actual <= stock_minimo` | Ver stock bajo |
-| ⚠️ Media | Recetas sin ingredientes | Receta activa con 0 detalles | Editar recetas |
+| 🔴 Crítico | Rojo | `bg-red-*` / `border-red-*` | Requiere acción inmediata (items agotados, PT sin stock) |
+| 🟡 Importante | Ámbar/Mostaza | `bg-amber-*` / `border-amber-*` | Requiere atención pronta (stock bajo, producción pendiente) |
+| 🔵 Informativo | Celeste/Sky | `bg-sky-*` / `border-sky-*` | Información operativa (pedidos pendientes, reservas activas) |
 
-### 22.3 Sección 2: Indicadores Clave (con tendencias)
+La jerarquía visual permite que el usuario escanee el Dashboard e identifique al instante qué requiere su atención, sin necesidad de leer cada alerta individualmente.
 
-Seis métricas en una grilla responsive (2/3/6 columnas según el ancho). Cada indicador muestra:
+### 22.3 Alertas ordenadas por flujo de trabajo
 
-- **Valor grande** (formateado como moneda ARS o número).
-- **Tendencia** comparada con el mes anterior: flecha verde ↑ (+X%), roja ↓ (-X%), o "sin datos".
-- **Contexto** (ej: "vs $365.000 mes anterior").
-
-| Indicador | Qué mide | Tendencia |
-|---|---|---|
-| Ventas del Mes | Suma de `total` de ventas del mes actual | vs mes anterior |
-| Producción del Mes | Suma de `cantidad_producida` del mes | vs mes anterior |
-| Pedidos Pendientes | Pedidos de clientes sin entregar | sin tendencia |
-| Reservas Activas | Reservas en estado pendiente/confirmada/activa | sin tendencia |
-| Compras del Mes | Suma de `total` de compras del mes | sin tendencia |
-| Stock Crítico | Items agotados (PT + MP + Insumos) | sin tendencia |
-
-El cálculo de tendencia usa: `pctVariacion = round((actual - anterior) / anterior * 100)`. Si el mes anterior fue 0 y el actual >0, se muestra +100%.
-
-### 22.4 Sección 3: Flujo de Trabajo
-
-Pipeline visual de las 5 etapas del proceso productivo, en horizontal (desktop) o vertical (mobile):
+Las alertas se agrupan y ordenan siguiendo el flujo productivo del negocio, de modo que el usuario pueda resolver los problemas "aguas arriba" antes de que afecten a las etapas posteriores:
 
 ```
 Materias Primas → Recetas → Producción → Stock → Ventas
 ```
 
-Cada etapa muestra:
+| Etapa | Alertas incluidas |
+|---|---|
+| Materias Primas | MP agotadas (🔴), MP stock bajo (🟡), Insumos agotados (🔴), Insumos stock bajo (🟡) |
+| Recetas | PT sin receta (🟡), Recetas vacías (🟡) |
+| Producción | Producción pendiente (🟡) |
+| Stock | PT sin stock (🔴), PT stock bajo (🟡) |
+| Ventas | Pedidos pendientes (🔵), Reservas activas (🔵) |
 
-- **Icono** representativo (Leaf, BookOpen, Factory, Package, DollarSign).
-- **Emoji de estado**: ✅ (ok), ⚠️ (pendiente), 🔴 (crítico).
-- **Detalle** textual (ej: "2 sin stock", "1 producto(s) sin receta").
-- **Badge de pendientes** si `pendientes > 0`.
-- **Link** a la pantalla del módulo correspondiente.
+Dentro de cada etapa, las alertas 🔴 críticas aparecen primero, luego las 🟡 importantes, y finalmente las 🔵 informativas.
 
-**Lógica de estados por etapa:**
+### 22.4 Acciones directas con filtros específicos
 
-| Etapa | 🔴 Crítico | ⚠️ Pendiente | ✅ OK |
-|---|---|---|---|
-| Materias Primas | MP agotadas >0 | MP stock bajo >0 | Sin agotadas ni bajas |
-| Recetas | PT sin receta >0 | Recetas vacías >0 | Sin PT sin receta ni vacías |
-| Producción | — | Producción pendiente >2 días | Sin pendientes atrasadas |
-| Stock PT | PT agotados >0 | PT stock bajo >0 | Sin agotados ni bajos |
-| Ventas | — | Sin ventas este mes | Hubo ventas este mes |
+**Todas las 11 alertas** del Dashboard incluyen un botón de acción directa cuya URL contiene parámetros de filtro específicos. Al hacer clic, el usuario es llevado a la página correspondiente con los datos ya filtrados, sin necesidad de configurar manualmente los filtros en la página de destino.
 
-El header muestra un badge: **"Flujo: X/5 etapas OK"**.
-
-### 22.5 Sección 4: Acciones Directas
-
-Ocho tarjetas grandes con accesos rápidos a las tareas más frecuentes. Cada tarjeta tiene un icono de color, título, descripción y flecha, con animación hover (scale 1.02).
-
-| Acción | Destino | Color |
+| Alerta | Severidad | URL con filtro |
 |---|---|---|
-| Ver productos sin stock | `/admin/productos-terminados?stock=sin_stock` | rojo |
-| Completar producción | `/admin/produccion` | marrón |
-| Cargar materias primas | `/admin/compras` | oliva |
-| Registrar venta | `/admin/ventas` | mostaza |
-| Gestionar pedidos | `/admin/pedidos-clientes` | mostaza |
-| Editar recetas | `/admin/recetas` | oliva |
-| Ver reservas | `/admin/reservas-clientes` | rojo |
-| Generar reporte | `/admin/reportes` | marrón |
+| MP agotadas | 🔴 Crítica | `/admin/compras?materias-primas=agotadas` |
+| MP stock bajo | 🟡 Importante | `/admin/materias-primas?stock=bajo` |
+| Insumos agotados | 🔴 Crítica | `/admin/compras?insumos=agotados` |
+| Insumos stock bajo | 🟡 Importante | `/admin/insumos?stock=bajo` |
+| PT sin receta | 🟡 Importante | `/admin/recetas?filtro=sin-receta` |
+| Recetas vacías | 🟡 Importante | `/admin/recetas?filtro=vacia` |
+| Producción pendiente | 🟡 Importante | `/admin/produccion?estado=pendiente` |
+| PT sin stock | 🔴 Crítica | `/admin/produccion?productos-sin-stock` |
+| PT stock bajo | 🟡 Importante | `/admin/productos-terminados?stock=bajo` |
+| Pedidos pendientes | 🔵 Informativo | `/admin/pedidos-clientes?estado=pendiente` |
+| Reservas activas | 🔵 Informativo | `/admin/reservas-clientes?estado=activa` |
 
-Debajo, una fila de botones compactos (outline) para accesos secundarios: Materias Primas, Insumos, Productos Terminados, Mov. Stock, Pedidos Proveedores, Catálogo Landing, Opiniones, WhatsApp, Usuarios, Auditoría.
+### 22.5 Etapas del flujo de trabajo clickeables
 
-### 22.6 Diseño y accesibilidad
+Las 5 etapas del pipeline visual del flujo de trabajo son ahora **enlaces clickeables** que navegan a vistas filtradas de cada módulo:
 
-- **Responsive mobile-first**: grids adaptativos (2 cols en mobile, 3-4 en tablet, 6 en desktop para indicadores).
-- **Regiones ARIA**: cada sección tiene `aria-label` (Pasos pendientes, Indicadores clave, Flujo de trabajo, Acciones directas, Más accesos).
-- **Headings semánticos**: jerarquía H1 (greeting) → H2 (títulos de sección) → H3 (items).
-- **Estados**: loading (skeletons), error (tarjeta con botón reintentar), empty (mensaje "todo en orden").
-- **Animaciones**: Framer Motion con `Variants` tipadas, entrada escalonada (delay por índice).
-- **Paleta**: marrón (primario), oliva (ok/positivo), mostaza (advertencia), rojo (crítico), crema (fondo).
+| Etapa | Destino al hacer clic |
+|---|---|
+| Materias Primas | Vista de materias primas con alertas visibles |
+| Recetas | Vista de recetas con alertas visibles |
+| Producción | Vista de producción con pendientes |
+| Stock | Vista de productos terminados con alertas de stock |
+| Ventas | Vista de pedidos pendientes |
+
+Cada etapa muestra su estado (✅ En orden, ⚠️ Pendiente, 🔴 Crítico) y un badge con la cantidad de pendientes. El header del flujo muestra un badge **"Flujo: X/5 etapas OK"**.
+
+### 22.6 Detección de parámetros URL en páginas de destino
+
+Las páginas administrativas de destino detectan los parámetros del query string al montarse y aplican los filtros correspondientes automáticamente. Esto elimina la fricción de tener que configurar manualmente los filtros después de hacer clic en una alerta del Dashboard.
+
+**Páginas que detectan parámetros URL:**
+
+| Página | Parámetros soportados |
+|---|---|
+| `/admin/materias-primas` | `stock=bajo` |
+| `/admin/insumos` | `stock=bajo` |
+| `/admin/productos-terminados` | `stock=bajo` |
+| `/admin/recetas` | `filtro=sin-receta`, `filtro=vacia` |
+| `/admin/produccion` | `estado=pendiente`, `productos-sin-stock` |
+| `/admin/pedidos-clientes` | `estado=pendiente` |
+| `/admin/reservas-clientes` | `estado=activa` |
+| `/admin/compras` | `materias-primas=agotadas`, `insumos=agotados` |
+
+**Implementación:** las páginas usan `useSearchParams()` (Next.js) para leer los parámetros al montarse, y los aplican a los filtros locales del componente. Si el parámetro está presente, el filtro se activa automáticamente y se resalta visualmente para que el usuario entienda qué está viendo.
 
 ### 22.7 Endpoint `/api/dashboard`
 
 **Método:** `GET`
 
-**Paralelización:** usa `Promise.all` para ejecutar 15 consultas Prisma en paralelo (productos, materias primas, insumos, estados, recetas, agregaciones de ventas/producción/compras del mes actual y anterior), más 2 sub-consultas `count` para producciones pendientes y pedidos pendientes.
+El endpoint retorna la información estructurada del Dashboard, incluyendo las alertas con sus respectivos `href` (URLs con filtros específicos), los indicadores clave con tendencias, y el estado de cada etapa del flujo de trabajo.
+
+**Estructura de la respuesta:**
+
+```json
+{
+  "pasosPendientes": [
+    {
+      "id": "mp_sin_stock",
+      "titulo": "MP agotadas",
+      "severidad": "critica",
+      "etapa": "materias_primas",
+      "href": "/admin/compras?materias-primas=agotadas",
+      "cantidad": 3,
+      "accion": "Cargar materias primas"
+    }
+  ],
+  "indicadoresClave": [],
+  "flujoTrabajo": {
+    "materias_primas": {},
+    "recetas": {},
+    "produccion": {},
+    "stock": {},
+    "ventas": {}
+  },
+  "resumen": {
+    "totalPasos": 11,
+    "criticas": 3,
+    "flujoCompletado": 3,
+    "flujoTotal": 5
+  }
+}
+```
+
+Donde `severidad` es `"critica"` | `"importante"` | `"informativo"` y `etapa` es `"materias_primas"` | `"recetas"` | `"produccion"` | `"stock"` | `"ventas"`.
+
+**Paralelización:** usa `Promise.all` para ejecutar las consultas Prisma en paralelo (productos, materias primas, insumos, estados, recetas, agregaciones de ventas/producción/compras del mes actual y anterior).
 
 **Cálculos clave:**
 - `pctVariacion(actual, anterior)`: porcentaje de variación mes a mes.
-- `tendencia(actual, anterior)`: 'sube' | 'baja' | 'estable' | 'sin_datos'.
+- `tendencia(actual, anterior)`: `'sube'` | `'baja'` | `'estable'` | `'sin_datos'`.
 - Estados del flujo basados en conteos de items agotados/bajos/pendientes.
+- Cada alerta incluye su `href` con los parámetros de filtro específicos.
 
-**Archivos:** `src/app/api/dashboard/route.ts` (485 líneas), `src/app/(dashboard)/admin/dashboard/page.tsx` (691 líneas).
+**Archivos:** `src/app/api/dashboard/route.ts`, `src/app/(dashboard)/admin/dashboard/page.tsx`.
 
 ---
-
 ## 23. Novedades de la Versión 16
 
 Esta versión incorpora el rediseño del Dashboard con enfoque en flujo de trabajo, además de todas las mejoras de la versión 15. A continuación se listan los cambios más relevantes, con referencia cruzada a la sección donde están descriptos en detalle.

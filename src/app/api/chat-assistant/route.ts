@@ -124,15 +124,34 @@ MÓDULOS DEL SISTEMA:
 - Productos visibles al público en la landing page
 - No confundir con productos terminados (estos son para la web pública)
 
-20. DASHBOARD (/admin/dashboard) — REDISEÑADO CON FLUJO DE TRABAJO
-- Panel principal rediseñado con 4 secciones jerárquicas que guían al usuario sobre QUÉ HACER:
-- SECCIÓN 1 "Pasos Pendientes" (prioridad alta): muestra SOLO alertas que requieren acción, ordenadas por severidad (críticas primero). Cada paso tiene un BOTÓN DIRECTO a la acción: "Ver productos sin stock", "Cargar materias primas", "Completar producción", "Crear recetas", "Ver stock bajo", "Editar recetas". Si no hay pendientes, muestra "Todo está en orden".
+20. DASHBOARD (/admin/dashboard) — JERARQUÍA VISUAL DE 3 NIVELES + FILTROS ESPECÍFICOS
+- Panel principal con 4 secciones que guían al usuario sobre QUÉ HACER, con jerarquía visual de 3 niveles:
+- SECCIÓN 1 "Pasos Pendientes" (prioridad alta): muestra SOLO alertas que requieren acción, con JERARQUÍA VISUAL DE 3 NIVELES DE SEVERIDAD:
+  - 🔴 Críticas (rojo): bloquean producción o venta. Requieren acción inmediata.
+  - 🟡 Importantes (mostaza): no bloquean pero conviene resolver pronto.
+  - 🔵 Informativas (celeste): información útil, no requieren resolución inmediata.
+  Las alertas se ordenan primero por ETAPA DEL FLUJO DE TRABAJO (Materias Primas → Recetas → Producción → Stock → Ventas) y luego por severidad dentro de cada etapa.
+  CADA ALERTA tiene un BOTÓN DIRECTO CON FILTRO ESPECÍFICO que lleva a la página de destino con los datos pre-filtrados:
+  - MP agotadas → /admin/compras?materias-primas=agotadas (🔴 Crítica)
+  - MP stock bajo → /admin/materias-primas?stock=bajo (🟡 Importante)
+  - Insumos agotados → /admin/compras?insumos=agotados (🔴 Crítica)
+  - Insumos stock bajo → /admin/insumos?stock=bajo (🟡 Importante)
+  - PT sin receta → /admin/recetas?filtro=sin-receta (🟡 Importante)
+  - Recetas vacías → /admin/recetas?filtro=vacia (🟡 Importante)
+  - Producción pendiente → /admin/produccion?estado=pendiente (🟡 Importante)
+  - PT sin stock → /admin/produccion?productos-sin-stock (🔴 Crítica)
+  - PT stock bajo → /admin/productos-terminados?stock=bajo (🟡 Importante)
+  - Pedidos pendientes → /admin/pedidos-clientes?estado=pendiente (🔵 Informativa)
+  - Reservas activas → /admin/reservas-clientes?estado=activa (🔵 Informativa)
+  Si no hay pendientes, muestra "✅ Todo está en orden".
 - SECCIÓN 2 "Indicadores Clave": 6 métricas con TENDENCIA vs mes anterior (flecha verde ↑ si subió, roja ↓ si bajó, "sin datos" si no hay comparación). Indicadores: Ventas del Mes ($), Producción del Mes (unidades), Pedidos Pendientes, Reservas Activas, Compras del Mes ($), Stock Crítico (items agotados).
-- SECCIÓN 3 "Flujo de Trabajo": 5 etapas del proceso en pipeline: Materias Primas → Recetas → Producción → Stock → Ventas. Cada etapa muestra su estado: ✅ En orden (oliva), ⚠️ Pendiente (mostaza), 🔴 Crítico (rojo). Header con badge "Flujo: X/5 etapas OK".
+- SECCIÓN 3 "Flujo de Trabajo": 5 etapas del proceso en pipeline: Materias Primas → Recetas → Producción → Stock → Ventas. Cada etapa muestra su estado: ✅ En orden (oliva), ⚠️ Pendiente (mostaza), 🔴 Crítico (rojo). Header con badge "Flujo: X/5 etapas OK". CADA ETAPA ES CLICKEABLE y navega a la sección con filtros aplicados.
 - SECCIÓN 4 "Acciones Directas": 8 botones grandes de acceso rápido: Ver productos sin stock, Completar producción, Cargar materias primas, Registrar venta, Gestionar pedidos, Editar recetas, Ver reservas, Generar reporte. Debajo: fila de botones compactos para accesos secundarios.
-- TIPOS DE ALERTAS (Pasos Pendientes):
-  - 🔴 Críticas: PT sin stock, MP agotadas, Insumos agotados, PT sin receta.
-  - ⚠️ Medias: Producción pendiente >2 días, MP stock bajo, PT stock bajo, Recetas sin ingredientes.
+- TIPOS DE ALERTAS (Pasos Pendientes) — JERARQUÍA DE 3 NIVELES:
+  - 🔴 Críticas: MP agotadas, Insumos agotados, PT sin stock (bloquean producción/venta).
+  - 🟡 Importantes: MP stock bajo, Insumos stock bajo, PT sin receta, Recetas vacías, Producción pendiente, PT stock bajo.
+  - 🔵 Informativas: Pedidos pendientes, Reservas activas.
+- Las PÁGINAS DE DESTINO detectan los parámetros URL y muestran los datos PRE-FILTRADOS automáticamente (useSearchParams).
 - Endpoint único /api/dashboard agrega todos los datos en 1 consulta (antes 16 fetches paralelos).
 - Estados del flujo: ok (sin pendientes), pendiente (stock bajo/producción atrasada), critico (sin stock/sin receta).
 
@@ -556,16 +575,31 @@ Las entregas se vinculan con los pedidos de clientes.`,
   },
   {
     keywords: ['dashboard', 'panel', 'inicio', 'estadísticas', 'cómo uso el dashboard', 'como uso el dashboard', 'pantalla principal'],
-    response: `📊 **Dashboard rediseñado con flujo de trabajo** (menú: Inicio → Dashboard, o \`/admin/dashboard\`)
+    response: `📊 **Dashboard con jerarquía visual de 3 niveles** (menú: Inicio → Dashboard, o \`/admin/dashboard\`)
 
-El Dashboard fue rediseñado para **guiarte sobre qué hacer**, no solo mostrar números. Tiene 4 secciones en orden de prioridad:
+El Dashboard te **guía sobre qué hacer** con una jerarquía visual de 3 niveles de severidad y alertas ordenadas por flujo de trabajo. Tiene 4 secciones:
 
 **1. Pasos Pendientes (arriba, prioridad alta)**
-Muestra solo las alertas que requieren acción, ordenadas: críticas (🔴) primero, medias (⚠️) después. Cada paso tiene un botón directo:
-- "Ver productos sin stock" → lista de PT agotados
-- "Cargar materias primas" → formulario de compras
-- "Completar producción" → producciones pendientes
-- "Crear recetas" → recetas
+Muestra las alertas que requieren acción, con **3 niveles de severidad visual**:
+- 🔴 **Críticas** (rojo): bloquean producción o venta — acción inmediata
+- 🟡 **Importantes** (mostaza): no bloquean pero conviene resolver pronto
+- 🔵 **Informativas** (celeste): información útil, no requieren resolución inmediata
+
+Las alertas se ordenan por **flujo de trabajo**: Materias Primas → Recetas → Producción → Stock → Ventas.
+
+CADA alerta tiene un **botón directo con filtro** que lleva a la página con datos pre-filtrados:
+- "MP agotadas" → \`/admin/compras?materias-primas=agotadas\` (🔴)
+- "MP stock bajo" → \`/admin/materias-primas?stock=bajo\` (🟡)
+- "Insumos agotados" → \`/admin/compras?insumos=agotados\` (🔴)
+- "Insumos stock bajo" → \`/admin/insumos?stock=bajo\` (🟡)
+- "PT sin receta" → \`/admin/recetas?filtro=sin-receta\` (🟡)
+- "Recetas vacías" → \`/admin/recetas?filtro=vacia\` (🟡)
+- "Producción pendiente" → \`/admin/produccion?estado=pendiente\` (🟡)
+- "PT sin stock" → \`/admin/produccion?productos-sin-stock\` (🔴)
+- "PT stock bajo" → \`/admin/productos-terminados?stock=bajo\` (🟡)
+- "Pedidos pendientes" → \`/admin/pedidos-clientes?estado=pendiente\` (🔵)
+- "Reservas activas" → \`/admin/reservas-clientes?estado=activa\` (🔵)
+
 Si no hay pendientes, ves "✅ Todo está en orden".
 
 **2. Indicadores Clave (al medio)**
@@ -578,36 +612,41 @@ Cada etapa tiene un estado visual:
 - ✅ En orden (verde oliva) — sin pendientes
 - ⚠️ Pendiente (mostaza) — hay stock bajo o producción atrasada
 - 🔴 Crítico (rojo) — hay items agotados o sin receta
-El header muestra "Flujo: X/5 etapas OK".
+El header muestra "Flujo: X/5 etapas OK". **Cada etapa es clickeable** y te lleva a la sección con filtros.
 
 **4. Acciones Directas (abajo)**
 8 botones grandes: Ver productos sin stock, Completar producción, Cargar materias primas, Registrar venta, Gestionar pedidos, Editar recetas, Ver reservas, Generar reporte.
 
 💡 **Cómo usarlo paso a paso:**
-1. Revisá los **Pasos Pendientes** y resolvé las críticas primero (botones directos).
+1. Revisá los **Pasos Pendientes** — las 🔴 críticas primero (botones con filtro).
 2. Mirá los **Indicadores Clave** para ver si ventas/producción suben o bajan.
-3. Identificá qué etapa del **Flujo de Trabajo** tiene ⚠️ o 🔴 — esa es tu próxima acción.
+3. Identificá qué etapa del **Flujo de Trabajo** tiene ⚠️ o 🔴 — hacé clic en la etapa para ir directo.
 4. Usá las **Acciones Directas** para tareas frecuentes (más rápido que el menú lateral).`,
   },
   {
     keywords: ['qué significa cada alerta', 'que significa cada alerta', 'tipos de alerta', 'alertas dashboard', 'crítica media', 'critica media', 'severidad alerta', 'colores alerta'],
-    response: `🔔 **Tipos de alertas en el Dashboard**
+    response: `🔔 **Tipos de alertas en el Dashboard (jerarquía de 3 niveles)**
 
-El Dashboard muestra alertas accionables en la sección **"Pasos Pendientes"**, ordenadas por severidad:
+El Dashboard muestra alertas en **"Pasos Pendientes"** con **3 niveles de severidad visual**, ordenadas por flujo de trabajo (Materias Primas → Recetas → Producción → Stock → Ventas):
 
-**🔴 Críticas (las más urgentes):**
-- **Productos sin stock**: producto terminado con stock = 0. Acción: producir más.
-- **Materias primas agotadas**: MP con stock = 0. No se puede producir sin reponer. Acción: registrar compra.
-- **Insumos agotados**: insumos (envases, bandejas) con stock = 0. Acción: registrar compra.
-- **Productos sin receta**: PT que no tiene receta asociada. No se puede producir. Acción: crear receta.
+**🔴 Críticas (bloquean producción o venta — acción inmediata):**
+- **MP agotadas**: materias primas con stock = 0. Botón: \`/admin/compras?materias-primas=agotadas\`
+- **Insumos agotados**: insumos con stock = 0. Botón: \`/admin/compras?insumos=agotados\`
+- **PT sin stock**: productos terminados con stock = 0. Botón: \`/admin/produccion?productos-sin-stock\`
 
-**⚠️ Medias (importantes pero no bloqueantes):**
-- **Producción pendiente >2 días**: producciones en estado pendiente/en_curso hace más de 2 días. Acción: completar o cancelar.
-- **Materias primas con stock bajo**: MP con stock_actual ≤ stock_minimo (pero >0). Acción: programar compra.
-- **Productos con stock bajo**: PT con stock_actual ≤ stock_minimo (pero >0). Acción: programar producción.
-- **Recetas sin ingredientes**: recetas activas pero vacías (sin ingredientes cargados). Acción: editar receta.
+**🟡 Importantes (no bloquean pero conviene resolver pronto):**
+- **MP stock bajo**: MP con stock ≤ stock_minimo. Botón: \`/admin/materias-primas?stock=bajo\`
+- **Insumos stock bajo**: insumos con stock ≤ stock_minimo. Botón: \`/admin/insumos?stock=bajo\`
+- **PT sin receta**: productos sin receta asociada. Botón: \`/admin/recetas?filtro=sin-receta\`
+- **Recetas vacías**: recetas sin ingredientes. Botón: \`/admin/recetas?filtro=vacia\`
+- **Producción pendiente**: producciones pendientes >2 días. Botón: \`/admin/produccion?estado=pendiente\`
+- **PT stock bajo**: PT con stock ≤ stock_minimo. Botón: \`/admin/productos-terminados?stock=bajo\`
 
-💡 **Orden de resolución recomendado:** primero las críticas (bloquean producción/venta), después las medias. Usá los botones directos de cada alerta para ir a la pantalla correspondiente.`,
+**🔵 Informativas (información útil, no requieren resolución):**
+- **Pedidos pendientes**: pedidos de clientes sin entregar. Botón: \`/admin/pedidos-clientes?estado=pendiente\`
+- **Reservas activas**: reservas vigentes con seña. Botón: \`/admin/reservas-clientes?estado=activa\`
+
+💡 **Cómo usarlo:** los botones de cada alerta llevan a la página de destino con los datos **pre-filtrados** — no tenés que buscar nada, ya te muestra solo lo que necesitás ver. Resolvé primero las 🔴 críticas (bloquean el negocio), después las 🟡 importantes. Las 🔵 informativas son para tu información.`,
   },
   {
     keywords: ['completar producción', 'completar produccion', 'finalizar producción', 'finalizar produccion', 'producción pendiente', 'produccion pendiente', 'producción atrasada', 'produccion atrasada'],
@@ -670,7 +709,9 @@ Cada etapa tiene un estado visual:
 
 El header muestra **"Flujo: X/5 etapas OK"** — cuántas etapas están en ✅.
 
-💡 **Cómo usarlo:** mirá qué etapa tiene ⚠️ o 🔴 — esa es tu próxima acción. Si "Recetas" está en 🔴, no podés producir esos productos hasta crearles receta.`,
+**Cada etapa es CLICKEABLE:** hacé clic en cualquier etapa del flujo para navegar directamente a la sección correspondiente con los filtros aplicados según su estado.
+
+💡 **Cómo usarlo:** mirá qué etapa tiene ⚠️ o 🔴 — esa es tu próxima acción. Si "Recetas" está en 🔴, no podés producir esos productos hasta crearles receta. Hacé clic en la etapa para ir directo a resolverlo.`,
   },
   {
     keywords: ['descuento por volumen', 'descuentos por volumen', 'mayorista', 'rango', 'cantidad', 'volumen', 'escalona'],

@@ -2808,7 +2808,7 @@ const helpSections: HelpSection[] = [
     id: 'dashboard-flujo',
     title: 'Dashboard y Flujo de Trabajo',
     iconComponent: LayoutDashboard,
-    summary: 'Panel principal rediseñado: Pasos Pendientes accionables, Indicadores Clave con tendencias, Flujo de Trabajo de 5 etapas y Acciones Directas.',
+    summary: 'Panel principal con jerarquía visual de 3 niveles (🔴🟡🔵), alertas ordenadas por flujo de trabajo (MP→Recetas→Producción→Stock→Ventas) y acciones directas con filtros específicos.',
     content: (
       <div className="space-y-5">
         <p className="text-muted-foreground">
@@ -2832,10 +2832,13 @@ const helpSections: HelpSection[] = [
               <div className="text-sm">
                 <p className="font-medium text-marron">1. Pasos Pendientes (prioridad alta)</p>
                 <p className="text-muted-foreground text-xs mt-1">
-                  Muestra <strong>solo las alertas que requieren acción</strong>, ordenadas por severidad
-                  (críticas primero). Cada paso tiene un <strong>botón directo</strong> a la acción
-                  correspondiente: "Ver productos sin stock", "Cargar materias primas", "Completar producción",
-                  "Crear recetas", etc. Si no hay pendientes, se muestra un mensaje "Todo está en orden".
+                  Muestra <strong>solo las alertas que requieren acción</strong>, con una{' '}
+                  <strong>jerarquía visual de 3 niveles</strong>: 🔴 críticas (rojo), 🟡 importantes
+                  (mostaza) y 🔵 informativas (celeste). Las alertas se ordenan por{' '}
+                  <strong>flujo de trabajo</strong> (Materias Primas → Recetas → Producción → Stock →
+                  Ventas) y luego por severidad. Cada paso tiene un <strong>botón directo con filtro</strong>{' '}
+                  que lleva a la vista pre-filtrada: "Ver MP agotadas", "Completar producción", "Ver PT
+                  sin receta", etc. Si no hay pendientes, se muestra "✅ Todo está en orden".
                 </p>
               </div>
             </div>
@@ -2867,7 +2870,9 @@ const helpSections: HelpSection[] = [
                   <li className="flex gap-2"><span className="text-rojo shrink-0">🔴</span><span><strong className="text-rojo">Crítico</strong>: hay items agotados o bloqueantes (sin stock, sin receta, etc.).</span></li>
                 </ul>
                 <p className="text-muted-foreground text-xs mt-2">
-                  El header muestra un badge con el progreso: "Flujo: X/5 etapas OK".
+                  El header muestra un badge con el progreso: "Flujo: X/5 etapas OK".{' '}
+                  <strong>Cada etapa es clickeable</strong> y te lleva a la sección correspondiente con
+                  los filtros aplicados según su estado.
                 </p>
               </div>
             </div>
@@ -2943,25 +2948,38 @@ const helpSections: HelpSection[] = [
             Tipos de alertas en Pasos Pendientes
           </h4>
           <p className="text-sm text-muted-foreground mb-3">
-            El Dashboard detecta automáticamente estas situaciones y las muestra como Pasos Pendientes:
+            El Dashboard detecta automáticamente estas situaciones y las muestra como Pasos Pendientes,
+            ordenadas por <strong>flujo de trabajo</strong> y con <strong>3 niveles de severidad</strong>.
+            Cada alerta incluye un botón que lleva a la vista <strong>pre-filtrada</strong> correspondiente:
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div className="bg-rojo/5 border border-rojo/20 rounded-lg p-3">
               <p className="font-medium text-sm text-rojo mb-1">🔴 Críticas</p>
+              <p className="text-xs text-muted-foreground mb-2">Requieren acción inmediata — bloquean producción o venta.</p>
               <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• Productos terminados sin stock (stock = 0)</li>
-                <li>• Materias primas agotadas (stock = 0)</li>
-                <li>• Insumos agotados (stock = 0)</li>
-                <li>• Productos terminados sin receta asociada</li>
+                <li>• MP agotadas → <code className="bg-rojo/10 px-1 rounded text-[10px]">?materias-primas=agotadas</code></li>
+                <li>• Insumos agotados → <code className="bg-rojo/10 px-1 rounded text-[10px]">?insumos=agotados</code></li>
+                <li>• PT sin stock → <code className="bg-rojo/10 px-1 rounded text-[10px]">?productos-sin-stock</code></li>
               </ul>
             </div>
             <div className="bg-mostaza/5 border border-mostaza/20 rounded-lg p-3">
-              <p className="font-medium text-sm text-mostaza mb-1">⚠️ Medias</p>
+              <p className="font-medium text-sm text-mostaza mb-1">🟡 Importantes</p>
+              <p className="text-xs text-muted-foreground mb-2">Necesitan atención pronta — no bloquean pero conviene resolver.</p>
               <ul className="text-xs text-muted-foreground space-y-1">
-                <li>• Producciones pendientes hace más de 2 días</li>
-                <li>• Materias primas con stock bajo (debajo del mínimo)</li>
-                <li>• Productos con stock bajo (debajo del mínimo)</li>
-                <li>• Recetas sin ingredientes cargados</li>
+                <li>• MP stock bajo → <code className="bg-mostaza/10 px-1 rounded text-[10px]">?stock=bajo</code></li>
+                <li>• Insumos stock bajo → <code className="bg-mostaza/10 px-1 rounded text-[10px]">?stock=bajo</code></li>
+                <li>• PT sin receta → <code className="bg-mostaza/10 px-1 rounded text-[10px]">?filtro=sin-receta</code></li>
+                <li>• Recetas vacías → <code className="bg-mostaza/10 px-1 rounded text-[10px]">?filtro=vacia</code></li>
+                <li>• Producción pendiente → <code className="bg-mostaza/10 px-1 rounded text-[10px]">?estado=pendiente</code></li>
+                <li>• PT stock bajo → <code className="bg-mostaza/10 px-1 rounded text-[10px]">?stock=bajo</code></li>
+              </ul>
+            </div>
+            <div className="bg-sky-500/5 border border-sky-500/20 rounded-lg p-3">
+              <p className="font-medium text-sm text-sky-600 mb-1">🔵 Informativas</p>
+              <p className="text-xs text-muted-foreground mb-2">Información útil — no requieren resolución inmediata.</p>
+              <ul className="text-xs text-muted-foreground space-y-1">
+                <li>• Pedidos pendientes → <code className="bg-sky-500/10 px-1 rounded text-[10px]">?estado=pendiente</code></li>
+                <li>• Reservas activas → <code className="bg-sky-500/10 px-1 rounded text-[10px]">?estado=activa</code></li>
               </ul>
             </div>
           </div>
@@ -3044,7 +3062,7 @@ const helpSections: HelpSection[] = [
     id: 'novedades',
     title: 'Novedades y Mejoras Recientes',
     iconComponent: CheckCircle2,
-    summary: 'Dashboard rediseñado con flujo de trabajo, buscador de promociones que muestra TODOS los productos y otras mejoras.',
+    summary: 'Dashboard v17 con jerarquía visual de 3 niveles, alertas con filtros específicos, etapas clickeables y otras mejoras.',
     content: (
       <div className="space-y-5">
         <p className="text-muted-foreground">
@@ -3052,6 +3070,28 @@ const helpSections: HelpSection[] = [
           recientes del sistema para que las tengas a mano. Si venís usando el sistema desde antes, acá
           encontrás qué cambió.
         </p>
+
+        <div className="bg-rojo/5 border border-rojo/20 rounded-lg p-4">
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <LayoutDashboard className="h-4 w-4 text-rojo" />
+            Dashboard v17: jerarquía visual de 3 niveles + filtros específicos
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            El Dashboard evolucionó con un sistema de <strong>3 niveles de severidad visual</strong> para
+            las alertas, ordenadas por flujo de trabajo y con <strong>acciones directas que incluyen
+            filtros específicos</strong> en la URL de destino.
+          </p>
+          <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-rojo shrink-0">•</span><span><strong>Jerarquía visual de 3 niveles:</strong> 🔴 Críticas (bloquean producción/venta), 🟡 Importantes (requieren atención), 🔵 Informativas (info útil).</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Alertas ordenadas por flujo de trabajo:</strong> Materias Primas → Recetas → Producción → Stock → Ventas. Dentro de cada etapa, por severidad.</span></li>
+            <li className="flex gap-2"><span className="text-oliva shrink-0">•</span><span><strong>Acciones directas con filtros:</strong> cada una de las 11 alertas tiene un botón que lleva a la página de destino con el filtro ya aplicado (ej: <code className="bg-marron/10 px-1 rounded text-xs">/recetas?filtro=sin-receta</code>).</span></li>
+            <li className="flex gap-2"><span className="text-sky-600 shrink-0">•</span><span><strong>Etapas clickeables:</strong> cada etapa del Flujo de Trabajo es clickeable y navega a la sección con filtros.</span></li>
+            <li className="flex gap-2"><span className="text-marron shrink-0">•</span><span><strong>Páginas de destino inteligentes:</strong> detectan los parámetros URL y muestran datos pre-filtrados automáticamente.</span></li>
+          </ul>
+          <p className="text-xs text-muted-foreground mt-2">
+            Ver sección <ModuleRef name="Dashboard y Flujo de Trabajo" /> para el detalle completo.
+          </p>
+        </div>
 
         <div className="bg-marron/5 border border-marron/20 rounded-lg p-4">
           <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">

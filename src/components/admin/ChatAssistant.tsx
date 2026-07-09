@@ -38,6 +38,8 @@ const SUGGESTED_QUESTIONS = [
   '¿Cómo filtro un reporte por fecha y cliente?',
   '¿Puedo ver la contraseña mientras la escribo?',
   '¿Por qué no veo todos los productos en el buscador de promociones?',
+  '¿Cómo funcionan los filtros automáticos en las alertas del dashboard?',
+  '¿Qué significa cada color de alerta en el dashboard?',
 ]
 
 // ─── Simple Markdown Renderer ────────────────────────────────────────────────
