@@ -349,6 +349,7 @@ export default function DashboardLayout({
   const toggleSection = (section: 'stock' | 'contenido' | 'compras' | 'ventas' | 'stockMov' | 'logistica' | 'notificaciones' | 'config' | 'auditoria' | 'seguridad', currentOpen: boolean) => {
     switch (section) {
       case 'stock': setStockOpen(!currentOpen); break
+      case 'contenido': setContenidoOpen(!currentOpen); break
       case 'compras': setComprasOpen(!currentOpen); break
       case 'ventas': setVentasOpen(!currentOpen); break
       case 'stockMov': setStockMovOpen(!currentOpen); break
