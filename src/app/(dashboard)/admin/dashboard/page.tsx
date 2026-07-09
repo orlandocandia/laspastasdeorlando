@@ -11,7 +11,7 @@ import {
   AlertTriangle, BookOpen, Shield, TrendingUp, FileBarChart,
   CheckCircle2, ChevronDown, ChevronUp, Utensils, Info, AlertCircle,
   TrendingDown, Minus, ArrowLeftRight as Flow, BookOpen as Recipe,
-  Zap, Target, ListChecks, Gauge,
+  Zap, Target, ListChecks, Gauge, ExternalLink,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,13 +21,15 @@ import { Separator } from '@/components/ui/separator';
 
 // ─── Types (mirror of API response) ──────────────────────────────────────────
 
-type Sev = 'critica' | 'media';
+type Sev = 'critica' | 'importante' | 'informativo';
+type Etapa = 'materias_primas' | 'recetas' | 'produccion' | 'stock' | 'ventas';
 
 interface PasoPendiente {
   id: string;
   titulo: string;
   descripcion: string;
   severidad: Sev;
+  etapa: Etapa;
   accionLabel: string;
   href: string;
   iconKey: string;
@@ -71,6 +73,8 @@ interface DashboardData {
   resumen: {
     totalPasos: number;
     criticas: number;
+    importantes: number;
+    informativas: number;
     flujoCompletado: number;
     flujoTotal: number;
   };
@@ -118,23 +122,62 @@ const cardVariants: Variants = {
   }),
 };
 
-// ─── Sev meta ────────────────────────────────────────────────────────────────
+// ─── Sev meta (3-tier visual hierarchy) ──────────────────────────────────────
 
-const SEV_META: Record<Sev, { color: string; bg: string; border: string; icon: typeof AlertTriangle; badge: string }> = {
+const SEV_META: Record<Sev, {
+  color: string;
+  bg: string;
+  border: string;
+  iconBg: string;
+  icon: typeof AlertTriangle;
+  badge: string;
+  dot: string;
+  emoji: string;
+  label: string;
+}> = {
   critica: {
     color: 'text-rojo',
     bg: 'bg-rojo/5',
     border: 'border-rojo/30',
+    iconBg: 'bg-rojo/15',
     icon: AlertTriangle,
     badge: 'bg-rojo text-crema',
+    dot: 'bg-rojo',
+    emoji: '\uD83D\uDD34',
+    label: 'Crítico',
   },
-  media: {
-    color: 'text-orange-600',
-    bg: 'bg-orange-50',
-    border: 'border-orange-200',
+  importante: {
+    color: 'text-mostaza',
+    bg: 'bg-mostaza/5',
+    border: 'border-mostaza/40',
+    iconBg: 'bg-mostaza/15',
     icon: AlertCircle,
-    badge: 'bg-orange-500 text-white',
+    badge: 'bg-mostaza text-marron',
+    dot: 'bg-mostaza',
+    emoji: '\uD83D\uDFE1',
+    label: 'Importante',
   },
+  informativo: {
+    color: 'text-sky-700',
+    bg: 'bg-sky-50',
+    border: 'border-sky-200',
+    iconBg: 'bg-sky-100',
+    icon: Info,
+    badge: 'bg-sky-600 text-white',
+    dot: 'bg-sky-500',
+    emoji: '\uD83D\uDD35',
+    label: 'Informativo',
+  },
+};
+
+// ─── Etapa meta (workflow stage badges) ──────────────────────────────────────
+
+const ETAPA_META: Record<Etapa, { label: string; short: string; num: number; icon: typeof Leaf }> = {
+  materias_primas: { label: 'Materias Primas', short: 'MP', num: 1, icon: Leaf },
+  recetas: { label: 'Recetas', short: 'Recetas', num: 2, icon: BookOpen },
+  produccion: { label: 'Producción', short: 'Prod.', num: 3, icon: Factory },
+  stock: { label: 'Stock', short: 'Stock', num: 4, icon: Package },
+  ventas: { label: 'Ventas', short: 'Ventas', num: 5, icon: DollarSign },
 };
 
 // ─── Flujo estado meta ───────────────────────────────────────────────────────
@@ -179,10 +222,7 @@ function TrendBadge({ ind }: { ind: IndicadorClave }) {
   }
   const isUp = ind.tendencia === 'sube';
   const isFlat = ind.tendencia === 'estable';
-  // For "stock critico" lower is better, but for most metrics higher is better.
-  // We treat the arrow direction as raw data direction; color reflects good/bad.
   const arrow = isFlat ? <Minus className="h-3.5 w-3.5" /> : isUp ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />;
-  // Good if sales/production go up; bad if they go down.
   const isGood = isFlat ? true : isUp;
   const color = isFlat ? 'text-muted-foreground' : isGood ? 'text-oliva' : 'text-rojo';
   return (
@@ -233,24 +273,43 @@ export default function DashboardPage() {
     ? [flujo.materias_primas, flujo.recetas, flujo.produccion, flujo.stock, flujo.ventas]
     : [];
 
+  // Group pasos by etapa for section headers
+  const etapasConPasos: Etapa[] = [];
+  (['materias_primas', 'recetas', 'produccion', 'stock', 'ventas'] as Etapa[]).forEach(e => {
+    if (pasos.some(p => p.etapa === e)) etapasConPasos.push(e);
+  });
+
   return (
     <div className="space-y-6">
       {/* ─── Header ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-marron">
-            ¡Hola, {firstName}! 👋
+            Hola, {firstName}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Panel de gestión con enfoque en flujo de trabajo — Pastas Orlando
+            Panel de gestion con flujo de trabajo - Pastas Orlando
           </p>
         </div>
-        {/* Resumen rápido badges */}
+        {/* Resumen rapido badges - 3 severidades */}
         {!loading && resumen && (
           <div className="flex flex-wrap gap-2">
             {resumen.criticas > 0 && (
-              <Badge className="bg-rojo text-crema hover:bg-rojo">
-                {resumen.criticas} crítica{resumen.criticas !== 1 ? 's' : ''}
+              <Badge className="bg-rojo text-crema hover:bg-rojo gap-1">
+                <span>{'\uD83D\uDD34'}</span>
+                {resumen.criticas} critica{resumen.criticas !== 1 ? 's' : ''}
+              </Badge>
+            )}
+            {resumen.importantes > 0 && (
+              <Badge className="bg-mostaza text-marron hover:bg-mostaza gap-1">
+                <span>{'\uD83D\uDFE1'}</span>
+                {resumen.importantes} importante{resumen.importantes !== 1 ? 's' : ''}
+              </Badge>
+            )}
+            {resumen.informativas > 0 && (
+              <Badge className="bg-sky-600 text-white hover:bg-sky-600 gap-1">
+                <span>{'\uD83D\uDD35'}</span>
+                {resumen.informativas} info.
               </Badge>
             )}
             <Badge className="bg-marron text-crema hover:bg-marron">
@@ -307,7 +366,7 @@ export default function DashboardPage() {
       {/* ─── Main content ───────────────────────────────────────────────── */}
       {!loading && !error && data && (
         <>
-          {/* ═══ 1. PASOS PENDIENTES ═══════════════════════════════════════ */}
+          {/* ═══ 1. PASOS PENDIENTES (ordenados por flujo de trabajo) ══════ */}
           <section aria-label="Pasos pendientes">
             <Card className={`border-marron/10 ${pasos.length === 0 ? 'border-oliva/30 bg-oliva/5' : ''}`}>
               <CardHeader className="pb-3">
@@ -331,63 +390,117 @@ export default function DashboardPage() {
                       </CardTitle>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {pasos.length === 0
-                          ? 'No hay acciones pendientes — todo está en orden'
-                          : 'Acciones que requieren tu atención ahora'}
+                          ? 'No hay acciones pendientes - todo esta en orden'
+                          : 'Ordenadas por flujo: MP -> Recetas -> Produccion -> Stock -> Ventas'}
                       </p>
                     </div>
                   </div>
+                  {pasos.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPasosExpanded(!pasosExpanded)}
+                      className="text-xs text-muted-foreground hover:text-marron"
+                    >
+                      {pasosExpanded ? (
+                        <><ChevronUp className="h-4 w-4 mr-1" /> Contraer</>
+                      ) : (
+                        <><ChevronDown className="h-4 w-4 mr-1" /> Expandir</>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
-              {pasos.length > 0 && (
-                <CardContent className="pt-0 space-y-2.5">
-                  <AnimatePresence>
-                    {pasosExpanded && pasos.map((paso, i) => {
-                      const sev = SEV_META[paso.severidad];
-                      const SevIcon = sev.icon;
-                      const StepIcon = getIcon(paso.iconKey);
-                      return (
-                        <motion.div
-                          key={paso.id}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: i * 0.05 }}
-                          className={`rounded-lg border ${sev.border} ${sev.bg} p-3 sm:p-4`}
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                            <div className="flex items-start gap-3 flex-1 min-w-0">
-                              <div className={`rounded-lg p-2 shrink-0 ${paso.severidad === 'critica' ? 'bg-rojo/15' : 'bg-orange-100'}`}>
-                                <StepIcon className={`h-4 w-4 ${sev.color}`} />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <h3 className={`font-semibold text-sm ${sev.color}`}>{paso.titulo}</h3>
-                                  <Badge className={`text-[10px] ${sev.badge}`}>
-                                    {paso.cantidad}
-                                  </Badge>
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  {paso.descripcion}
-                                </p>
-                              </div>
-                            </div>
-                            <Link href={paso.href} className="shrink-0">
-                              <Button
-                                size="sm"
-                                className={
-                                  paso.severidad === 'critica'
-                                    ? 'bg-rojo text-crema hover:bg-rojo/90'
-                                    : 'bg-marron text-crema hover:bg-marron/90'
-                                }
-                              >
-                                {paso.accionLabel}
-                                <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                              </Button>
-                            </Link>
+              {pasos.length > 0 && pasosExpanded && (
+                <CardContent className="pt-0 space-y-4">
+                  {/* Leyenda de severidad */}
+                  <div className="flex flex-wrap items-center gap-3 pb-2 border-b border-marron/5">
+                    <span className="text-xs text-muted-foreground">Severidad:</span>
+                    <span className="flex items-center gap-1 text-xs text-rojo">
+                      <span className="w-2 h-2 rounded-full bg-rojo" /> Critico
+                    </span>
+                    <span className="flex items-center gap-1 text-xs text-mostaza">
+                      <span className="w-2 h-2 rounded-full bg-mostaza" /> Importante
+                    </span>
+                    <span className="flex items-center gap-1 text-xs text-sky-700">
+                      <span className="w-2 h-2 rounded-full bg-sky-500" /> Informativo
+                    </span>
+                  </div>
+
+                  {/* Alertas agrupadas por etapa del flujo */}
+                  {etapasConPasos.map((etapa) => {
+                    const etapaMeta = ETAPA_META[etapa];
+                    const EtapaIcon = etapaMeta.icon;
+                    const pasosEtapa = pasos.filter(p => p.etapa === etapa);
+                    return (
+                      <div key={etapa} className="space-y-2">
+                        {/* Etapa header */}
+                        <div className="flex items-center gap-2 pt-1">
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-marron/70">
+                            <span className="flex items-center justify-center w-5 h-5 rounded-full bg-marron/10 text-marron text-[10px] font-bold">
+                              {etapaMeta.num}
+                            </span>
+                            <EtapaIcon className="h-3.5 w-3.5" />
+                            {etapaMeta.label}
                           </div>
-                        </motion.div>
-                      );
-                    })}
-                  </AnimatePresence>
+                          <Separator className="flex-1 bg-marron/5" />
+                        </div>
+                        {/* Alertas de esta etapa */}
+                        <AnimatePresence>
+                          {pasosEtapa.map((paso, i) => {
+                            const sev = SEV_META[paso.severidad];
+                            const StepIcon = getIcon(paso.iconKey);
+                            return (
+                              <motion.div
+                                key={paso.id}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.05 }}
+                                className={`rounded-lg border ${sev.border} ${sev.bg} p-3 sm:p-4`}
+                              >
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                                    <div className={`rounded-lg p-2 shrink-0 ${sev.iconBg}`}>
+                                      <StepIcon className={`h-4 w-4 ${sev.color}`} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <h3 className={`font-semibold text-sm ${sev.color}`}>{paso.titulo}</h3>
+                                        <Badge className={`text-[10px] ${sev.badge}`}>
+                                          {paso.cantidad}
+                                        </Badge>
+                                        <span className={`text-[10px] inline-flex items-center gap-0.5 ${sev.color} opacity-70`}>
+                                          {sev.emoji} {sev.label}
+                                        </span>
+                                      </div>
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        {paso.descripcion}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <Link href={paso.href} className="shrink-0">
+                                    <Button
+                                      size="sm"
+                                      className={
+                                        paso.severidad === 'critica'
+                                          ? 'bg-rojo text-crema hover:bg-rojo/90'
+                                          : paso.severidad === 'importante'
+                                            ? 'bg-mostaza text-marron hover:bg-mostaza/90'
+                                            : 'bg-sky-600 text-white hover:bg-sky-700'
+                                      }
+                                    >
+                                      {paso.accionLabel}
+                                      <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                                    </Button>
+                                  </Link>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
                 </CardContent>
               )}
             </Card>
@@ -440,14 +553,14 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* ═══ 3. FLUJO DE TRABAJO ═══════════════════════════════════════ */}
+          {/* ═══ 3. FLUJO DE TRABAJO (interactivo) ═════════════════════════ */}
           <section aria-label="Flujo de trabajo">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-2">
                 <Flow className="h-5 w-5 text-marron" />
                 <h2 className="text-lg font-semibold text-marron">Flujo de Trabajo</h2>
                 <span className="text-xs text-muted-foreground hidden sm:inline">
-                  Materias Primas → Recetas → Producción → Stock → Ventas
+                  click en cada etapa para abrir el modulo
                 </span>
               </div>
               {resumen && (
@@ -466,13 +579,19 @@ export default function DashboardPage() {
                     const EstadoIcon = meta.icon;
                     return (
                       <div key={stage.label} className="flex flex-col lg:flex-row lg:items-stretch gap-2 lg:gap-1 flex-1">
-                        <Link href={stage.href} className="flex-1 group">
+                        <Link href={stage.href} className="flex-1 group cursor-pointer">
                           <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
+                            whileHover={{ scale: 1.03 }}
+                            whileTap={{ scale: 0.98 }}
                             transition={{ delay: idx * 0.08 }}
-                            className={`rounded-xl border ${meta.border} ${meta.bg} p-3 sm:p-4 h-full transition-all group-hover:shadow-md group-hover:brightness-105`}
+                            className={`rounded-xl border ${meta.border} ${meta.bg} p-3 sm:p-4 h-full transition-all group-hover:shadow-md group-hover:brightness-105 relative`}
                           >
+                            {/* Numero de etapa */}
+                            <div className="absolute top-2 right-2 text-[10px] font-bold text-marron/30">
+                              {idx + 1}
+                            </div>
                             <div className="flex items-center justify-between mb-2">
                               <div className={`rounded-lg p-1.5 ${meta.bg} ${meta.border} border`}>
                                 <StageIcon className={`h-4 w-4 ${meta.color}`} />
@@ -500,6 +619,11 @@ export default function DashboardPage() {
                                 {meta.label}
                               </div>
                             )}
+                            {/* Indicador "click para abrir" */}
+                            <div className="mt-2 pt-2 border-t border-marron/5 flex items-center gap-1 text-[10px] text-muted-foreground group-hover:text-marron transition-colors">
+                              <ExternalLink className="h-3 w-3" />
+                              Abrir modulo
+                            </div>
                           </motion.div>
                         </Link>
                         {/* Arrow between stages (desktop) */}
@@ -522,7 +646,7 @@ export default function DashboardPage() {
                     <AlertCircle className="h-3 w-3" /> Pendiente
                   </span>
                   <span className="flex items-center gap-1 text-xs text-rojo">
-                    <AlertTriangle className="h-3 w-3" /> Crítico
+                    <AlertTriangle className="h-3 w-3" /> Critico
                   </span>
                 </div>
               </CardContent>
@@ -535,23 +659,23 @@ export default function DashboardPage() {
               <Zap className="h-5 w-5 text-marron" />
               <h2 className="text-lg font-semibold text-marron">Acciones Directas</h2>
               <span className="text-xs text-muted-foreground hidden sm:inline">
-                accesos rápidos a las tareas más frecuentes
+                accesos rapidos a las tareas mas frecuentes
               </span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <DirectAction
-                href="/admin/productos-terminados?stock=sin_stock"
-                icon={Package}
-                color="rojo"
-                titulo="Ver productos sin stock"
-                desc="Lista de productos terminados agotados"
-              />
-              <DirectAction
                 href="/admin/produccion"
                 icon={Factory}
+                color="rojo"
+                titulo="Producir mas"
+                desc="Iniciar produccion de productos sin stock"
+              />
+              <DirectAction
+                href="/admin/productos-terminados?stock=sin_stock"
+                icon={Package}
                 color="marron"
-                titulo="Completar producción"
-                desc="Marcar producciones como finalizadas"
+                titulo="Ver productos sin stock"
+                desc="Lista de productos terminados agotados"
               />
               <DirectAction
                 href="/admin/compras"
@@ -579,14 +703,14 @@ export default function DashboardPage() {
                 icon={BookOpen}
                 color="oliva"
                 titulo="Editar recetas"
-                desc="Recetas de producción y costos"
+                desc="Recetas de produccion y costos"
               />
               <DirectAction
                 href="/admin/reservas-clientes"
                 icon={CalendarCheck}
                 color="rojo"
                 titulo="Ver reservas"
-                desc="Reservas vigentes con seña"
+                desc="Reservas vigentes con sena"
               />
               <DirectAction
                 href="/admin/reportes"
@@ -599,11 +723,11 @@ export default function DashboardPage() {
           </section>
 
           {/* ═══ 5. Accesos adicionales (colapsable) ═══════════════════════ */}
-          <section aria-label="Más accesos">
+          <section aria-label="Mas accesos">
             <Card className="border-marron/5">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground">
-                  Más accesos
+                  Mas accesos
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -614,11 +738,11 @@ export default function DashboardPage() {
                     { href: '/admin/productos-terminados', icon: UtensilsCrossed, label: 'Productos Terminados', color: 'text-rojo' },
                     { href: '/admin/stock-movements', icon: ArrowLeftRight, label: 'Mov. Stock', color: 'text-oliva' },
                     { href: '/admin/pedidos-proveedores', icon: ClipboardList, label: 'Pedidos Proveedores', color: 'text-mostaza' },
-                    { href: '/admin/productos', icon: Package, label: 'Catálogo Landing', color: 'text-mostaza' },
+                    { href: '/admin/productos', icon: Package, label: 'Catalogo Landing', color: 'text-mostaza' },
                     { href: '/admin/opiniones', icon: MessageSquare, label: 'Opiniones', color: 'text-rojo' },
                     { href: '/admin/estadisticas', icon: Phone, label: 'WhatsApp', color: 'text-whatsapp' },
                     { href: '/admin/usuarios', icon: Users, label: 'Usuarios', color: 'text-oliva' },
-                    { href: '/admin/auditoria', icon: Shield, label: 'Auditoría', color: 'text-oliva' },
+                    { href: '/admin/auditoria', icon: Shield, label: 'Auditoria', color: 'text-oliva' },
                   ].map(item => (
                     <Link key={item.href} href={item.href}>
                       <Button

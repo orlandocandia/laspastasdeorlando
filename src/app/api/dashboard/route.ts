@@ -3,13 +3,15 @@ import { db } from '@/lib/db'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Sev = 'critica' | 'media'
+type Sev = 'critica' | 'importante' | 'informativo'
+type Etapa = 'materias_primas' | 'recetas' | 'produccion' | 'stock' | 'ventas'
 
 interface PasoPendiente {
   id: string
   titulo: string
   descripcion: string
   severidad: Sev
+  etapa: Etapa
   accionLabel: string
   href: string
   iconKey: string
@@ -53,12 +55,28 @@ interface DashboardResponse {
   resumen: {
     totalPasos: number
     criticas: number
+    importantes: number
+    informativas: number
     flujoCompletado: number
     flujoTotal: number
   }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+const ETAPA_ORDER: Record<Etapa, number> = {
+  materias_primas: 0,
+  recetas: 1,
+  produccion: 2,
+  stock: 3,
+  ventas: 4,
+}
+
+const SEV_ORDER: Record<Sev, number> = {
+  critica: 0,
+  importante: 1,
+  informativo: 2,
+}
 
 function pctVariacion(actual: number, anterior: number): number | null {
   if (anterior === 0) {
@@ -190,31 +208,36 @@ export async function GET() {
     ])
 
     // ─── Build "Pasos Pendientes" (actionable alerts) ────────────────────
+    // Ordered by workflow stage (MP → Recetas → Producción → Stock → Ventas)
+    // and within each stage by severity (crítica → importante → informativo).
     const pasosPendientes: PasoPendiente[] = []
 
-    if (ptSinStock.length > 0) {
-      pasosPendientes.push({
-        id: 'pt_sin_stock',
-        titulo: 'Productos sin stock',
-        descripcion: `${ptSinStock.length} producto(s) terminado(s) agotado(s). Es necesario producir más.`,
-        severidad: 'critica',
-        accionLabel: 'Ver productos sin stock',
-        href: '/admin/productos-terminados?stock=sin_stock',
-        iconKey: 'package',
-        cantidad: ptSinStock.length,
-      })
-    }
-
+    // ── Etapa 1: Materias Primas ──
     if (mpSinStock.length > 0) {
       pasosPendientes.push({
         id: 'mp_sin_stock',
         titulo: 'Materias primas agotadas',
         descripcion: `${mpSinStock.length} materia(s) prima(s) sin stock. No se puede producir sin reponer.`,
         severidad: 'critica',
+        etapa: 'materias_primas',
         accionLabel: 'Cargar materias primas',
         href: '/admin/compras',
         iconKey: 'leaf',
         cantidad: mpSinStock.length,
+      })
+    }
+
+    if (mpStockBajo.length > 0) {
+      pasosPendientes.push({
+        id: 'mp_stock_bajo',
+        titulo: 'Materias primas con stock bajo',
+        descripcion: `${mpStockBajo.length} materia(s) prima(s) por debajo del mínimo. Programar compra.`,
+        severidad: 'importante',
+        etapa: 'materias_primas',
+        accionLabel: 'Ver stock bajo',
+        href: '/admin/materias-primas?stock=stock_bajo',
+        iconKey: 'leaf',
+        cantidad: mpStockBajo.length,
       })
     }
 
@@ -224,6 +247,7 @@ export async function GET() {
         titulo: 'Insumos agotados',
         descripcion: `${insSinStock.length} insumo(s) sin stock (envases, bandejas, bolsas).`,
         severidad: 'critica',
+        etapa: 'materias_primas',
         accionLabel: 'Ver insumos sin stock',
         href: '/admin/insumos?stock=sin_stock',
         iconKey: 'package-open',
@@ -231,55 +255,32 @@ export async function GET() {
       })
     }
 
+    if (insStockBajo.length > 0) {
+      pasosPendientes.push({
+        id: 'ins_stock_bajo',
+        titulo: 'Insumos con stock bajo',
+        descripcion: `${insStockBajo.length} insumo(s) por debajo del mínimo.`,
+        severidad: 'importante',
+        etapa: 'materias_primas',
+        accionLabel: 'Ver insumos',
+        href: '/admin/insumos?stock=stock_bajo',
+        iconKey: 'package-open',
+        cantidad: insStockBajo.length,
+      })
+    }
+
+    // ── Etapa 2: Recetas ──
     if (productosSinReceta.length > 0) {
       pasosPendientes.push({
         id: 'pt_sin_receta',
         titulo: 'Productos sin receta',
         descripcion: `${productosSinReceta.length} producto(s) terminado(s) sin receta asociada. No se puede producir.`,
-        severidad: 'critica',
+        severidad: 'importante',
+        etapa: 'recetas',
         accionLabel: 'Crear recetas',
         href: '/admin/recetas',
         iconKey: 'book',
         cantidad: productosSinReceta.length,
-      })
-    }
-
-    if (produccionPendiente > 0) {
-      pasosPendientes.push({
-        id: 'produccion_pendiente',
-        titulo: 'Producción pendiente',
-        descripcion: `${produccionPendiente} producción(es) pendiente(s) hace más de 2 días.`,
-        severidad: 'media',
-        accionLabel: 'Completar producción',
-        href: '/admin/produccion',
-        iconKey: 'factory',
-        cantidad: produccionPendiente,
-      })
-    }
-
-    if (mpStockBajo.length > 0) {
-      pasosPendientes.push({
-        id: 'mp_stock_bajo',
-        titulo: 'Materias primas con stock bajo',
-        descripcion: `${mpStockBajo.length} materia(s) prima(s) por debajo del mínimo. Programar compra.`,
-        severidad: 'media',
-        accionLabel: 'Ver stock bajo',
-        href: '/admin/materias-primas?stock=stock_bajo',
-        iconKey: 'leaf',
-        cantidad: mpStockBajo.length,
-      })
-    }
-
-    if (ptStockBajo.length > 0) {
-      pasosPendientes.push({
-        id: 'pt_stock_bajo',
-        titulo: 'Productos con stock bajo',
-        descripcion: `${ptStockBajo.length} producto(s) por debajo del mínimo. Programar producción.`,
-        severidad: 'media',
-        accionLabel: 'Ver stock bajo',
-        href: '/admin/productos-terminados?stock=stock_bajo',
-        iconKey: 'package',
-        cantidad: ptStockBajo.length,
       })
     }
 
@@ -288,7 +289,8 @@ export async function GET() {
         id: 'receta_vacia',
         titulo: 'Recetas sin ingredientes',
         descripcion: `${recetasVacias.length} receta(s) sin ingredientes cargados.`,
-        severidad: 'media',
+        severidad: 'importante',
+        etapa: 'recetas',
         accionLabel: 'Editar recetas',
         href: '/admin/recetas',
         iconKey: 'book',
@@ -296,9 +298,85 @@ export async function GET() {
       })
     }
 
-    // Sort: criticas first, then by cantidad desc
+    // ── Etapa 3: Producción ──
+    if (produccionPendiente > 0) {
+      pasosPendientes.push({
+        id: 'produccion_pendiente',
+        titulo: 'Producción pendiente',
+        descripcion: `${produccionPendiente} producción(es) pendiente(s) hace más de 2 días.`,
+        severidad: 'importante',
+        etapa: 'produccion',
+        accionLabel: 'Completar producción',
+        href: '/admin/produccion',
+        iconKey: 'factory',
+        cantidad: produccionPendiente,
+      })
+    }
+
+    // ── Etapa 4: Stock ──
+    if (ptSinStock.length > 0) {
+      pasosPendientes.push({
+        id: 'pt_sin_stock',
+        titulo: 'Productos sin stock',
+        descripcion: `${ptSinStock.length} producto(s) terminado(s) agotado(s). Es necesario producir más.`,
+        severidad: 'critica',
+        etapa: 'stock',
+        accionLabel: 'Producir más',
+        href: '/admin/produccion',
+        iconKey: 'package',
+        cantidad: ptSinStock.length,
+      })
+    }
+
+    if (ptStockBajo.length > 0) {
+      pasosPendientes.push({
+        id: 'pt_stock_bajo',
+        titulo: 'Productos con stock bajo',
+        descripcion: `${ptStockBajo.length} producto(s) por debajo del mínimo. Programar producción.`,
+        severidad: 'importante',
+        etapa: 'stock',
+        accionLabel: 'Programar producción',
+        href: '/admin/produccion',
+        iconKey: 'package',
+        cantidad: ptStockBajo.length,
+      })
+    }
+
+    // ── Etapa 5: Ventas ──
+    if (pedidosPendientesCount > 0) {
+      pasosPendientes.push({
+        id: 'pedidos_pendientes',
+        titulo: 'Pedidos de clientes pendientes',
+        descripcion: `${pedidosPendientesCount} pedido(s) sin entregar.`,
+        severidad: 'informativo',
+        etapa: 'ventas',
+        accionLabel: 'Ver pedidos',
+        href: '/admin/pedidos-clientes',
+        iconKey: 'clipboard',
+        cantidad: pedidosPendientesCount,
+      })
+    }
+
+    if (reservasActivasCount > 0) {
+      pasosPendientes.push({
+        id: 'reservas_activas',
+        titulo: 'Reservas activas',
+        descripcion: `${reservasActivasCount} reserva(s) vigente(s) con seña.`,
+        severidad: 'informativo',
+        etapa: 'ventas',
+        accionLabel: 'Ver reservas',
+        href: '/admin/reservas-clientes',
+        iconKey: 'calendar',
+        cantidad: reservasActivasCount,
+      })
+    }
+
+    // Sort: by etapa (workflow order), then severity, then cantidad desc
     pasosPendientes.sort((a, b) => {
-      if (a.severidad !== b.severidad) return a.severidad === 'critica' ? -1 : 1
+      const etapaDiff = ETAPA_ORDER[a.etapa] - ETAPA_ORDER[b.etapa]
+      if (etapaDiff !== 0) return etapaDiff
+      const sevDiff = SEV_ORDER[a.severidad] - SEV_ORDER[b.severidad]
+      if (sevDiff !== 0) return sevDiff
       return b.cantidad - a.cantidad
     })
 
@@ -463,6 +541,8 @@ export async function GET() {
 
     // ─── Resumen ─────────────────────────────────────────────────────────
     const criticas = pasosPendientes.filter(p => p.severidad === 'critica').length
+    const importantes = pasosPendientes.filter(p => p.severidad === 'importante').length
+    const informativas = pasosPendientes.filter(p => p.severidad === 'informativo').length
     const flujoCompletado = Object.values(flujoTrabajo).filter(s => s.estado === 'ok').length
 
     const response: DashboardResponse = {
@@ -472,6 +552,8 @@ export async function GET() {
       resumen: {
         totalPasos: pasosPendientes.length,
         criticas,
+        importantes,
+        informativas,
         flujoCompletado,
         flujoTotal: 5,
       },
