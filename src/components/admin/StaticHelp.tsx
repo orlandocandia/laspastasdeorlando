@@ -44,6 +44,8 @@ import {
   Gauge,
   ListChecks,
   Zap,
+  Utensils,
+  Printer,
 } from 'lucide-react'
 import {
   Dialog,
@@ -63,6 +65,7 @@ interface HelpSection {
   title: string
   iconComponent: React.ComponentType<{ className?: string }>
   summary: string
+  keywords?: string[]
   content: React.ReactNode
 }
 
@@ -3167,6 +3170,168 @@ const helpSections: HelpSection[] = [
           (arriba a la izquierda) o abrí el <strong>asistente virtual</strong> (botón flotante abajo a la
           derecha) y preguntá en lenguaje natural.
         </InfoBox>
+      </div>
+    ),
+  },
+  {
+    id: 'recetas-cocina',
+    title: 'Recetas de Cocina',
+    summary: 'Recetas independientes para la landing page y exportación',
+    iconComponent: Utensils,
+    keywords: ['receta', 'cocina', 'landing', 'salsa', 'postre', 'pasta', 'aperitivo', 'bebida', 'ingrediente', 'paso', 'preparacion', 'dificultad', 'categoria', 'visible', 'destacado', 'exportar receta', 'imprimir receta'],
+    content: (
+      <div className="space-y-4">
+        <InfoBox type="info">
+          El módulo de <strong>Recetas de Cocina</strong> es independiente: NO está ligado a producción,
+          stock ni ventas. Sirve para publicar recetas en la landing page y exportarlas/imprimirlas.
+        </InfoBox>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2">¿Qué son?</h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Son recetas de cocina pensadas para los clientes: cómo preparar platos con los productos
+            de Pastas Orlando. A diferencia de las <strong>Recetas de Producción</strong> (que definen
+            qué materias primas usar para fabricar un producto), estas recetas son contenido editorial.
+          </p>
+          <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Título</strong> (obligatorio): nombre de la receta.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Ingredientes</strong> (obligatorio): texto libre, para copiar/pegar rápido.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Pasos</strong> (obligatorio): texto libre, para copiar/pegar rápido.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Dificultad</strong>: Fácil, Media o Difícil.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Categoría</strong>: Salsas, Pastas, Postres, Aperitivos, Bebidas u Otros.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Tiempos</strong> de preparación y cocción (texto libre, ej: "30 min").</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Imagen</strong>: opcional, subida con el sistema de upload existente.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Visible en Landing</strong>: si está activo, aparece en la sección "Recetas" de la página pública.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Destacada</strong>: aparece primero en la landing.</span></li>
+          </ul>
+        </div>
+
+        <div className="bg-crema/60 border border-mostaza/15 rounded-lg p-4">
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-oliva" />
+            Exportación e impresión de recetas
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Desde la vista de detalle de cada receta, podés:
+          </p>
+          <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Exportar a PDF</strong>: diseño profesional con imagen, ingredientes, pasos, tiempos y dificultad.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Exportar a Word (.docx)</strong>: formato editable.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Exportar a TXT</strong>: formato simple de texto plano.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Imprimir directamente</strong>: estilos optimizados para papel.</span></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2">Visibilidad en la landing page</h4>
+          <p className="text-sm text-muted-foreground">
+            Las recetas con <code className="bg-marron/10 px-1 rounded text-xs">visible_en_landing = true</code>{' '}
+            aparecen en una nueva sección <strong>"Recetas"</strong> de la página pública, entre
+            "Cómo Pedir" y "Nosotros". Los clientes pueden filtrar por categoría, buscar por texto
+            y ver el detalle completo en un modal. Las recetas <strong>destacadas</strong> aparecen
+            primero en la lista.
+          </p>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2">Ubicación en el menú</h4>
+          <p className="text-sm text-muted-foreground">
+            El módulo está en el menú lateral, dentro de la sección <strong>"Contenido"</strong>{' '}
+            (ícono: <Utensils className="inline h-4 w-4 text-mostaza" />), separada de "Stock & Producción"
+            para evitar confusión con las recetas de producción.
+          </p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'exportacion-impresion',
+    title: 'Exportación e Impresión',
+    summary: 'Sistema de exportación a PDF, Excel, Word e impresión en todos los módulos',
+    iconComponent: Printer,
+    keywords: ['exportar', 'imprimir', 'pdf', 'excel', 'word', 'docx', 'txt', 'factura', 'ticket', 'remito', 'orden venta', 'reporte', 'imprimir venta', 'exportar stock', 'exportar productos', 'impresion', 'impresora'],
+    content: (
+      <div className="space-y-4">
+        <InfoBox type="info">
+          El sistema incluye exportación e impresión profesional en todos los módulos del panel.
+          Cada módulo tiene botones de exportación adaptados a su propósito.
+        </InfoBox>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2">Menú de impresión en Ventas</h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            En la tabla de Ventas, cada fila tiene un botón de impresión{' '}
+            <Printer className="inline h-4 w-4 text-mostaza" /> que abre un menú con 4 opciones:
+          </p>
+          <ul className="space-y-2 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <div>
+                <strong>Factura</strong>: formato fiscal con datos de la empresa (CUIT, dirección, condición IVA),
+                datos del cliente, tabla de productos con cantidades y precios, desglose de IVA y total.
+              </div>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <div>
+                <strong>Ticket</strong>: formato estrecho tipo comprobante de caja. Simple, con lista de
+                productos, importe y mensaje de agradecimiento.
+              </div>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <div>
+                <strong>Remito</strong>: formato de entrega/logística con datos del destinatario, transporte,
+                domicilio de entrega y líneas de firma para entrega y recibido.
+              </div>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-mostaza shrink-0">•</span>
+              <div>
+                <strong>Orden de Venta</strong>: formato interno para producción/despacho, con casillas de
+                verificación de stock, instrucciones de despacho y marca "USO INTERNO".
+              </div>
+            </li>
+          </ul>
+          <p className="text-xs text-muted-foreground mt-2">
+            Todos los documentos se generan como PDF con diseño profesional y colores de marca.
+          </p>
+        </div>
+
+        <div className="bg-crema/60 border border-mostaza/15 rounded-lg p-4">
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-oliva" />
+            Exportación a Excel
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Los siguientes módulos tienen botón de exportación a Excel:
+          </p>
+          <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Ventas</strong>: reporte con fecha, comprobante, cliente, forma de pago, subtotal, IVA y total.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Productos Terminados</strong>: listado con código, nombre, categoría, stock y precio.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Movimientos de Stock</strong>: historial con tipo, producto, cantidad y observaciones.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Reportes</strong>: los reportes de Ventas, Stock y Producción ya incluyen exportación a Excel y CSV.</span></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2">Exportación de Recetas de Cocina</h4>
+          <p className="text-sm text-muted-foreground">
+            Cada receta de cocina se puede exportar a <strong>PDF</strong>, <strong>Word (.docx)</strong> y{' '}
+            <strong>TXT</strong>, o <strong>imprimir</strong> directamente. Ver sección{' '}
+            <ModuleRef name="Recetas de Cocina" /> para más detalles.
+          </p>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2">Librerías utilizadas</h4>
+          <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><code className="bg-marron/10 px-1 rounded text-xs">@react-pdf/renderer</code> para PDF profesionales.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><code className="bg-marron/10 px-1 rounded text-xs">xlsx</code> para Excel.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><code className="bg-marron/10 px-1 rounded text-xs">docx</code> para Word (.docx).</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>Impresión directa con <code className="bg-marron/10 px-1 rounded text-xs">window.print()</code> y estilos optimizados.</span></li>
+          </ul>
+        </div>
       </div>
     ),
   },

@@ -1,6 +1,6 @@
 # Documentación Técnica Completa — Sistema Las Pastas de Orlando
 
-> **Versión:** 17 (Fase 17 — Dashboard con jerarquía visual de 3 niveles, alertas con filtros específicos, acciones directas)
+> **Versión:** 18 (Fase 18 — Recetas de Cocina + Sistema de Exportación/Impresión Profesional)
 > **Fecha:** Julio 2026
 > **Autores:** Equipo de Desarrollo Las Pastas de Orlando
 > **Repositorio:** [github.com/orlandocandia/laspastasdeorlando](https://github.com/orlandocandia/laspastasdeorlando)
@@ -31,6 +31,8 @@
 20. [Diagrama de Relaciones (ERD)](#20-diagrama-de-relaciones-erd)
 21. [Impresión Térmica de Etiquetas](#21-impresión-térmica-de-etiquetas)
 22. [Novedades de la Versión 17](#22-novedades-de-la-versión-17)
+23. [Novedades de la Versión 16](#23-novedades-de-la-versión-16)
+24. [Novedades de la Versión 18 — Recetas de Cocina + Exportación/Impresión](#24-novedades-de-la-versión-18--recetas-de-cocina--sistema-de-exportaciónimpresión)
 
 ---
 
@@ -2117,3 +2119,148 @@ Resultado: filas claras, sin superposición, consistentes con el resto del siste
 
 *Documentación del Sistema Las Pastas de Orlando © 2026*
 
+
+---
+
+## 24. Novedades de la Versión 18 — Recetas de Cocina + Sistema de Exportación/Impresión
+
+> **Versión:** 18 (Fase 18 — Módulo de Recetas de Cocina independiente + Sistema completo de exportación e impresión profesional)
+> **Fecha:** Julio 2026
+
+### 24.1 Módulo de Recetas de Cocina (Independiente)
+
+**Descripción:** Nuevo módulo de recetas de cocina independiente, NO ligado a producción, stock ni ventas. Pensado para publicar recetas en la landing page y exportarlas/imprimirlas.
+
+**Modelo de Datos (Prisma):**
+```prisma
+model RecetaCocina {
+  id                 Int       @id @default(autoincrement())
+  titulo             String
+  descripcion        String?
+  ingredientes       String    // Texto libre (para copiar/pegar rápido)
+  pasos              String    // Texto libre (para copiar/pegar rápido)
+  tiempo_preparacion String?   // Ej: "30 min"
+  tiempo_coccion     String?   // Ej: "15 min"
+  dificultad         String    @default("facil") // facil | media | dificil
+  imagen             String?
+  categoria          String?   @default("otros") // salsas | pastas | postres | aperitivos | bebidas | otros
+  visible_en_landing Boolean   @default(false)
+  destacado          Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime? @updatedAt
+}
+```
+
+**Endpoints de API:**
+- `GET /api/recetas-cocina` — Listar con paginación y filtros (buscar, categoria, dificultad, visible_en_landing, destacado)
+- `POST /api/recetas-cocina` — Crear nueva receta (requiere auth)
+- `GET /api/recetas-cocina/[id]` — Obtener una receta por ID
+- `PUT /api/recetas-cocina/[id]` — Actualizar receta (requiere auth)
+- `DELETE /api/recetas-cocina/[id]` — Eliminar receta (requiere auth)
+- `GET /api/recetas-cocina/public` — Recetas visibles en landing (sin auth, para página pública)
+
+**Componentes:**
+- `src/components/admin/RecetaCocinaForm.tsx` — Formulario de creación/edición
+- `src/components/admin/RecetasCocinaTable.tsx` — Tabla con búsqueda, filtros y toggle de visibilidad/destacado
+- `src/components/sections/Recetas.tsx` — Sección de la landing page con grid de recetas y modal de detalle
+- `src/components/print/RecetaCocinaPDFDocument.tsx` — Documento PDF profesional de la receta
+- `src/lib/receta-cocina-export.ts` — Utilidades de exportación a Word (.docx) y TXT
+
+**Páginas:**
+- `/admin/recetas-cocina` — Lista de recetas
+- `/admin/recetas-cocina/nueva` — Crear nueva receta
+- `/admin/recetas-cocina/[id]` — Ver detalle con botones de exportación (PDF, Word, TXT, Imprimir)
+- `/admin/recetas-cocina/[id]/editar` — Editar receta
+
+**Ubicación en el menú:** Sección "Contenido" (ícono: `Utensils`), separada de "Stock & Producción" para evitar confusión con las recetas de producción.
+
+**Visibilidad en landing:** Las recetas con `visible_en_landing = true` aparecen en la sección "Recetas" de la página pública (entre "Cómo Pedir" y "Nosotros"), con filtros por categoría y búsqueda por texto.
+
+### 24.2 Sistema de Exportación e Impresión Profesional
+
+**Descripción:** Sistema completo de exportación e impresión en todos los módulos del panel de administración.
+
+#### 24.2.1 Menú de Impresión en Ventas
+
+En la tabla de Ventas, cada fila tiene un botón de impresión con menú desplegable de 4 opciones:
+
+| Documento | Formato | Propósito |
+|-----------|---------|-----------|
+| **Factura** | PDF A4 | Formato fiscal con datos de empresa (CUIT, dirección, condición IVA), cliente, productos, IVA y total |
+| **Ticket** | PDF estrecho | Comprobante de caja simple con lista de productos y total |
+| **Remito** | PDF A4 | Documento de entrega/logística con destinatario, transporte, firmas |
+| **Orden de Venta** | PDF A4 | Documento interno de despacho con casillas de verificación |
+
+**Componentes:**
+- `src/components/print/VentasDocumentPDF.tsx` — 4 documentos PDF (Factura, Ticket, Remito, Orden de Venta)
+- `src/components/admin/VentasPrintMenu.tsx` — Dropdown con las 4 opciones de impresión
+
+**Diseño:** Todos los PDF usan los colores de marca (marrón `#5C3A21`, mostaza `#E1AD01`, crema `#FFF8E7`) y diseño profesional con header, datos del cliente, tabla de productos y totales.
+
+#### 24.2.2 Exportación a Excel
+
+| Módulo | Botón | Datos exportados |
+|--------|-------|------------------|
+| **Ventas** | "Excel" | Fecha, comprobante, cliente, forma de pago, subtotal, IVA, total, estado |
+| **Productos Terminados** | "Exportar Excel" | Código, nombre, categoría, stock actual/mínimo, precio, destacado, visible |
+| **Movimientos de Stock** | "Exportar Excel" | Fecha, tipo, producto, cantidad, stock antes/después, referencia, observación |
+
+**Componente:** `src/components/admin/ExcelExportButton.tsx` — Reutilizable, con función `transform` para mapear datos de API a columnas Excel.
+
+#### 24.2.3 Exportación de Recetas de Cocina
+
+Desde la vista de detalle de cada receta:
+- **PDF**: diseño profesional con imagen, ingredientes, pasos, tiempos y dificultad
+- **Word (.docx)**: formato editable con título, metadatos, ingredientes y preparación
+- **TXT**: texto plano simple
+- **Imprimir**: estilos optimizados para papel (ventana emergente con `window.print()`)
+
+#### 24.2.4 Librerías utilizadas
+
+| Librería | Uso | Versión |
+|----------|-----|---------|
+| `@react-pdf/renderer` | Generación de PDF profesionales | ^4.5.1 |
+| `xlsx` | Exportación a Excel | ^0.18.5 |
+| `docx` | Exportación a Word (.docx) | ^9.7.1 |
+| `react-to-print` | Impresión directa (ya instalado) | ^3.3.0 |
+
+### 24.3 Actualización del Menú Lateral
+
+Se agrega una nueva sección **"Contenido"** en el menú lateral, después de "Stock & Producción", con el ítem "Recetas de Cocina" (ícono: `Utensils`).
+
+### 24.4 Actualización de Ayuda y Documentación
+
+- **StaticHelp:** 2 nuevas secciones — "Recetas de Cocina" y "Exportación e Impresión"
+- **ChatAssistant:** Knowledge base actualizada con módulos 29 y 30; 6 nuevas preguntas sugeridas
+- **FAQ fallback:** 2 nuevas entradas para recetas de cocina y exportación/impresión
+
+### 24.5 Archivos Nuevos y Modificados
+
+**Nuevos:**
+- `src/app/api/recetas-cocina/route.ts`
+- `src/app/api/recetas-cocina/[id]/route.ts`
+- `src/app/api/recetas-cocina/public/route.ts`
+- `src/app/(dashboard)/admin/recetas-cocina/page.tsx`
+- `src/app/(dashboard)/admin/recetas-cocina/nueva/page.tsx`
+- `src/app/(dashboard)/admin/recetas-cocina/[id]/page.tsx`
+- `src/app/(dashboard)/admin/recetas-cocina/[id]/editar/page.tsx`
+- `src/components/admin/RecetaCocinaForm.tsx`
+- `src/components/admin/RecetasCocinaTable.tsx`
+- `src/components/admin/VentasPrintMenu.tsx`
+- `src/components/admin/ExcelExportButton.tsx`
+- `src/components/print/VentasDocumentPDF.tsx`
+- `src/components/print/RecetaCocinaPDFDocument.tsx`
+- `src/components/sections/Recetas.tsx`
+- `src/lib/receta-cocina-export.ts`
+
+**Modificados:**
+- `prisma/schema.prisma` — Modelo `RecetaCocina`
+- `src/app/(dashboard)/layout.tsx` — Sección "Contenido" en el menú lateral
+- `src/components/admin/VentasTable.tsx` — VentasPrintMenu + exportación Excel
+- `src/app/(dashboard)/admin/productos-terminados/page.tsx` — Botón Excel
+- `src/app/(dashboard)/admin/stock-movements/page.tsx` — Botón Excel
+- `src/components/HomeContent.tsx` — Sección Recetas en landing
+- `src/components/admin/StaticHelp.tsx` — 2 nuevas secciones
+- `src/app/api/chat-assistant/route.ts` — Knowledge base + FAQ actualizadas
+- `src/components/admin/ChatAssistant.tsx` — Nuevas preguntas sugeridas
+- `package.json` — Dependencia `docx` añadida

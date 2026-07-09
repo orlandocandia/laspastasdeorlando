@@ -2,6 +2,7 @@
 
 import { ArrowLeftRight } from 'lucide-react'
 import StockMovementsTable from '@/components/admin/StockMovementsTable'
+import ExcelExportButton from '@/components/admin/ExcelExportButton'
 
 export default function StockMovementsPage() {
   return (
@@ -18,6 +19,25 @@ export default function StockMovementsPage() {
         </div>
       </div>
 
+      <div className="flex justify-end gap-2">
+        <ExcelExportButton
+          fetchUrl="/api/stock-movements?limite=1000"
+          filename="movimientos-stock"
+          sheetName="Movimientos"
+          label="Exportar Excel"
+          className="border-oliva/30 text-oliva hover:bg-oliva/10"
+          transform={(m) => ({
+            'Fecha': new Date(m.createdAt).toLocaleDateString('es-AR'),
+            'Tipo': m.tipo_movimiento,
+            'Producto': m.productoTerminado?.nombre || m.materiaPrima?.nombre || '-',
+            'Cantidad': m.cantidad,
+            'Stock Antes': m.stock_antes,
+            'Stock Después': m.stock_despues,
+            'Referencia': m.referencia_tabla ? `${m.referencia_tabla} #${m.referencia_id || ''}` : '-',
+            'Observación': m.observacion || '',
+          })}
+        />
+      </div>
       <StockMovementsTable />
     </div>
   )

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
-import { Pencil, Trash2, Plus, Search, Loader2, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, Loader2, ChevronLeft, ChevronRight, ShoppingCart, Printer, FileSpreadsheet } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,6 +40,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import VentaForm from './VentaForm'
+import VentasPrintMenu from './VentasPrintMenu'
 
 interface Venta {
   id: number
@@ -236,6 +237,38 @@ export default function VentasTable() {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value)
   }
 
+
+  const handleExportExcel = async () => {
+    try {
+      toast.info('Generando Excel...')
+      const res = await fetch('/api/ventas?limite=1000')
+      if (!res.ok) throw new Error('Error al cargar datos')
+      const data = await res.json()
+      const ventasData = data.data || []
+
+      // Import xlsx dynamically
+      const XLSX = await import('xlsx')
+      const rows = ventasData.map((v: Venta) => ({
+        'Fecha': new Date(v.fecha_venta).toLocaleDateString('es-AR'),
+        'Comprobante': v.numero_comprobante || `V-${v.id}`,
+        'Cliente': v.cliente?.razon_social || `${v.cliente?.nombre || ''} ${v.cliente?.apellido || ''}`.trim(),
+        'Forma Pago': v.formaPago?.nombre_forma || '-',
+        'Subtotal': v.subtotal,
+        'IVA': v.iva,
+        'Total': v.total,
+        'Estado': v.estado?.nombre_estado || '-',
+      }))
+
+      const ws = XLSX.utils.json_to_sheet(rows)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Ventas')
+      XLSX.writeFile(wb, `reporte-ventas-${new Date().toISOString().split('T')[0]}.xlsx`)
+      toast.success('Excel generado')
+    } catch {
+      toast.error('Error al generar Excel')
+    }
+  }
+
   if (loading && ventas.length === 0) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -298,6 +331,14 @@ export default function VentasTable() {
           </Select>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleExportExcel}
+            className="border-oliva/30 text-oliva hover:bg-oliva/10"
+          >
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
+            Excel
+          </Button>
           <Button
             onClick={openNewFromPedido}
             variant="outline"
@@ -372,6 +413,23 @@ export default function VentasTable() {
                         >
                           <Pencil className="h-4 w-4 text-mostaza" />
                         </Button>
+                        <VentasPrintMenu venta={{
+                      ...venta,
+                      cliente: {
+                        nombre: venta.cliente?.nombre || '',
+                        apellido: venta.cliente?.apellido || '',
+                        razon_social: venta.cliente?.razon_social || null,
+                        numero_documento: null,
+                        tipo_persona: null,
+                      },
+                      detalle: (venta.detalle || []).map((d) => ({
+                        nombre: d.productoTerminado?.nombre || '',
+                        codigo: null,
+                        cantidad: d.cantidad,
+                        precio_unitario: d.precio_unitario,
+                        subtotal: d.subtotal,
+                      })),
+                    }} />
                         <Button
                           variant="ghost"
                           size="icon"

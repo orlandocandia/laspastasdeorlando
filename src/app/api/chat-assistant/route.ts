@@ -227,6 +227,31 @@ MÓDULOS DEL SISTEMA:
 - Combinar con 2FA (Security → Mi 2FA) para cuentas de administrador.
 - Ver también: logs de acceso, sesiones activas, roles y permisos en /admin/seguridad.
 
+29. RECETAS DE COCINA (/admin/recetas-cocina) — MÓDULO INDEPENDIENTE
+- Recetas de cocina para mostrar en la LANDING PAGE y exportar/imprimir.
+- NO están ligadas a producción, stock ni ventas (son contenido editorial).
+- Campos: título (obligatorio), descripción, ingredientes (texto libre), pasos (texto libre), tiempo_preparación, tiempo_coccion, dificultad (facil/media/dificil), imagen, categoria (salsas/pastas/postres/aperitivos/bebidas/otros), visible_en_landing, destacado.
+- En el menú lateral está en la sección "Contenido" (ícono: utensilios), separada de "Stock & Producción".
+- Las recetas con visible_en_landing=true aparecen en la sección "Recetas" de la página pública (entre "Cómo Pedir" y "Nosotros").
+- Las recetas destacadas aparecen primero en la landing.
+- Desde la vista de detalle se puede: exportar a PDF, exportar a Word (.docx), exportar a TXT, e imprimir directamente.
+- En la tabla de administración se puede alternar visibilidad en landing y destacado con un clic.
+
+30. SISTEMA DE EXPORTACIÓN E IMPRESIÓN (todos los módulos)
+- Cada módulo del panel tiene botones de exportación adaptados a su propósito.
+- VENTAS: botón de impresión (ícono impresora) en cada fila con menú de 4 opciones:
+  * Factura: formato fiscal con datos de empresa (CUIT, dirección, condición IVA), cliente, productos, IVA y total.
+  * Ticket: formato estrecho tipo comprobante de caja, simple con lista de productos y total.
+  * Remito: formato de entrega/logística con destinatario, transporte, domicilio de entrega y líneas de firma.
+  * Orden de Venta: formato interno para despacho, con casillas de verificación e instrucciones.
+  * También tiene botón "Excel" para exportar el reporte de ventas.
+- PRODUCTOS TERMINADOS: botón "Exportar Excel" con listado completo.
+- MOVIMIENTOS DE STOCK: botón "Exportar Excel" con historial de movimientos.
+- RECETAS DE COCINA: exportar a PDF, Word (.docx), TXT e imprimir.
+- REPORTES: ya incluyen exportación a Excel, CSV y PDF con filtros personalizados.
+- PRESUPUESTOS: ya tienen exportación a PDF profesional.
+- Librerías: @react-pdf/renderer (PDF), xlsx (Excel), docx (Word), window.print() (impresión directa).
+
 FLUJO DE TRABAJO RECOMENDADO:
 El Dashboard refleja este flujo en su sección "Flujo de Trabajo" (5 etapas con estado visual ✅/⚠️/🔴):
 1. Cargar materias primas e insumos con su stock (etapa "Materias Primas")

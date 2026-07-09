@@ -40,6 +40,11 @@ const SUGGESTED_QUESTIONS = [
   '¿Por qué no veo todos los productos en el buscador de promociones?',
   '¿Cómo funcionan los filtros automáticos en las alertas del dashboard?',
   '¿Qué significa cada color de alerta en el dashboard?',
+  '¿Cómo creo una receta de cocina?',
+  '¿Cómo exporto una receta a PDF o Word?',
+  '¿Cómo imprimo una factura o ticket de venta?',
+  '¿Cómo exporto el listado de productos a Excel?',
+  '¿Qué opciones de impresión tiene el módulo de Ventas?',
 ]
 
 // ─── Simple Markdown Renderer ────────────────────────────────────────────────

@@ -1287,3 +1287,30 @@ model DescuentoVolumenRango {
 
   @@index([id_descuento])
 }
+
+// ============================================
+// RECETAS DE COCINA (Módulo independiente - Fase 14)
+// ============================================
+// Recetas de cocina independientes, NO ligadas a producción, stock ni ventas.
+// Para mostrar en la landing page y exportar/imprimir.
+
+model RecetaCocina {
+  id                Int       @id @default(autoincrement())
+  titulo            String
+  descripcion       String?
+  ingredientes      String    // Texto libre (para copiar/pegar rápido)
+  pasos             String    // Texto libre (para copiar/pegar rápido)
+  tiempo_preparacion String?  // Ej: "30 min"
+  tiempo_coccion    String?   // Ej: "15 min"
+  dificultad        String    @default("facil") // facil | media | dificil
+  imagen            String?
+  categoria         String?   @default("otros") // salsas | pastas | postres | aperitivos | bebidas | otros
+  visible_en_landing Boolean  @default(false)
+  destacado         Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime? @updatedAt
+
+  @@index([categoria])
+  @@index([visible_en_landing])
+  @@index([destacado])
+}

@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState } from 'react'
-import { Loader2, LogOut, LayoutDashboard, Package, MessageSquare, BarChart3, Users, UserCircle, Leaf, PackageOpen, UtensilsCrossed, FolderTree, Tag, Ruler, ChevronDown, ChevronRight, ShoppingCart, ClipboardList, ArrowLeftRight, Settings, Receipt, CalendarCheck, BookOpen, Factory, Shield, FileBarChart, KeyRound, FileSearch, MonitorSmartphone, Truck, MapPin, Map, Bell, History, AlertTriangle, Send, FileText, AlertCircle, Mail, Printer, HelpCircle, Database, Layers } from 'lucide-react'
+import { Loader2, LogOut, LayoutDashboard, Package, MessageSquare, BarChart3, Users, UserCircle, Leaf, PackageOpen, UtensilsCrossed, FolderTree, Tag, Ruler, ChevronDown, ChevronRight, ShoppingCart, ClipboardList, ArrowLeftRight, Settings, Receipt, CalendarCheck, BookOpen, Utensils, Factory, Shield, FileBarChart, KeyRound, FileSearch, MonitorSmartphone, Truck, MapPin, Map, Bell, History, AlertTriangle, Send, FileText, AlertCircle, Mail, Printer, HelpCircle, Database, Layers } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
@@ -71,6 +71,15 @@ const stockItems = [
     title: 'Etiquetas',
     href: '/admin/etiquetas',
     icon: Printer,
+  },
+]
+
+
+const contenidoItems = [
+  {
+    title: 'Recetas de Cocina',
+    href: '/admin/recetas-cocina',
+    icon: Utensils,
   },
 ]
 
@@ -291,6 +300,7 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const [unreadConsultas, setUnreadConsultas] = useState(0)
   const [stockOpen, setStockOpen] = useState(true)
+  const [contenidoOpen, setContenidoOpen] = useState(false)
   const [comprasOpen, setComprasOpen] = useState(false)
   const [ventasOpen, setVentasOpen] = useState(false)
   const [stockMovOpen, setStockMovOpen] = useState(false)
@@ -301,6 +311,7 @@ export default function DashboardLayout({
   const [seguridadOpen, setSeguridadOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
 
+  const isContenidoActive = contenidoItems.some(item => pathname === item.href || pathname.startsWith(item.href + '/'))
   const isStockActive = stockItems.some(item => pathname === item.href || pathname.startsWith(item.href + '/'))
   const isComprasActive = comprasItems.some(item => pathname === item.href || pathname.startsWith(item.href + '/'))
   const isVentasActive = ventasItems.some(item => pathname === item.href || pathname.startsWith(item.href + '/'))
@@ -335,7 +346,7 @@ export default function DashboardLayout({
   }, [status, pathname])
 
   // Toggle section handler
-  const toggleSection = (section: 'stock' | 'compras' | 'ventas' | 'stockMov' | 'logistica' | 'notificaciones' | 'config' | 'auditoria' | 'seguridad', currentOpen: boolean) => {
+  const toggleSection = (section: 'stock' | 'contenido' | 'compras' | 'ventas' | 'stockMov' | 'logistica' | 'notificaciones' | 'config' | 'auditoria' | 'seguridad', currentOpen: boolean) => {
     switch (section) {
       case 'stock': setStockOpen(!currentOpen); break
       case 'compras': setComprasOpen(!currentOpen); break
@@ -365,6 +376,7 @@ export default function DashboardLayout({
   const [prevPathname, setPrevPathname] = useState(pathname)
   if (pathname !== prevPathname) {
     setPrevPathname(pathname)
+    if (isContenidoActive) setContenidoOpen(true)
     if (isStockActive) setStockOpen(true)
     if (isComprasActive) setComprasOpen(true)
     if (isVentasActive) setVentasOpen(true)
@@ -494,6 +506,16 @@ export default function DashboardLayout({
             stockOpen,
             () => toggleSection('stock', stockOpen),
             isStockActive
+          )}
+
+          {/* Contenido */}
+          {renderCollapsibleSection(
+            'Contenido',
+            <Utensils className="h-3.5 w-3.5" />,
+            contenidoItems,
+            contenidoOpen,
+            () => toggleSection('contenido', contenidoOpen),
+            isContenidoActive
           )}
 
           {/* Compras */}
