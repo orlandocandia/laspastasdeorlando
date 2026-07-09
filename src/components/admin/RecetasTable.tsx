@@ -83,6 +83,8 @@ export default function RecetasTable() {
   const [selectedReceta, setSelectedReceta] = useState<Receta | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [filtroEspecial, setFiltroEspecial] = useState<'sin-receta' | 'vacia' | null>(null)
+  const [productosSinReceta, setProductosSinReceta] = useState<ProductoTerminado[]>([])
 
   const fetchRecetas = useCallback(async (paginaOverride?: number) => {
     setLoading(true)
@@ -93,6 +95,7 @@ export default function RecetasTable() {
       if (search) params.set('buscar', search)
       if (filtroProducto && filtroProducto !== 'all') params.set('id_producto_terminado', filtroProducto)
       if (filtroActivo && filtroActivo !== 'all') params.set('activo', filtroActivo)
+      if (filtroEspecial === 'vacia') params.set('vacia', 'true')
 
       const res = await fetch(`/api/recetas?${params.toString()}`)
       if (!res.ok) throw new Error('Error al cargar recetas')
@@ -105,7 +108,24 @@ export default function RecetasTable() {
     } finally {
       setLoading(false)
     }
-  }, [pagina, search, filtroProducto, filtroActivo])
+  }, [pagina, search, filtroProducto, filtroActivo, filtroEspecial])
+
+  // Fetch productos sin receta when filtroEspecial === 'sin-receta'
+  const fetchProductosSinReceta = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/productos-terminados?sin_receta=true&limite=200&estado=true')
+      if (!res.ok) throw new Error('Error al cargar productos sin receta')
+      const data = await res.json()
+      setProductosSinReceta(data.data || [])
+      setTotal((data.data || []).length)
+      setTotalPaginas(1)
+    } catch {
+      toast.error('Error al cargar productos sin receta')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   const fetchProductosTerminados = useCallback(async () => {
     try {
@@ -127,9 +147,22 @@ export default function RecetasTable() {
     fetchProductosTerminados()
   }, [fetchProductosTerminados])
 
+  // Read filtro query param from URL on mount (for dashboard alerts)
   useEffect(() => {
-    fetchRecetas()
-  }, [fetchRecetas])
+    const params = new URLSearchParams(window.location.search)
+    const filtroParam = params.get('filtro')
+    if (filtroParam === 'sin-receta' || filtroParam === 'vacia') {
+      setFiltroEspecial(filtroParam)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (filtroEspecial === 'sin-receta') {
+      fetchProductosSinReceta()
+    } else {
+      fetchRecetas()
+    }
+  }, [fetchRecetas, fetchProductosSinReceta, filtroEspecial])
 
   // When filters change, reset to page 1 and fetch
   useEffect(() => {
@@ -191,6 +224,34 @@ export default function RecetasTable() {
 
   return (
     <div className="space-y-4">
+      {/* Banner de filtro especial (desde dashboard) */}
+      {filtroEspecial && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-mostaza/30 bg-mostaza/5 p-3">
+          <div className="flex items-center gap-2 text-sm text-marron">
+            <Badge className="bg-mostaza text-marron">Filtro activo</Badge>
+            {filtroEspecial === 'sin-receta'
+              ? 'Mostrando productos terminados sin receta asociada'
+              : 'Mostrando recetas sin ingredientes cargados'}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setFiltroEspecial(null)
+              setProductosSinReceta([])
+              // Clean URL param
+              if (typeof window !== 'undefined') {
+                const url = new URL(window.location.href)
+                url.searchParams.delete('filtro')
+                window.history.replaceState({}, '', url.toString())
+              }
+            }}
+            className="text-xs text-muted-foreground hover:text-marron"
+          >
+            Quitar filtro
+          </Button>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">
@@ -249,10 +310,44 @@ export default function RecetasTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recetas.length === 0 ? (
+              {filtroEspecial === 'sin-receta' ? (
+                productosSinReceta.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-oliva">
+                      Todos los productos terminados tienen receta asociada
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  productosSinReceta.map((pt) => (
+                    <TableRow key={pt.id} className="hover:bg-mostaza/5">
+                      <TableCell className="font-medium text-marron">
+                        <Badge className="bg-rojo/15 text-rojo hover:bg-rojo/25 mr-2">Sin receta</Badge>
+                        {pt.nombre}
+                      </TableCell>
+                      <TableCell className="text-sm text-marron">{pt.nombre}</TableCell>
+                      <TableCell className="text-center text-sm text-muted-foreground">-</TableCell>
+                      <TableCell className="text-right text-muted-foreground">-</TableCell>
+                      <TableCell>
+                        <Badge className="bg-rojo/15 text-rojo hover:bg-rojo/25">Pendiente</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-mostaza/30 text-mostaza hover:bg-mostaza/10"
+                          onClick={openNew}
+                        >
+                          <Plus className="mr-1 h-3.5 w-3.5" />
+                          Crear receta
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )
+              ) : recetas.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    {search || filtroProducto || filtroActivo
+                    {search || filtroProducto || filtroActivo || filtroEspecial === 'vacia'
                       ? 'No se encontraron recetas con los filtros aplicados'
                       : 'No hay recetas registradas'}
                   </TableCell>

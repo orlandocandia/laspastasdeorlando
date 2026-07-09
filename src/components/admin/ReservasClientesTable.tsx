@@ -98,6 +98,7 @@ export default function ReservasClientesTable() {
   const [selectedReserva, setSelectedReserva] = useState<ReservaCliente | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
+  const [filtroActiva, setFiltroActiva] = useState(false)
 
   const fetchReservas = useCallback(async () => {
     setLoading(true)
@@ -108,6 +109,7 @@ export default function ReservasClientesTable() {
       if (search) params.set('buscar', search)
       if (filtroEstado && filtroEstado !== 'all') params.set('id_estado', filtroEstado)
       if (filtroCliente && filtroCliente !== 'all') params.set('id_cliente', filtroCliente)
+      if (filtroActiva) params.set('activa', 'true')
 
       const res = await fetch(`/api/reservas-clientes?${params.toString()}`)
       if (!res.ok) throw new Error('Error al cargar reservas')
@@ -120,7 +122,7 @@ export default function ReservasClientesTable() {
     } finally {
       setLoading(false)
     }
-  }, [pagina, search, filtroEstado, filtroCliente])
+  }, [pagina, search, filtroEstado, filtroCliente, filtroActiva])
 
   const fetchClientes = useCallback(async () => {
     try {
@@ -155,7 +157,16 @@ export default function ReservasClientesTable() {
 
   useEffect(() => {
     setPagina(1)
-  }, [search, filtroEstado, filtroCliente])
+  }, [search, filtroEstado, filtroCliente, filtroActiva])
+
+  // Read estado query param from URL on mount (for dashboard alerts)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const estadoParam = params.get('estado')
+    if (estadoParam === 'activa') {
+      setFiltroActiva(true)
+    }
+  }, [])
 
   const handleDelete = async () => {
     if (!deleteId) return
@@ -209,6 +220,30 @@ export default function ReservasClientesTable() {
 
   return (
     <div className="space-y-4">
+      {/* Banner de reservas activas (desde dashboard) */}
+      {filtroActiva && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-sky-300 bg-sky-50 p-3">
+          <div className="flex items-center gap-2 text-sm text-marron">
+            <Badge className="bg-sky-600 text-white">Filtro activo</Badge>
+            Mostrando reservas vigentes (pendientes / confirmadas)
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setFiltroActiva(false)
+              if (typeof window !== 'undefined') {
+                const url = new URL(window.location.href)
+                url.searchParams.delete('estado')
+                window.history.replaceState({}, '', url.toString())
+              }
+            }}
+            className="text-xs text-muted-foreground hover:text-marron"
+          >
+            Quitar filtro
+          </Button>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">

@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
 
     // For "stock_bajo" we need in-memory filtering (can't compare two columns in SQLite)
-    const isStockBajoFilter = stock === 'stock_bajo'
+    const isStockBajoFilter = stock === 'stock_bajo' || stock === 'bajo'
 
     if (isStockBajoFilter) {
       const allItems = await db.materiaPrima.findMany({

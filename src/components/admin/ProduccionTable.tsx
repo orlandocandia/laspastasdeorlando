@@ -126,6 +126,8 @@ export default function ProduccionTable() {
   const [completando, setCompletando] = useState(false)
   const [detalleOpen, setDetalleOpen] = useState(false)
   const [selectedProduccion, setSelectedProduccion] = useState<Produccion | null>(null)
+  const [filtroEspecial, setFiltroEspecial] = useState<'productos-sin-stock' | null>(null)
+  const [productosSinStock, setProductosSinStock] = useState<{ id: number; nombre: string; stock_actual: number; stock_minimo: number }[]>([])
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(value)
@@ -188,6 +190,37 @@ export default function ProduccionTable() {
     setPagina(1)
   }, [filtroEstado, filtroReceta])
 
+  // Read query params from URL on mount (for dashboard alerts)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const estadoParam = params.get('estado')
+    const productosSinStockFlag = params.get('productos-sin-stock')
+    if (productosSinStockFlag !== null) {
+      setFiltroEspecial('productos-sin-stock')
+      // Fetch productos sin stock
+      fetch('/api/productos-terminados?stock=sin_stock&limite=200&estado=true')
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => setProductosSinStock(data.data || []))
+        .catch(() => {})
+    } else if (estadoParam) {
+      // Translate estado name to id_estado using the loaded estados
+      // Fetch estados first if not loaded yet
+      fetch('/api/estados-generales?entidad_aplicable=produccion')
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(estadosData => {
+          let nombresBuscados = [estadoParam]
+          if (estadoParam === 'pendiente') {
+            nombresBuscados = ['planificado', 'en_curso']
+          }
+          const match = (Array.isArray(estadosData) ? estadosData : []).find(
+            (e: { nombre_estado: string }) => nombresBuscados.includes(e.nombre_estado.toLowerCase())
+          )
+          if (match) setFiltroEstado(match.id.toString())
+        })
+        .catch(() => {})
+    }
+  }, [])
+
   const handleCompletar = async () => {
     if (!completarId) return
     setCompletando(true)
@@ -246,6 +279,57 @@ export default function ProduccionTable() {
 
   return (
     <div className="space-y-4">
+      {/* Banner de productos sin stock (desde dashboard) */}
+      {filtroEspecial === 'productos-sin-stock' && (
+        <div className="rounded-lg border border-rojo/30 bg-rojo/5 p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-marron">
+              <Badge className="bg-rojo text-crema">Filtro activo</Badge>
+              Mostrando productos terminados sin stock - produci necesarios
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setFiltroEspecial(null)
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href)
+                  url.searchParams.delete('productos-sin-stock')
+                  window.history.replaceState({}, '', url.toString())
+                }
+              }}
+              className="text-xs text-muted-foreground hover:text-marron"
+            >
+              Quitar filtro
+            </Button>
+          </div>
+          {productosSinStock.length > 0 && (
+            <div className="max-h-48 overflow-y-auto rounded border border-rojo/20 bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead>Producto</TableHead>
+                    <TableHead className="text-center">Stock Actual</TableHead>
+                    <TableHead className="text-center">Stock Minimo</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {productosSinStock.map(pt => (
+                    <TableRow key={pt.id}>
+                      <TableCell className="font-medium text-marron text-sm">{pt.nombre}</TableCell>
+                      <TableCell className="text-center"><Badge className="bg-rojo/15 text-rojo">{pt.stock_actual}</Badge></TableCell>
+                      <TableCell className="text-center text-sm text-muted-foreground">{pt.stock_minimo}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Usa el boton <strong className="text-marron">Nueva Produccion</strong> para registrar la produccion de estos productos.
+          </p>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">

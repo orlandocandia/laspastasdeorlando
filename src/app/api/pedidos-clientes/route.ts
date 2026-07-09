@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const fecha_hasta = searchParams.get('fecha_hasta')
     const id_cliente = searchParams.get('id_cliente')
     const id_estado = searchParams.get('id_estado')
+    const estado_nombre = searchParams.get('estado') // string estado name (e.g. 'pendiente')
     const buscar = searchParams.get('buscar')
     const pagina = parseInt(searchParams.get('pagina') || '1')
     const limite = parseInt(searchParams.get('limite') || '10')
@@ -24,7 +25,23 @@ export async function GET(request: NextRequest) {
     const parsedClientePC = parseInt(id_cliente)
     if (id_cliente && !isNaN(parsedClientePC)) where.id_cliente = parsedClientePC
     const parsedEstadoPC = parseInt(id_estado)
-    if (id_estado && !isNaN(parsedEstadoPC)) where.id_estado = parsedEstadoPC
+    if (id_estado && !isNaN(parsedEstadoPC)) {
+      where.id_estado = parsedEstadoPC
+    } else if (estado_nombre) {
+      // Translate estado name to id via EstadoGeneral
+      // 'pendiente' maps to all pending pedido states
+      let nombresBuscados: string[] = [estado_nombre]
+      if (estado_nombre === 'pendiente') {
+        nombresBuscados = ['pendiente', 'confirmado', 'en_proceso', 'en_produccion']
+      }
+      const estados = await db.estadoGeneral.findMany({
+        where: { entidad_aplicable: 'pedido_cliente', nombre_estado: { in: nombresBuscados } },
+        select: { id: true },
+      })
+      if (estados.length > 0) {
+        where.id_estado = { in: estados.map(e => e.id) }
+      }
+    }
 
     if (buscar) {
       where.OR = [

@@ -168,6 +168,23 @@ export default function PedidosClientesTable() {
     setPagina(1)
   }, [search, filtroEstado, filtroCliente])
 
+  // Read estado query param from URL on mount (for dashboard alerts)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const estadoParam = params.get('estado')
+    if (estadoParam) {
+      // Translate estado name to id_estado using the loaded estados
+      let nombresBuscados = [estadoParam]
+      if (estadoParam === 'pendiente') {
+        nombresBuscados = ['pendiente', 'confirmado', 'en_proceso', 'en_produccion']
+      }
+      const match = estados.find(
+        (e) => nombresBuscados.includes(e.nombre_estado.toLowerCase())
+      )
+      if (match) setFiltroEstado(match.id.toString())
+    }
+  }, [estados])
+
   const handleDelete = async () => {
     if (!deleteId) return
     try {
@@ -220,6 +237,22 @@ export default function PedidosClientesTable() {
 
   return (
     <div className="space-y-4">
+      {/* Banner de filtro estado (desde dashboard) */}
+      {(() => {
+        const params = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null
+        const estadoParam = params?.get('estado')
+        if (estadoParam && filtroEstado) {
+          return (
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-sky-300 bg-sky-50 p-3">
+              <div className="flex items-center gap-2 text-sm text-marron">
+                <Badge className="bg-sky-600 text-white">Filtro activo</Badge>
+                Mostrando pedidos {estadoParam === 'pendiente' ? 'pendientes' : estadoParam}
+              </div>
+            </div>
+          )
+        }
+        return null
+      })()}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">

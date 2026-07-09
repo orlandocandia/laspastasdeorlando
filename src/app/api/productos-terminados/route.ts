@@ -80,6 +80,7 @@ export async function GET(request: NextRequest) {
     const incluir_inactivos = searchParams.get('incluir_inactivos') === 'true'
     const tipo_harina = searchParams.get('tipo_harina')
     const stock = searchParams.get('stock')
+    const sin_receta = searchParams.get('sin_receta') === 'true'
     const pagina = parseInt(searchParams.get('pagina') || '1')
     const limite = parseInt(searchParams.get('limite') || '10')
 
@@ -104,12 +105,19 @@ export async function GET(request: NextRequest) {
       ]
     }
     // Stock filter: sin_stock = stock_actual <= 0, stock_bajo = 0 < stock_actual <= stock_minimo
+    // Also accept 'bajo' as alias for 'stock_bajo' (dashboard compatibility)
     if (stock === 'sin_stock') {
       where.stock_actual = { lte: 0 }
     }
 
+    // sin_receta=true: productos terminados sin receta asociada
+    if (sin_receta) {
+      where.recetas = { none: {} }
+    }
+
     // For "stock_bajo" we need in-memory filtering (can't compare two columns in SQLite)
-    const isStockBajoFilter = stock === 'stock_bajo'
+    // Accept both 'stock_bajo' and 'bajo' (dashboard compatibility)
+    const isStockBajoFilter = stock === 'stock_bajo' || stock === 'bajo'
 
     if (isStockBajoFilter) {
       // Fetch all matching items and filter in-memory

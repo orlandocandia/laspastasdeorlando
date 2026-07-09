@@ -90,7 +90,11 @@ export default function InsumosTable() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const stockParam = params.get('stock')
-    if (stockParam) setFiltroStock(stockParam)
+    if (stockParam) {
+      // Normalize: 'bajo' -> 'stock_bajo' (API accepts sin_stock | stock_bajo)
+      const normalized = stockParam === 'bajo' ? 'stock_bajo' : stockParam
+      setFiltroStock(normalized)
+    }
   }, [])
 
   const fetchInsumos = useCallback(async () => {

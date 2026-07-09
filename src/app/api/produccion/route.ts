@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
     const fecha_desde = searchParams.get('fecha_desde')
     const fecha_hasta = searchParams.get('fecha_hasta')
     const id_estado = searchParams.get('id_estado')
+    const estado_nombre = searchParams.get('estado') // string estado name (e.g. 'pendiente')
     const id_receta = searchParams.get('id_receta')
     const pagina = parseInt(searchParams.get('pagina') || '1')
     const limite = parseInt(searchParams.get('limite') || '10')
@@ -21,7 +22,23 @@ export async function GET(request: NextRequest) {
     }
 
     const parsedEstadoProd = parseInt(id_estado)
-    if (id_estado && !isNaN(parsedEstadoProd)) where.id_estado = parsedEstadoProd
+    if (id_estado && !isNaN(parsedEstadoProd)) {
+      where.id_estado = parsedEstadoProd
+    } else if (estado_nombre) {
+      // Translate estado name to id via EstadoGeneral
+      // 'pendiente' maps to both 'planificado' and 'en_curso' (pending production states)
+      let nombresBuscados: string[] = [estado_nombre]
+      if (estado_nombre === 'pendiente') {
+        nombresBuscados = ['planificado', 'en_curso']
+      }
+      const estados = await db.estadoGeneral.findMany({
+        where: { entidad_aplicable: 'produccion', nombre_estado: { in: nombresBuscados } },
+        select: { id: true },
+      })
+      if (estados.length > 0) {
+        where.id_estado = { in: estados.map(e => e.id) }
+      }
+    }
     const parsedReceta = parseInt(id_receta)
     if (id_receta && !isNaN(parsedReceta)) where.id_receta = parsedReceta
 

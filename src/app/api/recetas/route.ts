@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const buscar = searchParams.get('buscar')
     const id_producto_terminado = searchParams.get('id_producto_terminado')
     const activo = searchParams.get('activo')
+    const vacia = searchParams.get('vacia') === 'true'
     const pagina = parseInt(searchParams.get('pagina') || '1')
     const limite = parseInt(searchParams.get('limite') || '20')
 
@@ -26,6 +27,11 @@ export async function GET(request: NextRequest) {
 
     if (activo !== null && activo !== undefined && activo !== '' && activo !== 'all') {
       where.activo = activo === 'true'
+    }
+
+    // Filter recetas without ingredients (vacia=true)
+    if (vacia) {
+      where.detalleRecetas = { none: {} }
     }
 
     const [data, total] = await Promise.all([

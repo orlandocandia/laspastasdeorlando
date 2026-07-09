@@ -113,6 +113,8 @@ export default function ComprasTable() {
   const [formOpen, setFormOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [deleteEstado, setDeleteEstado] = useState<string>('')
+  const [filtroEspecial, setFiltroEspecial] = useState<'materias-primas' | 'insumos' | null>(null)
+  const [itemsAgotados, setItemsAgotados] = useState<{ id: number; nombre: string; stock_actual: number; stock_minimo: number }[]>([])
 
   const fetchCompras = useCallback(async () => {
     setLoading(true)
@@ -172,6 +174,26 @@ export default function ComprasTable() {
     setPagina(1)
   }, [search, filtroEstado, filtroProveedor])
 
+  // Read query params from URL on mount (for dashboard alerts)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const mpFlag = params.get('materias-primas')
+    const insFlag = params.get('insumos')
+    if (mpFlag === 'agotadas') {
+      setFiltroEspecial('materias-primas')
+      fetch('/api/materias-primas?stock=sin_stock&limite=200&estado=true')
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => setItemsAgotados(data.data || []))
+        .catch(() => {})
+    } else if (insFlag === 'agotados') {
+      setFiltroEspecial('insumos')
+      fetch('/api/insumos?stock=sin_stock&limite=200&estado=true')
+        .then(r => r.ok ? r.json() : Promise.reject())
+        .then(data => setItemsAgotados(data.data || []))
+        .catch(() => {})
+    }
+  }, [])
+
   const handleDelete = async () => {
     if (!deleteId) return
     try {
@@ -225,6 +247,63 @@ export default function ComprasTable() {
 
   return (
     <div className="space-y-4">
+      {/* Banner de items agotados (desde dashboard) */}
+      {filtroEspecial && (
+        <div className="rounded-lg border border-rojo/30 bg-rojo/5 p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-marron">
+              <Badge className="bg-rojo text-crema">Filtro activo</Badge>
+              {filtroEspecial === 'materias-primas'
+                ? 'Materias primas agotadas - registre una compra para reponer'
+                : 'Insumos agotados - registre una compra para reponer'}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setFiltroEspecial(null)
+                setItemsAgotados([])
+                if (typeof window !== 'undefined') {
+                  const url = new URL(window.location.href)
+                  url.searchParams.delete('materias-primas')
+                  url.searchParams.delete('insumos')
+                  window.history.replaceState({}, '', url.toString())
+                }
+              }}
+              className="text-xs text-muted-foreground hover:text-marron"
+            >
+              Quitar filtro
+            </Button>
+          </div>
+          {itemsAgotados.length > 0 ? (
+            <div className="max-h-48 overflow-y-auto rounded border border-rojo/20 bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead>Nombre</TableHead>
+                    <TableHead className="text-center">Stock Actual</TableHead>
+                    <TableHead className="text-center">Stock Minimo</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {itemsAgotados.map(item => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium text-marron text-sm">{item.nombre}</TableCell>
+                      <TableCell className="text-center"><Badge className="bg-rojo/15 text-rojo">{item.stock_actual}</Badge></TableCell>
+                      <TableCell className="text-center text-sm text-muted-foreground">{item.stock_minimo}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <p className="text-xs text-oliva">No hay items agotados.</p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            Usa el boton <strong className="text-marron">Nueva Compra</strong> para registrar la compra de estos items.
+          </p>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <div className="relative w-full sm:w-64">

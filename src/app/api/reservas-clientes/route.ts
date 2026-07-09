@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     const fecha_hasta = searchParams.get('fecha_hasta')
     const id_cliente = searchParams.get('id_cliente')
     const id_estado = searchParams.get('id_estado')
+    const activa = searchParams.get('activa') === 'true'
     const pagina = parseInt(searchParams.get('pagina') || '1')
     const limite = parseInt(searchParams.get('limite') || '10')
 
@@ -24,6 +25,15 @@ export async function GET(request: NextRequest) {
     if (id_cliente && !isNaN(parsedClienteRC)) where.id_cliente = parsedClienteRC
     const parsedEstadoRC = parseInt(id_estado)
     if (id_estado && !isNaN(parsedEstadoRC)) where.id_estado = parsedEstadoRC
+
+    // activa=true: reservas vigentes (estados pendiente/confirmada/activa, no anuladas/expiradas/canceladas)
+    if (activa) {
+      const estadosActivos = await db.estadoGeneral.findMany({
+        where: { entidad_aplicable: 'reserva_cliente', nombre_estado: { in: ['pendiente', 'confirmada', 'activa'] } },
+        select: { id: true },
+      })
+      where.id_estado = { in: estadosActivos.map(e => e.id) }
+    }
 
     const [data, total] = await Promise.all([
       db.reservaCliente.findMany({

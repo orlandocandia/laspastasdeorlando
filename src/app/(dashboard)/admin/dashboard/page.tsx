@@ -664,7 +664,7 @@ export default function DashboardPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <DirectAction
-                href="/admin/produccion"
+                href="/admin/produccion?productos-sin-stock"
                 icon={Factory}
                 color="rojo"
                 titulo="Producir mas"
@@ -678,7 +678,7 @@ export default function DashboardPage() {
                 desc="Lista de productos terminados agotados"
               />
               <DirectAction
-                href="/admin/compras"
+                href="/admin/compras?materias-primas=agotadas"
                 icon={ShoppingCart}
                 color="oliva"
                 titulo="Cargar materias primas"
@@ -692,14 +692,14 @@ export default function DashboardPage() {
                 desc="Nueva venta y descuento de stock"
               />
               <DirectAction
-                href="/admin/pedidos-clientes"
+                href="/admin/pedidos-clientes?estado=pendiente"
                 icon={ClipboardList}
                 color="mostaza"
                 titulo="Gestionar pedidos"
                 desc="Pedidos de clientes pendientes"
               />
               <DirectAction
-                href="/admin/recetas"
+                href="/admin/recetas?filtro=vacia"
                 icon={BookOpen}
                 color="oliva"
                 titulo="Editar recetas"

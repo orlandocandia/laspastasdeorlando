@@ -221,7 +221,7 @@ export async function GET() {
         severidad: 'critica',
         etapa: 'materias_primas',
         accionLabel: 'Cargar materias primas',
-        href: '/admin/compras',
+        href: '/admin/compras?materias-primas=agotadas',
         iconKey: 'leaf',
         cantidad: mpSinStock.length,
       })
@@ -235,7 +235,7 @@ export async function GET() {
         severidad: 'importante',
         etapa: 'materias_primas',
         accionLabel: 'Ver stock bajo',
-        href: '/admin/materias-primas?stock=stock_bajo',
+        href: '/admin/materias-primas?stock=bajo',
         iconKey: 'leaf',
         cantidad: mpStockBajo.length,
       })
@@ -249,7 +249,7 @@ export async function GET() {
         severidad: 'critica',
         etapa: 'materias_primas',
         accionLabel: 'Ver insumos sin stock',
-        href: '/admin/insumos?stock=sin_stock',
+        href: '/admin/compras?insumos=agotados',
         iconKey: 'package-open',
         cantidad: insSinStock.length,
       })
@@ -263,7 +263,7 @@ export async function GET() {
         severidad: 'importante',
         etapa: 'materias_primas',
         accionLabel: 'Ver insumos',
-        href: '/admin/insumos?stock=stock_bajo',
+        href: '/admin/insumos?stock=bajo',
         iconKey: 'package-open',
         cantidad: insStockBajo.length,
       })
@@ -278,7 +278,7 @@ export async function GET() {
         severidad: 'importante',
         etapa: 'recetas',
         accionLabel: 'Crear recetas',
-        href: '/admin/recetas',
+        href: '/admin/recetas?filtro=sin-receta',
         iconKey: 'book',
         cantidad: productosSinReceta.length,
       })
@@ -292,7 +292,7 @@ export async function GET() {
         severidad: 'importante',
         etapa: 'recetas',
         accionLabel: 'Editar recetas',
-        href: '/admin/recetas',
+        href: '/admin/recetas?filtro=vacia',
         iconKey: 'book',
         cantidad: recetasVacias.length,
       })
@@ -307,7 +307,7 @@ export async function GET() {
         severidad: 'importante',
         etapa: 'produccion',
         accionLabel: 'Completar producción',
-        href: '/admin/produccion',
+        href: '/admin/produccion?estado=pendiente',
         iconKey: 'factory',
         cantidad: produccionPendiente,
       })
@@ -322,7 +322,7 @@ export async function GET() {
         severidad: 'critica',
         etapa: 'stock',
         accionLabel: 'Producir más',
-        href: '/admin/produccion',
+        href: '/admin/produccion?productos-sin-stock',
         iconKey: 'package',
         cantidad: ptSinStock.length,
       })
@@ -336,7 +336,7 @@ export async function GET() {
         severidad: 'importante',
         etapa: 'stock',
         accionLabel: 'Programar producción',
-        href: '/admin/produccion',
+        href: '/admin/productos-terminados?stock=bajo',
         iconKey: 'package',
         cantidad: ptStockBajo.length,
       })
@@ -351,7 +351,7 @@ export async function GET() {
         severidad: 'informativo',
         etapa: 'ventas',
         accionLabel: 'Ver pedidos',
-        href: '/admin/pedidos-clientes',
+        href: '/admin/pedidos-clientes?estado=pendiente',
         iconKey: 'clipboard',
         cantidad: pedidosPendientesCount,
       })
@@ -365,7 +365,7 @@ export async function GET() {
         severidad: 'informativo',
         etapa: 'ventas',
         accionLabel: 'Ver reservas',
-        href: '/admin/reservas-clientes',
+        href: '/admin/reservas-clientes?estado=activa',
         iconKey: 'calendar',
         cantidad: reservasActivasCount,
       })
