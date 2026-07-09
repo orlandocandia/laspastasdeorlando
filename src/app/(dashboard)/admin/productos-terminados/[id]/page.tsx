@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import ProductoTerminadoForm from '@/components/admin/ProductoTerminadoForm'
 import { StockInitialLoadDialog } from '@/components/admin/StockInitialLoadDialog'
+import FichaPrintMenu from '@/components/admin/FichaPrintMenu'
+import FichaProductoPDFDocument, { type FichaProductoData } from '@/components/print/FichaProductoPDFDocument'
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(price)
@@ -63,13 +65,46 @@ export default function ProductoTerminadoDetallePage() {
           </h1>
         </div>
         {producto && (
-          <Button
-            onClick={() => setStockInitialOpen(true)}
-            className="bg-oliva hover:bg-oliva/90 text-white font-semibold"
-          >
-            <PackagePlus className="mr-2 h-4 w-4" />
-            Cargar Stock
-          </Button>
+          <>
+            <FichaPrintMenu<FichaProductoData>
+              data={{
+                id: producto.id,
+                codigo: producto.codigo ?? null,
+                codigo_barras: producto.codigo_barras ?? null,
+                nombre: producto.nombre,
+                descripcion: producto.descripcion ?? null,
+                id_categoria: producto.id_categoria,
+                tipo_harina: producto.tipo_harina ?? null,
+                seccion: producto.seccion ?? null,
+                peso_unitario_aprox: producto.peso_unitario_aprox ?? 0,
+                unidades: producto.unidades ?? null,
+                precio_venta: producto.precio_venta ?? 0,
+                stock_actual: producto.stock_actual ?? 0,
+                stock_minimo: producto.stock_minimo ?? 0,
+                destacado: producto.destacado ?? false,
+                visible_en_landing: producto.visible_en_landing ?? true,
+                imagen: producto.imagen ?? null,
+                modo_coccion: producto.modo_coccion ?? null,
+                estado: producto.estado ?? true,
+                categoria: producto.categoria ?? null,
+                costo_produccion: producto.costo_produccion,
+                margen: producto.margen,
+                margen_porcentaje: producto.margen_porcentaje,
+                receta_activa: producto.receta_activa,
+              }}
+              DocumentComponent={FichaProductoPDFDocument}
+              filename={`ficha-producto-${producto.codigo || producto.id}`}
+              label="Ficha de Producto"
+              size="sm"
+            />
+            <Button
+              onClick={() => setStockInitialOpen(true)}
+              className="bg-oliva hover:bg-oliva/90 text-white font-semibold"
+            >
+              <PackagePlus className="mr-2 h-4 w-4" />
+              Cargar Stock
+            </Button>
+          </>
         )}
       </div>
 

@@ -14,8 +14,8 @@ import {
 interface ProductoParaEtiqueta {
   id: number
   nombre: string
-  codigo_barras: string | null
-  codigo: string | null
+  codigo_barras?: string | null
+  codigo?: string | null
   precio_venta: number
   peso_unitario_aprox: number
   unidades?: number | null

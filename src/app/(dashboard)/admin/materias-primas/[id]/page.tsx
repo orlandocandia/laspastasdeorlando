@@ -7,6 +7,8 @@ import Link from 'next/link'
 
 import { Button } from '@/components/ui/button'
 import MateriaPrimaForm from '@/components/admin/MateriaPrimaForm'
+import FichaPrintMenu from '@/components/admin/FichaPrintMenu'
+import FichaMateriaPrimaPDFDocument, { type FichaMateriaPrimaData } from '@/components/print/FichaMateriaPrimaPDFDocument'
 
 export default function MateriaPrimaDetallePage() {
   const params = useParams()
@@ -52,11 +54,34 @@ export default function MateriaPrimaDetallePage() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-bold text-marron">
             {materiaPrima ? `Editar: ${materiaPrima.nombre}` : 'Nueva Materia Prima'}
           </h1>
         </div>
+        {materiaPrima && (
+          <FichaPrintMenu<FichaMateriaPrimaData>
+            data={{
+              id: materiaPrima.id,
+              codigo: materiaPrima.codigo ?? null,
+              nombre: materiaPrima.nombre,
+              descripcion: materiaPrima.descripcion ?? null,
+              id_categoria: materiaPrima.id_categoria,
+              id_unidad_base: materiaPrima.id_unidad_base,
+              stock_actual: materiaPrima.stock_actual ?? 0,
+              stock_minimo: materiaPrima.stock_minimo ?? 0,
+              precio_compra_referencia: materiaPrima.precio_compra_referencia ?? 0,
+              imagen: materiaPrima.imagen ?? null,
+              estado: materiaPrima.estado ?? true,
+              categoria: materiaPrima.categoria ?? null,
+              unidadBase: materiaPrima.unidadBase ?? null,
+            }}
+            DocumentComponent={FichaMateriaPrimaPDFDocument}
+            filename={`ficha-materia-prima-${materiaPrima.codigo || materiaPrima.id}`}
+            label="Ficha de Materia Prima"
+            size="sm"
+          />
+        )}
       </div>
 
       <MateriaPrimaForm

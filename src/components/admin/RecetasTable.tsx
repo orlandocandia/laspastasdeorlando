@@ -39,6 +39,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import RecetaForm from './RecetaForm'
+import FichaPrintMenu from './FichaPrintMenu'
+import FichaRecetaPDFDocument, { type FichaRecetaData } from '@/components/print/FichaRecetaPDFDocument'
 
 interface Receta {
   id: number
@@ -380,6 +382,49 @@ export default function RecetasTable() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <FichaPrintMenu<FichaRecetaData>
+                          data={{
+                            id: receta.id,
+                            id_producto_terminado: receta.id_producto_terminado,
+                            nombre_receta: receta.nombre_receta,
+                            rendimiento_unidades: receta.rendimiento_unidades,
+                            activo: receta.activo,
+                            createdAt: receta.createdAt,
+                            updatedAt: receta.updatedAt,
+                            productoTerminado: {
+                              id: receta.productoTerminado.id,
+                              codigo: receta.productoTerminado.codigo,
+                              nombre: receta.productoTerminado.nombre,
+                              precio_venta: receta.productoTerminado.precio_venta,
+                            },
+                            detalleRecetas: receta.detalleRecetas.map((d) => ({
+                              id: d.id,
+                              materiaPrima: d.materiaPrima ? {
+                                id: d.materiaPrima.id,
+                                codigo: d.materiaPrima.codigo,
+                                nombre: d.materiaPrima.nombre,
+                                precio_compra_referencia: d.materiaPrima.precio_compra_referencia,
+                              } : null,
+                              insumo: d.insumo ? {
+                                id: d.insumo.id,
+                                codigo: d.insumo.codigo,
+                                nombre: d.insumo.nombre,
+                                precio_compra_referencia: d.insumo.precio_compra_referencia,
+                              } : null,
+                              cantidad_necesaria: d.cantidad_necesaria,
+                              costo_estimado: d.costo_estimado,
+                              unidad: {
+                                id: d.unidad.id,
+                                codigo: d.unidad.codigo,
+                                nombre: d.unidad.nombre,
+                              },
+                            })),
+                          }}
+                          DocumentComponent={FichaRecetaPDFDocument}
+                          filename={`ficha-receta-${receta.id}`}
+                          label="Ficha de Receta"
+                          triggerTitle="Exportar Ficha de Receta"
+                        />
                         <Button
                           variant="ghost"
                           size="icon"

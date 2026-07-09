@@ -41,6 +41,8 @@ import {
 } from '@/components/ui/select'
 import MateriaPrimaForm from './MateriaPrimaForm'
 import { StockAdjustDialog } from './StockAdjustDialog'
+import FichaPrintMenu from './FichaPrintMenu'
+import FichaMateriaPrimaPDFDocument, { type FichaMateriaPrimaData } from '@/components/print/FichaMateriaPrimaPDFDocument'
 
 interface MateriaPrima {
   id: number
@@ -334,6 +336,27 @@ export default function MateriasPrimasTable() {
                           >
                             <PackagePlus className="h-4 w-4 text-oliva" />
                           </Button>
+                          <FichaPrintMenu<FichaMateriaPrimaData>
+                            data={{
+                              id: mp.id,
+                              codigo: mp.codigo ?? null,
+                              nombre: mp.nombre,
+                              descripcion: mp.descripcion ?? null,
+                              id_categoria: mp.id_categoria,
+                              id_unidad_base: mp.id_unidad_base,
+                              stock_actual: mp.stock_actual,
+                              stock_minimo: mp.stock_minimo,
+                              precio_compra_referencia: mp.precio_compra_referencia,
+                              imagen: mp.imagen ?? null,
+                              estado: mp.estado,
+                              categoria: mp.categoria,
+                              unidadBase: mp.unidadBase,
+                            }}
+                            DocumentComponent={FichaMateriaPrimaPDFDocument}
+                            filename={`ficha-materia-prima-${mp.codigo || mp.id}`}
+                            label="Ficha de Materia Prima"
+                            triggerTitle="Exportar Ficha de Materia Prima"
+                          />
                           <Button
                             variant="ghost"
                             size="icon"

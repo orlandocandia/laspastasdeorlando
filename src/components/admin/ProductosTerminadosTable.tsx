@@ -43,6 +43,8 @@ import ProductoTerminadoForm from './ProductoTerminadoForm'
 import { EtiquetaProducto } from '@/components/admin/EtiquetaProducto'
 import { StockAdjustDialog } from './StockAdjustDialog'
 import { StockInitialLoadDialog } from './StockInitialLoadDialog'
+import FichaPrintMenu from './FichaPrintMenu'
+import FichaProductoPDFDocument, { type FichaProductoData } from '@/components/print/FichaProductoPDFDocument'
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' }).format(price)
@@ -65,6 +67,7 @@ interface ProductoTerminado {
   orden: number
   visible_en_landing: boolean
   imagen?: string | null
+  modo_coccion?: string | null
   estado: boolean
   categoria: { id: number; nombre: string; seccion?: string | null }
   // Cost/margin fields (merged from costData API)
@@ -93,7 +96,7 @@ export default function ProductosTerminadosTable() {
   const [selectedProducto, setSelectedProducto] = useState<ProductoTerminado | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<number | null>(null)
-  const [productoEtiqueta, setProductoEtiqueta] = useState<{id: number, nombre: string, codigo_barras: string | null, codigo: string | null, precio_venta: number, peso_unitario_aprox: number, categoria?: {nombre: string} | null} | null>(null)
+  const [productoEtiqueta, setProductoEtiqueta] = useState<{id: number, nombre: string, codigo_barras?: string | null, codigo?: string | null, precio_venta: number, peso_unitario_aprox: number, categoria?: {nombre: string} | null} | null>(null)
   const [showEtiqueta, setShowEtiqueta] = useState(false)
   const [filtroStock, setFiltroStock] = useState<string>('')
   const [stockAdjustItem, setStockAdjustItem] = useState<ProductoTerminado | null>(null)
@@ -470,6 +473,39 @@ export default function ProductosTerminadosTable() {
                           >
                             <Tag className="h-4 w-4 text-mostaza" />
                           </Button>
+                          <FichaPrintMenu<FichaProductoData>
+                            data={{
+                              id: pt.id,
+                              codigo: pt.codigo ?? null,
+                              codigo_barras: pt.codigo_barras ?? null,
+                              nombre: pt.nombre,
+                              descripcion: pt.descripcion ?? null,
+                              id_categoria: pt.id_categoria,
+                              tipo_harina: pt.tipo_harina ?? null,
+                              seccion: pt.seccion ?? null,
+                              peso_unitario_aprox: pt.peso_unitario_aprox,
+                              unidades: pt.unidades ?? null,
+                              precio_venta: pt.precio_venta,
+                              stock_actual: pt.stock_actual,
+                              stock_minimo: pt.stock_minimo,
+                              destacado: pt.destacado,
+                              visible_en_landing: pt.visible_en_landing,
+                              imagen: pt.imagen ?? null,
+                              modo_coccion: pt.modo_coccion ?? null,
+                              estado: pt.estado,
+                              categoria: pt.categoria,
+                              costo_produccion: costData[pt.id]?.costo_produccion,
+                              margen: costData[pt.id]?.margen,
+                              margen_porcentaje: costData[pt.id]?.margen_porcentaje,
+                              receta_activa: costData[pt.id]?.receta_nombre
+                                ? { nombre_receta: costData[pt.id].receta_nombre!, rendimiento_unidades: costData[pt.id].rendimiento_unidades ?? 0 }
+                                : pt.receta_activa,
+                            }}
+                            DocumentComponent={FichaProductoPDFDocument}
+                            filename={`ficha-producto-${pt.codigo || pt.id}`}
+                            label="Ficha de Producto"
+                            triggerTitle="Exportar Ficha de Producto"
+                          />
                           <Button
                             variant="ghost"
                             size="icon"
