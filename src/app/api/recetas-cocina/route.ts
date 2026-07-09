@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { db } from '@/lib/db'
+import { db, ensureDbReady } from '@/lib/db'
 
 // GET /api/recetas-cocina - Listar recetas de cocina con paginación y filtros
 export async function GET(request: NextRequest) {
   try {
+    await ensureDbReady()
     const { searchParams } = new URL(request.url)
     const buscar = searchParams.get('buscar')
     const categoria = searchParams.get('categoria')
@@ -55,6 +56,7 @@ export async function GET(request: NextRequest) {
 // POST /api/recetas-cocina - Crear nueva receta de cocina
 export async function POST(request: NextRequest) {
   try {
+    await ensureDbReady()
     const session = await getServerSession()
     if (!session) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })

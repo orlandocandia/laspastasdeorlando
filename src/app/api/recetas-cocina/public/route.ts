@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/db'
+import { db, ensureDbReady } from '@/lib/db'
 
 // GET /api/recetas-cocina/public - Recetas visibles en landing page (sin auth)
 export async function GET(request: NextRequest) {
   try {
+    await ensureDbReady()
     const { searchParams } = new URL(request.url)
     const categoria = searchParams.get('categoria')
     const destacado = searchParams.get('destacado')

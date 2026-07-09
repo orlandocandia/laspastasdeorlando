@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { db } from '@/lib/db'
+import { db, ensureDbReady } from '@/lib/db'
 
 // GET /api/recetas-cocina/[id] - Obtener una receta por ID
 export async function GET(
@@ -8,6 +8,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await ensureDbReady()
     const { id } = await params
     const receta = await db.recetaCocina.findUnique({
       where: { id: parseInt(id) },
@@ -30,6 +31,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await ensureDbReady()
     const session = await getServerSession()
     if (!session) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
@@ -91,6 +93,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await ensureDbReady()
     const session = await getServerSession()
     if (!session) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })

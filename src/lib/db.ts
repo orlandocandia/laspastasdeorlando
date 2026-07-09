@@ -146,6 +146,27 @@ async function autoMigrateTurso(client: Client) {
       FOREIGN KEY ("id_descuento") REFERENCES "DescuentoVolumen"("id") ON DELETE CASCADE
     )`, desc: 'DescuentoVolumenRango table' },
     { sql: 'CREATE INDEX IF NOT EXISTS "DescuentoVolumenRango_id_descuento_idx" ON "DescuentoVolumenRango"("id_descuento")', desc: 'DescuentoVolumenRango_id_descuento_idx' },
+
+    // ── CREATE TABLE RecetaCocina (módulo independiente de recetas de cocina) ──
+    { sql: `CREATE TABLE IF NOT EXISTS "RecetaCocina" (
+      "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "titulo" TEXT NOT NULL,
+      "descripcion" TEXT,
+      "ingredientes" TEXT NOT NULL,
+      "pasos" TEXT NOT NULL,
+      "tiempo_preparacion" TEXT,
+      "tiempo_coccion" TEXT,
+      "dificultad" TEXT NOT NULL DEFAULT 'facil',
+      "imagen" TEXT,
+      "categoria" TEXT DEFAULT 'otros',
+      "visible_en_landing" BOOLEAN NOT NULL DEFAULT 0,
+      "destacado" BOOLEAN NOT NULL DEFAULT 0,
+      "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" DATETIME
+    )`, desc: 'RecetaCocina table' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "RecetaCocina_categoria_idx" ON "RecetaCocina"("categoria")', desc: 'RecetaCocina_categoria_idx' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "RecetaCocina_visible_en_landing_idx" ON "RecetaCocina"("visible_en_landing")', desc: 'RecetaCocina_visible_en_landing_idx' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "RecetaCocina_destacado_idx" ON "RecetaCocina"("destacado")', desc: 'RecetaCocina_destacado_idx' },
   ]
 
   // Data migrations: set seccion for known categories (idempotent — WHERE seccion IS NULL)
