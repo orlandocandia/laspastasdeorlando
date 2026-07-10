@@ -1,8 +1,9 @@
 # Documentación Técnica Completa — Sistema Las Pastas de Orlando
 
-> **Versión:** 18 (Fase 18 — Recetas de Cocina + Sistema de Exportación/Impresión Profesional)
+> **Versión:** 19 (Fase 19 — Profesionalización: QR, Email, Editor de Plantillas, Historial, Exportación Completa, Nueva Marca)
 > **Fecha:** Julio 2026
 > **Autores:** Equipo de Desarrollo Las Pastas de Orlando
+> **Marca comercial:** El Amigo de las Pastas — _"Pastas artesanales con sabor a tradición"_
 > **Repositorio:** [github.com/orlandocandia/laspastasdeorlando](https://github.com/orlandocandia/laspastasdeorlando)
 
 ---
@@ -33,6 +34,7 @@
 22. [Novedades de la Versión 17](#22-novedades-de-la-versión-17)
 23. [Novedades de la Versión 16](#23-novedades-de-la-versión-16)
 24. [Novedades de la Versión 18 — Recetas de Cocina + Exportación/Impresión](#24-novedades-de-la-versión-18--recetas-de-cocina--sistema-de-exportaciónimpresión)
+25. [Novedades de la Versión 19 — Profesionalización del Sistema](#25-novedades-de-la-versión-19--profesionalización-del-sistema)
 
 ---
 
@@ -2264,3 +2266,663 @@ Se agrega una nueva sección **"Contenido"** en el menú lateral, después de "S
 - `src/app/api/chat-assistant/route.ts` — Knowledge base + FAQ actualizadas
 - `src/components/admin/ChatAssistant.tsx` — Nuevas preguntas sugeridas
 - `package.json` — Dependencia `docx` añadida
+
+## 25. Novedades de la Versión 19 — Profesionalización del Sistema
+
+La **Fase 19** marca la profesionalización integral del sistema, consolidando todas las capacidades de generación de documentos del ERP con un sistema unificado de exportación e impresión, e introduciendo capacidades comerciales clave: códigos QR de verificación, envío de documentos por email, un editor visual de plantillas de documentos, un historial trazable de documentos generados y la unificación de la marca comercial bajo **"El Amigo de las Pastas"**.
+
+### 25.1 Resumen Ejecutivo
+
+| # | Grupo de Novedades | Alcance | Componentes Clave |
+|---|---|---|---|
+| 1 | Sistema completo de exportación e impresión | Todos los módulos (5 etapas) | `@react-pdf/renderer`, `xlsx`, `FichaPrintMenu`, `ExcelExportButton`, `QuickPrintButton`, `ReporteExportMenu`, `DashboardPDFExport`, `ficha-shared.ts` |
+| 2 | Códigos QR en documentos | Facturas, Órdenes de Compra, Órdenes de Producción | `qrcode`, `ConfigDocumento.mostrar_qr`, `ConfigDocumento.qr_url_base` |
+| 3 | Envío de documentos por email | Detalle de Ventas (extensible) | `/api/documentos/enviar-pdf`, `EnviarEmailDocumento`, `nodemailer`, `DocumentoGenerado.email_enviado` |
+| 4 | Editor de plantillas de documentos | `/admin/configuracion` → pestaña "Documentos" | `DocumentoConfigEditor`, `useConfigDocumento`, `getDocumentoConfig`, tabla `ConfigDocumento` |
+| 5 | Historial de documentos generados | Configuración → Documentos | `DocumentosHistorial`, `/api/documentos/historial`, tabla `DocumentoGenerado` |
+| 6 | Cambio de marca comercial | Todos los PDFs del sistema | Constantes `EMPRESA`, `FICHA_EMPRESA`, defaults de config, migración DB |
+
+### 25.2 Sistema Completo de Exportación e Impresión
+
+Se implementó un sistema unificado que cubre **todas las etapas** de generación de documentos del ERP, organizado en 5 etapas incrementales. Cada módulo del sistema expone ahora capacidades de exportación a PDF, Excel e impresión nativa, con una arquitectura de componentes reutilizables que evita duplicación.
+
+#### 25.2.1 Stack de Generación
+
+| Tecnología | Uso |
+|---|---|
+| `@react-pdf/renderer` | Generación de PDFs declarativos con componentes React (`Document`, `Page`, `View`, `Text`, `Image`) |
+| `xlsx` (SheetJS) | Exportación de tablas a Excel `.xlsx` con estilos básicos |
+| `qrcode` | Generación de códigos QR como data-URL para embeber en PDFs |
+| `nodemailer` | Envío de emails con adjuntos PDF generados server-side |
+| `docx` | Exportación de recetas de cocina a Word `.docx` |
+| `window.print()` + CSS `@media print` | Impresión nativa del navegador con layouts optimizados |
+
+#### 25.2.2 Componentes Reutilizables
+
+| Componente | Ubicación | Función |
+|---|---|---|
+| `FichaPrintMenu<TData>` | `src/components/print/FichaPrintMenu.tsx` | Menú genérico tipado que ofrece PDF + Imprimir para cualquier "ficha" de entidad. Recibe `items`, `onPdf`, `onPrint`. |
+| `ExcelExportButton` | `src/components/admin/ExcelExportButton.tsx` | Botón único con ícono Excel que dispara la descarga de un `.xlsx`. Props: `data`, `filename`, `sheetName`. |
+| `QuickPrintButton` | `src/components/admin/QuickPrintButton.tsx` | Botón directo de impresión rápida (sin menú) para vistas de detalle. |
+| `ReporteExportMenu` | `src/components/admin/reportes/ReporteExportMenu.tsx` | Menú de exportación para reportes: PDF, Excel, impresión. |
+| `DashboardPDFExport` | `src/components/admin/dashboard/DashboardPDFExport.tsx` | Exportación del dashboard a PDF (resumen ejecutivo) + Excel de alertas/reservas/logs. |
+| `VentasPrintMenu` | `src/components/admin/VentasPrintMenu.tsx` | Menú específico de Ventas: Factura/Ticket/Remito/Orden de Venta (PDF) + Excel. |
+
+#### 25.2.3 Helpers Compartidos — `ficha-shared.ts`
+
+El archivo `src/components/print/ficha-shared.ts` centraliza constantes y funciones de formato compartidas por todas las fichas PDF:
+
+```typescript
+// src/components/print/ficha-shared.ts
+export const FICHA_COLORS = {
+  primario: '#7B3F00',    // marrón pasta
+  mostaza: '#D4A017',     // acento
+  verde: '#4A7C59',       // OK / stock
+  rojo: '#C0392B',        // crítico
+  gris: '#6B7280',
+  fondo: '#FAF7F2',
+} as const;
+
+export const FICHA_EMPRESA = {
+  nombre: 'El Amigo de las Pastas',
+  tagline: 'Pastas artesanales con sabor a tradición',
+  telefono: '3754-419324',
+  email: 'laspastasdeorlando@gmail.com',
+  cuit: '20-12345678-9',
+  direccion: 'Posadas, Misiones',
+};
+
+export function formatCurrency(n: number | null | undefined): string { /* $ 1.234,50 */ }
+export function formatNumber(n: number | null | undefined): string { /* 1.234 */ }
+export function formatFecha(f: Date | string | null | undefined): string { /* dd/mm/yyyy */ }
+export function formatFechaHora(f: Date | string | null | undefined): string { /* dd/mm/yyyy HH:mm */ }
+```
+
+#### 25.2.4 Matriz de Exportación por Módulo
+
+La siguiente tabla resume qué formatos soporta cada módulo del sistema:
+
+| Módulo | Documento | PDF | Excel | Imprimir |
+|---|---|:---:|:---:|:---:|
+| Ventas | Factura | ✅ | — | — |
+| Ventas | Ticket | ✅ | — | — |
+| Ventas | Remito | ✅ | — | — |
+| Ventas | Orden de Venta | ✅ | — | — |
+| Ventas | Listado/general | — | ✅ | — |
+| Producción | Orden de Producción | ✅ | — | ✅ |
+| Compras | Orden de Compra | ✅ | — | ✅ |
+| Pedidos de Clientes | Orden de Pedido | ✅ | — | ✅ |
+| Pedidos de Clientes | Remito | ✅ | — | ✅ |
+| Pedidos a Proveedores | Orden de Pedido | ✅ | — | ✅ |
+| Fichas | Producto Terminado | ✅ | ✅ | ✅ |
+| Fichas | Materia Prima | ✅ | ✅ | ✅ |
+| Fichas | Receta | ✅ | ✅ | ✅ |
+| Fichas | Persona | ✅ | ✅ | ✅ |
+| Fichas | Insumo | ✅ | ✅ | ✅ |
+| Movimientos de Stock | Reporte | ✅ | ✅ | — |
+| Reportes | Ventas | ✅ | — | ✅ |
+| Reportes | Stock | ✅ | — | ✅ |
+| Reportes | Producción | ✅ | — | ✅ |
+| Reportes | Compras | ✅ | — | ✅ |
+| Dashboard | Resumen ejecutivo | ✅ | — | ✅ |
+| Dashboard | Alertas | — | ✅ | — |
+| Dashboard | Reservas | — | ✅ | — |
+| Dashboard | Logs | — | ✅ | — |
+| Recetas de Cocina | Receta (PDF) | ✅ | — | ✅ |
+| Recetas de Cocina | Receta (Word) | `.docx` | — | — |
+| Recetas de Cocina | Receta (TXT) | `.txt` | — | — |
+
+#### 25.2.5 Componentes PDF por Documento
+
+| Componente PDF | Archivo |
+|---|---|
+| `VentasDocumentPDF` | `src/components/print/VentasDocumentPDF.tsx` |
+| `OrdenProduccionPDFDocument` | `src/components/print/OrdenProduccionPDFDocument.tsx` |
+| `OrdenCompraPDFDocument` | `src/components/print/OrdenCompraPDFDocument.tsx` |
+| `PedidoClientePDFDocument` | `src/components/print/PedidoClientePDFDocument.tsx` |
+| `OrdenPedidoProveedorPDFDocument` | `src/components/print/OrdenPedidoProveedorPDFDocument.tsx` |
+| `ProductoTerminadoFichaPDF` | `src/components/print/ProductoTerminadoFichaPDF.tsx` |
+| `MateriaPrimaFichaPDF` | `src/components/print/MateriaPrimaFichaPDF.tsx` |
+| `RecetaFichaPDF` | `src/components/print/RecetaFichaPDF.tsx` |
+| `PersonaFichaPDF` | `src/components/print/PersonaFichaPDF.tsx` |
+| `InsumoFichaPDF` | `src/components/print/InsumoFichaPDF.tsx` |
+| `ReportePDFDocument` | `src/components/print/ReportePDFDocument.tsx` |
+| `MovimientosStockPDF` | `src/components/print/MovimientosStockPDF.tsx` |
+| `ResumenDashboardPDF` | `src/components/print/ResumenDashboardPDF.tsx` |
+| `RecetaCocinaPDFDocument` | `src/components/print/RecetaCocinaPDFDocument.tsx` |
+
+### 25.3 Códigos QR en Documentos
+
+Se incorporaron **códigos QR** en los documentos comerciales más relevantes para permitir verificación rápida desde un dispositivo móvil: el QR codifica una URL pública que identifica al documento.
+
+#### 25.3.1 Documentos Soportados
+
+| Documento | Componente | Ubicación del QR |
+|---|---|---|
+| Factura | `VentasDocumentPDF` | Pie de página (footer) |
+| Orden de Compra | `OrdenCompraPDFDocument` | Pie de página |
+| Orden de Producción | `OrdenProduccionPDFDocument` | Pie de página |
+
+#### 25.3.2 Generación del QR
+
+La generación se realiza con la librería `qrcode`, que produce un PNG como `data:` URL embebido directamente en el PDF vía `<Image src={qrDataUrl} />` de `@react-pdf/renderer`.
+
+```typescript
+// Ejemplo de generación del QR (server-side u origin-side)
+import QRCode from 'qrcode';
+
+export async function generarQRDocumento(url: string): Promise<string> {
+  // Devuelve un data URL PNG (base64) listo para embeber en el PDF
+  return await QRCode.toDataURL(url, {
+    margin: 1,
+    width: 120,
+    color: { dark: '#000000', light: '#FFFFFF' },
+    errorCorrectionLevel: 'M',
+  });
+}
+```
+
+La URL que se codifica se construye como `{qr_url_base}/{tipo}/{entidad_id}`, por ejemplo:
+`https://laspastasdeorlando.vercel.app/documentos/factura/1234`
+
+#### 25.3.3 Toggle y Configuración
+
+El QR es **opcional y configurable** desde el editor de plantillas (ver §25.5). Se controla mediante dos campos de la tabla `ConfigDocumento`:
+
+| Campo | Tipo | Default | Descripción |
+|---|---|---|---|
+| `mostrar_qr` | `Boolean` | `false` | Activa/desactiva el render del QR en todos los documentos que lo soportan. |
+| `qr_url_base` | `String` | `https://laspastasdeorlando.vercel.app/documentos` | Base URL usada para construir el enlace codificado en el QR. |
+
+Si `mostrar_qr = false`, los PDFs se generan sin el bloque QR (no se reserva espacio). Esto permite desactivar la función si todavía no hay un front-end público de verificación desplegado.
+
+### 25.4 Envío de Documentos por Email
+
+Se incorporó la capacidad de **enviar documentos PDF por email** directamente desde el backoffice. La generación del PDF ocurre **server-side** (en la API route) para garantizar que el adjunto sea idéntico al que vería el cliente, y se registra el envío en el historial de documentos.
+
+#### 25.4.1 API Endpoint
+
+```
+POST /api/documentos/enviar-pdf
+Content-Type: application/json
+
+Body:
+{
+  "tipo": "factura" | "ticket" | "remito" | "orden_venta" | "orden_compra" | "orden_produccion" | "orden_pedido_cliente" | "remito_pedido_cliente" | "orden_pedido_proveedor" | "ficha_producto" | "ficha_materia_prima" | "ficha_receta" | "ficha_persona" | "ficha_insumo",
+  "entidad_id": number,
+  "destinatario": string,    // email del destinatario
+  "asunto"?: string,         // opcional, hay default por tipo
+  "mensaje"?: string         // opcional, hay default por tipo
+}
+
+Response 200:
+{ "ok": true, "documentoGeneradoId": <number> }
+
+Response 400/500:
+{ "ok": false, "error": "<mensaje>" }
+```
+
+Implementación (resumen):
+
+```typescript
+// src/app/api/documentos/enviar-pdf/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+import { renderToBuffer } from '@react-pdf/renderer';
+import nodemailer from 'nodemailer';
+import { getDocumentoConfig } from '@/lib/config-documento';
+import { prisma } from '@/lib/db';
+// ...import de los componentes PDF según `tipo`
+
+export async function POST(req: NextRequest) {
+  const { tipo, entidad_id, destinatario, asunto, mensaje } = await req.json();
+
+  // 1) Cargar la entidad desde la DB según tipo
+  const data = await cargarEntidad(tipo, entidad_id);
+
+  // 2) Generar el PDF server-side con @react-pdf/renderer
+  const Documento = resolverComponentePDF(tipo, data);   // <VentasDocumentPDF ... /> etc.
+  const buffer = await renderToBuffer(Documento);
+
+  // 3) Enviar email vía Nodemailer
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST!,
+    port: Number(process.env.SMTP_PORT ?? 587),
+    secure: Number(process.env.SMTP_PORT) === 465,
+    auth: { user: process.env.SMTP_USER!, pass: process.env.SMTP_PASS! },
+  });
+
+  const config = await getDocumentoConfig();
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM ?? config.email,
+    to: destinatario,
+    subject: asunto ?? `${config.empresa_nombre} — ${tipo}`,
+    text: mensaje ?? 'Adjuntamos el documento solicitado.',
+    attachments: [{
+      filename: `${tipo}-${entidad_id}.pdf`,
+      content: buffer,
+      contentType: 'application/pdf',
+    }],
+  });
+
+  // 4) Registrar en el historial (DocumentoGenerado)
+  const doc = await prisma.documentoGenerado.create({
+    data: {
+      tipo,
+      entidad_id,
+      entidad_tipo: tipo,
+      formato: 'pdf',
+      generado_por: getUserEmail(req),     // del token de sesión
+      email_enviado: true,
+      destinatario,
+      metadata: { asunto, enviado_en: new Date().toISOString() },
+    },
+  });
+
+  return NextResponse.json({ ok: true, documentoGeneradoId: doc.id });
+}
+```
+
+#### 25.4.2 Componente `EnviarEmailDocumento`
+
+Interfaz cliente para invocar el endpoint. Abre un diálogo/modal con:
+
+- Campo **Para** (email del destinatario, pre-rellenado si la entidad tiene email asociado — p. ej. cliente o proveedor).
+- Campos opcionales **Asunto** y **Mensaje** con defaults por tipo de documento.
+- Botón **Enviar** que dispara el `POST /api/documentos/enviar-pdf`.
+- Estados de UI: idle / enviando / éxito / error.
+
+```typescript
+// src/components/admin/EnviarEmailDocumento.tsx (resumen de API pública)
+interface EnviarEmailDocumentoProps {
+  tipo: DocumentoTipo;
+  entidadId: number;
+  destinatarioDefault?: string;
+  asuntoDefault?: string;
+  onClose?: () => void;
+  onEnviado?: (documentoGeneradoId: number) => void;
+}
+```
+
+#### 25.4.3 Integración en Ventas
+
+Actualmente el envío por email está integrado en el **detalle de Ventas** (`/admin/ventas/[id]`), accesible desde el menú de acciones del documento (Factura, Ticket, Remito, Orden de Venta). La arquitectura es extensible: el componente `EnviarEmailDocumento` y la API `enviar-pdf` son genéricos respecto del `tipo`, por lo que pueden agregarse botones en Producción, Compras, Pedidos, etc. sin cambios de backend.
+
+#### 25.4.4 Registro en `DocumentoGenerado`
+
+Cada envío exitoso crea un registro en la tabla `DocumentoGenerado` con:
+
+- `email_enviado = true`
+- `destinatario = <email>`
+- `metadata` con asunto, mensaje y timestamp de envío
+
+Esto permite auditar todos los envíos desde el Historial de Documentos (ver §25.6).
+
+#### 25.4.5 Configuración SMTP
+
+El envío de emails requiere configurar las siguientes variables de entorno en el entorno de despliegue (Vercel → Settings → Environment Variables):
+
+| Variable | Descripción | Ejemplo |
+|---|---|---|
+| `SMTP_HOST` | Host del servidor SMTP | `smtp.gmail.com` |
+| `SMTP_PORT` | Puerto SMTP (587 para STARTTLS, 465 para SSL) | `587` |
+| `SMTP_USER` | Usuario / email de la cuenta SMTP | `laspastasdeorlando@gmail.com` |
+| `SMTP_PASS` | Contraseña de la cuenta o **app password** (recomendado para Gmail) | `abcd-efgh-ijkl-mnop` |
+| `SMTP_FROM` | Dirección "From" del email (con nombre para mostrar) | `El Amigo de las Pastas <laspastasdeorlando@gmail.com>` |
+
+**Notas:**
+
+- Si `SMTP_FROM` no está definida, se usa `ConfigDocumento.email` como fallback.
+- Para Gmail, habilitá **verificación en dos pasos** y generá una **App Password**; no uses la contraseña principal de la cuenta.
+- Si las variables SMTP no están configuradas, el endpoint `POST /api/documentos/enviar-pdf` responde `500` con `{ error: 'SMTP no configurado' }`.
+- Se recomienda usar un proveedor transaccional (Resend, SendGrid, Postmark, Mailgun) en producción para evitar límites de envío de Gmail.
+
+### 25.5 Editor de Plantillas de Documentos
+
+Se incorporó un **editor visual de plantillas** que permite configurar los datos de cabecera, contacto, branding y comportamiento de los documentos generados por el sistema, sin necesidad de tocar código.
+
+#### 25.5.1 Ubicación
+
+- **Ruta:** `/admin/configuracion` → pestaña **"Documentos"**
+- **Componente:** `DocumentoConfigEditor` (`src/components/admin/DocumentoConfigEditor.tsx`)
+- **Tabla:** `ConfigDocumento` (singleton con `id = 1`)
+
+La tabla es **singleton**: existe un único registro con `id = 1` que se crea automáticamente (vía `upsert`) en la primera lectura. Las modificaciones del admin actualizan ese registro.
+
+#### 25.5.2 Campos de `ConfigDocumento`
+
+| Campo | Tipo | Default | Descripción |
+|---|---|---|---|
+| `id` | `Int` | `1` | PK fija (singleton) |
+| `empresa_nombre` | `String` | `El Amigo de las Pastas` | Nombre comercial impreso en cabeceras |
+| `direccion` | `String?` | `Posadas, Misiones` | Dirección fiscal/comercial |
+| `telefono` | `String?` | `3754-419324` | Teléfono de contacto |
+| `email` | `String?` | `laspastasdeorlando@gmail.com` | Email de contacto (también fallback `SMTP_FROM`) |
+| `cuit` | `String?` | `20-12345678-9` | CUIT para facturas |
+| `condicion` | `String?` | `Monotributo` | Condición frente al AFIP |
+| `inicio_act` | `String?` | `01/01/2020` | Fecha de inicio de actividades |
+| `logo_url` | `String?` | `null` | URL pública del logo (si está seteada, se imprime en cabecera) |
+| `footer_texto` | `String?` | `¡Gracias por su compra!` | Texto del pie de página de los PDFs |
+| `mostrar_qr` | `Boolean` | `false` | Activa el QR en documentos que lo soportan (§25.3) |
+| `qr_url_base` | `String?` | `https://laspastasdeorlando.vercel.app/documentos` | Base URL del QR |
+| `texto_condiciones` | `String?` | `…` | Texto legal / condiciones impresas al pie de facturas y remitos |
+| `color_acento` | `String?` | `#D4A017` | Color de acento (mostaza) para encabezados y separadores |
+| `createdAt` | `DateTime` | `now()` | — |
+| `updatedAt` | `DateTime` | `now()` | — |
+
+#### 25.5.3 Acceso a la Configuración
+
+**Server-side** (para usar en API routes y componentes PDF):
+
+```typescript
+// src/lib/config-documento.ts
+import { prisma } from '@/lib/db';
+
+export const DEFAULTS = {
+  empresa_nombre: 'El Amigo de las Pastas',
+  direccion: 'Posadas, Misiones',
+  telefono: '3754-419324',
+  email: 'laspastasdeorlando@gmail.com',
+  cuit: '20-12345678-9',
+  condicion: 'Monotributo',
+  inicio_act: '01/01/2020',
+  footer_texto: '¡Gracias por su compra!',
+  mostrar_qr: false,
+  qr_url_base: 'https://laspastasdeorlando.vercel.app/documentos',
+  color_acento: '#D4A017',
+};
+
+export async function getDocumentoConfig() {
+  const row = await prisma.configDocumento.upsert({
+    where: { id: 1 },
+    update: {},
+    create: { id: 1, ...DEFAULTS },
+  });
+  return { ...DEFAULTS, ...row };
+}
+```
+
+**Client-side** (para el editor):
+
+```typescript
+// src/hooks/useConfigDocumento.ts
+'use client';
+import { useState, useEffect } from 'react';
+import { ConfigDocumento } from '@prisma/client';
+
+const DEFAULTS: Partial<ConfigDocumento> = {
+  empresa_nombre: 'El Amigo de las Pastas',
+  // ...idem DEFAULTS server
+};
+
+export function useConfigDocumento() {
+  const [config, setConfig] = useState<Partial<ConfigDocumento>>(DEFAULTS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/config-documento')
+      .then(r => r.json())
+      .then(data => setConfig({ ...DEFAULTS, ...data }))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function save(nuevos: Partial<ConfigDocumento>) {
+    setSaving(true);
+    const res = await fetch('/api/config-documento', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(nuevos),
+    });
+    const data = await res.json();
+    setConfig({ ...DEFAULTS, ...data });
+    setSaving(false);
+    return data;
+  }
+
+  return { config, loading, saving, save };
+}
+```
+
+> **Nota sobre consistencia:** Los componentes PDF que todavía usan sus propias constantes `EMPRESA` (hardcodeadas) muestran el nombre "El Amigo de las Pastas" correctamente. El editor de plantillas permite override futuro para personalizar cabeceras sin recódigo. El admin puede sincronizar el registro de la DB con las constantes simplemente guardando el formulario.
+
+### 25.6 Historial de Documentos Generados
+
+Se incorporó un **historial trazable** de todos los documentos generados por el sistema, tanto descargas locales como envíos por email. Esto permite auditar quién generó qué, cuándo, en qué formato y a quién se envió.
+
+#### 25.6.1 Tabla `DocumentoGenerado`
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `id` | `Int` (PK, autoincrement) | Identificador único del registro |
+| `tipo` | `String` | Tipo de documento (`factura`, `ticket`, `remito`, `orden_venta`, `orden_compra`, `orden_produccion`, `orden_pedido_cliente`, `remito_pedido_cliente`, `orden_pedido_proveedor`, `ficha_producto`, `ficha_materia_prima`, `ficha_receta`, `ficha_persona`, `ficha_insumo`, `reporte_ventas`, `reporte_stock`, `reporte_produccion`, `reporte_compras`, `movimientos_stock`, `resumen_dashboard`) |
+| `entidad_id` | `Int?` | ID de la entidad referenciada (p. ej. venta, orden de compra). Null para reportes globales. |
+| `entidad_tipo` | `String?` | Nombre del modelo relacionado (`Venta`, `OrdenCompra`, `ProductoTerminado`, etc.) |
+| `formato` | `String` | `pdf` \| `xlsx` \| `docx` \| `txt` \| `print` |
+| `generado_por` | `String?` | Email del usuario autenticado que generó/envió el documento |
+| `email_enviado` | `Boolean` | `true` si el documento fue enviado por email (vía §25.4) |
+| `destinatario` | `String?` | Email del destinatario (si `email_enviado = true`) |
+| `metadata` | `Json?` | Estructura adicional: asunto del email, parámetros del reporte, etc. |
+| `createdAt` | `DateTime` | Timestamp de generación |
+
+#### 25.6.2 Componente `DocumentosHistorial`
+
+- **Ubicación:** `/admin/configuracion` → pestaña **"Documentos"** → sección **"Historial de documentos generados"**
+- **Componente:** `src/components/admin/DocumentosHistorial.tsx`
+
+Características:
+
+- Tabla paginada con: fecha, tipo, entidad, formato, generado por, enviado (sí/no), destinatario.
+- Filtros por tipo de documento, formato y rango de fechas.
+- Búsqueda por destinatario o generado por.
+- Exportación de la propia tabla del historial a Excel.
+
+#### 25.6.3 API Endpoint
+
+```
+GET /api/documentos/historial?tipo=&formato=&desde=&hasta=&page=&pageSize=
+
+Response 200:
+{
+  "items": [
+    {
+      "id": 123,
+      "tipo": "factura",
+      "entidad_id": 456,
+      "entidad_tipo": "Venta",
+      "formato": "pdf",
+      "generado_por": "admin@laspastasdeorlando.com",
+      "email_enviado": true,
+      "destinatario": "cliente@example.com",
+      "metadata": { "asunto": "Factura #456" },
+      "createdAt": "2026-07-15T14:30:00.000Z"
+    }
+  ],
+  "total": 1234,
+  "page": 1,
+  "pageSize": 50
+}
+```
+
+#### 25.6.4 Registro Automático
+
+Las descargas PDF/Excel generadas por el usuario también se registran en el historial (con `email_enviado = false`). Esto se implementa en las API routes de exportación, que además de devolver el binario crean el registro en `DocumentoGenerado`. De esta forma el historial es **completo**, no solo de envíos por email.
+
+### 25.7 Cambio de Marca — "El Amigo de las Pastas"
+
+Se renombró la **marca comercial** del sistema de **"Pastas Orlando"** a **"El Amigo de las Pastas"**, con el tagline **"Pastas artesanales con sabor a tradición"**. Este cambio afecta **todos los documentos PDF** generados por el sistema.
+
+#### 25.7.1 Alcance del Cambio
+
+| Aspecto | Antes | Después |
+|---|---|---|
+| Marca comercial | Pastas Orlando | El Amigo de las Pastas |
+| Tagline | (sin tagline) | _Pastas artesanales con sabor a tradición_ |
+| Nombre del sistema/ERP | Las Pastas de Orlando | Las Pastas de Orlando (sin cambios) |
+| Email de contacto | laspastasdeorlando@gmail.com | laspastasdeorlando@gmail.com (sin cambios) |
+| Dominio web | laspastasdeorlando.vercel.app | laspastasdeorlando.vercel.app (sin cambios) |
+| Repositorio GitHub | github.com/orlandocandia/laspastasdeorlando | (sin cambios) |
+
+> El dominio web, el email y el repositorio se **preservan** — el cambio es exclusivamente de la marca comercial impresa en los documentos.
+
+#### 25.7.2 Estilo del Tagline
+
+El tagline se imprime bajo el título principal del documento con estilo:
+
+```typescript
+{ fontSize: 9, color: COLORS.mostaza, fontStyle: 'italic', marginTop: 1 }
+```
+
+Aparece en las cabeceras de los 6 documentos comerciales principales (10 cabeceras en total):
+
+1. `VentasDocumentPDF.tsx` — Factura, Ticket, Remito, Orden de Venta (4 cabeceras)
+2. `OrdenCompraPDFDocument.tsx` — Orden de Compra
+3. `OrdenProduccionPDFDocument.tsx` — Orden de Producción
+4. `PedidoClientePDFDocument.tsx` — Orden de Pedido, Remito (2 cabeceras)
+5. `OrdenPedidoProveedorPDFDocument.tsx` — Orden de Pedido a Proveedor
+6. `PresupuestoPDFDocument.tsx` — Presupuesto
+
+#### 25.7.3 Archivos Afectados
+
+El reemplazo se ejecutó sobre 18 archivos:
+
+**Componentes PDF (`src/components/print/`):**
+
+- `VentasDocumentPDF.tsx`
+- `OrdenCompraPDFDocument.tsx`
+- `OrdenProduccionPDFDocument.tsx`
+- `PedidoClientePDFDocument.tsx`
+- `OrdenPedidoProveedorPDFDocument.tsx`
+- `PresupuestoPDFDocument.tsx`
+- `RecetaCocinaPDFDocument.tsx`
+- `HojaRutaPDFDocument.tsx`
+- `ReportePDFDocument.tsx` (variantes: Ventas, Stock, Producción, Compras)
+- `ResumenDashboardPDF.tsx`
+- `OrdenProduccionPrint.tsx`
+- `ficha-shared.ts` (`FICHA_EMPRESA.nombre`)
+
+**Configuración y DB:**
+
+- `src/lib/config-documento.ts` — `DEFAULTS.empresa_nombre`
+- `src/hooks/useConfigDocumento.ts` — `DEFAULTS.empresa_nombre`
+- `src/lib/db.ts` — `DEFAULT` en `CREATE TABLE ConfigDocumento` (migración)
+- `src/components/admin/reportes/ExportadorPDF.tsx` — `doc.text(...)` de jsPDF
+
+#### 25.7.4 Compatibilidad con Datos Existentes
+
+Si el admin guardó previamente una configuración en `ConfigDocumento` con el nombre "Pastas Orlando", ese valor puede persistir en la DB hasta que se re-guarde desde el editor (§25.5). Sin embargo, los PDFs que no leen de `ConfigDocumento` (sino de sus constantes `EMPRESA` propias) ya muestran "El Amigo de las Pastas". Para sincronizar la DB, basta con abrir el editor y guardar.
+
+### 25.8 Archivos Nuevos y Modificados
+
+#### Nuevos (selección)
+
+```
+src/app/api/documentos/enviar-pdf/route.ts
+src/app/api/documentos/historial/route.ts
+src/app/api/config-documento/route.ts
+src/components/admin/DocumentoConfigEditor.tsx
+src/components/admin/DocumentosHistorial.tsx
+src/components/admin/EnviarEmailDocumento.tsx
+src/components/admin/ExcelExportButton.tsx
+src/components/admin/QuickPrintButton.tsx
+src/components/admin/reportes/ReporteExportMenu.tsx
+src/components/admin/dashboard/DashboardPDFExport.tsx
+src/components/print/FichaPrintMenu.tsx
+src/components/print/ficha-shared.ts
+src/components/print/MovimientosStockPDF.tsx
+src/components/print/PersonaFichaPDF.tsx
+src/components/print/InsumoFichaPDF.tsx
+src/components/print/ResumenDashboardPDF.tsx
+```
+
+#### Modificados (selección)
+
+```
+prisma/schema.prisma                                  — Modelos ConfigDocumento + DocumentoGenerado
+src/lib/db.ts                                         — Migración CREATE TABLE con defaults de marca
+src/lib/config-documento.ts                           — DEFAULTS.empresa_nombre + getDocumentoConfig()
+src/hooks/useConfigDocumento.ts                       — DEFAULTS + hook cliente
+src/components/print/VentasDocumentPDF.tsx            — Marca + tagline + QR (factura)
+src/components/print/OrdenCompraPDFDocument.tsx       — Marca + tagline + QR
+src/components/print/OrdenProduccionPDFDocument.tsx   — Marca + tagline + QR
+src/components/print/PedidoClientePDFDocument.tsx     — Marca + tagline
+src/components/print/OrdenPedidoProveedorPDFDocument.tsx — Marca + tagline
+src/components/print/PresupuestoPDFDocument.tsx       — Marca + tagline
+src/components/print/ficha-shared.ts                  — FICHA_EMPRESA + FICHA_COLORS + format helpers
+src/app/(dashboard)/admin/configuracion/page.tsx      — Nueva pestaña "Documentos"
+src/app/(dashboard)/admin/ventas/[id]/page.tsx        — Botón EnviarEmailDocumento
+src/app/(dashboard)/admin/reportes/page.tsx           — Integración ReporteExportMenu
+src/app/(dashboard)/admin/dashboard/page.tsx          — Integración DashboardPDFExport
+package.json                                          — Dependencias: qrcode, nodemailer, docx
+```
+
+### 25.9 Dependencias Añadidas
+
+| Dependencia | Versión | Propósito |
+|---|---|---|
+| `qrcode` | `^1.5.x` | Generación de códigos QR como PNG data-URL |
+| `nodemailer` | `^6.9.x` | Envío de emails con adjuntos PDF |
+| `docx` | `^8.x` | Generación de archivos Word `.docx` (recetas de cocina) |
+| `@react-pdf/renderer` | (preexistente) | Confirmado como stack unificado de PDFs |
+| `xlsx` | (preexistente) | Confirmado como stack unificado de Excel |
+
+> Las dependencias se instalan con `bun install` o `npm install` y deben estar disponibles tanto en build como en runtime (Vercel). `nodemailer` y `qrcode` se ejecutan server-side únicamente.
+
+### 25.10 Consideraciones de Despliegue y Migración
+
+#### 25.10.1 Migración de Base de Datos
+
+La Fase 19 agrega dos tablas nuevas al schema:
+
+- `ConfigDocumento` (singleton `id = 1`) — creada vía migración con defaults de marca ya actualizados a "El Amigo de las Pastas".
+- `DocumentoGenerado` — creada vía migración, vacía inicialmente.
+
+En entornos existentes (Turso/SQLite), las tablas se crean automáticamente al primer `upsert`/`create`. No se requiere `prisma migrate` manual si la app usa `db.ts` con `CREATE TABLE IF NOT EXISTS`.
+
+#### 25.10.2 Variables de Entorno Requeridas
+
+Para habilitar **todas** las funcionalidades de la Fase 19, configurar en Vercel:
+
+```bash
+# SMTP (para envío de documentos por email — §25.4)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=laspastasdeorlando@gmail.com
+SMTP_PASS=<app-password-de-16-caracteres>
+SMTP_FROM="El Amigo de las Pastas <laspastasdeorlando@gmail.com>"
+
+# (Opcional) URL pública de verificación de documentos
+# Si no está seteada, se usa ConfigDocumento.qr_url_base
+PUBLIC_DOCUMENTOS_URL=https://laspastasdeorlando.vercel.app/documentos
+```
+
+Si las variables SMTP no están configuradas:
+
+- El endpoint `POST /api/documentos/enviar-pdf` responde `500` con `{ error: 'SMTP no configurado' }`.
+- El resto de las funcionalidades (PDF, Excel, impresión, QR, editor, historial) siguen operativas.
+
+#### 25.10.3 Activación del QR
+
+Por defecto `ConfigDocumento.mostrar_qr = false`. Para activarlo:
+
+1. Ingresar a `/admin/configuracion` → pestaña **Documentos**.
+2. Marcar el checkbox **"Mostrar código QR en documentos"**.
+3. Verificar que la **URL base** (`qr_url_base`) apunte al front-end público de verificación.
+4. Guardar.
+
+A partir del siguiente PDF generado, los documentos compatibles (Factura, Orden de Compra, Orden de Producción) incluirán el QR en el pie de página.
+
+#### 25.10.4 Verificación Post-Deploy
+
+Checklist recomendado tras desplegar la Fase 19:
+
+- [ ] Abrir `/admin/configuracion` → Documentos: debe cargar el editor con defaults "El Amigo de las Pastas".
+- [ ] Generar una Factura PDF desde Ventas: verificar nombre + tagline + (si activo) QR.
+- [ ] Exportar Excel de Productos Terminados: debe descargar `.xlsx`.
+- [ ] Imprimir una Orden de Producción: debe abrir el diálogo de impresión con layout limpio.
+- [ ] Enviar una Factura por email (con SMTP configurado): verificar receipt en casilla del destinatario.
+- [ ] Abrir el Historial de Documentos: deben aparecer los documentos generados en los pasos anteriores.
+- [ ] Verificar en la tabla `DocumentoGenerado` que `email_enviado = true` y `destinatario` estén correctos para el envío.
+
+---
+
+**Fin de la Versión 19.**

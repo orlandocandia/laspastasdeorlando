@@ -39,6 +39,7 @@ import {
   Ruler,
   Lock,
   Eye,
+  Mail,
   Database,
   Clock,
   Gauge,
@@ -123,12 +124,13 @@ const helpSections: HelpSection[] = [
     id: 'introduccion',
     title: 'Introducción',
     iconComponent: LayoutDashboard,
-    summary: 'Bienvenida al sistema ERP de Las Pastas de Orlando y flujo de trabajo recomendado.',
+    summary: 'Bienvenida al sistema ERP de El Amigo de las Pastas y flujo de trabajo recomendado.',
     content: (
       <div className="space-y-5">
         <p className="text-muted-foreground">
-          Bienvenido al sistema de gestión <strong className="text-marron">Las Pastas de Orlando</strong>,
+          Bienvenido al sistema de gestión <strong className="text-marron">El Amigo de las Pastas</strong>,
           una plataforma integral diseñada específicamente para fábricas de pastas artesanales.
+          <em className="block text-xs text-mostaza mt-1">Pastas artesanales con sabor a tradición</em>
           Este ERP te permite centralizar y controlar todos los aspectos operativos de tu negocio
           de manera sencilla y eficiente.
         </p>
@@ -3190,7 +3192,7 @@ const helpSections: HelpSection[] = [
           <h4 className="font-semibold text-marron mb-2">¿Qué son?</h4>
           <p className="text-sm text-muted-foreground mb-2">
             Son recetas de cocina pensadas para los clientes: cómo preparar platos con los productos
-            de Pastas Orlando. A diferencia de las <strong>Recetas de Producción</strong> (que definen
+            de El Amigo de las Pastas. A diferencia de las <strong>Recetas de Producción</strong> (que definen
             qué materias primas usar para fabricar un producto), estas recetas son contenido editorial.
           </p>
           <ul className="space-y-1 text-sm text-muted-foreground ml-4">
@@ -3311,7 +3313,36 @@ const helpSections: HelpSection[] = [
             <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Productos Terminados</strong>: listado con código, nombre, categoría, stock y precio.</span></li>
             <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Movimientos de Stock</strong>: historial con tipo, producto, cantidad y observaciones.</span></li>
             <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Reportes</strong>: los reportes de Ventas, Stock y Producción ya incluyen exportación a Excel y CSV.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Personas</strong>: listado de clientes/proveedores con datos de contacto.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Insumos</strong>: listado con tipo, stock y estado.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Reservas</strong>: listado de reservas con cliente, producto y estado.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Alertas del Dashboard</strong>: exportación de alertas y logs de acceso.</span></li>
           </ul>
+        </div>
+
+        <div className="bg-crema/60 border border-mostaza/15 rounded-lg p-4">
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-oliva" />
+            Fichas en PDF (páginas de detalle)
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Las páginas de detalle de estos módulos tienen botones <strong>"PDF"</strong> e{' '}
+            <strong>"Imprimir"</strong>:
+          </p>
+          <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Producto Terminado</strong>: ficha con imagen, datos, stock, costos y rentabilidad.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Materia Prima</strong>: ficha con datos, stock con alerta y valor de inventario.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Receta de Producción</strong>: ficha con ingredientes, costos y margen.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Persona</strong>: ficha con foto, contactos, direcciones y datos fiscales.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Insumo</strong>: ficha con tarjetas de stock e inventario.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Pedido a Proveedor</strong>: orden de pedido con items, totales y firmas.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Movimientos de Stock</strong>: reporte en PDF (horizontal) con filtros y resumen.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Dashboard</strong>: resumen con KPIs, flujo de trabajo y alertas.</span></li>
+          </ul>
+          <p className="text-xs text-muted-foreground mt-2">
+            En los <strong>listados</strong>, cada fila tiene un botón de impresión rápida{' '}
+            <Printer className="inline h-3 w-3 text-mostaza" /> que descarga la ficha directamente.
+          </p>
         </div>
 
         <div>
@@ -3332,6 +3363,226 @@ const helpSections: HelpSection[] = [
             <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span>Impresión directa con <code className="bg-marron/10 px-1 rounded text-xs">window.print()</code> y estilos optimizados.</span></li>
           </ul>
         </div>
+      </div>
+    ),
+  },
+  {
+    id: 'documentos-plantillas',
+    title: 'Documentos y Plantillas',
+    summary: 'Editor de plantillas de documentos, códigos QR y envío por email',
+    iconComponent: FileText,
+    keywords: ['plantilla documento', 'editor documento', 'qr documento', 'codigo qr', 'enviar email', 'enviar pdf', 'email documento', 'configuracion documento', 'logo documento', 'color acento', 'footer documento', 'factura qr', 'orden compra qr', 'condiciones documento'],
+    content: (
+      <div className="space-y-4">
+        <InfoBox type="info">
+          Desde <strong>Configuración → Documentos</strong> podés personalizar todos los documentos
+          que genera el sistema (facturas, órdenes, remitos, fichas, reportes) con tu marca, logo,
+          datos de empresa, QR y colores.
+        </InfoBox>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2">Editor de plantillas</h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            En <ModuleRef name="Configuración" /> → pestaña <strong>"Documentos"</strong> encontrás el
+            editor con estos campos:
+          </p>
+          <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Nombre de empresa</strong>: aparece como título principal (ej: "El Amigo de las Pastas").</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Datos fiscales</strong>: CUIT, condición IVA, inicio de actividades.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Contacto</strong>: dirección, teléfono, email.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Logo URL</strong>: si cargás una URL, se muestra el logo en el encabezado.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Texto de pie (footer)</strong>: mensaje al pie de cada documento.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Texto de condiciones</strong>: cláusulas para órdenes de compra/pedido.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Color de acento</strong>: color hexadecimal (ej: <code className="bg-marron/10 px-1 rounded text-xs">#E1AD01</code> mostaza).</span></li>
+          </ul>
+          <p className="text-xs text-muted-foreground mt-2">
+            Los cambios se guardan en la tabla <code className="bg-marron/10 px-1 rounded text-xs">ConfigDocumento</code>{' '}
+            (registro único id=1) y se aplican a todos los documentos nuevos que se generen.
+          </p>
+        </div>
+
+        <div className="bg-crema/60 border border-mostaza/15 rounded-lg p-4">
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-oliva" />
+            Códigos QR en documentos
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Los siguientes documentos incluyen un <strong>código QR</strong> en la esquina inferior
+            derecha que, al escanearlo, abre la URL del documento en el sistema:
+          </p>
+          <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Facturas</strong> (Ventas)</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Órdenes de Compra</strong> (Compras)</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Órdenes de Producción</strong> (Producción)</span></li>
+          </ul>
+          <p className="text-sm text-muted-foreground mt-2">
+            Podés <strong>activar/desactivar</strong> el QR desde el editor de plantillas (switch "Mostrar QR")
+            y configurar la <strong>URL base</strong> (ej: <code className="bg-marron/10 px-1 rounded text-xs">https://laspastasdeorlando.vercel.app</code>).
+            El QR se genera con la librería <code className="bg-marron/10 px-1 rounded text-xs">qrcode</code>.
+          </p>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2">Envío de documentos por email</h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Desde el <strong>detalle de una Venta</strong> (<code className="bg-marron/10 px-1 rounded text-xs">/admin/ventas/[id]</code>)
+            podés enviar la <strong>Factura en PDF</strong> por email directamente:
+          </p>
+          <ol className="space-y-1 text-sm text-muted-foreground ml-4 list-decimal ml-6">
+            <li>Abrir la venta desde el listado (botón <Eye className="inline h-3 w-3" /> o clic en la fila).</li>
+            <li>En el header, clic en el botón <Mail className="inline h-3 w-3" /> "Enviar por email".</li>
+            <li>Se abre un diálogo: ingresar <strong>destinatario</strong> (pre-cargado si el cliente tiene email) y <strong>asunto</strong> (opcional).</li>
+            <li>Confirmar → el sistema genera el PDF en el servidor, lo adjunta y envía vía SMTP (Nodemailer).</li>
+            <li>Al enviar, se registra en el <strong>Historial de Documentos</strong> con <code className="bg-marron/10 px-1 rounded text-xs">email_enviado = true</code>.</li>
+          </ol>
+          <InfoBox type="warning">
+            Requiere configurar las variables de entorno SMTP en el servidor:
+            <code className="bg-marron/10 px-1 rounded text-xs ml-1">SMTP_HOST</code>,
+            <code className="bg-marron/10 px-1 rounded text-xs ml-1">SMTP_PORT</code>,
+            <code className="bg-marron/10 px-1 rounded text-xs ml-1">SMTP_USER</code>,
+            <code className="bg-marron/10 px-1 rounded text-xs ml-1">SMTP_PASS</code>,
+            <code className="bg-marron/10 px-1 rounded text-xs ml-1">SMTP_FROM</code>.
+          </InfoBox>
+        </div>
+      </div>
+    ),
+  },
+  {
+    id: 'historial-documentos',
+    title: 'Historial de Documentos',
+    summary: 'Registro automático de todos los documentos generados y enviados',
+    iconComponent: Database,
+    keywords: ['historial documento', 'documentos generados', 'registro documento', 'documento generado', 'auditoria documento', 'trazabilidad documento', 'envios email', 'documento email'],
+    content: (
+      <div className="space-y-4">
+        <InfoBox type="info">
+          El sistema registra <strong>automáticamente</strong> cada documento que se genera (PDF,
+          Excel, etc.) en un historial, permitiendo trazabilidad completa de qué se generó, cuándo,
+          quién lo generó y si se envió por email.
+        </InfoBox>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2">¿Dónde se ve?</h4>
+          <p className="text-sm text-muted-foreground">
+            En <ModuleRef name="Configuración" /> → pestaña <strong>"Documentos"</strong>, debajo del
+            editor de plantillas. El componente <strong>DocumentosHistorial</strong> muestra la lista
+            con filtros por tipo.
+          </p>
+        </div>
+
+        <div>
+          <h4 className="font-semibold text-marron mb-2">Datos que se registran</h4>
+          <p className="text-sm text-muted-foreground mb-2">Cada documento generado guarda:</p>
+          <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Tipo</strong>: factura, ticket, remito, orden_compra, orden_produccion, orden_pedido, ficha_producto, reporte, etc.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Entidad</strong>: ID y tipo de entidad (venta, compra, producción, persona, etc.).</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Formato</strong>: pdf, excel, word, txt.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Generado por</strong>: usuario que lo generó (si estaba logueado).</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Email enviado</strong>: true/false si se envió por email.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Destinatario</strong>: email a quien se envió (si aplica).</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Fecha</strong> de generación.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Metadata</strong>: información adicional en JSON (número de comprobante, etc.).</span></li>
+          </ul>
+        </div>
+
+        <div className="bg-crema/60 border border-mostaza/15 rounded-lg p-4">
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-oliva" />
+            Filtros disponibles
+          </h4>
+          <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Por tipo</strong>: filtrar por un tipo de documento específico.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Ver todos</strong>: lista completa ordenada por fecha descendente.</span></li>
+          </ul>
+        </div>
+
+        <InfoBox type="tip">
+          Usá el historial para auditoría: saber qué documentos se generaron, quién los generó y
+          cuáles se enviaron por email a clientes/proveedores.
+        </InfoBox>
+      </div>
+    ),
+  },
+  {
+    id: 'novedades-v19',
+    title: 'Novedades Versión 19 (Profesionalización)',
+    summary: 'QR en PDFs, envío por email, editor de plantillas, historial, exportación completa y nueva marca',
+    iconComponent: Zap,
+    keywords: ['novedad', 'mejora', 'version 19', 'v19', 'qr', 'email documento', 'editor plantilla', 'historial documento', 'exportacion completa', 'nueva marca', 'el amigo de las pastas', 'profesionalizacion'],
+    content: (
+      <div className="space-y-5">
+        <p className="text-muted-foreground">
+          La <strong className="text-marron">versión 19</strong> profesionaliza el sistema con 6 grandes
+          mejoras. Si venís usando el sistema desde antes, acá encontrás qué cambió.
+        </p>
+
+        <div className="bg-rojo/5 border border-rojo/20 rounded-lg p-4">
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <span className="text-lg">🍽️</span>
+            Nueva marca: "El Amigo de las Pastas"
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            El nombre comercial cambió de "Pastas Orlando" a <strong>"El Amigo de las Pastas"</strong>{' '}
+            en TODOS los documentos generados (facturas, órdenes, remitos, fichas, reportes).
+            Tagline: <em>"Pastas artesanales con sabor a tradición"</em>. El dominio web{' '}
+            <code className="bg-marron/10 px-1 rounded text-xs">laspastasdeorlando</code> se mantiene
+            en el email de contacto.
+          </p>
+        </div>
+
+        <div className="bg-mostaza/10 border border-mostaza/20 rounded-lg p-4">
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Printer className="h-4 w-4 text-mostaza" />
+            Exportación e impresión completa (Etapas 1-5)
+          </h4>
+          <p className="text-sm text-muted-foreground mb-2">
+            Todos los módulos del panel ahora tienen exportación a <strong>PDF</strong>,{' '}
+            <strong>Excel</strong> e <strong>impresión directa</strong>, con diseños profesionales y
+            colores de marca:
+          </p>
+          <ul className="space-y-1 text-sm text-muted-foreground ml-4">
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Ventas</strong>: Factura, Ticket, Remito, Orden de Venta (4 PDF) + Excel.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Producción, Compras, Pedidos</strong>: Órdenes en PDF + impresión.</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Fichas</strong>: Producto, Materia Prima, Receta, Persona, Insumo (PDF + Excel).</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Reportes</strong>: Ventas, Stock, Producción, Compras, Movimientos, Dashboard (PDF + Excel).</span></li>
+            <li className="flex gap-2"><span className="text-mostaza shrink-0">•</span><span><strong>Recetas de Cocina</strong>: PDF, Word (.docx), TXT e impresión.</span></li>
+          </ul>
+          <p className="text-xs text-muted-foreground mt-2">
+            Componentes reutilizables: <code className="bg-marron/10 px-1 rounded text-xs">FichaPrintMenu</code>,{' '}
+            <code className="bg-marron/10 px-1 rounded text-xs">ExcelExportButton</code>,{' '}
+            <code className="bg-marron/10 px-1 rounded text-xs">QuickPrintButton</code>.
+          </p>
+        </div>
+
+        <div className="bg-oliva/10 border border-oliva/20 rounded-lg p-4">
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <FileText className="h-4 w-4 text-oliva" />
+            Documentos y Plantillas
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Nuevo editor de plantillas (<ModuleRef name="Configuración" /> → Documentos) para
+            personalizar datos de empresa, logo, footer, condiciones, color de acento y QR.
+            Ver sección <ModuleRef name="Documentos y Plantillas" />.
+          </p>
+        </div>
+
+        <div className="bg-crema/60 border border-mostaza/15 rounded-lg p-4">
+          <h4 className="font-semibold text-marron mb-2 flex items-center gap-2">
+            <Database className="h-4 w-4 text-mostaza" />
+            Historial de Documentos + Envío por email
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Cada documento generado se registra automáticamente (tipo, entidad, formato, usuario,
+            email enviado, destinatario, fecha). Desde el detalle de Ventas podés enviar facturas
+            por email con PDF adjunto. Ver secciones <ModuleRef name="Historial de Documentos" /> y{' '}
+            <ModuleRef name="Documentos y Plantillas" />.
+          </p>
+        </div>
+
+        <InfoBox type="tip">
+          Todas estas mejoras son <strong>aditivas</strong>: las funcionalidades existentes siguen
+          funcionando igual. Los nuevos botones de exportación se suman a los que ya existían.
+        </InfoBox>
       </div>
     ),
   },
@@ -3416,7 +3667,7 @@ export default function StaticHelp({ open, onOpenChange }: StaticHelpProps) {
         className="w-full h-full max-w-none sm:max-w-none p-0 gap-0 overflow-hidden border-0 rounded-none"
         showCloseButton={false}
       >
-        <DialogTitle className="sr-only">Manual de Ayuda - Las Pastas de Orlando</DialogTitle>
+        <DialogTitle className="sr-only">Manual de Ayuda - El Amigo de las Pastas</DialogTitle>
 
         {/* Close Button */}
         <button
@@ -3491,7 +3742,7 @@ export default function StaticHelp({ open, onOpenChange }: StaticHelpProps) {
             {/* Footer */}
             <div className="p-3 border-t border-mostaza/15">
               <p className="text-xs text-muted-foreground text-center">
-                Las Pastas de Orlando — ERP v1.0
+                El Amigo de las Pastas — ERP v1.0
               </p>
             </div>
           </aside>
@@ -3638,7 +3889,7 @@ export default function StaticHelp({ open, onOpenChange }: StaticHelpProps) {
                     {/* Footer */}
                     <div className="mt-12 pt-6 border-t border-mostaza/15 text-center">
                       <p className="text-sm text-muted-foreground">
-                        Fin del manual — Las Pastas de Orlando ERP
+                        Fin del manual — El Amigo de las Pastas ERP
                       </p>
                       <p className="text-xs text-muted-foreground/60 mt-1">
                         Si necesitás más ayuda, usá el asistente virtual

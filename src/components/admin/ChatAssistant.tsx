@@ -15,7 +15,7 @@ interface Message {
 const WELCOME_MESSAGE: Message = {
   role: 'assistant',
   content:
-    '¡Hola! Soy tu asistente virtual de Pastas Orlando. Preguntame cualquier duda sobre cómo usar el sistema.',
+    '¡Hola! Soy tu asistente virtual de El Amigo de las Pastas. Preguntame cualquier duda sobre cómo usar el sistema.',
 }
 
 const SUGGESTED_QUESTIONS = [
@@ -45,6 +45,13 @@ const SUGGESTED_QUESTIONS = [
   '¿Cómo imprimo una factura o ticket de venta?',
   '¿Cómo exporto el listado de productos a Excel?',
   '¿Qué opciones de impresión tiene el módulo de Ventas?',
+  '¿Cómo envío una factura por email?',
+  '¿Cómo personalizo la plantilla de los documentos?',
+  '¿Para qué sirve el código QR en los documentos?',
+  '¿Cómo veo el historial de documentos generados?',
+  '¿Cómo exporto el dashboard a PDF?',
+  '¿Cómo imprimo la ficha de un producto?',
+  '¿Cómo exporto movimientos de stock a Excel?',
 ]
 
 // ─── Simple Markdown Renderer ────────────────────────────────────────────────
@@ -297,7 +304,7 @@ export default function ChatAssistant() {
                   <h3 className="text-sm font-semibold text-crema">
                     Asistente Virtual
                   </h3>
-                  <p className="text-xs text-crema/70">Pastas Orlando</p>
+                  <p className="text-xs text-crema/70">El Amigo de las Pastas</p>
                 </div>
               </div>
               <Button

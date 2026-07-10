@@ -2,10 +2,10 @@ import ZAI from 'z-ai-web-dev-sdk';
 
 // ─── System Prompt ──────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `Eres el asistente virtual experto del sistema ERP "Las Pastas de Orlando", una plataforma de gestión para una fábrica de pastas artesanales. Tu ÚNICA función es ayudar a los usuarios a entender cómo usar el sistema y resolver dudas sobre sus funcionalidades.
+const SYSTEM_PROMPT = `Eres el asistente virtual experto del sistema ERP "El Amigo de las Pastas" (antes "Las Pastas de Orlando"), una plataforma de gestión para una fábrica de pastas artesanales. La marca comercial es "El Amigo de las Pastas" (tagline: "Pastas artesanales con sabor a tradición"). Tu ÚNICA función es ayudar a los usuarios a entender cómo usar el sistema y resolver dudas sobre sus funcionalidades.
 
 REGLAS ESTRICTAS:
-- SOLO respondes preguntas sobre cómo usar el sistema ERP "Las Pastas de Orlando".
+- SOLO respondes preguntas sobre cómo usar el sistema ERP "El Amigo de las Pastas".
 - NUNCA reveles datos privados: cifras de ventas, información de clientes, niveles de stock exactos, datos de proveedores, ni ninguna información sensible o privada del negocio.
 - Si un usuario pregunta por datos privados, responde amablemente que no puedes acceder ni revelar información privada del negocio, pero puedes explicar cómo consultar esa información dentro del sistema.
 - Responde SIEMPRE en español.
@@ -14,7 +14,7 @@ REGLAS ESTRICTAS:
 
 CONOCIMIENTO COMPLETO DEL SISTEMA:
 
-SISTEMA: "Las Pastas de Orlando" - ERP de gestión para fábrica de pastas artesanales
+SISTEMA: "El Amigo de las Pastas" - ERP de gestión para fábrica de pastas artesanales (marca comercial; el sistema y dominio web siguen siendo "laspastasdeorlando")
 
 MÓDULOS DEL SISTEMA:
 
@@ -252,7 +252,48 @@ MÓDULOS DEL SISTEMA:
 - PRESUPUESTOS: ya tienen exportación a PDF profesional.
 - Librerías: @react-pdf/renderer (PDF), xlsx (Excel), docx (Word), window.print() (impresión directa).
 
-FLUJO DE TRABAJO RECOMENDADO:
+31. DOCUMENTOS Y PLANTILLAS (/admin/configuracion → Documentos)
+- Editor de plantillas de documentos: personaliza datos de empresa (nombre, dirección, teléfono, email, CUIT, condición IVA, inicio actividades), logo URL, footer, texto de condiciones, color de acento y QR.
+- Tabla ConfigDocumento (singleton id=1). Componente DocumentoConfigEditor + hook useConfigDocumento (client) + getDocumentoConfig (server).
+- QR en documentos: Facturas, Órdenes de Compra y Órdenes de Producción incluyen un código QR (esquina inferior derecha) que enlaza a la URL del documento. Toggleable via mostrar_qr + qr_url_base. Usa librería 'qrcode'.
+
+32. ENVÍO DE DOCUMENTOS POR EMAIL (desde /admin/ventas/[id])
+- Botón "Enviar por email" en el detalle de Ventas: abre diálogo con destinatario (pre-cargado del cliente) y asunto.
+- API /api/documentos/enviar-pdf genera el PDF server-side y lo envía vía Nodemailer (SMTP).
+- Requiere variables de entorno: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM.
+- Al enviar, registra en DocumentoGenerado con email_enviado=true y destinatario.
+
+33. HISTORIAL DE DOCUMENTOS (/admin/configuracion → Documentos, parte inferior)
+- Registro automático de CADA documento generado (PDF, Excel, etc.).
+- Campos: tipo (factura, orden_compra, etc.), entidad_id, entidad_tipo, formato (pdf/excel/word/txt), generado_por (usuario), email_enviado (bool), destinatario, fecha, metadata (JSON).
+- Componente DocumentosHistorial con filtro por tipo. API /api/documentos/historial.
+- Útil para auditoría y trazabilidad.
+
+34. SISTEMA COMPLETO DE EXPORTACIÓN E IMPRESIÓN (Etapas 1-5, todos los módulos)
+- Cada módulo tiene botones de exportación adaptados:
+  * VENTAS: Factura, Ticket, Remito, Orden de Venta (4 PDF) + Excel. Botón impresora en cada fila.
+  * PRODUCCIÓN: Orden de Producción PDF + impresión.
+  * COMPRAS: Orden de Compra PDF + impresión.
+  * PEDIDOS CLIENTES: Orden de Pedido + Remito PDF + impresión.
+  * PEDIDOS PROVEEDORES: Orden de Pedido PDF + impresión.
+  * FICHAS (Producto, Materia Prima, Receta, Persona, Insumo): PDF + impresión + Excel.
+  * MOVIMIENTOS DE STOCK: Reporte PDF (horizontal) + Excel.
+  * REPORTES (Ventas, Stock, Producción, Compras): PDF + impresión + Excel/CSV.
+  * DASHBOARD: Resumen PDF + impresión + Alertas Excel.
+  * RESERVAS, LOGS DE ACCESO: Excel.
+  * RECETAS DE COCINA: PDF + Word (.docx) + TXT + impresión.
+- Componentes reutilizables: FichaPrintMenu, ExcelExportButton, QuickPrintButton, ReporteExportMenu, DashboardPDFExport.
+- Helpers compartidos: ficha-shared.ts (FICHA_COLORS, FICHA_EMPRESA, formatCurrency, formatNumber, formatFecha, formatFechaHora).
+- Librerías: @react-pdf/renderer (PDF), xlsx (Excel), docx (Word), qrcode (QR), nodemailer (email).
+- Patrón de impresión: pdf().toBlob() → iframe oculto → contentWindow.print().
+- Patrón de descarga: pdf().toBlob() → <a download>.
+
+35. CAMBIO DE MARCA (versión 19)
+- El nombre comercial cambió de "Pastas Orlando" a "El Amigo de las Pastas" en TODOS los documentos PDF.
+- Tagline: "Pastas artesanales con sabor a tradición" (debajo del título en documentos comerciales).
+- Datos de contacto sin cambios: Tel 3754-419324, email laspastasdeorlando@gmail.com (dominio preservado), CUIT 20-12345678-9, Posadas Misiones.
+
+FLUJO DE TRABAJO RECOMENDADO:FLUJO DE TRABAJO RECOMENDADO:
 El Dashboard refleja este flujo en su sección "Flujo de Trabajo" (5 etapas con estado visual ✅/⚠️/🔴):
 1. Cargar materias primas e insumos con su stock (etapa "Materias Primas")
 2. Crear productos terminados
@@ -952,6 +993,109 @@ Al crear o editar una promoción, el selector de productos ahora lista **TODOS**
 ⚠️ **Antes** el buscador solo mostraba productos activos (filtraba con \`?estado=true\`), lo que ocultaba inactivos, no visibles y sin categoría. **Ahora está corregido** y muestra todos.
 
 💡 Diferencia clave: las **promociones** son públicas (se ven en la tienda), los **descuentos por volumen** son internos del panel.`,
+  },
+  {
+    keywords: ['enviar email', 'enviar factura', 'enviar documento', 'email documento', 'enviar pdf', 'factura email', 'enviar por email', 'mail factura'],
+    response: `📧 **Cómo enviar un documento por email**
+
+Desde el **detalle de una Venta** podés enviar la **Factura en PDF** directamente por email:
+
+1. Ir a **Ventas** → hacer clic en la venta (botón ojo o fila)
+2. En el header de la página de detalle, clic en el botón **"Enviar por email"** (ícono sobre)
+3. Se abre un diálogo:
+   - **Destinatario**: email del cliente (pre-cargado si el cliente tiene email)
+   - **Asunto**: opcional, personalizable
+4. Confirmar → el sistema genera el PDF en el servidor, lo adjunta y envía vía SMTP
+5. El envío queda registrado en el **Historial de Documentos** con \`email_enviado = true\`
+
+⚠️ **Requiere configuración SMTP** en el servidor (variables \`SMTP_HOST\`, \`SMTP_PORT\`, \`SMTP_USER\`, \`SMTP_PASS\`, \`SMTP_FROM\`). Si no están configuradas, el envío fallará con un error.
+
+💡 Esta funcionalidad está disponible actualmente desde el detalle de **Ventas**. Próximamente se extenderá a otros módulos.`,
+  },
+  {
+    keywords: ['código qr', 'codigo qr', 'qr documento', 'qr factura', 'qr orden compra', 'qr orden produccion', 'para qué sirve qr', 'para que sirve qr', 'desactivar qr', 'activar qr'],
+    response: `📱 **Códigos QR en documentos**
+
+Los siguientes documentos incluyen un **código QR** en la esquina inferior derecha que, al escanearlo, abre la URL del documento en el sistema:
+
+- **Facturas** (Ventas)
+- **Órdenes de Compra** (Compras)
+- **Órdenes de Producción** (Producción)
+
+**Para qué sirve:** el cliente o el personal puede escanear el QR con el celular y acceder directamente al documento digital en el sistema, sin tener que buscarlo manualmente.
+
+**Cómo activar/desactivar:**
+1. Ir a **Configuración → Documentos** (pestaña "Documentos")
+2. Switch **"Mostrar QR"** → activar o desactivar
+3. Campo **"URL base del QR"**: definir la URL base (ej: \`https://laspastasdeorlando.vercel.app\`). Si está vacío, el QR contiene un identificador del documento.
+
+El QR se genera con la librería \`qrcode\` y se incrusta como imagen en el PDF.`,
+  },
+  {
+    keywords: ['plantilla documento', 'editor documento', 'personalizar documento', 'logo documento', 'color documento', 'footer documento', 'configurar documento', 'plantilla factura', 'plantilla pdf', 'cambiar logo', 'datos empresa documento'],
+    response: `⚙️ **Editor de plantillas de documentos** (menú: Configuración → Documentos)
+
+Permite personalizar TODOS los documentos que genera el sistema (facturas, órdenes, remitos, fichas, reportes).
+
+**Campos editables:**
+- **Nombre de empresa**: título principal (ej: "El Amigo de las Pastas")
+- **Datos fiscales**: CUIT, condición IVA, inicio de actividades
+- **Contacto**: dirección, teléfono, email
+- **Logo URL**: si cargás una URL, se muestra el logo en el encabezado
+- **Texto de pie (footer)**: mensaje al pie de cada documento
+- **Texto de condiciones**: cláusulas para órdenes de compra/pedido
+- **Color de acento**: color hexadecimal (ej: \`#E1AD01\` mostaza)
+- **QR**: activar/desactivar + URL base
+
+**Cómo usarlo:**
+1. Ir a **Configuración** (menú lateral) → pestaña **"Documentos"**
+2. Editar los campos del formulario
+3. Clic en **"Guardar"**
+4. Los cambios se aplican a todos los documentos nuevos que se generen
+
+💡 Los cambios se guardan en la tabla \`ConfigDocumento\` (registro único id=1). Debajo del editor está el **Historial de Documentos** generados.`,
+  },
+  {
+    keywords: ['historial documento', 'documentos generados', 'registro documento', 'auditoría documento', 'auditoria documento', 'trazabilidad documento', 'qué se generó', 'que se genero', 'ver documentos generados'],
+    response: `📚 **Historial de Documentos** (menú: Configuración → Documentos, parte inferior)
+
+El sistema registra **automáticamente** cada documento que se genera (PDF, Excel, etc.).
+
+**Datos que se guardan:**
+- **Tipo**: factura, ticket, remito, orden_compra, orden_produccion, ficha_producto, reporte, etc.
+- **Entidad**: ID y tipo (venta, compra, producción, persona, etc.)
+- **Formato**: pdf, excel, word, txt
+- **Generado por**: usuario que lo generó
+- **Email enviado**: true/false
+- **Destinatario**: email a quien se envió (si aplica)
+- **Fecha** de generación
+- **Metadata**: info adicional en JSON (número de comprobante, etc.)
+
+**Cómo verlo:**
+1. Ir a **Configuración → Documentos**
+2. Debajo del editor de plantillas está el **Historial**
+3. Filtrar por tipo o ver todos, ordenados por fecha descendente
+
+💡 Útil para **auditoría**: saber qué documentos se generaron, quién los generó y cuáles se enviaron por email.`,
+  },
+  {
+    keywords: ['exportar dashboard', 'pdf dashboard', 'imprimir dashboard', 'excel alertas', 'exportar alertas', 'resumen dashboard pdf', 'dashboard pdf'],
+    response: `📊 **Exportar el Dashboard**
+
+Desde el Dashboard podés exportar:
+
+**1. Resumen en PDF / Imprimir**
+- Botón **"PDF"** (descarga) y **"Imprimir"** en el header del Dashboard
+- Incluye: KPIs (indicadores clave), flujo de trabajo (5 etapas con estado) y alertas agrupadas por etapa
+- Útil para compartir el estado del negocio o archivarlo
+
+**2. Alertas a Excel**
+- Botón **"Alertas Excel"** en el header del Dashboard
+- Exporta todas las alertas de "Pasos Pendientes" con su nivel de severidad y acción recomendada
+
+**Dónde están los botones:** en la parte superior del Dashboard (\`/admin/dashboard\`), junto al título.
+
+💡 El PDF del Dashboard se genera con \`@react-pdf/renderer\` (componente \`DashboardPDFExport\`). Las alertas se exportan con \`xlsx\`.`,
   },
 ]
 
