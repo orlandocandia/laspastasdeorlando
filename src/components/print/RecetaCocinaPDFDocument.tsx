@@ -97,12 +97,12 @@ const formatDate = (dateStr: string) => {
 
 export function RecetaCocinaPDFDocument({ receta }: { receta: RecetaCocinaPDFData }) {
   return (
-    <Document title={`Receta: ${receta.titulo}`} author="Pastas Orlando" subject="Receta de Cocina">
+    <Document title={`Receta: ${receta.titulo}`} author="El Amigo de las Pastas" subject="Receta de Cocina">
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.headerRow}>
           <View style={styles.empresaBlock}>
-            <Text style={styles.empresaNombre}>Pastas Orlando</Text>
+            <Text style={styles.empresaNombre}>El Amigo de las Pastas</Text>
             <Text style={styles.empresaSub}>Recetas de Cocina</Text>
           </View>
           <View style={styles.recetaBlock}>
@@ -151,7 +151,7 @@ export function RecetaCocinaPDFDocument({ receta }: { receta: RecetaCocinaPDFDat
 
         {/* Footer */}
         <View style={styles.footer} fixed>
-          <Text>Receta creada el {formatDate(receta.createdAt)} — Pastas Orlando</Text>
+          <Text>Receta creada el {formatDate(receta.createdAt)} — El Amigo de las Pastas</Text>
         </View>
       </Page>
     </Document>

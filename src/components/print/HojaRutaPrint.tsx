@@ -25,7 +25,7 @@ interface HojaRutaPrintProps {
 const HojaRutaPrint = forwardRef<HTMLDivElement, HojaRutaPrintProps>(
   ({ fecha, entregas, empresa }, ref) => {
     const empresaData = empresa || {
-      nombre: 'Pastas Orlando',
+      nombre: 'El Amigo de las Pastas',
       direccion: 'Posadas, Misiones',
       telefono: '3754-419324',
     }

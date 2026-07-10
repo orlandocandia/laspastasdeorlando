@@ -15,7 +15,7 @@ export const FICHA_COLORS = {
 }
 
 export const FICHA_EMPRESA = {
-  nombre: 'Pastas Orlando',
+  nombre: 'El Amigo de las Pastas',
   direccion: 'Posadas, Misiones',
   telefono: '3754-419324',
   email: 'laspastasdeorlando@gmail.com',

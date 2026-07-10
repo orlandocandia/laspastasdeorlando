@@ -172,7 +172,7 @@ async function autoMigrateTurso(client: Client) {
     {
     sql: `CREATE TABLE IF NOT EXISTS "ConfigDocumento" (
       "id" INTEGER PRIMARY KEY DEFAULT 1,
-      "empresa_nombre" TEXT NOT NULL DEFAULT 'Pastas Orlando',
+      "empresa_nombre" TEXT NOT NULL DEFAULT 'El Amigo de las Pastas',
       "empresa_direccion" TEXT NOT NULL DEFAULT 'Posadas, Misiones',
       "empresa_telefono" TEXT NOT NULL DEFAULT '3754-419324',
       "empresa_email" TEXT NOT NULL DEFAULT 'laspastasdeorlando@gmail.com',

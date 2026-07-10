@@ -39,7 +39,7 @@ interface PresupuestoPDFProps {
 const PresupuestoPDF = forwardRef<HTMLDivElement, PresupuestoPDFProps>(
   ({ presupuesto, cliente, productos, empresa }, ref) => {
     const empresaData = empresa || {
-      nombre: 'Pastas Orlando',
+      nombre: 'El Amigo de las Pastas',
       direccion: 'Posadas, Misiones',
       telefono: '3754-419324',
       email: process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'laspastasdeorlando@gmail.com',

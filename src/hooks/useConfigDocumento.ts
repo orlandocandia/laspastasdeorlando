@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { ConfigDocumentoData } from '@/lib/config-documento'
 
 const DEFAULTS: ConfigDocumentoData = {
-  empresa_nombre: 'Pastas Orlando',
+  empresa_nombre: 'El Amigo de las Pastas',
   empresa_direccion: 'Posadas, Misiones',
   empresa_telefono: '3754-419324',
   empresa_email: 'laspastasdeorlando@gmail.com',

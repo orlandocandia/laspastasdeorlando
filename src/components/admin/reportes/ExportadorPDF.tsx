@@ -23,7 +23,7 @@ export default function ExportadorPDF({ data, filename, title, columns, modulo, 
 
     // Title
     doc.setFontSize(18)
-    doc.text('Pastas Orlando', 14, 20)
+    doc.text('El Amigo de las Pastas', 14, 20)
     doc.setFontSize(12)
     doc.text(title, 14, 30)
     doc.setFontSize(8)

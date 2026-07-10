@@ -48,7 +48,7 @@ const COLORS = {
 }
 
 const EMPRESA = {
-  nombre: 'Pastas Orlando',
+  nombre: 'El Amigo de las Pastas',
   direccion: 'Posadas, Misiones',
   telefono: '3754-419324',
   email: 'laspastasdeorlando@gmail.com',
@@ -113,6 +113,7 @@ function FacturaDocument({ venta, qrContent }: { venta: VentaDocData; qrContent?
         <View style={facturaStyles.headerRow}>
           <View style={facturaStyles.empresaBlock}>
             <Text style={facturaStyles.empresaNombre}>{EMPRESA.nombre}</Text>
+            <Text style={{ fontSize: 9, color: COLORS.mostaza, fontStyle: 'italic', marginTop: 1 }}>Pastas artesanales con sabor a tradición</Text>
             <Text style={facturaStyles.empresaLine}>{EMPRESA.direccion}</Text>
             <Text style={facturaStyles.empresaLine}>Tel: {EMPRESA.telefono} — {EMPRESA.email}</Text>
             <Text style={facturaStyles.empresaLine}>CUIT: {EMPRESA.cuit} — {EMPRESA.condicionIVA}</Text>
@@ -211,6 +212,7 @@ function TicketDocument({ venta }: { venta: VentaDocData }) {
     <Document title={`Ticket ${comprobante}`} author={EMPRESA.nombre} subject="Ticket">
       <Page size={{ width: 300, height: 'auto' }} style={ticketStyles.page}>
         <Text style={ticketStyles.empresaNombre}>{EMPRESA.nombre}</Text>
+            <Text style={{ fontSize: 9, color: COLORS.mostaza, fontStyle: 'italic', marginTop: 1 }}>Pastas artesanales con sabor a tradición</Text>
         <Text style={ticketStyles.empresaLine}>{EMPRESA.direccion} — Tel: {EMPRESA.telefono}</Text>
         <Text style={ticketStyles.empresaLine}>CUIT: {EMPRESA.cuit}</Text>
         <View style={ticketStyles.separator} />
@@ -289,6 +291,7 @@ function RemitoDocument({ venta }: { venta: VentaDocData }) {
         <View style={remitoStyles.headerRow}>
           <View style={remitoStyles.empresaBlock}>
             <Text style={remitoStyles.empresaNombre}>{EMPRESA.nombre}</Text>
+            <Text style={{ fontSize: 9, color: COLORS.mostaza, fontStyle: 'italic', marginTop: 1 }}>Pastas artesanales con sabor a tradición</Text>
             <Text style={remitoStyles.empresaLine}>{EMPRESA.direccion}</Text>
             <Text style={remitoStyles.empresaLine}>Tel: {EMPRESA.telefono} — CUIT: {EMPRESA.cuit}</Text>
           </View>
@@ -398,6 +401,7 @@ function OrdenVentaDocument({ venta }: { venta: VentaDocData }) {
         <View style={ordenStyles.headerRow}>
           <View style={ordenStyles.empresaBlock}>
             <Text style={ordenStyles.empresaNombre}>{EMPRESA.nombre}</Text>
+            <Text style={{ fontSize: 9, color: COLORS.mostaza, fontStyle: 'italic', marginTop: 1 }}>Pastas artesanales con sabor a tradición</Text>
             <Text style={ordenStyles.empresaLine}>{EMPRESA.direccion} — Tel: {EMPRESA.telefono}</Text>
           </View>
           <View style={ordenStyles.docBlock}>

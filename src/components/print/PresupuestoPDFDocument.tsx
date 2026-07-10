@@ -231,7 +231,7 @@ export function PresupuestoPDFDocument({
   empresa,
 }: PresupuestoPDFData) {
   const empresaData = empresa || {
-    nombre: 'Pastas Orlando',
+    nombre: 'El Amigo de las Pastas',
     direccion: 'Posadas, Misiones',
     telefono: '3754-419324',
     email: 'laspastasdeorlando@gmail.com',
@@ -251,6 +251,7 @@ export function PresupuestoPDFDocument({
         <View style={styles.headerRow}>
           <View style={styles.empresaBlock}>
             <Text style={styles.empresaNombre}>{empresaData.nombre}</Text>
+            <Text style={{ fontSize: 9, color: COLORS.mostaza, fontStyle: 'italic', marginTop: 1 }}>Pastas artesanales con sabor a tradición</Text>
             <Text style={styles.empresaLine}>{empresaData.direccion}</Text>
             <Text style={styles.empresaLine}>Tel: {empresaData.telefono}</Text>
             <Text style={styles.empresaLine}>{empresaData.email}</Text>

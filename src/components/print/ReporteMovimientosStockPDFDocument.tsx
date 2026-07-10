@@ -50,7 +50,7 @@ const COLORS = {
 }
 
 const EMPRESA = {
-  nombre: 'Pastas Orlando',
+  nombre: 'El Amigo de las Pastas',
   direccion: 'Posadas, Misiones',
   telefono: '3754-419324',
   cuit: '20-12345678-9',

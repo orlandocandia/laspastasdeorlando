@@ -56,7 +56,7 @@ const COLORS = {
 }
 
 const EMPRESA = {
-  nombre: 'Pastas Orlando',
+  nombre: 'El Amigo de las Pastas',
   direccion: 'Posadas, Misiones',
   telefono: '3754-419324',
   email: 'laspastasdeorlando@gmail.com',
@@ -174,6 +174,7 @@ export function OrdenProduccionPDFDocument({ orden, qrContent }: { orden: OrdenP
         <View style={styles.headerRow}>
           <View style={styles.empresaBlock}>
             <Text style={styles.empresaNombre}>{EMPRESA.nombre}</Text>
+            <Text style={{ fontSize: 9, color: COLORS.mostaza, fontStyle: 'italic', marginTop: 1 }}>Pastas artesanales con sabor a tradición</Text>
             <Text style={styles.empresaLine}>{EMPRESA.direccion}</Text>
             <Text style={styles.empresaLine}>Tel: {EMPRESA.telefono} — {EMPRESA.email}</Text>
           </View>

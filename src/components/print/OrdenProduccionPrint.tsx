@@ -30,7 +30,7 @@ interface OrdenProduccionPrintProps {
 const OrdenProduccionPrint = forwardRef<HTMLDivElement, OrdenProduccionPrintProps>(
   ({ orden, ingredientes, costoTotalEstimado, empresa }, ref) => {
     const empresaData = empresa || {
-      nombre: 'Pastas Orlando',
+      nombre: 'El Amigo de las Pastas',
       direccion: 'Posadas, Misiones',
     }
 

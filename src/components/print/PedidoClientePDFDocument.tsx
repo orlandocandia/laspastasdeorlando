@@ -51,7 +51,7 @@ const COLORS = {
 }
 
 const EMPRESA = {
-  nombre: 'Pastas Orlando',
+  nombre: 'El Amigo de las Pastas',
   direccion: 'Posadas, Misiones',
   telefono: '3754-419324',
   email: 'laspastasdeorlando@gmail.com',
@@ -127,6 +127,7 @@ function OrdenPedidoDocument({ pedido }: { pedido: PedidoClienteDocData }) {
         <View style={ordenStyles.headerRow}>
           <View style={ordenStyles.empresaBlock}>
             <Text style={ordenStyles.empresaNombre}>{EMPRESA.nombre}</Text>
+            <Text style={{ fontSize: 9, color: COLORS.mostaza, fontStyle: 'italic', marginTop: 1 }}>Pastas artesanales con sabor a tradición</Text>
             <Text style={ordenStyles.empresaLine}>{EMPRESA.direccion}</Text>
             <Text style={ordenStyles.empresaLine}>Tel: {EMPRESA.telefono} — CUIT: {EMPRESA.cuit}</Text>
             <Text style={ordenStyles.empresaLine}>IVA: {EMPRESA.condicionIVA}</Text>
@@ -251,6 +252,7 @@ function RemitoPedidoDocument({ pedido }: { pedido: PedidoClienteDocData }) {
         <View style={remitoStyles.headerRow}>
           <View style={remitoStyles.empresaBlock}>
             <Text style={remitoStyles.empresaNombre}>{EMPRESA.nombre}</Text>
+            <Text style={{ fontSize: 9, color: COLORS.mostaza, fontStyle: 'italic', marginTop: 1 }}>Pastas artesanales con sabor a tradición</Text>
             <Text style={remitoStyles.empresaLine}>{EMPRESA.direccion}</Text>
             <Text style={remitoStyles.empresaLine}>Tel: {EMPRESA.telefono} — CUIT: {EMPRESA.cuit}</Text>
           </View>
