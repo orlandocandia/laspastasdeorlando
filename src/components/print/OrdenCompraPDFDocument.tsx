@@ -2,6 +2,7 @@
 
 import {
   Document, Page, Text, View, StyleSheet,
+  Image as PDFImage,
 } from '@react-pdf/renderer'
 
 // ============================================
@@ -170,12 +171,15 @@ const styles = StyleSheet.create({
     borderTopWidth: 1, borderTopColor: '#E5E7EB', paddingTop: 8,
     textAlign: 'center', fontSize: 8, color: COLORS.grisOscuro,
   },
+  qrBox: { position: 'absolute', bottom: 24, right: 36, width: 70, height: 70, alignItems: 'center' },
+  qrImage: { width: 64, height: 64 },
+  qrLabel: { fontSize: 6, color: COLORS.grisOscuro, marginTop: 2, textAlign: 'center' },
 })
 
 // ============================================
 // DOCUMENTO
 // ============================================
-export function OrdenCompraPDFDocument({ compra }: { compra: OrdenCompraData }) {
+export function OrdenCompraPDFDocument({ compra, qrContent }: { compra: OrdenCompraData; qrContent?: string }) {
   const numero = compra.numero_factura || `OC-${String(compra.id).padStart(6, '0')}`
   return (
     <Document title={`Orden de Compra ${numero}`} author={EMPRESA.nombre} subject="Orden de Compra">
@@ -296,6 +300,12 @@ export function OrdenCompraPDFDocument({ compra }: { compra: OrdenCompraData }) 
           </View>
         </View>
 
+        {qrContent ? (
+          <View style={styles.qrBox} fixed>
+            <PDFImage style={styles.qrImage} src={qrContent} />
+            <Text style={styles.qrLabel}>Escanear para verificar</Text>
+          </View>
+        ) : null}
         {/* Footer */}
         <View style={styles.footer} fixed>
           <Text>Orden de Compra {numero} — {EMPRESA.nombre} — {EMPRESA.direccion} — CUIT: {EMPRESA.cuit}</Text>

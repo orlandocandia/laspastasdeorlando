@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import VentasPrintMenu from '@/components/admin/VentasPrintMenu'
+import EnviarEmailDocumento from '@/components/admin/EnviarEmailDocumento'
 
 interface DetalleVenta {
   id: number
@@ -137,6 +138,12 @@ export default function VentaDetailPage() {
               subtotal: d.subtotal,
             })),
           }}
+        />
+        <EnviarEmailDocumento
+          tipo="factura"
+          id={venta.id}
+          label={`Factura ${venta.numero_comprobante || `V-${String(venta.id).padStart(6, '0')}`}`}
+          variant="sm"
         />
       </div>
 

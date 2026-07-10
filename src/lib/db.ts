@@ -167,6 +167,49 @@ async function autoMigrateTurso(client: Client) {
     { sql: 'CREATE INDEX IF NOT EXISTS "RecetaCocina_categoria_idx" ON "RecetaCocina"("categoria")', desc: 'RecetaCocina_categoria_idx' },
     { sql: 'CREATE INDEX IF NOT EXISTS "RecetaCocina_visible_en_landing_idx" ON "RecetaCocina"("visible_en_landing")', desc: 'RecetaCocina_visible_en_landing_idx' },
     { sql: 'CREATE INDEX IF NOT EXISTS "RecetaCocina_destacado_idx" ON "RecetaCocina"("destacado")', desc: 'RecetaCocina_destacado_idx' },
+
+    // ── CREATE TABLE ConfigDocumento (configuración de PDFs — singleton id=1) ──
+    {
+    sql: `CREATE TABLE IF NOT EXISTS "ConfigDocumento" (
+      "id" INTEGER PRIMARY KEY DEFAULT 1,
+      "empresa_nombre" TEXT NOT NULL DEFAULT 'Pastas Orlando',
+      "empresa_direccion" TEXT NOT NULL DEFAULT 'Posadas, Misiones',
+      "empresa_telefono" TEXT NOT NULL DEFAULT '3754-419324',
+      "empresa_email" TEXT NOT NULL DEFAULT 'laspastasdeorlando@gmail.com',
+      "empresa_cuit" TEXT NOT NULL DEFAULT '20-12345678-9',
+      "empresa_condicion" TEXT NOT NULL DEFAULT 'Responsable Inscripto',
+      "empresa_inicio_act" TEXT NOT NULL DEFAULT '01/2018',
+      "logo_url" TEXT,
+      "footer_texto" TEXT NOT NULL DEFAULT 'Documento no fiscal — Para uso interno',
+      "mostrar_qr" BOOLEAN NOT NULL DEFAULT 1,
+      "qr_url_base" TEXT NOT NULL DEFAULT '',
+      "texto_condiciones" TEXT NOT NULL DEFAULT 'La mercadería debe entregarse en condiciones óptimas. Cualquier diferencia debe notificarse dentro de las 48 hs.',
+      "color_acento" TEXT NOT NULL DEFAULT '#E1AD01',
+      "updatedAt" DATETIME
+    )`, desc: 'ConfigDocumento table'
+    },
+    // Seed default singleton row (idempotent — INSERT OR IGNORE)
+    { sql: `INSERT OR IGNORE INTO "ConfigDocumento" ("id") VALUES (1)`, desc: 'ConfigDocumento seed row' },
+
+    // ── CREATE TABLE DocumentoGenerado (historial de documentos generados) ──
+    {
+    sql: `CREATE TABLE IF NOT EXISTS "DocumentoGenerado" (
+      "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "tipo" TEXT NOT NULL,
+      "entidad_id" INTEGER NOT NULL,
+      "entidad_tipo" TEXT NOT NULL,
+      "formato" TEXT NOT NULL DEFAULT 'pdf',
+      "generado_por" INTEGER,
+      "email_enviado" BOOLEAN NOT NULL DEFAULT 0,
+      "destinatario" TEXT,
+      "metadata" TEXT,
+      "fecha" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY ("generado_por") REFERENCES "Usuario"("id")
+    )`, desc: 'DocumentoGenerado table'
+    },
+    { sql: 'CREATE INDEX IF NOT EXISTS "DocumentoGenerado_tipo_idx" ON "DocumentoGenerado"("tipo")', desc: 'DocumentoGenerado_tipo_idx' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "DocumentoGenerado_entidad_tipo_entidad_id_idx" ON "DocumentoGenerado"("entidad_tipo", "entidad_id")', desc: 'DocumentoGenerado composite idx' },
+    { sql: 'CREATE INDEX IF NOT EXISTS "DocumentoGenerado_fecha_idx" ON "DocumentoGenerado"("fecha")', desc: 'DocumentoGenerado_fecha_idx' },
   ]
 
   // Data migrations: set seccion for known categories (idempotent — WHERE seccion IS NULL)

@@ -221,6 +221,7 @@ model Usuario {
   twoFactor        Usuario2FA?
   logsAcceso       LogAcceso[]
   sesionesActivas  SesionActiva[]
+  documentosGenerados DocumentoGenerado[]
 
   @@index([email])
 }
@@ -1313,4 +1314,46 @@ model RecetaCocina {
   @@index([categoria])
   @@index([visible_en_landing])
   @@index([destacado])
+}
+
+// ============================================
+// CONFIGURACIÓN DE DOCUMENTOS (Mejoras adicionales)
+// ============================================
+model ConfigDocumento {
+  id                  Int       @id @default(1)
+  // Datos de la empresa (para PDFs)
+  empresa_nombre      String    @default("Pastas Orlando")
+  empresa_direccion   String    @default("Posadas, Misiones")
+  empresa_telefono    String    @default("3754-419324")
+  empresa_email       String    @default("laspastasdeorlando@gmail.com")
+  empresa_cuit        String    @default("20-12345678-9")
+  empresa_condicion   String    @default("Responsable Inscripto")
+  empresa_inicio_act  String    @default("01/2018")
+  logo_url            String?
+  // Personalización de PDFs
+  footer_texto        String    @default("Documento no fiscal — Para uso interno")
+  mostrar_qr          Boolean   @default(true)
+  qr_url_base         String    @default("")
+  texto_condiciones   String    @default("La mercadería debe entregarse en condiciones óptimas. Cualquier diferencia debe notificarse dentro de las 48 hs.")
+  color_acento        String    @default("#E1AD01")
+  updatedAt           DateTime? @updatedAt
+}
+
+model DocumentoGenerado {
+  id            Int       @id @default(autoincrement())
+  tipo          String    // factura | orden_compra | orden_produccion | remito | ficha_producto | etc.
+  entidad_id    Int
+  entidad_tipo  String    // venta | compra | produccion | producto | etc.
+  formato       String    @default("pdf") // pdf | excel | zpl
+  generado_por  Int?      // id_usuario
+  email_enviado Boolean   @default(false)
+  destinatario  String?
+  metadata      String?   // JSON string con info extra (numero comprobante, total, etc.)
+  fecha         DateTime  @default(now())
+
+  usuario       Usuario?  @relation(fields: [generado_por], references: [id])
+
+  @@index([tipo])
+  @@index([entidad_tipo, entidad_id])
+  @@index([fecha])
 }

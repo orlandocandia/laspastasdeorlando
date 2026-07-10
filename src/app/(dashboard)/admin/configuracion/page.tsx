@@ -1,9 +1,11 @@
 'use client'
 
-import { Settings, CreditCard, ListChecks } from 'lucide-react'
+import { Settings, CreditCard, ListChecks, FileText } from 'lucide-react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import FormaPagoManager from '@/components/admin/FormaPagoManager'
 import EstadoGeneralManager from '@/components/admin/EstadoGeneralManager'
+import DocumentoConfigEditor from '@/components/admin/DocumentoConfigEditor'
+import DocumentosHistorial from '@/components/admin/DocumentosHistorial'
 
 export default function ConfiguracionPage() {
   return (
@@ -30,12 +32,20 @@ export default function ConfiguracionPage() {
             <ListChecks className="h-4 w-4" />
             Estados Generales
           </TabsTrigger>
+          <TabsTrigger value="documentos" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Documentos
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="formas-pago" className="mt-4">
           <FormaPagoManager />
         </TabsContent>
         <TabsContent value="estados-generales" className="mt-4">
           <EstadoGeneralManager />
+        </TabsContent>
+        <TabsContent value="documentos" className="mt-4 space-y-8">
+          <DocumentoConfigEditor />
+          <DocumentosHistorial />
         </TabsContent>
       </Tabs>
     </div>

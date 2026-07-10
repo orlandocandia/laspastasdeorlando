@@ -13,6 +13,7 @@ import {
   OrdenCompraPDFDocument,
   type OrdenCompraData,
 } from '@/components/print/OrdenCompraPDFDocument'
+import { useConfigDocumento, maybeGenerateQr } from '@/hooks/useConfigDocumento'
 
 interface ComprasPrintButtonProps {
   compra: OrdenCompraData
@@ -21,11 +22,14 @@ interface ComprasPrintButtonProps {
 
 export default function ComprasPrintButton({ compra, variant = 'icon' }: ComprasPrintButtonProps) {
   const [generating, setGenerating] = useState(false)
+  const { config } = useConfigDocumento()
 
   const handleDownload = async () => {
     setGenerating(true)
     try {
-      const blob = await pdf(<OrdenCompraPDFDocument compra={compra} />).toBlob()
+      const numeroQr = compra.numero_factura || `OC-${String(compra.id).padStart(6, '0')}`
+      const qrContent = (await maybeGenerateQr(config, { tipo: 'orden_compra', id: compra.id, comprobante: numeroQr })) || undefined
+      const blob = await pdf(<OrdenCompraPDFDocument compra={compra} qrContent={qrContent} />).toBlob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -47,7 +51,9 @@ export default function ComprasPrintButton({ compra, variant = 'icon' }: Compras
   const handlePrint = async () => {
     setGenerating(true)
     try {
-      const blob = await pdf(<OrdenCompraPDFDocument compra={compra} />).toBlob()
+      const numeroQrP = compra.numero_factura || `OC-${String(compra.id).padStart(6, '0')}`
+      const qrContentP = (await maybeGenerateQr(config, { tipo: 'orden_compra', id: compra.id, comprobante: numeroQrP })) || undefined
+      const blob = await pdf(<OrdenCompraPDFDocument compra={compra} qrContent={qrContentP} />).toBlob()
       const url = URL.createObjectURL(blob)
       const win = window.open(url, '_blank')
       if (win) {

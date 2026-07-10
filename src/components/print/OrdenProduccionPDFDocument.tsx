@@ -2,6 +2,7 @@
 
 import {
   Document, Page, Text, View, StyleSheet,
+  Image as PDFImage,
 } from '@react-pdf/renderer'
 
 // ============================================
@@ -156,12 +157,15 @@ const styles = StyleSheet.create({
     borderTopWidth: 1, borderTopColor: '#E5E7EB', paddingTop: 8,
     textAlign: 'center', fontSize: 8, color: COLORS.grisOscuro,
   },
+  qrBox: { position: 'absolute', bottom: 24, right: 36, width: 70, height: 70, alignItems: 'center' },
+  qrImage: { width: 64, height: 64 },
+  qrLabel: { fontSize: 6, color: COLORS.grisOscuro, marginTop: 2, textAlign: 'center' },
 })
 
 // ============================================
 // DOCUMENTO
 // ============================================
-export function OrdenProduccionPDFDocument({ orden }: { orden: OrdenProduccionData }) {
+export function OrdenProduccionPDFDocument({ orden, qrContent }: { orden: OrdenProduccionData; qrContent?: string }) {
   const numero = `OP-${String(orden.id).padStart(6, '0')}`
   return (
     <Document title={`Orden de Produccion ${numero}`} author={EMPRESA.nombre} subject="Orden de Produccion">
@@ -291,6 +295,12 @@ export function OrdenProduccionPDFDocument({ orden }: { orden: OrdenProduccionDa
           </View>
         </View>
 
+        {qrContent ? (
+          <View style={styles.qrBox} fixed>
+            <PDFImage style={styles.qrImage} src={qrContent} />
+            <Text style={styles.qrLabel}>Escanear para verificar</Text>
+          </View>
+        ) : null}
         {/* Footer */}
         <View style={styles.footer} fixed>
           <Text>Orden de Produccion {numero} — {EMPRESA.nombre} — Generado el {new Date().toLocaleDateString('es-AR')}</Text>

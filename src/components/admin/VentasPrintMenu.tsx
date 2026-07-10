@@ -15,6 +15,7 @@ import {
   FacturaDocument, TicketDocument, RemitoDocument, OrdenVentaDocument,
   type VentaDocData,
 } from '@/components/print/VentasDocumentPDF'
+import { useConfigDocumento, maybeGenerateQr } from '@/hooks/useConfigDocumento'
 
 interface VentasPrintMenuProps {
   venta: VentaDocData
@@ -31,13 +32,20 @@ const DOC_CONFIG: Record<DocType, { label: string; icon: typeof FileText; compon
 
 export default function VentasPrintMenu({ venta }: VentasPrintMenuProps) {
   const [generating, setGenerating] = useState<DocType | null>(null)
+  const { config: docConfig } = useConfigDocumento()
 
   const handleGenerate = async (type: DocType) => {
     setGenerating(type)
     try {
       const config = DOC_CONFIG[type]
       const DocComponent = config.component
-      const blob = await pdf(<DocComponent venta={venta} />).toBlob()
+      // Generar QR para factura si la config lo permite
+      let qrContent: string | undefined
+      if (type === 'factura') {
+        const comprobanteQr = venta.numero_comprobante || `V-${String(venta.id).padStart(6, '0')}`
+        qrContent = (await maybeGenerateQr(docConfig, { tipo: 'factura', id: venta.id, comprobante: comprobanteQr })) || undefined
+      }
+      const blob = await pdf(<DocComponent venta={venta} qrContent={qrContent} />).toBlob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url

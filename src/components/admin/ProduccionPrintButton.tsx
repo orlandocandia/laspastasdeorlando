@@ -13,6 +13,7 @@ import {
   OrdenProduccionPDFDocument,
   type OrdenProduccionData,
 } from '@/components/print/OrdenProduccionPDFDocument'
+import { useConfigDocumento, maybeGenerateQr } from '@/hooks/useConfigDocumento'
 
 interface ProduccionPrintButtonProps {
   orden: OrdenProduccionData
@@ -21,11 +22,14 @@ interface ProduccionPrintButtonProps {
 
 export default function ProduccionPrintButton({ orden, variant = 'icon' }: ProduccionPrintButtonProps) {
   const [generating, setGenerating] = useState(false)
+  const { config } = useConfigDocumento()
 
   const handleDownload = async () => {
     setGenerating(true)
     try {
-      const blob = await pdf(<OrdenProduccionPDFDocument orden={orden} />).toBlob()
+      const numeroQr = `OP-${String(orden.id).padStart(6, '0')}`
+      const qrContent = (await maybeGenerateQr(config, { tipo: 'orden_produccion', id: orden.id, comprobante: numeroQr })) || undefined
+      const blob = await pdf(<OrdenProduccionPDFDocument orden={orden} qrContent={qrContent} />).toBlob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -47,7 +51,9 @@ export default function ProduccionPrintButton({ orden, variant = 'icon' }: Produ
   const handlePrint = async () => {
     setGenerating(true)
     try {
-      const blob = await pdf(<OrdenProduccionPDFDocument orden={orden} />).toBlob()
+      const numeroQrP = `OP-${String(orden.id).padStart(6, '0')}`
+      const qrContentP = (await maybeGenerateQr(config, { tipo: 'orden_produccion', id: orden.id, comprobante: numeroQrP })) || undefined
+      const blob = await pdf(<OrdenProduccionPDFDocument orden={orden} qrContent={qrContentP} />).toBlob()
       const url = URL.createObjectURL(blob)
       const win = window.open(url, '_blank')
       if (win) {

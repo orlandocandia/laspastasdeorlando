@@ -2,6 +2,7 @@
 
 import {
   Document, Page, Text, View, StyleSheet,
+  Image as PDFImage,
 } from '@react-pdf/renderer'
 
 // Tipos compartidos
@@ -99,9 +100,12 @@ const facturaStyles = StyleSheet.create({
   totalLine: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3, fontSize: 10 },
   totalFinal: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, marginTop: 4, borderTopWidth: 2, borderTopColor: COLORS.marron, fontFamily: 'Helvetica-Bold', fontSize: 13, color: COLORS.marron },
   footer: { position: 'absolute', bottom: 24, left: 36, right: 36, borderTopWidth: 1, borderTopColor: '#E5E7EB', paddingTop: 8, textAlign: 'center', fontSize: 8, color: COLORS.grisOscuro },
+  qrBox: { position: 'absolute', bottom: 24, right: 36, width: 70, height: 70, alignItems: 'center' },
+  qrImage: { width: 64, height: 64 },
+  qrLabel: { fontSize: 6, color: COLORS.grisOscuro, marginTop: 2, textAlign: 'center' },
 })
 
-function FacturaDocument({ venta }: { venta: VentaDocData }) {
+function FacturaDocument({ venta, qrContent }: { venta: VentaDocData; qrContent?: string }) {
   const comprobante = venta.numero_comprobante || `V-${String(venta.id).padStart(6, '0')}`
   return (
     <Document title={`Factura ${comprobante}`} author={EMPRESA.nombre} subject="Factura">
@@ -161,6 +165,12 @@ function FacturaDocument({ venta }: { venta: VentaDocData }) {
           </View>
         </View>
 
+        {qrContent ? (
+          <View style={facturaStyles.qrBox} fixed>
+            <PDFImage style={facturaStyles.qrImage} src={qrContent} />
+            <Text style={facturaStyles.qrLabel}>Escanear para verificar</Text>
+          </View>
+        ) : null}
         <View style={facturaStyles.footer} fixed>
           <Text>{EMPRESA.nombre} — {EMPRESA.direccion} — CUIT: {EMPRESA.cuit}</Text>
           <Text>Documento no fiscal — Para uso interno</Text>
