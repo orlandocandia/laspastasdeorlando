@@ -20,6 +20,10 @@
  * Usuarios demo:
  *  - cocina@laspastasdeorlando.com.ar / cocinero123
  *  - admin@laspastasdeorlando.com.ar / admin123
+ *
+ * NOTA: `useSearchParams()` debe estar envuelto en <Suspense>.
+ * El componente principal exporta un <Suspense> que envuelve a
+ * <LoginContent />, que es donde se usa el hook.
  * ============================================================
  */
 
@@ -55,7 +59,11 @@ type FormState = {
 
 type FieldErrors = Partial<Record<keyof FormState, string>>
 
-export default function CmLoginPage() {
+/**
+ * Componente interno con toda la lógica del login.
+ * Usa `useSearchParams()` (que requiere Suspense en el padre).
+ */
+function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const nextPath = searchParams.get('next') || '/dashboard'
@@ -284,5 +292,25 @@ export default function CmLoginPage() {
         </CardFooter>
       </form>
     </Card>
+  )
+}
+
+/**
+ * Componente principal de la página.
+ * Envuelve <LoginContent /> en un <Suspense> boundary porque
+ * `useSearchParams()` lo requiere (Next.js App Router).
+ * Mientras carga, muestra un spinner simple en la paleta de marca.
+ */
+export default function CmLoginPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-[#E1AD01]" />
+        </div>
+      }
+    >
+      <LoginContent />
+    </React.Suspense>
   )
 }
