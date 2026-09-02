@@ -42,7 +42,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { loginCm } from '@/lib/cocina-movil/auth-client'
+import { loginCm, getRedirectPathByRole } from '@/lib/cocina-movil/auth-client'
 import {
   Eye,
   EyeOff,
@@ -66,7 +66,10 @@ type FieldErrors = Partial<Record<keyof FormState, string>>
 function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const nextPath = searchParams.get('next') || '/dashboard'
+  // Si viene ?next=... en la URL, se usa ese path (explicit redirect).
+  // Si no, se redirige según el rol del usuario:
+  //   admin → /admin/dashboard, cocinero → /cook/dashboard
+  const explicitNext = searchParams.get('next')
 
   const [form, setForm] = React.useState<FormState>({
     email: '',
@@ -109,7 +112,8 @@ function LoginContent() {
       const result = await loginCm(form.email, form.password)
       if (result.ok && result.user) {
         // Redirigir al destino (por defecto /dashboard)
-        router.push(nextPath)
+        const redirectTo = explicitNext || getRedirectPathByRole(result.user.role)
+        router.push(redirectTo)
       } else {
         setSubmitError(
           result.error ||

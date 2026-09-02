@@ -7,18 +7,22 @@
  *  - logout()
  *  - verifySession()
  *  - requestPasswordReset(email)
+ *  - getRedirectPathByRole(role)
  *
  * Maneja el token via cookie HttpOnly (seteada por el servidor)
  * y opcionalmente en localStorage para acceso desde hooks.
  * ============================================================
  */
 
+export type CmRole = 'cocinero' | 'supervisor' | 'admin'
+
 export interface CmUser {
   id: string
   email: string
   name: string
-  role: 'cocinero' | 'supervisor' | 'admin'
+  role: CmRole
   avatar: string
+  isActive: boolean
 }
 
 export interface CmLoginResult {
@@ -28,6 +32,31 @@ export interface CmLoginResult {
 }
 
 const DEFAULT_AVATAR = '/images/(cocina-movil)/default-avatar.png'
+
+/**
+ * Path de redirección según el rol del usuario.
+ * Se usa cuando no hay ?next= explícito en la URL de login.
+ *
+ *  - admin      → /admin/dashboard
+ *  - cocinero   → /cook/dashboard
+ *  - supervisor → /supervisor/dashboard
+ *  - fallback   → /dashboard
+ *
+ * Duplicada del servidor (src/lib/cocina-movil/auth.ts) para
+ * uso client-side sin necesidad de importar código de servidor.
+ */
+export function getRedirectPathByRole(role: CmRole | undefined | null): string {
+  switch (role) {
+    case 'admin':
+      return '/admin/dashboard'
+    case 'cocinero':
+      return '/cook/dashboard'
+    case 'supervisor':
+      return '/supervisor/dashboard'
+    default:
+      return '/dashboard'
+  }
+}
 
 /**
  * Inicia sesión en la Cocina Móvil.

@@ -9,17 +9,20 @@
  * las funciones de este archivo por la lógica de producción.
  *
  * Usuarios demo hardcodeados para pruebas:
- *  - cocina@laspastasdeorlando.com.ar / cocinero123
- *  - admin@laspastasdeorlando.com.ar / admin123
+ *  - cocina@laspastasdeorlando.com.ar / cocinero123  (rol: cocinero)
+ *  - admin@laspastasdeorlando.com.ar   / admin123    (rol: admin)
  * ============================================================
  */
+
+export type CmRole = 'cocinero' | 'supervisor' | 'admin'
 
 export interface CmUser {
   id: string
   email: string
   name: string
-  role: 'cocinero' | 'supervisor' | 'admin'
+  role: CmRole
   avatar?: string | null
+  isActive: boolean
 }
 
 export interface CmSession {
@@ -33,21 +36,23 @@ const DEMO_USERS: Record<string, { password: string; user: CmUser }> = {
   'cocina@laspastasdeorlando.com.ar': {
     password: 'cocinero123',
     user: {
-      id: 'cm-user-001',
+      id: 'cocinero-1',
       email: 'cocina@laspastasdeorlando.com.ar',
-      name: 'Cocinero Demo',
+      name: 'Cocinero',
       role: 'cocinero',
       avatar: null,
+      isActive: true,
     },
   },
   'admin@laspastasdeorlando.com.ar': {
     password: 'admin123',
     user: {
-      id: 'cm-user-002',
+      id: 'admin-1',
       email: 'admin@laspastasdeorlando.com.ar',
-      name: 'Administrador Demo',
+      name: 'Administrador',
       role: 'admin',
       avatar: null,
+      isActive: true,
     },
   },
 }
@@ -59,8 +64,30 @@ const SESSION_TTL_MS = 1000 * 60 * 60 * 8 // 8 horas
 const sessions = new Map<string, CmSession>()
 
 /**
+ * Path de redirección según el rol del usuario.
+ * Se usa cuando no hay ?next= explícito en la URL de login.
+ *
+ *  - admin      → /admin/dashboard
+ *  - cocinero   → /cook/dashboard
+ *  - supervisor → /supervisor/dashboard
+ *  - fallback   → /dashboard
+ */
+export function getRedirectPathByRole(role: CmRole | undefined | null): string {
+  switch (role) {
+    case 'admin':
+      return '/admin/dashboard'
+    case 'cocinero':
+      return '/cook/dashboard'
+    case 'supervisor':
+      return '/supervisor/dashboard'
+    default:
+      return '/dashboard'
+  }
+}
+
+/**
  * Intenta autenticar un usuario con email + contraseña.
- * Retorna null si las credenciales son inválidas.
+ * Retorna null si las credenciales son inválidas o el usuario está inactivo.
  * POR SEGURIDAD: siempre tarda el mismo tiempo (delay artificial).
  */
 export async function authenticateCm(
@@ -73,7 +100,12 @@ export async function authenticateCm(
   const normalizedEmail = email.trim().toLowerCase()
   const record = DEMO_USERS[normalizedEmail]
 
+  // Mensaje genérico tanto si no existe el usuario como si la
+  // contraseña es incorrecta o el usuario está inactivo.
   if (!record || record.password !== password) {
+    return null
+  }
+  if (!record.user.isActive) {
     return null
   }
 
