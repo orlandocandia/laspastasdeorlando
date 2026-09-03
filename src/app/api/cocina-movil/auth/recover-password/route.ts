@@ -124,26 +124,79 @@ export async function POST(request: Request) {
 
   // Enviar email
   try {
+    // Determinar el remitente (FROM).
+    // Prioridad:
+    //   1. CM_SMTP_FROM (dedicado a cocina-móvil, ej: no-reply@laspastasdeorlando.com.ar)
+    //   2. SMTP_FROM (compartido con el sistema principal)
+    //   3. SMTP_USER (fallback: el usuario SMTP como remitente)
+    const smtpUser = process.env.SMTP_USER || ''
     const from =
+      process.env.CM_SMTP_FROM ||
       process.env.SMTP_FROM ||
-      `"Cocina Móvil — El Amigo de las Pastas" <${process.env.SMTP_USER}>`
+      `"Cocina Móvil — El Amigo de las Pastas" <${smtpUser}>`
 
-    console.log('[CocinaMóvil-Recover] Enviando email a:', user.email)
+    // Extraer la dirección de email del campo FROM para detectar self-send.
+    // Gmail (y otros proveedores) silenciosamente filtran o marcan como spam
+    // los emails donde FROM == TO (anti-spam). Si el admin usa el mismo
+    // email como remitente y destinatario, no recibirá el email.
+    const fromEmailMatch = from.match(/<([^>]+)>/) || [from, from]
+    const fromEmail = (fromEmailMatch[1] || from).toLowerCase().trim()
+    const toEmail = user.email.toLowerCase().trim()
+    const isSelfSend = fromEmail === toEmail
+
+    console.log('[CocinaMóvil-Recover] Enviando email:', {
+      to: user.email,
+      from,
+      fromEmail,
+      toEmail,
+      isSelfSend,
+    })
+
+    if (isSelfSend) {
+      console.warn('[CocinaMóvil-Recover] ⚠️ FROM == TO (self-send detectado)')
+      console.warn('[CocinaMóvil-Recover] ⚠️ Gmail filtra self-sends. Configurá CM_SMTP_FROM con un email diferente (ej: no-reply@laspastasdeorlando.com.ar) o usá otra cuenta como destinataria.')
+    }
+
     if (!sendMail) {
       throw new Error('Servidor de email no configurado (smtp-transporter no disponible)')
     }
-    const info = await sendMail({
+
+    // Construir el destinatario. Si es self-send, agregar el email como
+    // reply-to para que el usuario pueda responder, pero el email se envía
+    // a la misma dirección (Gmail debería entregarlo si el SPF/DKIM pasa).
+    const mailOptions: {
+      to: string
+      from: string
+      subject: string
+      html: string
+      text: string
+      replyTo?: string
+      headers?: Record<string, string>
+    } = {
       to: user.email,
       from,
       subject: 'Restablecé tu contraseña — Cocina Móvil',
       html,
       text,
-    })
+    }
+
+    // Si es self-send, agregar headers para reducir la chance de filtrado
+    if (isSelfSend) {
+      mailOptions.headers = {
+        'X-Priority': '1',
+        'X-MSMail-Priority': 'High',
+        'X-Mailer': 'Cocina Móvil — El Amigo de las Pastas',
+      }
+    }
+
+    const info = await sendMail(mailOptions)
 
     console.log('[CocinaMóvil-Recover] ✅ Email enviado:', {
       to: user.email,
+      from,
       messageId: info.messageId,
       response: info.response,
+      isSelfSend,
     })
   } catch (err) {
     console.error('[CocinaMóvil-Recover] ❌ Error enviando email:', err)
