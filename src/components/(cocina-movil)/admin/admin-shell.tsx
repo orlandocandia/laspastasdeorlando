@@ -48,7 +48,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { title: 'Dashboard', href: '/cm/admin/dashboard', icon: LayoutDashboard, enabled: true },
   { title: 'Usuarios', href: '/cm/admin/users', icon: Users, enabled: true },
-  { title: 'Lugares', href: '/cm/admin/lugares', icon: MapPin, enabled: false },
+  { title: 'Lugares', href: '/cm/admin/lugares', icon: MapPin, enabled: true },
   { title: 'Materias Primas', href: '/cm/admin/materias-primas', icon: Package, enabled: false },
   { title: 'Insumos', href: '/cm/admin/insumos', icon: FlaskConical, enabled: false },
   { title: 'Recetas', href: '/cm/admin/recetas', icon: ChefHat, enabled: false },
