@@ -53,9 +53,19 @@ async function exportExcel(users: CmUserRecord[], timestamp: string) {
   const XLSX = await import('xlsx')
   const data = users.map((u, i) => ({
     '#': i + 1,
-    Nombre: u.name,
+    Nombre: u.firstName,
+    Apellido: u.lastName,
+    DNI: u.dni || '',
     Email: u.email,
     Rol: u.role,
+    Género: u.gender || '',
+    'Estado Civil': u.maritalStatus || '',
+    Dirección: u.address || '',
+    País: u.country || '',
+    Provincia: u.province || '',
+    Departamento: u.department || '',
+    Municipio: u.municipality || '',
+    Ubicación: u.location || '',
     Estado: u.isActive ? 'Activo' : 'Inactivo',
     'Último Acceso': u.lastLoginAt ? formatDate(u.lastLoginAt) : 'Nunca',
     'Creado': formatDate(u.createdAt),
@@ -63,7 +73,9 @@ async function exportExcel(users: CmUserRecord[], timestamp: string) {
   const ws = XLSX.utils.json_to_sheet(data)
   // Anchos de columna
   ws['!cols'] = [
-    { wch: 5 }, { wch: 25 }, { wch: 40 }, { wch: 12 }, { wch: 12 }, { wch: 22 }, { wch: 22 },
+    { wch: 5 }, { wch: 20 }, { wch: 20 }, { wch: 12 }, { wch: 35 }, { wch: 12 },
+    { wch: 12 }, { wch: 14 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+    { wch: 15 }, { wch: 12 }, { wch: 22 }, { wch: 22 },
   ]
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Usuarios')
@@ -82,7 +94,7 @@ async function exportWord(users: CmUserRecord[], timestamp: string) {
   const docx = await import('docx')
   const { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType, AlignmentType, HeadingLevel } = docx
 
-  const headerCells = ['#', 'Nombre', 'Email', 'Rol', 'Estado', 'Último Acceso'].map(
+  const headerCells = ['#', 'Nombre', 'Apellido', 'DNI', 'Email', 'Rol', 'Estado', 'Último Acceso'].map(
     (text) =>
       new TableCell({
         children: [new Paragraph({ children: [new TextRun({ text, bold: true })] })],
@@ -96,7 +108,9 @@ async function exportWord(users: CmUserRecord[], timestamp: string) {
       new TableRow({
         children: [
           String(i + 1),
-          u.name,
+          u.firstName,
+          u.lastName,
+          u.dni || '',
           u.email,
           u.role,
           u.isActive ? 'Activo' : 'Inactivo',
@@ -239,12 +253,18 @@ async function exportPdf(users: CmUserRecord[], timestamp: string) {
     doc.line(margin, y + rowHeight, pageWidth - margin, y + rowHeight)
 
     doc.setTextColor(50, 50, 50)
-    doc.text(String(i + 1), colX[0] + 1, y + 5)
-    doc.text(truncate(doc, u.name, colW[1] - 2), colX[1] + 1, y + 5)
-    doc.text(truncate(doc, u.email, colW[2] - 2), colX[2] + 1, y + 5)
-    doc.text(u.role, colX[3] + 1, y + 5)
-    doc.text(u.isActive ? 'Activo' : 'Inactivo', colX[4] + 1, y + 5)
-    doc.text(u.lastLoginAt ? formatDate(u.lastLoginAt) : 'Nunca', colX[5] + 1, y + 5)
+    const rowData = [
+      String(i + 1),
+      truncate(doc, u.firstName + ' ' + u.lastName, colW[1] - 2),
+      truncate(doc, u.dni || '', colW[2] - 2),
+      truncate(doc, u.email, colW[3] - 2),
+      u.role,
+      u.isActive ? 'Activo' : 'Inactivo',
+      u.lastLoginAt ? formatDate(u.lastLoginAt) : 'Nunca',
+    ]
+    for (let c = 0; c < rowData.length; c++) {
+      doc.text(rowData[c], colX[c] + 1, y + 5)
+    }
 
     y += rowHeight
   })

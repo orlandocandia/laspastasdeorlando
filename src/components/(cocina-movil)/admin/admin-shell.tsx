@@ -32,6 +32,7 @@ import {
   Menu,
   X,
   ChevronRight,
+  UserCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { logoutCm, getCmUserFromStorage, type CmUser } from '@/lib/cocina-movil/auth-client'
@@ -129,9 +130,13 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
             <div className="text-xs font-semibold text-[#FFF8E7]">{user?.name}</div>
             <div className="text-[10px] text-[#FFF8E7]/60 capitalize">{user?.role}</div>
           </div>
-          <div className="h-8 w-8 rounded-full bg-[#E1AD01] text-[#5C3A21] flex items-center justify-center text-sm font-bold ring-2 ring-[#FFF8E7]/20">
+          <Link
+            href="/cm/profile"
+            className="h-8 w-8 rounded-full bg-[#E1AD01] text-[#5C3A21] flex items-center justify-center text-sm font-bold ring-2 ring-[#FFF8E7]/20 hover:ring-[#FFF8E7]/40 transition-all"
+            title="Mi Perfil"
+          >
             {user?.name?.charAt(0).toUpperCase() || '?'}
-          </div>
+          </Link>
           <Button
             onClick={handleLogout}
             size="icon"
@@ -202,6 +207,23 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
               )
             })}
           </nav>
+
+          {/* Profile link */}
+          <div className="px-2 pt-2 mt-2 border-t border-[#5C3A21]/10">
+            <Link
+              href="/cm/profile"
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                pathname === '/cm/profile'
+                  ? 'bg-[#5C3A21] text-[#FFF8E7]'
+                  : 'text-[#5C3A21] hover:bg-[#5C3A21]/8'
+              )}
+            >
+              <UserCircle className="h-4 w-4 shrink-0" />
+              <span className="flex-1">Mi Perfil</span>
+            </Link>
+          </div>
 
           {/* Footer del sidebar */}
           <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-[#5C3A21]/10 bg-[#F3E8D0]">
