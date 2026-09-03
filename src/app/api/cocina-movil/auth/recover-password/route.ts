@@ -105,9 +105,10 @@ export async function POST(request: Request) {
 
   const { token, user } = result
 
-  // Construir URL de reset (el proxy detecta el subdominio cocinamovil)
-  // Usamos /reset-password?token=XXX que es una ruta exclusiva de cocina-movil
-  const resetUrl = `${APP_URL.replace(/\/$/, '')}/reset-password?token=${token}`
+  // Construir URL de reset.
+  // Usamos /cm/reset-password?token=XXX para evitar conflicto con la ruta
+  // /reset-password del sistema principal (src/app/(auth)/reset-password).
+  const resetUrl = `${APP_URL.replace(/\/$/, '')}/cm/reset-password?token=${token}`
 
   // Generar email HTML + texto
   const html = buildPasswordResetEmailHtml({
