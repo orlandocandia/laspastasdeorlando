@@ -9,8 +9,8 @@
  * las funciones de este archivo por la lógica de producción.
  *
  * Usuarios demo hardcodeados para pruebas:
- *  - cocina@laspastasdeorlando.com.ar / cocinero123  (rol: cocinero)
- *  - admin@laspastasdeorlando.com.ar   / admin123    (rol: admin)
+ *  - proyectos.orlando.candia@gmail.com / cocinero123  (rol: cocinero)
+ *  - orlando.candia@gmail.com   / admin123    (rol: admin)
  * ============================================================
  */
 
@@ -33,22 +33,22 @@ export interface CmSession {
 
 // ----- Usuarios demo (reemplazar por consulta a Prisma) -----
 const DEMO_USERS: Record<string, { password: string; user: CmUser }> = {
-  'cocina@laspastasdeorlando.com.ar': {
+  'proyectos.orlando.candia@gmail.com': {
     password: 'cocinero123',
     user: {
       id: 'cocinero-1',
-      email: 'cocina@laspastasdeorlando.com.ar',
+      email: 'proyectos.orlando.candia@gmail.com',
       name: 'Cocinero',
       role: 'cocinero',
       avatar: null,
       isActive: true,
     },
   },
-  'admin@laspastasdeorlando.com.ar': {
+  'orlando.candia@gmail.com': {
     password: 'admin123',
     user: {
       id: 'admin-1',
-      email: 'admin@laspastasdeorlando.com.ar',
+      email: 'orlando.candia@gmail.com',
       name: 'Administrador',
       role: 'admin',
       avatar: null,

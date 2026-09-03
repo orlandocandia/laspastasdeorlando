@@ -175,7 +175,7 @@ export default function CmRecoverPasswordPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="cocina@laspastasdeorlando.com.ar"
+                placeholder="proyectos.orlando.candia@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"

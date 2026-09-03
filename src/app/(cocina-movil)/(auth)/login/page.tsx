@@ -18,8 +18,8 @@
  * Conectado a API: POST /api/cocina-movil/auth/login
  *
  * Usuarios demo:
- *  - cocina@laspastasdeorlando.com.ar / cocinero123
- *  - admin@laspastasdeorlando.com.ar / admin123
+ *  - proyectos.orlando.candia@gmail.com / cocinero123
+ *  - orlando.candia@gmail.com / admin123
  *
  * NOTA: `useSearchParams()` debe estar envuelto en <Suspense>.
  * El componente principal exporta un <Suspense> que envuelve a
@@ -169,7 +169,7 @@ function LoginContent() {
               <Input
                 id="email"
                 type="email"
-                placeholder="cocina@laspastasdeorlando.com.ar"
+                placeholder="proyectos.orlando.candia@gmail.com"
                 value={form.email}
                 onChange={(e) => updateField('email', e.target.value)}
                 autoComplete="email"
@@ -262,8 +262,8 @@ function LoginContent() {
           {process.env.NODE_ENV !== 'production' && (
             <div className="text-[11px] text-[#8A7E70] bg-[#5C3A21]/5 border border-[#5C3A21]/10 rounded-md px-3 py-2 space-y-0.5">
               <p className="font-semibold text-[#5C3A21]">Credenciales demo:</p>
-              <p>cocina@laspastasdeorlando.com.ar / cocinero123</p>
-              <p>admin@laspastasdeorlando.com.ar / admin123</p>
+              <p>proyectos.orlando.candia@gmail.com / cocinero123</p>
+              <p>orlando.candia@gmail.com / admin123</p>
             </div>
           )}
         </CardContent>
