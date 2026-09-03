@@ -20,12 +20,16 @@ export async function POST(request: Request) {
   revokeCmSession(token)
 
   const response = NextResponse.json({ ok: true, message: 'Sesión cerrada.' })
+  // Para eliminar correctamente una cookie con domain, hay que setear
+  // el MISMO domain (si no, el navegador no la borra).
+  const isProd = process.env.NODE_ENV === 'production'
   response.cookies.set('cm_session', '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProd,
     sameSite: 'lax',
     path: '/',
     maxAge: 0,
+    ...(isProd ? { domain: '.laspastasdeorlando.com.ar' } : {}),
   })
   return response
 }

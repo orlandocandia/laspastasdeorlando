@@ -69,12 +69,18 @@ export async function POST(request: Request) {
     expiresAt: session.expiresAt,
   })
 
+  // Cookie accesible desde el subdominio cocinamovil.laspastasdeorlando.com.ar
+  // y desde el dominio principal laspastasdeorlando.com.ar.
+  // El punto inicial (.) hace que la cookie se comparta con subdominios.
+  // En localhost no se setea domain para evitar problemas de persistencia.
+  const isProd = process.env.NODE_ENV === 'production'
   response.cookies.set('cm_session', session.token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProd,
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 8, // 8 horas
+    ...(isProd ? { domain: '.laspastasdeorlando.com.ar' } : {}),
   })
 
   return response

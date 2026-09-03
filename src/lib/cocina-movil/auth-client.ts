@@ -48,13 +48,13 @@ const DEFAULT_AVATAR = '/images/(cocina-movil)/default-avatar.png'
 export function getRedirectPathByRole(role: CmRole | undefined | null): string {
   switch (role) {
     case 'admin':
-      return '/admin/dashboard'
+      return '/cm/admin/dashboard'
     case 'cocinero':
-      return '/cook/dashboard'
+      return '/cm/cocina/dashboard'
     case 'supervisor':
-      return '/supervisor/dashboard'
+      return '/cm/supervisor/dashboard'
     default:
-      return '/dashboard'
+      return '/cm/dashboard'
   }
 }
 
