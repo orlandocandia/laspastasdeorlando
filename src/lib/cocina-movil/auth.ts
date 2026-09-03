@@ -241,15 +241,140 @@ export function revokeCmSession(token: string | undefined | null): void {
   }
 }
 
+// Reset tokens guardados en memoria (en prod usar DB/Redis).
+// NOTA: En Vercel serverless, cada instancia tiene su propio Map.
+// Para que el reset funcione entre instancias, el token es STATELESS
+// (firmado con HMAC) y su validez se verifica con la firma + expiración.
+// El Map se usa solo como blacklist de tokens YA USADOS (single-use).
+const usedResetTokens = new Set<string>()
+
+const RESET_TOKEN_TTL_MS = 1000 * 60 * 60 // 1 hora
+
+/**
+ * Crea un token de recuperación de contraseña (stateless, firmado).
+ * El token contiene el email + expiración, firmados con HMAC-SHA256.
+ * No requiere estado servidor para validar (excepto la blacklist de single-use).
+ */
+export function createPasswordResetToken(email: string): string {
+  const normalizedEmail = email.trim().toLowerCase()
+  const payload = JSON.stringify({
+    email: normalizedEmail,
+    expiresAt: Date.now() + RESET_TOKEN_TTL_MS,
+    nonce: crypto.randomBytes(16).toString('hex'), // uniqueness
+  })
+  const payloadB64 = Buffer.from(payload, 'utf-8').toString('base64url')
+  const signature = crypto
+    .createHmac('sha256', CM_AUTH_SECRET)
+    .update(payloadB64)
+    .digest('base64url')
+  return `cmreset_${payloadB64}.${signature}`
+}
+
+/**
+ * Verifica un token de recuperación de contraseña.
+ * Retorna el email si el token es válido y no ha expirado, o null si:
+ *  - la firma no coincide
+ *  - expiró
+ *  - ya fue usado (está en la blacklist single-use)
+ */
+export function verifyPasswordResetToken(token: string): string | null {
+  try {
+    if (!token.startsWith('cmreset_')) return null
+    const stripped = token.slice('cmreset_'.length)
+    const [payloadB64, signature] = stripped.split('.')
+    if (!payloadB64 || !signature) return null
+
+    // Verificar firma
+    const expectedSignature = crypto
+      .createHmac('sha256', CM_AUTH_SECRET)
+      .update(payloadB64)
+      .digest('base64url')
+
+    const sigBuffer = Buffer.from(signature)
+    const expectedBuffer = Buffer.from(expectedSignature)
+    if (sigBuffer.length !== expectedBuffer.length) return null
+    if (!crypto.timingSafeEqual(sigBuffer, expectedBuffer)) return null
+
+    // Decodificar payload
+    const payload = JSON.parse(
+      Buffer.from(payloadB64, 'base64url').toString('utf-8')
+    ) as { email: string; expiresAt: number; nonce: string }
+
+    // Verificar expiración
+    if (Date.now() > payload.expiresAt) {
+      console.log('[CocinaMóvil-Auth] Reset token expired')
+      return null
+    }
+
+    // Verificar single-use (no reutilizable)
+    if (usedResetTokens.has(token)) {
+      console.log('[CocinaMóvil-Auth] Reset token already used (single-use)')
+      return null
+    }
+
+    return payload.email
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Marca un token como usado (single-use). Debe llamarse después de
+ * cambiar la contraseña exitosamente.
+ */
+export function consumePasswordResetToken(token: string): void {
+  usedResetTokens.add(token)
+  console.log('[CocinaMóvil-Auth] Reset token consumed (single-use)')
+}
+
+/**
+ * Busca un usuario por email. Retorna el usuario (sin password) o null.
+ * Case-insensitive, trim.
+ */
+export function findUserByEmail(email: string): CmUser | null {
+  const normalizedEmail = email.trim().toLowerCase()
+  const record = DEMO_USERS[normalizedEmail]
+  return record?.user ?? null
+}
+
+/**
+ * Actualiza la contraseña de un usuario.
+ * En demo: actualiza el Map en memoria (NO persiste entre instancias en Vercel).
+ * En prod: aquí se actualizaría la DB (hash bcrypt).
+ * Retorna true si se actualizó, false si el usuario no existe o está inactivo.
+ */
+export function updateUserPassword(email: string, newPassword: string): boolean {
+  const normalizedEmail = email.trim().toLowerCase()
+  const record = DEMO_USERS[normalizedEmail]
+  if (!record || !record.user.isActive) {
+    console.log('[CocinaMóvil-Auth] Cannot update password: user not found or inactive')
+    return false
+  }
+  // DEMO: actualiza en memoria (en prod: hash bcrypt + DB)
+  record.password = newPassword.trim()
+  console.log('[CocinaMóvil-Auth] Password updated for:', normalizedEmail)
+  return true
+}
+
 /**
  * Registra una solicitud de recuperación de contraseña.
- * En demo: siempre devuelve true (no revela si el email existe).
+ * Genera un token stateless y retorna el email del usuario si existe
+ * (para que el caller pueda enviar el email).
+ * No revela si el email existe o no (el caller debe comportarse igual).
  */
-export async function requestPasswordReset(email: string): Promise<boolean> {
+export async function requestPasswordReset(email: string): Promise<{ token: string; user: CmUser } | null> {
   await new Promise((r) => setTimeout(r, 600))
   const normalizedEmail = email.trim().toLowerCase()
-  console.log(`[CocinaMóvil-Demo] Solicitud de recuperación para: ${normalizedEmail}`)
-  return true
+  const record = DEMO_USERS[normalizedEmail]
+
+  if (!record || !record.user.isActive) {
+    console.log(`[CocinaMóvil-Auth] Password reset requested for unknown/inactive: ${normalizedEmail}`)
+    return null
+  }
+
+  const token = createPasswordResetToken(normalizedEmail)
+  console.log(`[CocinaMóvil-Auth] Password reset token created for: ${normalizedEmail}`)
+  return { token, user: record.user }
 }
 
 /**

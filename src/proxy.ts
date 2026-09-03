@@ -43,6 +43,7 @@ const CM_SUBDOMAIN_PREFIX = 'cocinamovil.'
 const CM_ROUTE_PREFIXES = [
   '/login',
   '/recover-password',
+  '/reset-password',
   '/dashboard',
   '/pedidos',
   '/stock',
