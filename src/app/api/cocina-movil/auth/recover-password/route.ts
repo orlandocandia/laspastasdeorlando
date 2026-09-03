@@ -37,10 +37,16 @@ try {
 
 export const runtime = 'nodejs'
 
-const APP_URL =
+// URL base del subdominio de la Cocina Móvil.
+// En producción: https://cocinamovil.laspastasdeorlando.com.ar
+// En desarrollo: http://localhost:3000 (no hay subdominio real en local)
+const CM_URL =
+  process.env.NEXT_PUBLIC_CM_URL ||
   process.env.NEXT_PUBLIC_APP_URL ||
   process.env.NEXTAUTH_URL ||
   'http://localhost:3000'
+
+console.log('[CocinaMóvil-Recover] CM_URL base:', CM_URL)
 
 export async function POST(request: Request) {
   console.log('[CocinaMóvil-Recover] POST /api/cocina-movil/auth/recover-password')
@@ -108,7 +114,7 @@ export async function POST(request: Request) {
   // Construir URL de reset.
   // Usamos /cm/reset-password?token=XXX para evitar conflicto con la ruta
   // /reset-password del sistema principal (src/app/(auth)/reset-password).
-  const resetUrl = `${APP_URL.replace(/\/$/, '')}/cm/reset-password?token=${token}`
+  const resetUrl = `${CM_URL.replace(/\/$/, '')}/cm/reset-password?token=${token}`
 
   // Generar email HTML + texto
   const html = buildPasswordResetEmailHtml({
