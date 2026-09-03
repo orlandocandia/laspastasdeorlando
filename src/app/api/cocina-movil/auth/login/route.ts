@@ -8,7 +8,8 @@
  * Response 200: { token, user: { id, email, name, role, avatar } }
  * Response 401: { error: "Credenciales inválidas" }
  *
- * NOTA: Implementación DEMO. Ver src/lib/cocina-movil/auth.ts.
+ * NOTA: Implementación DEMO con tokens stateless.
+ * Ver src/lib/cocina-movil/auth.ts.
  * ============================================================
  */
 import { NextResponse } from 'next/server'
@@ -17,10 +18,26 @@ import { authenticateCm } from '@/lib/cocina-movil/auth'
 export const runtime = 'nodejs'
 
 export async function POST(request: Request) {
+  console.log('[CocinaMóvil-Login] ===== POST /api/cocina-movil/auth/login =====')
+  console.log('[CocinaMóvil-Login] NODE_ENV:', process.env.NODE_ENV)
+  console.log('[CocinaMóvil-Login] Request headers:', {
+    'content-type': request.headers.get('content-type'),
+    origin: request.headers.get('origin'),
+    host: request.headers.get('host'),
+    'x-forwarded-host': request.headers.get('x-forwarded-host'),
+  })
+
   let body: { email?: unknown; password?: unknown }
   try {
     body = await request.json()
-  } catch {
+    console.log('[CocinaMóvil-Login] Body parsed OK:', {
+      hasEmail: !!body.email,
+      hasPassword: !!body.password,
+      emailType: typeof body.email,
+      passwordType: typeof body.password,
+    })
+  } catch (err) {
+    console.error('[CocinaMóvil-Login] ❌ Body parse failed:', err)
     return NextResponse.json(
       { error: 'Cuerpo de la solicitud inválido. Se esperaba JSON.' },
       { status: 400 }
@@ -31,6 +48,7 @@ export async function POST(request: Request) {
 
   // Validación de tipos
   if (typeof email !== 'string' || typeof password !== 'string') {
+    console.log('[CocinaMóvil-Login] ❌ Invalid types: email is', typeof email, ', password is', typeof password)
     return NextResponse.json(
       { error: 'Email y contraseña son obligatorios.' },
       { status: 400 }
@@ -38,6 +56,7 @@ export async function POST(request: Request) {
   }
 
   if (!email.trim() || !password.trim()) {
+    console.log('[CocinaMóvil-Login] ❌ Empty email or password')
     return NextResponse.json(
       { error: 'Email y contraseña son obligatorios.' },
       { status: 400 }
@@ -46,34 +65,39 @@ export async function POST(request: Request) {
 
   // Validación básica de formato de email
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    console.log('[CocinaMóvil-Login] ❌ Invalid email format:', email)
     return NextResponse.json(
       { error: 'El formato del email no es válido.' },
       { status: 400 }
     )
   }
 
+  console.log('[CocinaMóvil-Login] Calling authenticateCm...')
   const session = await authenticateCm(email, password)
 
   if (!session) {
-    // Mensaje genérico por seguridad (no revelar si el email existe)
+    console.log('[CocinaMóvil-Login] ❌ authenticateCm returned null — returning 401')
     return NextResponse.json(
       { error: 'Credenciales inválidas. Verificá tu email y contraseña.' },
       { status: 401 }
     )
   }
 
-  // Set HttpOnly cookie con el token (para sesiones del lado servidor)
+  console.log('[CocinaMóvil-Login] ✅ Login success:', {
+    userId: session.user.id,
+    email: session.user.email,
+    role: session.user.role,
+    tokenPrefix: session.token.slice(0, 20) + '...',
+  })
+
+  // Set HttpOnly cookie con el token (stateless — no requiere estado servidor)
+  const isProd = process.env.NODE_ENV === 'production'
   const response = NextResponse.json({
     token: session.token,
     user: session.user,
     expiresAt: session.expiresAt,
   })
 
-  // Cookie accesible desde el subdominio cocinamovil.laspastasdeorlando.com.ar
-  // y desde el dominio principal laspastasdeorlando.com.ar.
-  // El punto inicial (.) hace que la cookie se comparta con subdominios.
-  // En localhost no se setea domain para evitar problemas de persistencia.
-  const isProd = process.env.NODE_ENV === 'production'
   response.cookies.set('cm_session', session.token, {
     httpOnly: true,
     secure: isProd,
@@ -81,6 +105,12 @@ export async function POST(request: Request) {
     path: '/',
     maxAge: 60 * 60 * 8, // 8 horas
     ...(isProd ? { domain: '.laspastasdeorlando.com.ar' } : {}),
+  })
+
+  console.log('[CocinaMóvil-Login] Cookie set:', {
+    domain: isProd ? '.laspastasdeorlando.com.ar' : '(none — localhost)',
+    secure: isProd,
+    sameSite: 'lax',
   })
 
   return response
