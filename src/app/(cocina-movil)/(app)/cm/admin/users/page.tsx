@@ -60,6 +60,7 @@ import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 
 import LocationPicker from '@/components/(cocina-movil)/admin/location-picker'
+import AvatarUploader from '@/components/(cocina-movil)/admin/avatar-uploader'
 import {
   getFullName, getInitials,
   type CmUserRecord, type CmRole, type CmGender, type CmMaritalStatus,
@@ -761,13 +762,15 @@ function UserFormDialog({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5 sm:col-span-2">
-                <Label className="text-[#5C3A21]">Avatar (URL)</Label>
-                <Input
-                  value={form.avatar}
-                  onChange={(e) => setField('avatar', e.target.value)}
-                  placeholder="https://ejemplo.com/avatar.jpg"
-                  className="border-[#5C3A21]/15"
+              <div className="space-y-2 sm:col-span-2">
+                <Label className="text-[#5C3A21]">Avatar</Label>
+                <AvatarUploader
+                  value={form.avatar || null}
+                  onChange={(url) => setField('avatar', url || '')}
+                  initials={getInitials(form)}
+                  role={form.role}
+                  size="lg"
+                  disabled={saving}
                 />
               </div>
             </div>

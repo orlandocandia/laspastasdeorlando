@@ -132,10 +132,14 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
           </div>
           <Link
             href="/cm/profile"
-            className="h-8 w-8 rounded-full bg-[#E1AD01] text-[#5C3A21] flex items-center justify-center text-sm font-bold ring-2 ring-[#FFF8E7]/20 hover:ring-[#FFF8E7]/40 transition-all"
+            className="h-8 w-8 rounded-full bg-[#E1AD01] text-[#5C3A21] flex items-center justify-center text-sm font-bold ring-2 ring-[#FFF8E7]/20 hover:ring-[#FFF8E7]/40 transition-all overflow-hidden"
             title="Mi Perfil"
           >
-            {user?.name?.charAt(0).toUpperCase() || '?'}
+            {user?.avatar ? (
+              <img src={user.avatar} alt={user.name || 'Perfil'} className="h-full w-full object-cover" />
+            ) : (
+              user?.name?.charAt(0).toUpperCase() || '?'
+            )}
           </Link>
           <Button
             onClick={handleLogout}

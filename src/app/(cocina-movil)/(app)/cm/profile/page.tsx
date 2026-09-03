@@ -24,6 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { getCmUserFromStorage, logoutCm, type CmUser } from '@/lib/cocina-movil/auth-client'
 import { getFullName, getInitials, parseLocation, type CmUserRecord } from '@/lib/cocina-movil/users'
 import { toast } from 'sonner'
+import AvatarUploader from '@/components/(cocina-movil)/admin/avatar-uploader'
 
 export default function CmProfilePage() {
   const router = useRouter()
@@ -94,8 +95,12 @@ export default function CmProfilePage() {
       <Card className="border-[#5C3A21]/10 shadow-sm overflow-hidden">
         <div className="h-2 bg-gradient-to-r from-[#5C3A21] via-[#E1AD01] to-[#708238]" />
         <CardContent className="p-6 flex items-center gap-4">
-          <div className="h-20 w-20 rounded-full bg-[#E1AD01] text-[#5C3A21] flex items-center justify-center text-2xl font-bold shrink-0 ring-4 ring-[#E1AD01]/20">
-            {getInitials(u)}
+          <div className="h-20 w-20 rounded-full overflow-hidden bg-[#E1AD01] text-[#5C3A21] flex items-center justify-center text-2xl font-bold shrink-0 ring-4 ring-[#E1AD01]/20">
+            {u.avatar ? (
+              <img src={u.avatar} alt={getFullName(u)} className="h-full w-full object-cover" />
+            ) : (
+              getInitials(u)
+            )}
           </div>
           <div className="min-w-0">
             <h2 className="text-xl font-bold text-[#5C3A21]">{getFullName(u)}</h2>
@@ -289,9 +294,16 @@ function EditProfileDialog({
             <Label className="text-[#5C3A21]">Apellido</Label>
             <Input value={lastName} onChange={(e) => setLastName(e.target.value)} className="border-[#5C3A21]/15" />
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-[#5C3A21]">Avatar (URL)</Label>
-            <Input value={avatar} onChange={(e) => setAvatar(e.target.value)} placeholder="https://…" className="border-[#5C3A21]/15" />
+          <div className="space-y-2">
+            <Label className="text-[#5C3A21]">Avatar</Label>
+            <AvatarUploader
+              value={avatar || null}
+              onChange={(url) => setAvatar(url || '')}
+              initials={getInitials(user)}
+              role={user.role}
+              size="lg"
+              disabled={saving}
+            />
           </div>
           <DialogFooter className="gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>
