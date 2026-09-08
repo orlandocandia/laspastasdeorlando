@@ -1,0 +1,12 @@
+import { NextResponse } from 'next/server'
+import { setRecipeStatus } from '@/lib/cocina-movil/recipes'
+export const runtime = 'nodejs'
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  let body: { isActive?: unknown }
+  try { body = await request.json() } catch { return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 }) }
+  if (typeof body.isActive !== 'boolean') return NextResponse.json({ error: 'isActive debe ser boolean.' }, { status: 400 })
+  const recipe = setRecipeStatus(id, body.isActive)
+  if (!recipe) return NextResponse.json({ error: 'No encontrada' }, { status: 404 })
+  return NextResponse.json({ recipe })
+}
