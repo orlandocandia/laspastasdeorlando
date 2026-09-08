@@ -57,7 +57,7 @@ const NAV_ITEMS: NavItem[] = [
   { title: 'Compras', href: '/cm/admin/compras', icon: ShoppingCart, enabled: true },
   { title: 'Recetas', href: '/cm/admin/recetas', icon: ChefHat, enabled: true },
   { title: 'Producciones', href: '/cm/admin/producciones', icon: Factory, enabled: true },
-  { title: 'Presupuestos', href: '/cm/admin/presupuestos', icon: FileText, enabled: false },
+  { title: 'Presupuestos', href: '/cm/admin/presupuestos', icon: FileText, enabled: true },
 ]
 
 export default function CmAdminShell({ children }: { children: React.ReactNode }) {
