@@ -12,7 +12,10 @@ import type { Metadata } from 'next'
 import CmAdminShell from '@/components/(cocina-movil)/admin/admin-shell'
 
 export const metadata: Metadata = {
-  title: 'Dashboard — Cocina Móvil',
+  title: {
+    default: 'Dashboard — Cocina Móvil',
+    template: '%s — Cocina Móvil',
+  },
   description: 'Panel de administración de la Cocina Móvil',
   robots: { index: false, follow: false },
 }

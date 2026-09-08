@@ -23,6 +23,7 @@ export interface CmPrinterSettings {
   logoUrl: string | null
   thankYouMessage: string
   footerText: string
+  ivaRate: number
 }
 
 const DEFAULT_SETTINGS: CmPrinterSettings = {
@@ -36,6 +37,7 @@ const DEFAULT_SETTINGS: CmPrinterSettings = {
   logoUrl: null,
   thankYouMessage: '¡Gracias por su compra!',
   footerText: 'El Amigo de las Pastas · Cocina Móvil',
+  ivaRate: 21,
 }
 
 let currentSettings: CmPrinterSettings = { ...DEFAULT_SETTINGS }

@@ -202,6 +202,7 @@ export function updateProduction(id: string, updates: Partial<CmProductionInput>
 }
 
 export function setProductionStatus(id: string, status: CmProductionStatus, rejectionReason?: string): CmProductionRecord | null {
+  if (status === 'rejected' && !rejectionReason?.trim()) throw new Error('El motivo de rechazo es obligatorio')
   const p = productionsStore.get(id)
   if (!p) return null
   p.status = status

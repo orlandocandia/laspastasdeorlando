@@ -11,7 +11,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 }) }
   const validStatuses: CmProductionStatus[] = ['pending', 'confirmed', 'rejected']
   if (!validStatuses.includes(body.status as CmProductionStatus)) return NextResponse.json({ error: 'Estado inválido. Usar: pending, confirmed, o rejected.' }, { status: 400 })
-  const prod = setProductionStatus(id, body.status as CmProductionStatus, typeof body.rejectionReason === 'string' ? body.rejectionReason : undefined)
+try {
+    const prod = setProductionStatus(id, body.status as CmProductionStatus, typeof body.rejectionReason === 'string' ? body.rejectionReason : undefined)
   if (!prod) return NextResponse.json({ error: 'No encontrada' }, { status: 404 })
-  return NextResponse.json({ production: prod })
+    return NextResponse.json({ production: prod })
+  } catch (err) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Error al cambiar estado' }, { status: 400 })
+  }
 }

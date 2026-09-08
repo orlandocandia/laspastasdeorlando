@@ -27,6 +27,7 @@ export interface CmSaleRecord {
   profitPercentage: number // (profit / totalPrice) × 100 (auto)
   saleDate: number
   observations: string | null
+  paymentMethod: string
   createdAt: number
   updatedAt: number
 }
@@ -39,6 +40,7 @@ export interface CmSaleInput {
   unitPrice: number
   saleDate?: number
   observations?: string | null
+  paymentMethod?: string
 }
 
 let salesStore: Map<string, CmSaleRecord> = new Map()
@@ -179,6 +181,7 @@ export function createSale(input: CmSaleInput): CmSaleRecord {
     profitPercentage,
     saleDate: input.saleDate || now,
     observations: input.observations?.trim() || null,
+    paymentMethod: input.paymentMethod || 'Efectivo',
     createdAt: now,
     updatedAt: now,
   }
@@ -211,6 +214,7 @@ export function updateSale(id: string, updates: Partial<CmSaleInput>): CmSaleRec
   if (updates.unitPrice !== undefined) s.unitPrice = Number(updates.unitPrice)
   if (updates.saleDate !== undefined) s.saleDate = updates.saleDate
   if (updates.observations !== undefined) s.observations = updates.observations?.trim() || null
+  if (updates.paymentMethod !== undefined) s.paymentMethod = updates.paymentMethod || 'Efectivo'
 
   // Recalcular
   s.totalPrice = s.unitPrice * s.quantity

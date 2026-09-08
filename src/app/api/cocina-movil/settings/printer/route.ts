@@ -29,6 +29,7 @@ export async function PUT(request: Request) {
   if (typeof body.logoUrl === 'string') updates.logoUrl = body.logoUrl
   if (typeof body.thankYouMessage === 'string') updates.thankYouMessage = body.thankYouMessage
   if (typeof body.footerText === 'string') updates.footerText = body.footerText
+  if (typeof body.ivaRate === 'number' && body.ivaRate >= 0 && body.ivaRate <= 100) updates.ivaRate = body.ivaRate
 
   const settings = updatePrinterSettings(updates)
   return NextResponse.json({ settings })

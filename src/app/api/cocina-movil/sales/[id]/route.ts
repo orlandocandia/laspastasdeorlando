@@ -26,6 +26,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (typeof body.unitPrice === 'number') updates.unitPrice = body.unitPrice
   if (typeof body.saleDate === 'number') updates.saleDate = body.saleDate
   if (body.observations !== undefined) updates.observations = typeof body.observations === 'string' ? body.observations : null
+  if (body.paymentMethod !== undefined) updates.paymentMethod = typeof body.paymentMethod === 'string' ? body.paymentMethod : 'Efectivo'
   try {
     const sale = updateSale(id, updates)
     if (!sale) return NextResponse.json({ error: 'No encontrada' }, { status: 404 })

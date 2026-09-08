@@ -31,18 +31,23 @@ interface PrinterSettings {
   logoUrl: string | null
   thankYouMessage: string
   footerText: string
+  ivaRate: number
 }
 
 export default function CmPrinterSettingsPage() {
   const [settings, setSettings] = React.useState<PrinterSettings | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     fetch('/api/cocina-movil/settings/printer')
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        if (!res.ok) throw new Error('HTTP ' + res.status)
+        return res.json()
+      })
       .then((data) => { if (data?.settings) setSettings(data.settings) })
-      .catch(console.error)
+      .catch((err) => { setError(err instanceof Error ? err.message : 'Error al cargar configuración') })
       .finally(() => setLoading(false))
   }, [])
 
@@ -68,10 +73,19 @@ export default function CmPrinterSettingsPage() {
     }
   }
 
-  if (loading || !settings) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="h-8 w-8 animate-spin text-[#E1AD01]" />
+      </div>
+    )
+  }
+
+  if (error || !settings) {
+    return (
+      <div className="py-20 text-center">
+        <p className="text-sm text-[#B91C1C]">Error al cargar configuración: {error || 'Datos no disponibles'}</p>
+        <Button onClick={() => window.location.reload()} variant="outline" className="mt-3 border-[#5C3A21]/20 text-[#5C3A21]">Reintentar</Button>
       </div>
     )
   }
@@ -193,6 +207,19 @@ export default function CmPrinterSettingsPage() {
               onChange={(e) => setField('footerText', e.target.value)}
               className="border-[#5C3A21]/15"
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-[#5C3A21]">Tasa de IVA (%)</Label>
+            <Input
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={settings.ivaRate}
+              onChange={(e) => setField('ivaRate', parseFloat(e.target.value) || 0)}
+              className="border-[#5C3A21]/15 w-32"
+            />
+            <p className="text-xs text-[#8A7E70]">Se aplica en los tickets de venta (default: 21%)</p>
           </div>
         </CardContent>
       </Card>

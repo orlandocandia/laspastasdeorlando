@@ -57,15 +57,16 @@ export async function POST(request: Request) {
   lines.push(line)
 
   // Totals
-  const iva = sale.totalPrice * 0.21
+  const ivaRate = settings.ivaRate || 21
+  const iva = sale.totalPrice * (ivaRate / 100)
   const subtotal = sale.totalPrice - iva
   lines.push(`Subtotal:          $${subtotal.toFixed(2)}`)
-  lines.push(`IVA (21%):         $${iva.toFixed(2)}`)
+  lines.push(`IVA (${ivaRate}%):        $${iva.toFixed(2)}`)
   lines.push(`TOTAL:             $${sale.totalPrice.toFixed(2)}`)
   lines.push(line)
 
   // Payment
-  lines.push(`Forma de pago: Efectivo`)
+  lines.push(`Forma de pago: ${sale.paymentMethod || 'Efectivo'}`)
   lines.push(line)
 
   // Footer
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
   lines.push(center(settings.footerText))
   lines.push('')
   lines.push(center('Pastas artesanales con'))
-  lines.push(center('sabor a tradicion'))
+  lines.push(center('sabor a tradición'))
   lines.push('')
   lines.push(line)
 

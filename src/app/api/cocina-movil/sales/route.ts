@@ -37,6 +37,7 @@ export async function POST(request: Request) {
     unitPrice: body.unitPrice,
     saleDate: typeof body.saleDate === 'number' ? body.saleDate : undefined,
     observations: typeof body.observations === 'string' ? body.observations : null,
+    paymentMethod: typeof body.paymentMethod === 'string' ? body.paymentMethod : 'Efectivo',
   }
   try {
     const sale = createSale(input)
