@@ -13,6 +13,7 @@
  * ============================================================
  */
 import { getManualAsText, AYUDA_SECCIONES } from '@/lib/cocina-movil/ayuda-data'
+import { requireAuth } from '@/lib/cocina-movil/auth-middleware'
 
 export const runtime = 'nodejs'
 
@@ -86,6 +87,8 @@ function getFallbackResponse(text: string): string {
 }
 
 export async function POST(request: Request) {
+  const auth = requireAuth(request)
+  if (!auth.authorized) return auth.response!
   try {
     const body = await request.json()
 

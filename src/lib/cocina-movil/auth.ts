@@ -24,6 +24,7 @@
  */
 
 import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
 
 export type CmRole = 'cocinero' | 'supervisor' | 'admin'
 
@@ -45,7 +46,7 @@ export interface CmSession {
 // ----- Usuarios demo (reemplazar por consulta a Prisma) -----
 const DEMO_USERS: Record<string, { password: string; user: CmUser }> = {
   'proyectos.orlando.candia@gmail.com': {
-    password: 'cocinero123',
+    password: '$2b$10$v0mNx1l/bcU/MJSq.mtAleHRtmoPcgGUoOx5v3zx.13JfxAqK1nt6',
     user: {
       id: 'cocinero-1',
       email: 'proyectos.orlando.candia@gmail.com',
@@ -56,7 +57,7 @@ const DEMO_USERS: Record<string, { password: string; user: CmUser }> = {
     },
   },
   'orlando.candia@gmail.com': {
-    password: 'admin123',
+    password: '$2b$10$WxqImx2V98hF1BZUCKZxaupSiqB9QxSpKA.1kHSt4lkDBm1GPn2y.',
     user: {
       id: 'admin-1',
       email: 'orlando.candia@gmail.com',
@@ -74,9 +75,7 @@ const SESSION_TTL_MS = 1000 * 60 * 60 * 8 // 8 horas
 // ----- Secret para firmar tokens (stateless) -----
 // En producción usar una variable de entorno.
 // Fallback a un valor por defecto para dev (NO usar en prod real).
-const CM_AUTH_SECRET =
-  process.env.CM_AUTH_SECRET ||
-  'cocina-movil-demo-secret-change-in-production-2026'
+const CM_AUTH_SECRET = process.env.CM_AUTH_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new Error('CM_AUTH_SECRET no configurado') })() : 'cm-dev-secret-not-for-prod')
 
 /**
  * Path de redirección según el rol del usuario.
@@ -190,7 +189,7 @@ export async function authenticateCm(
 
   // Mensaje genérico tanto si no existe el usuario como si la
   // contraseña es incorrecta o el usuario está inactivo.
-  if (!record || record.password !== normalizedPassword) {
+  if (!record || !await bcrypt.compare(normalizedPassword, record.password)) {
     console.log('[CocinaMóvil-Auth] ❌ Authentication failed: invalid credentials')
     return null
   }
@@ -351,7 +350,7 @@ export function updateUserPassword(email: string, newPassword: string): boolean 
     return false
   }
   // DEMO: actualiza en memoria (en prod: hash bcrypt + DB)
-  record.password = newPassword.trim()
+  record.password = bcrypt.hashSync(newPassword, 10).trim()
   console.log('[CocinaMóvil-Auth] Password updated for:', normalizedEmail)
   return true
 }

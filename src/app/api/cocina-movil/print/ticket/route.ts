@@ -9,10 +9,13 @@
 import { NextResponse } from 'next/server'
 import { getSaleById } from '@/lib/cocina-movil/sales'
 import { getPrinterSettings } from '@/lib/cocina-movil/printer-settings'
+import { requireAuth } from '@/lib/cocina-movil/auth-middleware'
 
 export const runtime = 'nodejs'
 
 export async function POST(request: Request) {
+  const auth = requireAuth(request)
+  if (!auth.authorized) return auth.response!
   let body: { saleId?: unknown }
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 }) }
   const saleId = body.saleId

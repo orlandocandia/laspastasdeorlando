@@ -1,9 +1,12 @@
 import { NextResponse } from 'next/server'
 import { listPlaces, createPlace, type CmPlaceInput } from '@/lib/cocina-movil/places'
+import { requireAuth } from '@/lib/cocina-movil/auth-middleware'
 
 export const runtime = 'nodejs'
 
 export async function GET(request: Request) {
+  const auth = requireAuth(request)
+  if (!auth.authorized) return auth.response!
   const url = new URL(request.url)
   const search = url.searchParams.get('search') || undefined
   const statusParam = url.searchParams.get('isActive') || 'all'
@@ -20,6 +23,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = requireAuth(request)
+  if (!auth.authorized) return auth.response!
   let body: Record<string, unknown>
   try {
     body = await request.json()

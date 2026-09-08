@@ -43,6 +43,7 @@
  */
 
 import crypto from 'crypto'
+import bcrypt from 'bcryptjs'
 
 export type CmRole = 'cocinero' | 'supervisor' | 'admin'
 
@@ -311,7 +312,7 @@ export function createUser(input: CmUserInput): CmUserRecord {
     lastLoginAt: null,
     createdAt: now,
     updatedAt: now,
-    password: input.password,
+    password: bcrypt.hashSync(input.password, 10),
   }
   usersStore.set(id, newUser)
   console.log('[CocinaMóvil-Users] Usuario creado:', id, normalizedEmail)
@@ -381,7 +382,7 @@ export function changeUserPassword(id: string, newPassword: string): boolean {
   if (!newPassword || newPassword.length < 6) {
     throw new Error('La contraseña debe tener al menos 6 caracteres')
   }
-  u.password = newPassword
+  u.password = bcrypt.hashSync(newPassword, 10)
   u.updatedAt = Date.now()
   usersStore.set(id, u)
   console.log('[CocinaMóvil-Users] Contraseña cambiada para:', id)

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getPrinterSettings, updatePrinterSettings, type CmPrinterType, type CmTicketWidth, type CmLabelSize, type CmPrinterPort, type CmPrinterSettings } from '@/lib/cocina-movil/printer-settings'
+import { requireAuth } from '@/lib/cocina-movil/auth-middleware'
 export const runtime = 'nodejs'
 
 export async function GET() {
@@ -7,6 +8,8 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
+  const auth = requireAuth(request)
+  if (!auth.authorized) return auth.response!
   let body: Record<string, unknown>
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 }) }
 

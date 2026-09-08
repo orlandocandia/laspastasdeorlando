@@ -32,6 +32,7 @@ import { listProductions } from '@/lib/cocina-movil/productions'
 import { listBudgets } from '@/lib/cocina-movil/budgets'
 import { listSales } from '@/lib/cocina-movil/sales'
 import { listPurchases } from '@/lib/cocina-movil/purchases'
+import { requireAuth } from '@/lib/cocina-movil/auth-middleware'
 
 export const runtime = 'nodejs'
 

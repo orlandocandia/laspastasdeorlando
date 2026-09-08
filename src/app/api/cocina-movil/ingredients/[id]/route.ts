@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server'
 import { getIngredientById, updateIngredient, deleteIngredient, type CmIngredientCategory, type CmUnit, type CmIngredientInput } from '@/lib/cocina-movil/ingredients'
+import { requireAuth } from '@/lib/cocina-movil/auth-middleware'
 export const runtime = 'nodejs'
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = requireAuth(_request)
+  if (!auth.authorized) return auth.response!
   const { id } = await params
   const ing = getIngredientById(id)
   if (!ing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
@@ -10,6 +13,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = requireAuth(request)
+  if (!auth.authorized) return auth.response!
   const { id } = await params
   let body: Record<string, unknown>
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 }) }
@@ -39,6 +44,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = requireAuth(_request)
+  if (!auth.authorized) return auth.response!
   const { id } = await params
   const ok = deleteIngredient(id)
   if (!ok) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })

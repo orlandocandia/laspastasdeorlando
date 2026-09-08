@@ -9,6 +9,7 @@
  */
 import { NextResponse } from 'next/server'
 import { getUserById, updateUser, deleteUser, type CmRole, type CmGender, type CmMaritalStatus } from '@/lib/cocina-movil/users'
+import { requireAuth } from '@/lib/cocina-movil/auth-middleware'
 
 export const runtime = 'nodejs'
 

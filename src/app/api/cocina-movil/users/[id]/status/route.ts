@@ -7,6 +7,7 @@
  */
 import { NextResponse } from 'next/server'
 import { setUserStatus } from '@/lib/cocina-movil/users'
+import { requireAuth } from '@/lib/cocina-movil/auth-middleware'
 
 export const runtime = 'nodejs'
 
