@@ -35,6 +35,8 @@ import {
   UserCircle,
   Building2,
   ShoppingCart,
+  ShoppingBag,
+  Settings,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { logoutCm, getCmUserFromStorage, type CmUser } from '@/lib/cocina-movil/auth-client'
@@ -58,6 +60,8 @@ const NAV_ITEMS: NavItem[] = [
   { title: 'Recetas', href: '/cm/admin/recetas', icon: ChefHat, enabled: true },
   { title: 'Producciones', href: '/cm/admin/producciones', icon: Factory, enabled: true },
   { title: 'Presupuestos', href: '/cm/admin/presupuestos', icon: FileText, enabled: true },
+  { title: 'Ventas', href: '/cm/admin/ventas', icon: ShoppingBag, enabled: true },
+  { title: 'Configuración', href: '/cm/admin/configuracion/impresoras', icon: Settings, enabled: true },
 ]
 
 export default function CmAdminShell({ children }: { children: React.ReactNode }) {
