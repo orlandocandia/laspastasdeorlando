@@ -20,6 +20,11 @@
 import type { Metadata, Viewport } from 'next'
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_CM_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    'http://localhost:3000'
+  ),
   title: {
     default: 'Cocina Móvil — El Amigo de las Pastas',
     template: '%s · Cocina Móvil',
@@ -68,7 +73,7 @@ export default function CocinaMovilLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="cocina-movil-root min-h-screen flex flex-col bg-[#FFF8E7] text-[#1F1611] antialiased">
+    <div className="cocina-movil-root min-h-screen flex flex-col bg-[#FFF8E7] text-[#1F1611] antialiased scroll-smooth">
       {children}
     </div>
   )

@@ -14,10 +14,21 @@
  */
 import { NextResponse } from 'next/server'
 import { authenticateCm } from '@/lib/cocina-movil/auth'
+import { checkRateLimit, getClientIp, LOGIN_RATE_LIMIT } from '@/lib/cocina-movil/rate-limit'
 
 export const runtime = 'nodejs'
 
 export async function POST(request: Request) {
+  // Rate limiting
+  const ip = getClientIp(request)
+  const rateLimitKey = `login:${ip}`
+  const rateLimit = checkRateLimit(rateLimitKey, LOGIN_RATE_LIMIT)
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Demasiados intentos. Intentá de nuevo en 15 minutos.' },
+      { status: 429 }
+    )
+  }
 
   let body: { email?: unknown; password?: unknown }
   try {

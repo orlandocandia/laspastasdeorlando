@@ -16,6 +16,7 @@
  */
 import { NextResponse } from 'next/server'
 import { requestPasswordReset } from '@/lib/cocina-movil/auth'
+import { checkRateLimit, getClientIp, RECOVER_RATE_LIMIT } from '@/lib/cocina-movil/rate-limit'
 import {
   buildPasswordResetEmailHtml,
   buildPasswordResetEmailText,
@@ -49,6 +50,16 @@ const CM_URL =
 console.log('[CocinaMóvil-Recover] CM_URL base:', CM_URL)
 
 export async function POST(request: Request) {
+  // Rate limiting
+  const ip = getClientIp(request)
+  const rateLimitKey = `recover:${ip}`
+  const rateLimit = checkRateLimit(rateLimitKey, RECOVER_RATE_LIMIT)
+  if (!rateLimit.allowed) {
+    return NextResponse.json(
+      { error: 'Demasiadas solicitudes. Intentá de nuevo en 1 hora.' },
+      { status: 429 }
+    )
+  }
   console.log('[CocinaMóvil-Recover] POST /api/cocina-movil/auth/recover-password')
 
   let body: { email?: unknown }

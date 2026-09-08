@@ -239,6 +239,21 @@ export const AYUDA_SECCIONES: AyudaSeccion[] = [
     ],
     tips: ['Los tickets se imprimen desde el detalle de cada venta.', 'Las etiquetas se imprimen desde el detalle de cada producción.'],
   },
+,
+  {
+    id: 'perfil',
+    titulo: 'Mi Perfil',
+    icono: 'UserCircle',
+    descripcion: 'Página donde cada usuario puede ver y editar sus propios datos personales, cambiar su contraseña y actualizar su avatar.',
+    pasos: [
+      'Hacé clic en tu avatar (iniciales) en la barra superior o en "Mi Perfil" del menú lateral.',
+      'Verás todos tus datos: personales (nombre, apellido, DNI, género, etc.), domicilio y datos de acceso.',
+      'Para editar tu perfil: hacé clic en "Editar Perfil", modificá tu nombre, apellido o avatar, y guardá.',
+      'Para cambiar tu contraseña: hacé clic en "Cambiar Contraseña", ingresá tu contraseña actual, la nueva y confirmá.',
+      'El sistema valida tu contraseña actual antes de permitir el cambio.',
+    ],
+    tips: ['El avatar se sube a Vercel Blob y se muestra como vista previa circular.', 'Si olvidas tu contraseña, usá la opción "Olvidé mi contraseña" en el login.'],
+  },
 ]
 
 /**

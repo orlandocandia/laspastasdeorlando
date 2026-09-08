@@ -273,3 +273,30 @@ La página pública incluye:
 ## 📄 Licencia
 
 Proyecto privado — **laspastasdeorlando** © 2026. Todos los derechos reservados.
+
+## Cocina Móvil (Subdominio)
+
+El subsistema **Cocina Móvil** funciona en el subdominio `cocinamovil.laspastasdeorlando.com.ar`.
+
+### Variables de Entorno Requeridas
+
+| Variable | Descripción | Ejemplo |
+|---|---|---|
+| `CM_AUTH_SECRET` | Secret para firmar tokens de autenticación (HMAC-SHA256). Generar con `openssl rand -hex 32` | (32-byte hex string) |
+| `CM_SMTP_FROM` | Email remitente para emails de cocina-móvil (diferente al admin) | `Cocina Móvil <no-reply@laspastasdeorlando.com.ar>` |
+| `NEXT_PUBLIC_CM_URL` | URL del subdominio cocinamovil | `https://cocinamovil.laspastasdeorlando.com.ar` |
+| `BLOB_READ_WRITE_TOKEN` | Token de Vercel Blob (compartido con sistema principal) | (token de Vercel) |
+| `SMTP_HOST` | Host SMTP (compartido con sistema principal) | `smtp.gmail.com` |
+| `SMTP_USER` | Usuario SMTP (compartido con sistema principal) | (email de Gmail) |
+| `SMTP_PASS` | App password de Gmail | (app password) |
+
+### Credenciales Demo
+
+| Rol | Email | Password |
+|---|---|---|
+| Administrador | `orlando.candia@gmail.com` | `admin123` |
+| Cocinero | `proyectos.orlando.candia@gmail.com` | `cocinero123` |
+
+### Módulos (12 activos)
+
+Dashboard, Usuarios, Lugares, Materias Primas, Insumos, Proveedores, Compras, Recetas, Producciones, Presupuestos, Ventas, Configuración de Impresoras.
