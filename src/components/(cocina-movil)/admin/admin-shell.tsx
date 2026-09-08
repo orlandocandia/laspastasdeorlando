@@ -37,10 +37,12 @@ import {
   ShoppingCart,
   ShoppingBag,
   Settings,
+  HelpCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { logoutCm, getCmUserFromStorage, type CmUser } from '@/lib/cocina-movil/auth-client'
 import { cn } from '@/lib/utils'
+import AsistenteChat from '@/components/(cocina-movil)/asistente/asistente-chat'
 
 interface NavItem {
   title: string
@@ -220,8 +222,21 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
             })}
           </nav>
 
-          {/* Profile link */}
+          {/* Ayuda + Profile links */}
           <div className="px-2 pt-2 mt-2 border-t border-[#5C3A21]/10">
+            <Link
+              href="/cm/ayuda"
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full',
+                pathname === '/cm/ayuda'
+                  ? 'bg-[#5C3A21] text-[#FFF8E7]'
+                  : 'text-[#5C3A21] hover:bg-[#5C3A21]/8'
+              )}
+            >
+              <HelpCircle className="h-4 w-4 shrink-0" />
+              <span className="flex-1 text-left">Ayuda</span>
+            </Link>
             <Link
               href="/cm/profile"
               onClick={() => setSidebarOpen(false)}
@@ -253,6 +268,9 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
           <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">{children}</div>
         </main>
       </div>
+
+      {/* Floating AI Assistant */}
+      <AsistenteChat />
     </div>
   )
 }
