@@ -581,6 +581,7 @@ function UserFormDialog({
   const [form, setForm] = React.useState<UserFormState>(emptyForm)
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [showPassword, setShowPassword] = React.useState(false)
 
   // Sincronizar form cuando se abre el modal
   React.useEffect(() => {
