@@ -362,7 +362,6 @@ function IngredientFormDialog({ open, mode, item, onClose, onSaved }: { open: bo
       const body: Record<string, unknown> = {
         name: form.name, description: form.description || null,
         category: form.category || null, purchaseUnit: form.purchaseUnit,
-        purchasePrice: price,
         gramsPerUnit: form.gramsPerUnit ? parseFloat(form.gramsPerUnit) : null,
         purchaseUnitType: form.purchaseUnitType || null,
         unitsPurchased: form.unitsPurchased ? parseFloat(form.unitsPurchased) : null,
