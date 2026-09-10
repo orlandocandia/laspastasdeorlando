@@ -35,6 +35,7 @@ import { useSearchParams } from 'next/navigation'
 import {
   Plus, Search, Printer, FileText, FileSpreadsheet, FileDown,
   Pencil, Trash2, Key, MoreHorizontal, Loader2, Users as UsersIcon,
+  Eye, EyeOff,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -855,13 +856,23 @@ function UserFormDialog({
               {mode === 'create' && (
                 <div className="space-y-1.5 sm:col-span-2">
                   <Label className="text-[#5C3A21]">Contraseña *</Label>
-                  <Input
-                    type="password"
-                    value={form.password}
-                    onChange={(e) => setField('password', e.target.value)}
-                    placeholder="Mínimo 6 caracteres"
-                    className="border-[#5C3A21]/15"
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      value={form.password}
+                      onChange={(e) => setField('password', e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      className="border-[#5C3A21]/15 pr-9"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((s) => !s)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A7E70] hover:text-[#5C3A21] transition-colors"
+                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
               )}
               <div className="space-y-1.5">
@@ -946,12 +957,16 @@ function PasswordChangeDialog({
   const [confirmPassword, setConfirmPassword] = React.useState('')
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [showNewPassword, setShowNewPassword] = React.useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false)
 
   React.useEffect(() => {
     if (user) {
       setNewPassword('')
       setConfirmPassword('')
       setError(null)
+      setShowNewPassword(false)
+      setShowConfirmPassword(false)
     }
   }, [user])
 
@@ -1000,24 +1015,44 @@ function PasswordChangeDialog({
           )}
           <div className="space-y-1.5">
             <Label className="text-[#5C3A21]">Nueva contraseña</Label>
-            <Input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="••••••••"
-              className="border-[#5C3A21]/15"
-              autoFocus
-            />
+            <div className="relative">
+              <Input
+                type={showNewPassword ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••••"
+                className="border-[#5C3A21]/15 pr-9"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword((s) => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A7E70] hover:text-[#5C3A21] transition-colors"
+                aria-label={showNewPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <div className="space-y-1.5">
             <Label className="text-[#5C3A21]">Confirmar contraseña</Label>
-            <Input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••••"
-              className="border-[#5C3A21]/15"
-            />
+            <div className="relative">
+              <Input
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••••"
+                className="border-[#5C3A21]/15 pr-9"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((s) => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A7E70] hover:text-[#5C3A21] transition-colors"
+                aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <DialogFooter className="gap-2 pt-2">
             <Button type="button" variant="outline" onClick={onClose}>
