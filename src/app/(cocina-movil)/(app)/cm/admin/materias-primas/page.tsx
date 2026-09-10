@@ -76,6 +76,46 @@ const PURCHASE_TYPES = [
   { value: 'litro_suelto', label: 'Litro suelto' },
 ]
 
+// Dynamic labels based on purchase unit type
+function getQuantityLabel(type: string): string {
+  switch (type) {
+    case 'bulto': return 'Cantidad de Bultos'
+    case 'caja': return 'Cantidad de Cajas'
+    case 'botella': return 'Cantidad de Botellas'
+    case 'unidad': return 'Cantidad de Unidades'
+    case 'kg_suelto': return 'Cantidad de Kg'
+    case 'litro_suelto': return 'Cantidad de Litros'
+    default: return 'Cantidad de Unidades'
+  }
+}
+
+function getWeightLabel(type: string): string {
+  switch (type) {
+    case 'bulto': return 'Peso por Bulto (kg)'
+    case 'caja': return 'Peso por Caja (kg)'
+    case 'botella': return 'Volumen por Botella (l)'
+    case 'unidad': return 'Peso por Unidad (g)'
+    default: return 'Peso/Volumen por Unidad'
+  }
+}
+
+function isWeightFieldHidden(type: string): boolean {
+  return type === 'kg_suelto' || type === 'litro_suelto'
+}
+
+// For kg_suelto / litro_suelto: the "quantity" IS the weight/volume
+function getDefaultWeightUnit(type: string): string {
+  switch (type) {
+    case 'bulto': return 'kg'
+    case 'caja': return 'kg'
+    case 'botella': return 'l'
+    case 'unidad': return 'g'
+    case 'kg_suelto': return 'kg'
+    case 'litro_suelto': return 'l'
+    default: return 'kg'
+  }
+}
+
 const WEIGHT_UNITS = [
   { value: 'kg', label: 'kg' },
   { value: 'g', label: 'g' },
@@ -352,23 +392,39 @@ function IngredientFormDialog({ open, mode, item, onClose, onSaved }: { open: bo
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Nombre *</Label><Input value={form.name} onChange={(e) => setField('name', e.target.value)} className="border-[#5C3A21]/15" autoFocus /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Categoría</Label><Select value={form.category || 'none'} onValueChange={(v) => setField('category', v === 'none' ? '' : v)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Sin categoría" /></SelectTrigger><SelectContent><SelectItem value="none">— Sin categoría —</SelectItem>{CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Descripción</Label><Textarea value={form.description} onChange={(e) => setField('description', e.target.value)} className="border-[#5C3A21]/15" rows={2} /></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Tipo de Unidad de Compra</Label><Select value={form.purchaseUnitType || 'none'} onValueChange={(v) => setField('purchaseUnitType', v === 'none' ? '' : v)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Sin tipo" /></SelectTrigger><SelectContent><SelectItem value="none">— Sin tipo —</SelectItem>{PURCHASE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Cantidad de Unidades</Label><Input type="number" step="0.01" min="0" value={form.unitsPurchased} onChange={(e) => setField('unitsPurchased', e.target.value)} placeholder="ej: 1 (bulto), 6 (botellas)" className="border-[#5C3A21]/15" /></div>
-            <div className="space-y-1.5 grid grid-cols-2 gap-2"><div className="space-y-1.5"><Label className="text-[#5C3A21]">Peso/Vol. por Unidad</Label><Input type="number" step="0.01" min="0" value={form.weightPerUnit} onChange={(e) => setField('weightPerUnit', e.target.value)} placeholder="ej: 25" className="border-[#5C3A21]/15" /></div><div className="space-y-1.5"><Label className="text-[#5C3A21]">Unidad</Label><Select value={form.weightUnit} onValueChange={(v) => setField('weightUnit', v)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue /></SelectTrigger><SelectContent>{WEIGHT_UNITS.map((u) => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent></Select></div></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Precio Total Pagado ($)</Label><Input type="number" step="0.01" min="0" value={form.totalPrice} onChange={(e) => setField('totalPrice', e.target.value)} placeholder="ej: 450" className="border-[#5C3A21]/15" /></div>
-            {form.unitsPurchased && form.weightPerUnit && form.totalPrice && parseFloat(form.unitsPurchased) > 0 && parseFloat(form.weightPerUnit) > 0 && parseFloat(form.totalPrice) > 0 && (
-              <div className="bg-[#E1AD01]/10 border border-[#E1AD01]/30 rounded-md p-3 space-y-1">
-                <p className="text-xs font-semibold text-[#7a5c00]">📊 Cálculo automático:</p>
-                <p className="text-sm text-[#5C3A21]">Precio por unidad: <strong>{fmtCurrency(parseFloat(form.totalPrice) / (parseFloat(form.unitsPurchased) * parseFloat(form.weightPerUnit)))}</strong> / {form.weightUnit}</p>
-                <p className="text-sm text-[#5C3A21]">Total: <strong>{(parseFloat(form.unitsPurchased) * parseFloat(form.weightPerUnit)).toLocaleString('es-AR')} {form.weightUnit}</strong>
-                  {form.weightUnit === 'kg' ? ` (${(parseFloat(form.unitsPurchased) * parseFloat(form.weightPerUnit) * 1000).toLocaleString('es-AR')} g)` : form.weightUnit === 'l' ? ` (${(parseFloat(form.unitsPurchased) * parseFloat(form.weightPerUnit) * 1000).toLocaleString('es-AR')} ml)` : ''}
-                </p>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Tipo de Unidad de Compra</Label><Select value={form.purchaseUnitType || 'none'} onValueChange={(v) => {
+              const newType = v === 'none' ? '' : v
+              setField('purchaseUnitType', newType)
+              // Auto-set weight unit based on type
+              if (newType) setField('weightUnit', getDefaultWeightUnit(newType))
+              // For kg_suelto/litro_suelto: weightPerUnit = 1 (quantity IS the weight)
+              if (isWeightFieldHidden(newType)) setField('weightPerUnit', '1')
+            }}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Sin tipo" /></SelectTrigger><SelectContent><SelectItem value="none">— Sin tipo —</SelectItem>{PURCHASE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">{getQuantityLabel(form.purchaseUnitType)}</Label><Input type="number" step="0.01" min="0" value={form.unitsPurchased} onChange={(e) => setField('unitsPurchased', e.target.value)} placeholder={form.purchaseUnitType === 'kg_suelto' ? 'ej: 5 (5 kg sueltos)' : form.purchaseUnitType === 'litro_suelto' ? 'ej: 3 (3 litros sueltos)' : 'ej: 1 (bulto), 6 (botellas)'} className="border-[#5C3A21]/15" /></div>
+            {!isWeightFieldHidden(form.purchaseUnitType) && (
+              <div className="space-y-1.5 grid grid-cols-2 gap-2">
+                <div className="space-y-1.5"><Label className="text-[#5C3A21]">{getWeightLabel(form.purchaseUnitType)}</Label><Input type="number" step="0.01" min="0" value={form.weightPerUnit} onChange={(e) => setField('weightPerUnit', e.target.value)} placeholder="ej: 25" className="border-[#5C3A21]/15" /></div>
+                <div className="space-y-1.5"><Label className="text-[#5C3A21]">Unidad</Label><Select value={form.weightUnit} onValueChange={(v) => setField('weightUnit', v)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue /></SelectTrigger><SelectContent>{WEIGHT_UNITS.map((u) => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent></Select></div>
               </div>
             )}
-            <Separator />
-            <div className="space-y-1.5"><Label className="text-[#5C3A21] text-xs text-[#8A7E70]">Unidad (legacy, opcional)</Label><Select value={form.purchaseUnit} onValueChange={(v) => setField('purchaseUnit', v as CmUnit)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue /></SelectTrigger><SelectContent>{UNITS.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21] text-xs text-[#8A7E70]">Precio (legacy, opcional)</Label><Input type="number" step="0.01" min="0" value={form.purchasePrice} onChange={(e) => setField('purchasePrice', e.target.value)} placeholder="Auto-calculado arriba" className="border-[#5C3A21]/15" /></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21] text-xs text-[#8A7E70]">Gramos (legacy, opcional)</Label><Input type="number" step="0.01" min="0" value={form.gramsPerUnit} onChange={(e) => setField('gramsPerUnit', e.target.value)} placeholder="Auto-calculado arriba" className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Precio Total Pagado ($)</Label><Input type="number" step="0.01" min="0" value={form.totalPrice} onChange={(e) => setField('totalPrice', e.target.value)} placeholder="ej: 450" className="border-[#5C3A21]/15" /></div>
+            {form.unitsPurchased && form.totalPrice && parseFloat(form.unitsPurchased) > 0 && parseFloat(form.totalPrice) > 0 && (
+              <div className="bg-[#E1AD01]/10 border border-[#E1AD01]/30 rounded-md p-3 space-y-1">
+                <p className="text-xs font-semibold text-[#7a5c00]">📊 Cálculo automático:</p>
+                {(() => {
+                  const qty = parseFloat(form.unitsPurchased)
+                  const wpu = isWeightFieldHidden(form.purchaseUnitType) ? 1 : (form.weightPerUnit ? parseFloat(form.weightPerUnit) : 0)
+                  const wu = form.weightUnit || 'kg'
+                  const total = qty * wpu
+                  const pricePerUnit = total > 0 ? parseFloat(form.totalPrice) / total : 0
+                  const totalGrams = wu === 'kg' ? total * 1000 : wu === 'l' ? total * 1000 : wu === 'g' ? total : total
+                  return (<>
+                    <p className="text-sm text-[#5C3A21]">Precio por {wu}: <strong>{fmtCurrency(pricePerUnit)}</strong></p>
+                    <p className="text-sm text-[#5C3A21]">Total: <strong>{total.toLocaleString('es-AR')} {wu}</strong> ({totalGrams.toLocaleString('es-AR')} g)</p>
+                  </>)
+                })()}
+              </div>
+            )}
             {mode === 'edit' && (
               <div className="space-y-1.5 flex items-center gap-3 pt-5"><Label className="text-[#5C3A21]">Activo</Label><Switch checked={form.isActive} onCheckedChange={(v) => setField('isActive', v)} /></div>
             )}
