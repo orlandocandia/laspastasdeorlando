@@ -133,7 +133,7 @@ function seedDemoUsers() {
     lastLoginAt: null,
     createdAt: now,
     updatedAt: now,
-    password: 'admin123',
+    password: '$2b$10$8vh0o3bdE431oET1rzHtxuGcNiEeD9PbYaUeGrfrNKS9EOtO/XhN.',
   }
   const cocinero: CmUserWithPassword = {
     id: 'cocinero-1',
@@ -156,7 +156,7 @@ function seedDemoUsers() {
     lastLoginAt: null,
     createdAt: now,
     updatedAt: now,
-    password: 'cocinero123',
+    password: '$2b$10$b3ijFWAo7jWQc7Wb.E24lueyPyiQs1eGG/5nIQRHGzwahBSHGx.ta',
   }
   usersStore.set(admin.id, admin)
   usersStore.set(cocinero.id, cocinero)
@@ -259,6 +259,20 @@ export function getUserByEmail(email: string): CmUserRecord | null {
   for (const u of usersStore.values()) {
     if (u.email.toLowerCase() === normalized) {
       return stripPassword(u)
+    }
+  }
+  return null
+}
+
+/**
+ * Returns a user WITH password for authentication purposes.
+ * ONLY for internal use by auth.ts — never expose password to API responses.
+ */
+export function getUserWithPasswordByEmail(email: string): CmUserWithPassword | null {
+  const normalized = email.trim().toLowerCase()
+  for (const u of usersStore.values()) {
+    if (u.email.toLowerCase() === normalized) {
+      return u
     }
   }
   return null

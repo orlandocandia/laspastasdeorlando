@@ -25,6 +25,7 @@
 
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
+import { getUserWithPasswordByEmail } from '@/lib/cocina-movil/users'
 
 export type CmRole = 'cocinero' | 'supervisor' | 'admin'
 
@@ -181,38 +182,36 @@ export async function authenticateCm(
   const normalizedEmail = email.trim().toLowerCase()
   const normalizedPassword = password.trim()
 
-  const record = DEMO_USERS[normalizedEmail]
+  // Look up user in the users store (users.ts) — includes both seed users
+  // AND users created via the UI (createUser).
+  const record = getUserWithPasswordByEmail(normalizedEmail)
 
-  // Debug logging (temporal — quitar en producción real)
-  console.log('[CocinaMóvil-Auth] Login attempt:', {
-    emailOriginal: email,
-    emailNormalized: normalizedEmail,
-    userFound: !!record,
-    passwordLength: normalizedPassword.length,
-    expectedPasswordLength: record?.password?.length,
-    passwordMatch: record ? record.password === normalizedPassword : false,
-    isActive: record?.user?.isActive,
-  })
-
-  // Mensaje genérico tanto si no existe el usuario como si la
-  // contraseña es incorrecta o el usuario está inactivo.
-  if (!record || !await bcrypt.compare(normalizedPassword, record.password)) {
-    console.log('[CocinaMóvil-Auth] ❌ Authentication failed: invalid credentials')
-    return null
-  }
-  if (!record.user.isActive) {
-    console.log('[CocinaMóvil-Auth] ❌ Authentication failed: user inactive')
+  if (!record) {
     return null
   }
 
-  console.log('[CocinaMóvil-Auth] ✅ Authentication success:', record.user.email)
+  // Compare password using bcrypt (handles hashed passwords)
+  // Also falls back to direct comparison for legacy plaintext passwords
+  let passwordMatch = false
+  try {
+    passwordMatch = await bcrypt.compare(normalizedPassword, record.password)
+  } catch {
+    passwordMatch = record.password === normalizedPassword
+  }
+
+  if (!passwordMatch) {
+    return null
+  }
+  if (!record.isActive) {
+    return null
+  }
 
   const expiresAt = Date.now() + SESSION_TTL_MS
   const session: CmSession = {
     token: '', // se setea abajo
     user: {
-      ...record.user,
-      avatar: record.user.avatar || DEFAULT_AVATAR,
+      ...record,
+      avatar: record.avatar || DEFAULT_AVATAR,
     },
     expiresAt,
   }
@@ -338,9 +337,10 @@ export function consumePasswordResetToken(token: string): void {
  * Case-insensitive, trim.
  */
 export function findUserByEmail(email: string): CmUser | null {
-  const normalizedEmail = email.trim().toLowerCase()
-  const record = DEMO_USERS[normalizedEmail]
-  return record?.user ?? null
+  const record = getUserWithPasswordByEmail(email)
+  if (!record) return null
+  const { password: _pw, ...userWithoutPassword } = record
+  return userWithoutPassword
 }
 
 /**
@@ -351,8 +351,8 @@ export function findUserByEmail(email: string): CmUser | null {
  */
 export function updateUserPassword(email: string, newPassword: string): boolean {
   const normalizedEmail = email.trim().toLowerCase()
-  const record = DEMO_USERS[normalizedEmail]
-  if (!record || !record.user.isActive) {
+  const record = getUserWithPasswordByEmail(normalizedEmail)
+  if (!record || !record.isActive) {
     console.log('[CocinaMóvil-Auth] Cannot update password: user not found or inactive')
     return false
   }
@@ -371,9 +371,9 @@ export function updateUserPassword(email: string, newPassword: string): boolean 
 export async function requestPasswordReset(email: string): Promise<{ token: string; user: CmUser } | null> {
   await new Promise((r) => setTimeout(r, 600))
   const normalizedEmail = email.trim().toLowerCase()
-  const record = DEMO_USERS[normalizedEmail]
+  const record = getUserWithPasswordByEmail(normalizedEmail)
 
-  if (!record || !record.user.isActive) {
+  if (!record || !record.isActive) {
     console.log(`[CocinaMóvil-Auth] Password reset requested for unknown/inactive: ${normalizedEmail}`)
     return null
   }
