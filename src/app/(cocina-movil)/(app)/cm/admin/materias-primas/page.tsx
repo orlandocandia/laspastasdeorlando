@@ -350,8 +350,12 @@ function IngredientFormDialog({ open, mode, item, onClose, onSaved }: { open: bo
     e.preventDefault()
     setError(null)
     if (!form.name.trim()) return setError('El nombre es obligatorio')
-    const price = parseFloat(form.purchasePrice)
-    if (isNaN(price) || price < 0) return setError('El precio debe ser un número válido')
+    // Validate totalPrice (the new field the user fills in)
+    // purchasePrice is auto-calculated in the backend from totalPrice
+    const totalPrice = parseFloat(form.totalPrice)
+    if (form.totalPrice && (isNaN(totalPrice) || totalPrice < 0)) {
+      return setError('El precio total debe ser un número válido')
+    }
 
     setSaving(true)
     try {
