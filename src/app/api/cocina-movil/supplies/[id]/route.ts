@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getSupplyById, updateSupply, deleteSupply, type CmSupplyCategory, type CmSupplyUnit, type CmSupplyInput } from '@/lib/cocina-movil/supplies'
+import { getSupplyById, updateSupply, deleteSupply, type CmSupplyCategory, type CmSupplyUnit, type CmPurchaseUnitType, type CmMeasureUnit, type CmUsageUnit, type CmSupplyInput } from '@/lib/cocina-movil/supplies'
 import { requireAuth } from '@/lib/cocina-movil/auth-middleware'
 export const runtime = 'nodejs'
 
@@ -33,6 +33,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (body.image !== undefined) updates.image = typeof body.image === 'string' ? body.image : null
   if (body.supplierId !== undefined) updates.supplierId = typeof body.supplierId === 'string' ? body.supplierId : null
   if (body.isActive !== undefined) updates.isActive = !!body.isActive
+  const validPTypes: CmPurchaseUnitType[] = ['unidad', 'caja', 'paquete', 'rollo', 'kg_suelto', 'metro_suelto']
+  const validMUnits: CmMeasureUnit[] = ['u', 'm', 'kg', 'cm', 'g']
+  const validUUnits: CmUsageUnit[] = ['u', 'g', 'cm']
+  if (body.purchaseUnitType !== undefined) updates.purchaseUnitType = validPTypes.includes(body.purchaseUnitType as CmPurchaseUnitType) ? body.purchaseUnitType as CmPurchaseUnitType : null
+  if (body.unitsPurchased !== undefined) updates.unitsPurchased = typeof body.unitsPurchased === 'number' ? body.unitsPurchased : null
+  if (body.measurePerUnit !== undefined) updates.measurePerUnit = typeof body.measurePerUnit === 'number' ? body.measurePerUnit : null
+  if (body.measureUnit !== undefined) updates.measureUnit = validMUnits.includes(body.measureUnit as CmMeasureUnit) ? body.measureUnit as CmMeasureUnit : null
+  if (body.totalPrice !== undefined) updates.totalPrice = typeof body.totalPrice === 'number' ? body.totalPrice : null
+  if (body.usageUnit !== undefined) updates.usageUnit = validUUnits.includes(body.usageUnit as CmUsageUnit) ? body.usageUnit as CmUsageUnit : null
+  if (body.equivalenceValue !== undefined) updates.equivalenceValue = typeof body.equivalenceValue === 'number' ? body.equivalenceValue : null
+  if (body.equivalenceUnit !== undefined) updates.equivalenceUnit = validUUnits.includes(body.equivalenceUnit as CmUsageUnit) ? body.equivalenceUnit as CmUsageUnit : null
   try {
     const sup = updateSupply(id, updates)
     if (!sup) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })
