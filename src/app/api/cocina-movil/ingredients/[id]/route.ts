@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getIngredientById, updateIngredient, deleteIngredient, type CmIngredientCategory, type CmUnit, type CmIngredientInput } from '@/lib/cocina-movil/ingredients'
+import { getIngredientById, updateIngredient, deleteIngredient, type CmIngredientCategory, type CmUnit, type CmPurchaseUnitType, type CmWeightUnit, type CmIngredientInput } from '@/lib/cocina-movil/ingredients'
 import { requireAuth } from '@/lib/cocina-movil/auth-middleware'
 export const runtime = 'nodejs'
 
@@ -34,6 +34,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (body.image !== undefined) updates.image = typeof body.image === 'string' ? body.image : null
   if (body.supplierId !== undefined) updates.supplierId = typeof body.supplierId === 'string' ? body.supplierId : null
   if (body.isActive !== undefined) updates.isActive = !!body.isActive
+  const validPTypes: CmPurchaseUnitType[] = ['bulto', 'caja', 'botella', 'unidad', 'kg_suelto', 'litro_suelto']
+  const validWUnits: CmWeightUnit[] = ['kg', 'g', 'l', 'ml']
+  if (body.purchaseUnitType !== undefined) updates.purchaseUnitType = validPTypes.includes(body.purchaseUnitType as CmPurchaseUnitType) ? body.purchaseUnitType as CmPurchaseUnitType : null
+  if (body.unitsPurchased !== undefined) updates.unitsPurchased = typeof body.unitsPurchased === 'number' ? body.unitsPurchased : null
+  if (body.weightPerUnit !== undefined) updates.weightPerUnit = typeof body.weightPerUnit === 'number' ? body.weightPerUnit : null
+  if (body.weightUnit !== undefined) updates.weightUnit = validWUnits.includes(body.weightUnit as CmWeightUnit) ? body.weightUnit as CmWeightUnit : null
+  if (body.totalPrice !== undefined) updates.totalPrice = typeof body.totalPrice === 'number' ? body.totalPrice : null
   try {
     const ing = updateIngredient(id, updates)
     if (!ing) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })

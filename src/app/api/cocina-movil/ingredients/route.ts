@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { listIngredients, createIngredient, type CmIngredientCategory, type CmUnit, type CmIngredientInput } from '@/lib/cocina-movil/ingredients'
+import { listIngredients, createIngredient, type CmIngredientCategory, type CmUnit, type CmPurchaseUnitType, type CmWeightUnit, type CmIngredientInput } from '@/lib/cocina-movil/ingredients'
 import { requireAuth } from '@/lib/cocina-movil/auth-middleware'
 export const runtime = 'nodejs'
 
@@ -29,6 +29,8 @@ export async function POST(request: Request) {
   if (typeof body.name !== 'string' || !body.name.trim()) return NextResponse.json({ error: 'El nombre es obligatorio.' }, { status: 400 })
   const validUnits: CmUnit[] = ['kg','g','l','ml','u','paquete','docena']
   const validCats: CmIngredientCategory[] = ['harinas','carnes','lacteos','verduras','especias','aceites','otros']
+  const validPurchaseTypes: CmPurchaseUnitType[] = ['bulto', 'caja', 'botella', 'unidad', 'kg_suelto', 'litro_suelto']
+  const validWeightUnits: CmWeightUnit[] = ['kg', 'g', 'l', 'ml']
   const input: CmIngredientInput = {
     name: body.name,
     description: typeof body.description === 'string' ? body.description : null,
@@ -36,6 +38,11 @@ export async function POST(request: Request) {
     purchaseUnit: validUnits.includes(body.purchaseUnit as CmUnit) ? body.purchaseUnit as CmUnit : 'kg',
     purchasePrice: typeof body.purchasePrice === 'number' ? body.purchasePrice : 0,
     gramsPerUnit: typeof body.gramsPerUnit === 'number' ? body.gramsPerUnit : null,
+    purchaseUnitType: validPurchaseTypes.includes(body.purchaseUnitType as CmPurchaseUnitType) ? body.purchaseUnitType as CmPurchaseUnitType : null,
+    unitsPurchased: typeof body.unitsPurchased === 'number' ? body.unitsPurchased : null,
+    weightPerUnit: typeof body.weightPerUnit === 'number' ? body.weightPerUnit : null,
+    weightUnit: validWeightUnits.includes(body.weightUnit as CmWeightUnit) ? body.weightUnit as CmWeightUnit : null,
+    totalPrice: typeof body.totalPrice === 'number' ? body.totalPrice : null,
     image: typeof body.image === 'string' ? body.image : null,
     supplierId: typeof body.supplierId === 'string' ? body.supplierId : null,
     isActive: typeof body.isActive === 'boolean' ? body.isActive : true,

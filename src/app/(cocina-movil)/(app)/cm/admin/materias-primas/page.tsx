@@ -41,6 +41,14 @@ interface CmIngredient {
   image: string | null
   supplierId: string | null
   isActive: boolean
+  // New fields for auto-calc
+  purchaseUnitType: string | null
+  unitsPurchased: number | null
+  weightPerUnit: number | null
+  weightUnit: string | null
+  totalPrice: number | null
+  pricePerUnit: number | null
+  totalGrams: number | null
   createdAt: number
   updatedAt: number
 }
@@ -58,6 +66,24 @@ const CATEGORIES: { value: CmIngredientCategory; label: string }[] = [
 ]
 
 const UNITS: CmUnit[] = ['kg', 'g', 'l', 'ml', 'u', 'paquete', 'docena']
+
+const PURCHASE_TYPES = [
+  { value: 'bulto', label: 'Bulto' },
+  { value: 'caja', label: 'Caja' },
+  { value: 'botella', label: 'Botella' },
+  { value: 'unidad', label: 'Unidad' },
+  { value: 'kg_suelto', label: 'Kg suelto' },
+  { value: 'litro_suelto', label: 'Litro suelto' },
+]
+
+const WEIGHT_UNITS = [
+  { value: 'kg', label: 'kg' },
+  { value: 'g', label: 'g' },
+  { value: 'l', label: 'l' },
+  { value: 'ml', label: 'ml' },
+]
+
+const fmtCurrency = (v: number) => '$' + v.toLocaleString('es-AR', { maximumFractionDigits: 2 })
 
 function CmMateriasPrimasPageContent() {
   const searchParams = useSearchParams()
@@ -208,7 +234,7 @@ function CmMateriasPrimasPageContent() {
                         {item.category && <Badge variant="outline" className="text-[10px] capitalize border-[#5C3A21]/20">{item.category}</Badge>}
                       </TableCell>
                       <TableCell className="text-sm text-[#4A3F36]">{item.purchaseUnit}</TableCell>
-                      <TableCell className="text-sm font-medium text-[#5C3A21]">${item.purchasePrice.toLocaleString('es-AR')}</TableCell>
+                      <TableCell className="text-sm font-medium text-[#5C3A21]">${(item.pricePerUnit || item.purchasePrice).toLocaleString('es-AR', { maximumFractionDigits: 2 })}</TableCell>
                       <TableCell><Badge className={`text-[10px] ${item.isActive ? 'bg-[#708238] hover:bg-[#708238]' : 'bg-[#8A7E70] hover:bg-[#8A7E70]'}`}>{item.isActive ? 'Activo' : 'Inactivo'}</Badge></TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
@@ -250,7 +276,11 @@ function CmMateriasPrimasPageContent() {
 
 function IngredientFormDialog({ open, mode, item, onClose, onSaved }: { open: boolean; mode: FormMode; item: CmIngredient | null; onClose: () => void; onSaved: () => void }) {
   const [form, setForm] = React.useState({
-    name: '', description: '', category: '' as string, purchaseUnit: 'kg' as CmUnit, purchasePrice: '', gramsPerUnit: '', image: '' as string, isActive: true,
+    name: '', description: '', category: '' as string,
+    purchaseUnit: 'kg' as CmUnit, purchasePrice: '', gramsPerUnit: '',
+    purchaseUnitType: '' as string, unitsPurchased: '', weightPerUnit: '',
+    weightUnit: 'kg' as string, totalPrice: '',
+    image: '' as string, isActive: true,
   })
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -258,7 +288,15 @@ function IngredientFormDialog({ open, mode, item, onClose, onSaved }: { open: bo
   React.useEffect(() => {
     if (open) {
       if (mode === 'edit' && item) {
-        setForm({ name: item.name, description: item.description || '', category: item.category || '', purchaseUnit: item.purchaseUnit, purchasePrice: String(item.purchasePrice), gramsPerUnit: item.gramsPerUnit ? String(item.gramsPerUnit) : '', image: item.image || '', isActive: item.isActive })
+        setForm({
+          name: item.name, description: item.description || '', category: item.category || '',
+          purchaseUnit: item.purchaseUnit, purchasePrice: String(item.purchasePrice),
+          gramsPerUnit: item.gramsPerUnit ? String(item.gramsPerUnit) : '',
+          purchaseUnitType: item.purchaseUnitType || '', unitsPurchased: item.unitsPurchased ? String(item.unitsPurchased) : '',
+          weightPerUnit: item.weightPerUnit ? String(item.weightPerUnit) : '',
+          weightUnit: item.weightUnit || 'kg', totalPrice: item.totalPrice ? String(item.totalPrice) : '',
+          image: item.image || '', isActive: item.isActive,
+        })
       } else {
         setForm({ name: '', description: '', category: '', purchaseUnit: 'kg', purchasePrice: '', gramsPerUnit: '', image: '', isActive: true })
       }
@@ -282,6 +320,11 @@ function IngredientFormDialog({ open, mode, item, onClose, onSaved }: { open: bo
         category: form.category || null, purchaseUnit: form.purchaseUnit,
         purchasePrice: price,
         gramsPerUnit: form.gramsPerUnit ? parseFloat(form.gramsPerUnit) : null,
+        purchaseUnitType: form.purchaseUnitType || null,
+        unitsPurchased: form.unitsPurchased ? parseFloat(form.unitsPurchased) : null,
+        weightPerUnit: form.weightPerUnit ? parseFloat(form.weightPerUnit) : null,
+        weightUnit: form.weightUnit || null,
+        totalPrice: form.totalPrice ? parseFloat(form.totalPrice) : null,
         image: form.image || null, isActive: form.isActive,
       }
       const url = mode === 'create' ? '/api/cocina-movil/ingredients' : `/api/cocina-movil/ingredients/${item!.id}`
@@ -309,9 +352,23 @@ function IngredientFormDialog({ open, mode, item, onClose, onSaved }: { open: bo
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Nombre *</Label><Input value={form.name} onChange={(e) => setField('name', e.target.value)} className="border-[#5C3A21]/15" autoFocus /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Categoría</Label><Select value={form.category || 'none'} onValueChange={(v) => setField('category', v === 'none' ? '' : v)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Sin categoría" /></SelectTrigger><SelectContent><SelectItem value="none">— Sin categoría —</SelectItem>{CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Descripción</Label><Textarea value={form.description} onChange={(e) => setField('description', e.target.value)} className="border-[#5C3A21]/15" rows={2} /></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Unidad de Compra</Label><Select value={form.purchaseUnit} onValueChange={(v) => setField('purchaseUnit', v as CmUnit)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue /></SelectTrigger><SelectContent>{UNITS.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Precio por Unidad ($)</Label><Input type="number" step="0.01" min="0" value={form.purchasePrice} onChange={(e) => setField('purchasePrice', e.target.value)} className="border-[#5C3A21]/15" /></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Conversión a Gramos (opcional)</Label><Input type="number" step="0.01" min="0" value={form.gramsPerUnit} onChange={(e) => setField('gramsPerUnit', e.target.value)} placeholder="ej: 1000 para 1kg" className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Tipo de Unidad de Compra</Label><Select value={form.purchaseUnitType || 'none'} onValueChange={(v) => setField('purchaseUnitType', v === 'none' ? '' : v)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Sin tipo" /></SelectTrigger><SelectContent><SelectItem value="none">— Sin tipo —</SelectItem>{PURCHASE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Cantidad de Unidades</Label><Input type="number" step="0.01" min="0" value={form.unitsPurchased} onChange={(e) => setField('unitsPurchased', e.target.value)} placeholder="ej: 1 (bulto), 6 (botellas)" className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-1.5 grid grid-cols-2 gap-2"><div className="space-y-1.5"><Label className="text-[#5C3A21]">Peso/Vol. por Unidad</Label><Input type="number" step="0.01" min="0" value={form.weightPerUnit} onChange={(e) => setField('weightPerUnit', e.target.value)} placeholder="ej: 25" className="border-[#5C3A21]/15" /></div><div className="space-y-1.5"><Label className="text-[#5C3A21]">Unidad</Label><Select value={form.weightUnit} onValueChange={(v) => setField('weightUnit', v)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue /></SelectTrigger><SelectContent>{WEIGHT_UNITS.map((u) => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent></Select></div></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Precio Total Pagado ($)</Label><Input type="number" step="0.01" min="0" value={form.totalPrice} onChange={(e) => setField('totalPrice', e.target.value)} placeholder="ej: 450" className="border-[#5C3A21]/15" /></div>
+            {form.unitsPurchased && form.weightPerUnit && form.totalPrice && parseFloat(form.unitsPurchased) > 0 && parseFloat(form.weightPerUnit) > 0 && parseFloat(form.totalPrice) > 0 && (
+              <div className="bg-[#E1AD01]/10 border border-[#E1AD01]/30 rounded-md p-3 space-y-1">
+                <p className="text-xs font-semibold text-[#7a5c00]">📊 Cálculo automático:</p>
+                <p className="text-sm text-[#5C3A21]">Precio por unidad: <strong>{fmtCurrency(parseFloat(form.totalPrice) / (parseFloat(form.unitsPurchased) * parseFloat(form.weightPerUnit)))}</strong> / {form.weightUnit}</p>
+                <p className="text-sm text-[#5C3A21]">Total: <strong>{(parseFloat(form.unitsPurchased) * parseFloat(form.weightPerUnit)).toLocaleString('es-AR')} {form.weightUnit}</strong>
+                  {form.weightUnit === 'kg' ? ` (${(parseFloat(form.unitsPurchased) * parseFloat(form.weightPerUnit) * 1000).toLocaleString('es-AR')} g)` : form.weightUnit === 'l' ? ` (${(parseFloat(form.unitsPurchased) * parseFloat(form.weightPerUnit) * 1000).toLocaleString('es-AR')} ml)` : ''}
+                </p>
+              </div>
+            )}
+            <Separator />
+            <div className="space-y-1.5"><Label className="text-[#5C3A21] text-xs text-[#8A7E70]">Unidad (legacy, opcional)</Label><Select value={form.purchaseUnit} onValueChange={(v) => setField('purchaseUnit', v as CmUnit)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue /></SelectTrigger><SelectContent>{UNITS.map((u) => <SelectItem key={u} value={u}>{u}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21] text-xs text-[#8A7E70]">Precio (legacy, opcional)</Label><Input type="number" step="0.01" min="0" value={form.purchasePrice} onChange={(e) => setField('purchasePrice', e.target.value)} placeholder="Auto-calculado arriba" className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21] text-xs text-[#8A7E70]">Gramos (legacy, opcional)</Label><Input type="number" step="0.01" min="0" value={form.gramsPerUnit} onChange={(e) => setField('gramsPerUnit', e.target.value)} placeholder="Auto-calculado arriba" className="border-[#5C3A21]/15" /></div>
             {mode === 'edit' && (
               <div className="space-y-1.5 flex items-center gap-3 pt-5"><Label className="text-[#5C3A21]">Activo</Label><Switch checked={form.isActive} onCheckedChange={(v) => setField('isActive', v)} /></div>
             )}

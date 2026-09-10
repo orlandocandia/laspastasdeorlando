@@ -11,15 +11,27 @@ import crypto from 'crypto'
 
 export type CmIngredientCategory = 'harinas' | 'carnes' | 'lacteos' | 'verduras' | 'especias' | 'aceites' | 'otros'
 export type CmUnit = 'kg' | 'g' | 'l' | 'ml' | 'u' | 'paquete' | 'docena'
+export type CmPurchaseUnitType = 'bulto' | 'caja' | 'botella' | 'unidad' | 'kg_suelto' | 'litro_suelto'
+export type CmWeightUnit = 'kg' | 'g' | 'l' | 'ml'
 
 export interface CmIngredientRecord {
   id: string
   name: string
   description: string | null
   category: CmIngredientCategory | null
+  // Campos originales (mantenidos para compatibilidad)
   purchaseUnit: CmUnit
   purchasePrice: number
   gramsPerUnit: number | null
+  // Nuevos campos: cálculo automático de precio
+  purchaseUnitType: CmPurchaseUnitType | null
+  unitsPurchased: number | null
+  weightPerUnit: number | null
+  weightUnit: CmWeightUnit | null
+  totalPrice: number | null
+  pricePerUnit: number | null
+  totalGrams: number | null
+  // Comunes
   image: string | null
   supplierId: string | null
   isActive: boolean
@@ -31,12 +43,50 @@ export interface CmIngredientInput {
   name: string
   description?: string | null
   category?: CmIngredientCategory | null
-  purchaseUnit: CmUnit
-  purchasePrice: number
+  // Campos originales
+  purchaseUnit?: CmUnit
+  purchasePrice?: number
   gramsPerUnit?: number | null
+  // Nuevos campos
+  purchaseUnitType?: CmPurchaseUnitType | null
+  unitsPurchased?: number | null
+  weightPerUnit?: number | null
+  weightUnit?: CmWeightUnit | null
+  totalPrice?: number | null
+  pricePerUnit?: number | null
+  totalGrams?: number | null
+  // Comunes
   image?: string | null
   supplierId?: string | null
   isActive?: boolean
+}
+
+
+/**
+ * Convierte un peso/volumen a gramos.
+ * - kg → ×1000
+ * - g → ×1
+ * - l → ×1000 (asumiendo densidad similar al agua)
+ * - ml → ×1
+ */
+function convertToGrams(weight: number, unit: CmWeightUnit): number {
+  switch (unit) {
+    case 'kg': return weight * 1000
+    case 'g': return weight
+    case 'l': return weight * 1000
+    case 'ml': return weight
+    default: return weight
+  }
+}
+
+/**
+ * Calcula pricePerUnit y totalGrams automáticamente.
+ */
+function calculateAutoFields(unitsPurchased: number, weightPerUnit: number, weightUnit: CmWeightUnit, totalPrice: number): { pricePerUnit: number; totalGrams: number } {
+  const totalUnits = unitsPurchased * weightPerUnit
+  const pricePerUnit = totalUnits > 0 ? totalPrice / totalUnits : 0
+  const totalGrams = convertToGrams(totalUnits, weightUnit)
+  return { pricePerUnit, totalGrams }
 }
 
 let ingredientsStore: Map<string, CmIngredientRecord> = new Map()
@@ -45,10 +95,10 @@ function seedDemoIngredients() {
   if (ingredientsStore.size > 0) return
   const now = Date.now()
   const demos: CmIngredientRecord[] = [
-    { id: 'ing-1', name: 'Harina 000', description: 'Harina de trigo para pastas', category: 'harinas', purchaseUnit: 'kg', purchasePrice: 450, gramsPerUnit: 1000, image: null, supplierId: null, isActive: true, createdAt: now, updatedAt: now },
-    { id: 'ing-2', name: 'Carne Molida', description: 'Carne molida común', category: 'carnes', purchaseUnit: 'kg', purchasePrice: 3200, gramsPerUnit: 1000, image: null, supplierId: null, isActive: true, createdAt: now, updatedAt: now },
-    { id: 'ing-3', name: 'Queso Mozzarella', description: 'Muzzarella barra', category: 'lacteos', purchaseUnit: 'kg', purchasePrice: 2800, gramsPerUnit: 1000, image: null, supplierId: null, isActive: true, createdAt: now, updatedAt: now },
-    { id: 'ing-4', name: 'Huevos', description: 'Huevos frescos', category: 'otros', purchaseUnit: 'docena', purchasePrice: 1800, gramsPerUnit: 600, image: null, supplierId: null, isActive: true, createdAt: now, updatedAt: now },
+    { id: 'ing-1', name: 'Harina 000', description: 'Harina de trigo para pastas', category: 'harinas', purchaseUnit: 'kg', purchasePrice: 18, gramsPerUnit: 1000, image: null, supplierId: null, isActive: true, purchaseUnitType: 'bulto', unitsPurchased: 1, weightPerUnit: 25, weightUnit: 'kg', totalPrice: 450, pricePerUnit: 18, totalGrams: 25000, createdAt: now, updatedAt: now },
+    { id: 'ing-2', name: 'Carne Molida', description: 'Carne molida común', category: 'carnes', purchaseUnit: 'kg', purchasePrice: 3200, gramsPerUnit: 1000, image: null, supplierId: null, isActive: true, purchaseUnitType: 'kg_suelto', unitsPurchased: 1, weightPerUnit: 1, weightUnit: 'kg', totalPrice: 3200, pricePerUnit: 3200, totalGrams: 1000, createdAt: now, updatedAt: now },
+    { id: 'ing-3', name: 'Queso Mozzarella', description: 'Muzzarella barra', category: 'lacteos', purchaseUnit: 'kg', purchasePrice: 2800, gramsPerUnit: 1000, image: null, supplierId: null, isActive: true, purchaseUnitType: 'unidad', unitsPurchased: 1, weightPerUnit: 1, weightUnit: 'kg', totalPrice: 2800, pricePerUnit: 2800, totalGrams: 1000, createdAt: now, updatedAt: now },
+    { id: 'ing-4', name: 'Huevos', description: 'Huevos frescos', category: 'otros', purchaseUnit: 'docena', purchasePrice: 150, gramsPerUnit: 50, image: null, supplierId: null, isActive: true, purchaseUnitType: 'caja', unitsPurchased: 1, weightPerUnit: 0.05, weightUnit: 'kg', totalPrice: 1800, pricePerUnit: 150, totalGrams: 50, createdAt: now, updatedAt: now },
   ]
   for (const ing of demos) ingredientsStore.set(ing.id, ing)
 }
@@ -89,17 +139,44 @@ export function getIngredientById(id: string): CmIngredientRecord | null {
 
 export function createIngredient(input: CmIngredientInput): CmIngredientRecord {
   if (!input.name.trim()) throw new Error('El nombre es obligatorio')
-  if (!input.purchasePrice || input.purchasePrice < 0) throw new Error('El precio debe ser mayor o igual a 0')
   const now = Date.now()
   const id = `ing-${crypto.randomBytes(6).toString('hex')}`
+
+  // Calcular campos automáticos si se proporcionan los datos necesarios
+  let pricePerUnit: number | null = null
+  let totalGrams: number | null = null
+  let purchasePrice = input.purchasePrice || 0
+  let gramsPerUnit = input.gramsPerUnit ? Number(input.gramsPerUnit) : null
+
+  if (input.unitsPurchased && input.weightPerUnit && input.weightUnit && input.totalPrice) {
+    const calc = calculateAutoFields(
+      Number(input.unitsPurchased),
+      Number(input.weightPerUnit),
+      input.weightUnit,
+      Number(input.totalPrice)
+    )
+    pricePerUnit = calc.pricePerUnit
+    totalGrams = calc.totalGrams
+    // También actualizar campos legacy
+    purchasePrice = pricePerUnit
+    gramsPerUnit = totalGrams / Number(input.unitsPurchased)
+  }
+
   const ing: CmIngredientRecord = {
     id,
     name: input.name.trim(),
     description: input.description?.trim() || null,
     category: input.category || null,
-    purchaseUnit: input.purchaseUnit,
-    purchasePrice: Number(input.purchasePrice),
-    gramsPerUnit: input.gramsPerUnit ? Number(input.gramsPerUnit) : null,
+    purchaseUnit: input.purchaseUnit || 'kg',
+    purchasePrice,
+    gramsPerUnit,
+    purchaseUnitType: input.purchaseUnitType || null,
+    unitsPurchased: input.unitsPurchased ? Number(input.unitsPurchased) : null,
+    weightPerUnit: input.weightPerUnit ? Number(input.weightPerUnit) : null,
+    weightUnit: input.weightUnit || null,
+    totalPrice: input.totalPrice ? Number(input.totalPrice) : null,
+    pricePerUnit,
+    totalGrams,
     image: input.image || null,
     supplierId: input.supplierId || null,
     isActive: input.isActive ?? true,
@@ -123,6 +200,21 @@ export function updateIngredient(id: string, updates: Partial<CmIngredientInput>
   if (updates.image !== undefined) ing.image = updates.image || null
   if (updates.supplierId !== undefined) ing.supplierId = updates.supplierId || null
   if (updates.isActive !== undefined) ing.isActive = updates.isActive
+  if (updates.purchaseUnitType !== undefined) ing.purchaseUnitType = updates.purchaseUnitType
+  if (updates.unitsPurchased !== undefined) ing.unitsPurchased = updates.unitsPurchased ? Number(updates.unitsPurchased) : null
+  if (updates.weightPerUnit !== undefined) ing.weightPerUnit = updates.weightPerUnit ? Number(updates.weightPerUnit) : null
+  if (updates.weightUnit !== undefined) ing.weightUnit = updates.weightUnit
+  if (updates.totalPrice !== undefined) ing.totalPrice = updates.totalPrice ? Number(updates.totalPrice) : null
+
+  // Recalcular campos automáticos si hay datos suficientes
+  if (ing.unitsPurchased && ing.weightPerUnit && ing.weightUnit && ing.totalPrice) {
+    const calc = calculateAutoFields(ing.unitsPurchased, ing.weightPerUnit, ing.weightUnit, ing.totalPrice)
+    ing.pricePerUnit = calc.pricePerUnit
+    ing.totalGrams = calc.totalGrams
+    ing.purchasePrice = calc.pricePerUnit
+    ing.gramsPerUnit = calc.totalGrams / ing.unitsPurchased
+  }
+
   ing.updatedAt = Date.now()
   ingredientsStore.set(id, ing)
   return ing
