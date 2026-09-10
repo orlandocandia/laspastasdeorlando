@@ -75,7 +75,14 @@ const SESSION_TTL_MS = 1000 * 60 * 60 * 8 // 8 horas
 // ----- Secret para firmar tokens (stateless) -----
 // En producción usar una variable de entorno.
 // Fallback a un valor por defecto para dev (NO usar en prod real).
-const CM_AUTH_SECRET = process.env.CM_AUTH_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new Error('CM_AUTH_SECRET no configurado') })() : 'cm-dev-secret-not-for-prod')
+// Lazy getter for CM_AUTH_SECRET — avoids throwing at module load time
+// which would crash ALL routes that import auth.ts
+let _cmAuthSecret: string | null = null
+function getCmAuthSecret(): string {
+  if (_cmAuthSecret) return _cmAuthSecret
+  _cmAuthSecret = process.env.CM_AUTH_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new Error('CM_AUTH_SECRET no configurado. Seteá la variable de entorno en Vercel.') })() : 'cm-dev-secret-not-for-prod')
+  return _cmAuthSecret
+}
 
 /**
  * Path de redirección según el rol del usuario.
@@ -111,7 +118,7 @@ function createToken(session: Omit<CmSession, 'token'>): string {
   })
   const payloadB64 = Buffer.from(payload, 'utf-8').toString('base64url')
   const signature = crypto
-    .createHmac('sha256', CM_AUTH_SECRET)
+    .createHmac('sha256', getCmAuthSecret())
     .update(payloadB64)
     .digest('base64url')
   return `cm_${payloadB64}.${signature}`
@@ -130,7 +137,7 @@ function verifyToken(token: string): CmSession | null {
 
     // Verificar firma
     const expectedSignature = crypto
-      .createHmac('sha256', CM_AUTH_SECRET)
+      .createHmac('sha256', getCmAuthSecret())
       .update(payloadB64)
       .digest('base64url')
 
@@ -263,7 +270,7 @@ export function createPasswordResetToken(email: string): string {
   })
   const payloadB64 = Buffer.from(payload, 'utf-8').toString('base64url')
   const signature = crypto
-    .createHmac('sha256', CM_AUTH_SECRET)
+    .createHmac('sha256', getCmAuthSecret())
     .update(payloadB64)
     .digest('base64url')
   return `cmreset_${payloadB64}.${signature}`
@@ -285,7 +292,7 @@ export function verifyPasswordResetToken(token: string): string | null {
 
     // Verificar firma
     const expectedSignature = crypto
-      .createHmac('sha256', CM_AUTH_SECRET)
+      .createHmac('sha256', getCmAuthSecret())
       .update(payloadB64)
       .digest('base64url')
 

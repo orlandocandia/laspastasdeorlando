@@ -22,18 +22,22 @@ import {
   buildPasswordResetEmailText,
 } from '@/lib/cocina-movil/email-templates'
 
-// Dynamic import so that if smtp-transporter isn't available (e.g., local
-// dev without nodemailer installed), the route still compiles and returns
-// a graceful error instead of crashing the whole module.
+// sendMail will be loaded dynamically when needed (not at module load)
+// This avoids require() issues in ESM/Vercel builds
 let sendMail: ((opts: { to: string; from?: string; subject: string; html: string; text: string }) => Promise<unknown>) | null = null
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const mod = require('@/lib/smtp-transporter')
-  if (mod && typeof mod.sendMail === 'function') {
-    sendMail = mod.sendMail
+let sendMailLoaded = false
+
+async function loadSendMail() {
+  if (sendMailLoaded) return
+  sendMailLoaded = true
+  try {
+    const mod = await import('@/lib/smtp-transporter')
+    if (mod && typeof mod.sendMail === 'function') {
+      sendMail = mod.sendMail
+    }
+  } catch {
+    console.warn('[CocinaMóvil-Recover] smtp-transporter no disponible')
   }
-} catch {
-  console.warn('[CocinaMóvil-Recover] smtp-transporter no disponible (¿nodemailer no instalado?)')
 }
 
 export const runtime = 'nodejs'
