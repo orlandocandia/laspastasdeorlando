@@ -28,6 +28,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
+import { SelectWithCreate, type QuickCreateEntity, type SelectOption } from '@/components/(cocina-movil)/admin/select-with-create'
 
 // ============================================================
 // Tipos
@@ -373,6 +374,12 @@ function CmComprasPageContent() {
         supplies={supplies}
         onClose={() => setFormOpen(false)}
         onSaved={() => { setFormOpen(false); loadPurchases() }}
+        onQuickCreated={(entity, record) => {
+          if (entity === 'supplier') setSuppliers((arr) => [...arr, { id: record.id, name: record.name, purchaseUnit: '', purchasePrice: 0 }])
+          else if (entity === 'place') setPlaces((arr) => [...arr, { id: record.id, name: record.name, purchaseUnit: '', purchasePrice: 0 }])
+          else if (entity === 'ingredient') setIngredients((arr) => [...arr, { id: record.id, name: record.name, purchaseUnit: '', purchasePrice: 0 }])
+          else if (entity === 'supply') setSupplies((arr) => [...arr, { id: record.id, name: record.name, purchaseUnit: '', purchasePrice: 0 }])
+        }}
       />
 
       {/* Delete Dialog */}
@@ -413,9 +420,10 @@ interface PurchaseFormDialogProps {
   supplies: OptionItem[]
   onClose: () => void
   onSaved: () => void
+  onQuickCreated?: (entity: QuickCreateEntity, record: SelectOption) => void
 }
 
-function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, supplies, onClose, onSaved }: PurchaseFormDialogProps) {
+function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, supplies, onClose, onSaved, onQuickCreated }: PurchaseFormDialogProps) {
   const [supplierId, setSupplierId] = React.useState('')
   const [placeId, setPlaceId] = React.useState('')
   const [purchaseDate, setPurchaseDate] = React.useState(epochToDateInput(Date.now()))
@@ -548,22 +556,27 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-[#5C3A21]">Proveedor *</Label>
-              <Select value={supplierId} onValueChange={setSupplierId}>
-                <SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Seleccionar proveedor" /></SelectTrigger>
-                <SelectContent>
-                  {suppliers.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SelectWithCreate
+                entity="supplier"
+                value={supplierId}
+                onValueChange={setSupplierId}
+                options={suppliers}
+                placeholder="Seleccionar proveedor"
+                onCreated={(r) => onQuickCreated?.('supplier', r)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-[#5C3A21]">Lugar</Label>
-              <Select value={placeId || '__none__'} onValueChange={(v) => setPlaceId(v === '__none__' ? '' : v)}>
-                <SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Sin lugar asignado" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">— Sin lugar —</SelectItem>
-                  {places.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SelectWithCreate
+                entity="place"
+                value={placeId || '__none__'}
+                onValueChange={(v) => setPlaceId(v === '__none__' ? '' : v)}
+                options={places}
+                placeholder="Sin lugar asignado"
+                allowNone
+                noneLabel="— Sin lugar —"
+                onCreated={(r) => onQuickCreated?.('place', r)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-[#5C3A21]">Fecha *</Label>
@@ -634,18 +647,18 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
                         {/* Producto */}
                         <div className="col-span-2 lg:col-span-4">
                           <Label className="text-[10px] text-[#8A7E70] lg:hidden">Producto</Label>
-                          <Select value={it.itemId} onValueChange={(v) => onProductSelect(it.key, v)}>
-                            <SelectTrigger className="h-9 border-[#5C3A21]/15 text-xs">
-                              <SelectValue placeholder={it.itemType === 'ingredient' ? 'Seleccionar materia prima…' : 'Seleccionar insumo…'} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {pool.length === 0 ? (
-                                <SelectItem value="__empty__" disabled>No hay productos</SelectItem>
-                              ) : (
-                                pool.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)
-                              )}
-                            </SelectContent>
-                          </Select>
+                          <SelectWithCreate
+                            entity={it.itemType}
+                            value={it.itemId}
+                            onValueChange={(v) => onProductSelect(it.key, v)}
+                            options={pool}
+                            placeholder={it.itemType === 'ingredient' ? 'Seleccionar materia prima…' : 'Seleccionar insumo…'}
+                            compact
+                            triggerClassName="h-9 border-[#5C3A21]/15 text-xs"
+                            onCreated={(r) => {
+                              onQuickCreated?.(it.itemType, r)
+                            }}
+                          />
                         </div>
 
                         {/* Cantidad */}

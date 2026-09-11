@@ -35,6 +35,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import ImageUploader from '@/components/(cocina-movil)/admin/image-uploader'
+import { SelectWithCreate, type QuickCreateEntity, type SelectOption } from '@/components/(cocina-movil)/admin/select-with-create'
 
 // ============================================================
 // Tipos
@@ -418,6 +419,10 @@ function CmRecetasPageContent() {
         supplies={supplies}
         onClose={() => setFormOpen(false)}
         onSaved={() => { setFormOpen(false); loadRecipes() }}
+        onQuickCreated={(entity, record) => {
+          if (entity === 'ingredient') setIngredients((arr) => [...arr, { id: record.id, name: record.name, purchaseUnit: '', purchasePrice: 0 }])
+          else if (entity === 'supply') setSupplies((arr) => [...arr, { id: record.id, name: record.name, purchaseUnit: '', purchasePrice: 0 }])
+        }}
       />
 
       {/* Delete Dialog */}
@@ -452,9 +457,10 @@ interface RecipeFormDialogProps {
   supplies: OptionItem[]
   onClose: () => void
   onSaved: () => void
+  onQuickCreated?: (entity: QuickCreateEntity, record: SelectOption) => void
 }
 
-function RecipeFormDialog({ open, mode, item, ingredients, supplies, onClose, onSaved }: RecipeFormDialogProps) {
+function RecipeFormDialog({ open, mode, item, ingredients, supplies, onClose, onSaved, onQuickCreated }: RecipeFormDialogProps) {
   const [title, setTitle] = React.useState('')
   const [description, setDescription] = React.useState('')
   const [category, setCategory] = React.useState<CmRecipeCategory | ''>('')
@@ -524,7 +530,11 @@ function RecipeFormDialog({ open, mode, item, ingredients, supplies, onClose, on
       }
       setError(null)
     }
-  }, [open, mode, item, ingredients, supplies])
+    // NOTE: ingredients/supplies intentionally omitted from deps so the form is
+    // NOT reset when a new ingredient/supply is added via the quick-create (+)
+    // button. The dropdowns load on page mount (before the dialog opens), so
+    // the price lookup above already has the data it needs.
+  }, [open, mode, item])
 
   // Cálculo dinámico de costos
   const ingredientsCost = ingItems.reduce((sum, it) => sum + (Number(it.quantity) || 0) * (Number(it.pricePerUnit) || 0), 0)
@@ -724,18 +734,16 @@ function RecipeFormDialog({ open, mode, item, ingredients, supplies, onClose, on
                       {/* Producto */}
                       <div className="col-span-2 lg:col-span-5">
                         <Label className="text-[10px] text-[#8A7E70] lg:hidden">Producto</Label>
-                        <Select value={it.ingredientId} onValueChange={(v) => onIngredientSelect(it.key, v)}>
-                          <SelectTrigger className="h-9 border-[#5C3A21]/15 text-xs">
-                            <SelectValue placeholder="Seleccionar materia prima…" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ingredients.length === 0 ? (
-                              <SelectItem value="__empty__" disabled>No hay materias primas</SelectItem>
-                            ) : (
-                              ingredients.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)
-                            )}
-                          </SelectContent>
-                        </Select>
+                        <SelectWithCreate
+                          entity="ingredient"
+                          value={it.ingredientId}
+                          onValueChange={(v) => onIngredientSelect(it.key, v)}
+                          options={ingredients}
+                          placeholder="Seleccionar materia prima…"
+                          compact
+                          triggerClassName="h-9 border-[#5C3A21]/15 text-xs"
+                          onCreated={(r) => onQuickCreated?.('ingredient', r)}
+                        />
                       </div>
                       {/* Cantidad */}
                       <div className="lg:col-span-2">
@@ -828,18 +836,16 @@ function RecipeFormDialog({ open, mode, item, ingredients, supplies, onClose, on
                       {/* Producto */}
                       <div className="col-span-2 lg:col-span-5">
                         <Label className="text-[10px] text-[#8A7E70] lg:hidden">Producto</Label>
-                        <Select value={it.supplyId} onValueChange={(v) => onSupplySelect(it.key, v)}>
-                          <SelectTrigger className="h-9 border-[#5C3A21]/15 text-xs">
-                            <SelectValue placeholder="Seleccionar insumo…" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {supplies.length === 0 ? (
-                              <SelectItem value="__empty__" disabled>No hay insumos</SelectItem>
-                            ) : (
-                              supplies.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)
-                            )}
-                          </SelectContent>
-                        </Select>
+                        <SelectWithCreate
+                          entity="supply"
+                          value={it.supplyId}
+                          onValueChange={(v) => onSupplySelect(it.key, v)}
+                          options={supplies}
+                          placeholder="Seleccionar insumo…"
+                          compact
+                          triggerClassName="h-9 border-[#5C3A21]/15 text-xs"
+                          onCreated={(r) => onQuickCreated?.('supply', r)}
+                        />
                       </div>
                       {/* Cantidad */}
                       <div className="lg:col-span-2">

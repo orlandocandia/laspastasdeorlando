@@ -32,6 +32,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
+import { SelectWithCreate, type QuickCreateEntity, type SelectOption } from '@/components/(cocina-movil)/admin/select-with-create'
 
 // ============================================================
 // Tipos
@@ -403,6 +404,10 @@ function CmProduccionesPageContent() {
         places={places}
         onClose={() => setFormOpen(false)}
         onSaved={() => { setFormOpen(false); loadProductions() }}
+        onQuickCreated={(entity, record) => {
+          if (entity === 'recipe') setRecipes((arr) => [...arr, { id: record.id, title: record.name, costPerServing: 0 }])
+          else if (entity === 'place') setPlaces((arr) => [...arr, { id: record.id, name: record.name }])
+        }}
       />
 
       {/* Detail Dialog */}
@@ -450,9 +455,10 @@ interface ProductionFormDialogProps {
   places: PlaceOption[]
   onClose: () => void
   onSaved: () => void
+  onQuickCreated?: (entity: QuickCreateEntity, record: SelectOption) => void
 }
 
-function ProductionFormDialog({ open, mode, item, recipes, places, onClose, onSaved }: ProductionFormDialogProps) {
+function ProductionFormDialog({ open, mode, item, recipes, places, onClose, onSaved, onQuickCreated }: ProductionFormDialogProps) {
   const [recipeId, setRecipeId] = React.useState<string>('')
   const [placeId, setPlaceId] = React.useState<string>('')
   const [quantity, setQuantity] = React.useState<string>('1')
@@ -540,21 +546,25 @@ function ProductionFormDialog({ open, mode, item, recipes, places, onClose, onSa
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-[#5C3A21]">Receta *</Label>
-              <Select value={recipeId} onValueChange={setRecipeId}>
-                <SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Seleccionar receta" /></SelectTrigger>
-                <SelectContent>
-                  {recipes.map((r) => <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SelectWithCreate
+                entity="recipe"
+                value={recipeId}
+                onValueChange={setRecipeId}
+                options={recipes.map((r) => ({ id: r.id, name: r.title }))}
+                placeholder="Seleccionar receta"
+                onCreated={(r) => onQuickCreated?.('recipe', r)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-[#5C3A21]">Lugar *</Label>
-              <Select value={placeId} onValueChange={setPlaceId}>
-                <SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Seleccionar lugar" /></SelectTrigger>
-                <SelectContent>
-                  {places.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SelectWithCreate
+                entity="place"
+                value={placeId}
+                onValueChange={setPlaceId}
+                options={places}
+                placeholder="Seleccionar lugar"
+                onCreated={(r) => onQuickCreated?.('place', r)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-[#5C3A21]">Cantidad *</Label>
