@@ -356,8 +356,11 @@ function SupplyFormDialog({ open, mode, item, onClose, onSaved }: { open: boolea
     e.preventDefault()
     setError(null)
     if (!form.name.trim()) return setError('El nombre es obligatorio')
-    const price = parseFloat(form.purchasePrice)
-    if (isNaN(price) || price < 0) return setError('El precio debe ser un número válido')
+    // Validate totalPrice (the field the user actually fills in)
+    const totalPrice = parseFloat(form.totalPrice)
+    if (form.totalPrice && (isNaN(totalPrice) || totalPrice < 0)) {
+      return setError('El precio total debe ser un número válido')
+    }
 
     setSaving(true)
     try {
@@ -416,8 +419,45 @@ function SupplyFormDialog({ open, mode, item, onClose, onSaved }: { open: boolea
             {form.unitsPurchased && form.totalPrice && parseFloat(form.unitsPurchased) > 0 && parseFloat(form.totalPrice) > 0 && (
               <div className="sm:col-span-2 bg-[#E1AD01]/10 border border-[#E1AD01]/30 rounded-md p-3 space-y-1">
                 <p className="text-xs font-semibold text-[#7a5c00]">📊 Cálculo automático:</p>
-                <p className="text-sm text-[#5C3A21]">Precio por unidad de compra: <strong>{fmtCurrency(parseFloat(form.totalPrice) / (parseFloat(form.unitsPurchased) * (form.measurePerUnit && !isMeasureFieldHidden(form.purchaseUnitType) ? parseFloat(form.measurePerUnit) : 1)))}</strong></p>
-                <p className="text-xs text-[#8A7E70]">Unidad de uso detectada automáticamente: <strong>{getAutoUsageUnit(form.purchaseUnitType) === 'u' ? 'Unidades' : getAutoUsageUnit(form.purchaseUnitType) === 'g' ? 'Gramos' : 'Centímetros'}</strong></p>
+                {(() => {
+                  const qty = parseFloat(form.unitsPurchased)
+                  const total = parseFloat(form.totalPrice)
+                  const measure = form.measurePerUnit && !isMeasureFieldHidden(form.purchaseUnitType) ? parseFloat(form.measurePerUnit) : 1
+                  const pType = form.purchaseUnitType
+                  const usageUnit = getAutoUsageUnit(pType)
+                  
+                  // Price per purchase unit (per metro, per unidad, per kg, etc.)
+                  const pricePerPurchase = total / (qty * measure)
+                  
+                  // Conversion to usage unit
+                  let pricePerUsage: number | null = null
+                  let purchaseUnitLabel = ''
+                  let usageUnitLabel = ''
+                  
+                  if (pType === 'rollo' || pType === 'metro_suelto') {
+                    // metros → centímetros: dividir por 100
+                    pricePerUsage = pricePerPurchase / 100
+                    purchaseUnitLabel = '/m'
+                    usageUnitLabel = '/cm'
+                  } else if (pType === 'kg_suelto') {
+                    // kg → gramos: dividir por 1000
+                    pricePerUsage = pricePerPurchase / 1000
+                    purchaseUnitLabel = '/kg'
+                    usageUnitLabel = '/g'
+                  } else {
+                    // unidad, caja, paquete → unidad (sin conversión)
+                    pricePerUsage = pricePerPurchase
+                    purchaseUnitLabel = '/u'
+                    usageUnitLabel = '/u'
+                  }
+                  
+                  return (
+                    <>
+                      <p className="text-sm text-[#5C3A21]">Precio por unidad de compra: <strong>{fmtCurrency(pricePerPurchase)}{purchaseUnitLabel}</strong></p>
+                      <p className="text-sm text-[#5C3A21]">Precio por unidad de uso ({usageUnit === 'u' ? 'Unidades' : usageUnit === 'g' ? 'Gramos' : 'Centímetros'}): <strong>{fmtCurrency(pricePerUsage)}{usageUnitLabel}</strong></p>
+                    </>
+                  )
+                })()}
               </div>
             )}
             {mode === 'edit' && (
