@@ -4,22 +4,26 @@
  * ============================================================
  * SelectWithCreate — Cocina Móvil
  * ============================================================
- * Wraps the shadcn Select with a small "+" button that opens a
- * quick-create modal. After saving, the new record is added to
- * the parent's options and auto-selected in the underlying Select.
+ * Wraps the shadcn Select with a "+" button that opens the FULL
+ * creation form for the corresponding entity. After saving, the
+ * new record is added to the parent's options and auto-selected.
  *
  * Used in: Compras, Recetas, Producciones, Ventas.
  * ============================================================
  */
 
 import * as React from 'react'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { toast } from 'sonner'
+import {
+  SupplierFullCreateDialog,
+  PlaceFullCreateDialog,
+  IngredientFullCreateDialog,
+  SupplyFullCreateDialog,
+  RecipeFullCreateDialog,
+  type CreatedRecord,
+} from '@/components/(cocina-movil)/admin/full-create-dialogs'
 
 // ============================================================
 // Types
@@ -34,213 +38,42 @@ export interface SelectOption {
 
 interface EntityConfig {
   label: string
-  apiUrl: string
-  responseKey: string
-  /** Field used for the primary name — recipes use "title", others use "name" */
-  nameField: 'name' | 'title'
 }
 
 const ENTITY_CONFIG: Record<QuickCreateEntity, EntityConfig> = {
-  supplier: { label: 'Proveedor', apiUrl: '/api/cocina-movil/suppliers', responseKey: 'supplier', nameField: 'name' },
-  place: { label: 'Lugar', apiUrl: '/api/cocina-movil/places', responseKey: 'place', nameField: 'name' },
-  ingredient: { label: 'Materia Prima', apiUrl: '/api/cocina-movil/ingredients', responseKey: 'ingredient', nameField: 'name' },
-  supply: { label: 'Insumo', apiUrl: '/api/cocina-movil/supplies', responseKey: 'supply', nameField: 'name' },
-  recipe: { label: 'Receta', apiUrl: '/api/cocina-movil/recipes', responseKey: 'recipe', nameField: 'title' },
+  supplier: { label: 'Proveedor' },
+  place: { label: 'Lugar' },
+  ingredient: { label: 'Materia Prima' },
+  supply: { label: 'Insumo' },
+  recipe: { label: 'Receta' },
 }
 
-const INGREDIENT_CATEGORIES = [
-  { value: 'harinas', label: 'Harinas' },
-  { value: 'carnes', label: 'Carnes' },
-  { value: 'lacteos', label: 'Lácteos' },
-  { value: 'verduras', label: 'Verduras' },
-  { value: 'especias', label: 'Especias' },
-  { value: 'aceites', label: 'Aceites' },
-  { value: 'otros', label: 'Otros' },
-]
-
-const SUPPLY_CATEGORIES = [
-  { value: 'envases', label: 'Envases' },
-  { value: 'limpieza', label: 'Limpieza' },
-  { value: 'descartables', label: 'Descartables' },
-  { value: 'otros', label: 'Otros' },
-]
-
-const RECIPE_CATEGORIES = [
-  { value: 'carnes', label: 'Carnes' },
-  { value: 'pastas', label: 'Pastas' },
-  { value: 'postres', label: 'Postres' },
-  { value: 'aperitivos', label: 'Aperitivos' },
-  { value: 'bebidas', label: 'Bebidas' },
-  { value: 'otros', label: 'Otros' },
-]
-
 // ============================================================
-// QuickCreateDialog
+// Full-form render switch
 // ============================================================
 
-interface QuickCreateDialogProps {
+interface FullFormProps {
   entity: QuickCreateEntity
   open: boolean
-  onOpenChange: (open: boolean) => void
-  /** Called with the newly created record (already mapped to {id, name}) */
-  onCreated: (record: SelectOption) => void
+  onClose: () => void
+  onCreated: (record: CreatedRecord) => void
 }
 
-function QuickCreateDialog({ entity, open, onOpenChange, onCreated }: QuickCreateDialogProps) {
-  const cfg = ENTITY_CONFIG[entity]
-  const [name, setName] = React.useState('')
-  const [category, setCategory] = React.useState('otros')
-  const [contactName, setContactName] = React.useState('')
-  const [phone, setPhone] = React.useState('')
-  const [address, setAddress] = React.useState('')
-  const [servings, setServings] = React.useState(1)
-  const [saving, setSaving] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
-
-  // Reset all fields whenever the dialog opens
-  React.useEffect(() => {
-    if (open) {
-      setName('')
-      setCategory('otros')
-      setContactName('')
-      setPhone('')
-      setAddress('')
-      setServings(1)
-      setError(null)
-    }
-  }, [open])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    const trimmed = name.trim()
-    if (!trimmed) {
-      setError(cfg.nameField === 'title' ? 'El título es obligatorio' : 'El nombre es obligatorio')
-      return
-    }
-
-    const body: Record<string, unknown> = { [cfg.nameField]: trimmed }
-    if (entity === 'supplier') {
-      if (contactName.trim()) body.contactName = contactName.trim()
-      if (phone.trim()) body.phone = phone.trim()
-    } else if (entity === 'place') {
-      if (address.trim()) body.address = address.trim()
-    } else if (entity === 'ingredient' || entity === 'supply') {
-      body.category = category
-    } else if (entity === 'recipe') {
-      body.category = category
-      body.servings = Number(servings) || 1
-    }
-
-    setSaving(true)
-    try {
-      const res = await fetch(cfg.apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error((data && data.error) || 'HTTP ' + res.status)
-      const created = data[cfg.responseKey]
-      if (!created || !created.id) throw new Error('Respuesta inválida del servidor')
-      const record: SelectOption = {
-        id: created.id,
-        name: created[cfg.nameField] || trimmed,
-      }
-      toast.success(`${cfg.label} creado: ${record.name}`)
-      onCreated(record)
-      onOpenChange(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al crear')
-    } finally {
-      setSaving(false)
-    }
+function FullCreateDialog({ entity, open, onClose, onCreated }: FullFormProps) {
+  switch (entity) {
+    case 'supplier':
+      return <SupplierFullCreateDialog open={open} onClose={onClose} onCreated={onCreated} />
+    case 'place':
+      return <PlaceFullCreateDialog open={open} onClose={onClose} onCreated={onCreated} />
+    case 'ingredient':
+      return <IngredientFullCreateDialog open={open} onClose={onClose} onCreated={onCreated} />
+    case 'supply':
+      return <SupplyFullCreateDialog open={open} onClose={onClose} onCreated={onCreated} />
+    case 'recipe':
+      return <RecipeFullCreateDialog open={open} onClose={onClose} onCreated={onCreated} />
+    default:
+      return null
   }
-
-  const nameLabel = cfg.nameField === 'title' ? 'Título' : 'Nombre'
-  const titleText = `Crear ${cfg.label}`
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            {titleText}
-          </DialogTitle>
-          <DialogDescription>
-            Creá un registro rápido. Podés completar más detalles después desde su módulo.
-          </DialogDescription>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {error && (
-            <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>
-          )}
-
-          <div className="space-y-1.5">
-            <Label className="text-[#5C3A21]">{nameLabel} *</Label>
-            <Input
-              autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={`Ingresá el ${nameLabel.toLowerCase()}…`}
-              className="border-[#5C3A21]/15"
-            />
-          </div>
-
-          {entity === 'supplier' && (
-            <>
-              <div className="space-y-1.5">
-                <Label className="text-[#5C3A21]">Contacto</Label>
-                <Input value={contactName} onChange={(e) => setContactName(e.target.value)} placeholder="Nombre del contacto (opcional)" className="border-[#5C3A21]/15" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[#5C3A21]">Teléfono</Label>
-                <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Teléfono (opcional)" className="border-[#5C3A21]/15" />
-              </div>
-            </>
-          )}
-
-          {entity === 'place' && (
-            <div className="space-y-1.5">
-              <Label className="text-[#5C3A21]">Dirección</Label>
-              <Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Dirección (opcional)" className="border-[#5C3A21]/15" />
-            </div>
-          )}
-
-          {(entity === 'ingredient' || entity === 'supply' || entity === 'recipe') && (
-            <div className="space-y-1.5">
-              <Label className="text-[#5C3A21]">Categoría</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger className="border-[#5C3A21]/15"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {(entity === 'ingredient' ? INGREDIENT_CATEGORIES : entity === 'supply' ? SUPPLY_CATEGORIES : RECIPE_CATEGORIES).map((c) => (
-                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {entity === 'recipe' && (
-            <div className="space-y-1.5">
-              <Label className="text-[#5C3A21]">Porciones</Label>
-              <Input type="number" min="1" value={servings} onChange={(e) => setServings(Number(e.target.value))} className="border-[#5C3A21]/15" />
-            </div>
-          )}
-
-          <DialogFooter className="gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
-            <Button type="submit" disabled={saving} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              Crear
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  )
 }
 
 // ============================================================
@@ -284,7 +117,7 @@ function SelectWithCreate({
   const [createOpen, setCreateOpen] = React.useState(false)
   const cfg = ENTITY_CONFIG[entity]
 
-  const handleCreated = (record: SelectOption) => {
+  const handleCreated = (record: CreatedRecord) => {
     onCreated?.(record)
     // Defer the auto-select so the parent's options list updates first.
     // Radix Select can't display a value whose option hasn't rendered yet.
@@ -337,15 +170,18 @@ function SelectWithCreate({
           <Plus className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
         </Button>
       </div>
-      <QuickCreateDialog
+      <FullCreateDialog
         entity={entity}
         open={createOpen}
-        onOpenChange={setCreateOpen}
-        onCreated={handleCreated}
+        onClose={() => setCreateOpen(false)}
+        onCreated={(record) => {
+          handleCreated(record)
+          setCreateOpen(false)
+        }}
       />
     </>
   )
 }
 
-export { SelectWithCreate, QuickCreateDialog, ENTITY_CONFIG }
-export type { SelectWithCreateProps, QuickCreateDialogProps }
+export { SelectWithCreate, ENTITY_CONFIG }
+export type { SelectWithCreateProps }
