@@ -114,6 +114,19 @@ function isMeasureFieldHidden(type: string): boolean {
   return type === 'unidad' || type === 'kg_suelto' || type === 'metro_suelto'
 }
 
+// Auto-detect usage unit based on purchase unit type
+function getAutoUsageUnit(type: string): string {
+  switch (type) {
+    case 'unidad': return 'u'
+    case 'caja': return 'u'
+    case 'paquete': return 'u'
+    case 'rollo': return 'cm'
+    case 'kg_suelto': return 'g'
+    case 'metro_suelto': return 'cm'
+    default: return 'u'
+  }
+}
+
 const fmtCurrency = (v: number) => '$' + v.toLocaleString('es-AR', { maximumFractionDigits: 2 })
 
 function CmInsumosPageContent() {
@@ -351,7 +364,15 @@ function SupplyFormDialog({ open, mode, item, onClose, onSaved }: { open: boolea
       const body: Record<string, unknown> = {
         name: form.name, description: form.description || null,
         category: form.category || null, purchaseUnit: form.purchaseUnit,
-        purchasePrice: price, image: form.image || null, isActive: form.isActive,
+        purchaseUnitType: form.purchaseUnitType || null,
+        unitsPurchased: form.unitsPurchased ? parseFloat(form.unitsPurchased) : null,
+        measurePerUnit: form.measurePerUnit ? parseFloat(form.measurePerUnit) : null,
+        measureUnit: form.measureUnit || null,
+        totalPrice: form.totalPrice ? parseFloat(form.totalPrice) : null,
+        usageUnit: getAutoUsageUnit(form.purchaseUnitType),
+        equivalenceValue: form.equivalenceValue ? parseFloat(form.equivalenceValue) : null,
+        equivalenceUnit: form.equivalenceUnit || null,
+        image: form.image || null, isActive: form.isActive,
       }
       const url = mode === 'create' ? '/api/cocina-movil/supplies' : `/api/cocina-movil/supplies/${item!.id}`
       const res = await fetch(url, { method: mode === 'create' ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
@@ -374,38 +395,38 @@ function SupplyFormDialog({ open, mode, item, onClose, onSaved }: { open: boolea
           {error && <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>}
 
           <div className="flex items-center gap-3"><div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">1</div><h3 className="text-sm font-semibold text-[#5C3A21]">Datos del Insumo</h3></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-10">
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Nombre *</Label><Input value={form.name} onChange={(e) => setField('name', e.target.value)} className="border-[#5C3A21]/15" autoFocus /></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Categoría</Label><Select value={form.category || 'none'} onValueChange={(v) => setField('category', v === 'none' ? '' : v)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Sin categoría" /></SelectTrigger><SelectContent><SelectItem value="none">— Sin categoría —</SelectItem>{CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-10">
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Nombre *</Label><Input value={form.name} onChange={(e) => setField('name', e.target.value)} className="border-[#5C3A21]/15 h-10" autoFocus /></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Categoría</Label><Select value={form.category || 'none'} onValueChange={(v) => setField('category', v === 'none' ? '' : v)}><SelectTrigger className="border-[#5C3A21]/15 h-10"><SelectValue placeholder="Sin categoría" /></SelectTrigger><SelectContent><SelectItem value="none">— Sin categoría —</SelectItem>{CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Descripción</Label><Textarea value={form.description} onChange={(e) => setField('description', e.target.value)} className="border-[#5C3A21]/15" rows={2} /></div>
-            <Separator />
-            <div className="flex items-center gap-3"><div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">2</div><h3 className="text-sm font-semibold text-[#5C3A21]">Compra</h3></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Tipo de Unidad de Compra</Label><Select value={form.purchaseUnitType || 'none'} onValueChange={(v) => { const nt = v === 'none' ? '' : v; setField('purchaseUnitType', nt); if (isMeasureFieldHidden(nt)) setField('measurePerUnit', '1') }}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Sin tipo" /></SelectTrigger><SelectContent><SelectItem value="none">— Sin tipo —</SelectItem>{PURCHASE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">{getQuantityLabel(form.purchaseUnitType)}</Label><Input type="number" step="0.01" min="0" value={form.unitsPurchased} onChange={(e) => setField('unitsPurchased', e.target.value)} placeholder="ej: 1 (caja), 6 (rollos)" className="border-[#5C3A21]/15" /></div>
+          </div>
+
+          <Separator />
+          <div className="flex items-center gap-3"><div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">2</div><h3 className="text-sm font-semibold text-[#5C3A21]">Compra</h3></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-10">
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Tipo de Unidad de Compra</Label><Select value={form.purchaseUnitType || 'none'} onValueChange={(v) => { const nt = v === 'none' ? '' : v; setField('purchaseUnitType', nt); if (isMeasureFieldHidden(nt)) setField('measurePerUnit', '1'); setField('usageUnit', getAutoUsageUnit(nt)) }}><SelectTrigger className="border-[#5C3A21]/15 h-10"><SelectValue placeholder="Sin tipo" /></SelectTrigger><SelectContent><SelectItem value="none">— Sin tipo —</SelectItem>{PURCHASE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">{getQuantityLabel(form.purchaseUnitType)}</Label><Input type="number" step="0.01" min="0" value={form.unitsPurchased} onChange={(e) => setField('unitsPurchased', e.target.value)} placeholder="ej: 1 (caja), 6 (rollos)" className="border-[#5C3A21]/15 h-10" /></div>
             {!isMeasureFieldHidden(form.purchaseUnitType) && (
-              <div className="space-y-1.5 grid grid-cols-2 gap-2"><div className="space-y-1.5"><Label className="text-[#5C3A21]">{getMeasureLabel(form.purchaseUnitType)}</Label><Input type="number" step="0.01" min="0" value={form.measurePerUnit} onChange={(e) => setField('measurePerUnit', e.target.value)} placeholder="ej: 100" className="border-[#5C3A21]/15" /></div><div className="space-y-1.5"><Label className="text-[#5C3A21]">Unidad</Label><Select value={form.measureUnit} onValueChange={(v) => setField('measureUnit', v)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue /></SelectTrigger><SelectContent>{MEASURE_UNITS.map((u) => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent></Select></div></div>
+              <>
+                <div className="space-y-1.5"><Label className="text-[#5C3A21]">{getMeasureLabel(form.purchaseUnitType)}</Label><Input type="number" step="0.01" min="0" value={form.measurePerUnit} onChange={(e) => setField('measurePerUnit', e.target.value)} placeholder="ej: 100" className="border-[#5C3A21]/15 h-10" /></div>
+                <div className="space-y-1.5"><Label className="text-[#5C3A21]">Unidad de Medida</Label><Select value={form.measureUnit} onValueChange={(v) => setField('measureUnit', v)}><SelectTrigger className="border-[#5C3A21]/15 h-10"><SelectValue /></SelectTrigger><SelectContent>{MEASURE_UNITS.map((u) => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent></Select></div>
+              </>
             )}
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Precio Total Pagado ($)</Label><Input type="number" step="0.01" min="0" value={form.totalPrice} onChange={(e) => setField('totalPrice', e.target.value)} placeholder="ej: 2500" className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Precio Total Pagado ($)</Label><Input type="number" step="0.01" min="0" value={form.totalPrice} onChange={(e) => setField('totalPrice', e.target.value)} placeholder="ej: 2500" className="border-[#5C3A21]/15 h-10" /></div>
             {form.unitsPurchased && form.totalPrice && parseFloat(form.unitsPurchased) > 0 && parseFloat(form.totalPrice) > 0 && (
-              <div className="bg-[#E1AD01]/10 border border-[#E1AD01]/30 rounded-md p-3 space-y-1">
+              <div className="sm:col-span-2 bg-[#E1AD01]/10 border border-[#E1AD01]/30 rounded-md p-3 space-y-1">
                 <p className="text-xs font-semibold text-[#7a5c00]">📊 Cálculo automático:</p>
                 <p className="text-sm text-[#5C3A21]">Precio por unidad de compra: <strong>{fmtCurrency(parseFloat(form.totalPrice) / (parseFloat(form.unitsPurchased) * (form.measurePerUnit && !isMeasureFieldHidden(form.purchaseUnitType) ? parseFloat(form.measurePerUnit) : 1)))}</strong></p>
-                {form.equivalenceValue && parseFloat(form.equivalenceValue) > 0 && (
-                  <p className="text-sm text-[#5C3A21]">Precio por unidad de uso: <strong>{fmtCurrency((parseFloat(form.totalPrice) / (parseFloat(form.unitsPurchased) * (form.measurePerUnit && !isMeasureFieldHidden(form.purchaseUnitType) ? parseFloat(form.measurePerUnit) : 1))) / parseFloat(form.equivalenceValue))}</strong></p>
-                )}
+                <p className="text-xs text-[#8A7E70]">Unidad de uso detectada automáticamente: <strong>{getAutoUsageUnit(form.purchaseUnitType) === 'u' ? 'Unidades' : getAutoUsageUnit(form.purchaseUnitType) === 'g' ? 'Gramos' : 'Centímetros'}</strong></p>
               </div>
             )}
-            <Separator />
-            <div className="flex items-center gap-3"><div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">3</div><h3 className="text-sm font-semibold text-[#5C3A21]">Uso</h3></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Unidad de Uso</Label><Select value={form.usageUnit} onValueChange={(v) => setField('usageUnit', v)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue /></SelectTrigger><SelectContent>{USAGE_UNITS.map((u) => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent></Select></div>
-            <div className="space-y-1.5 grid grid-cols-2 gap-2"><div className="space-y-1.5"><Label className="text-[#5C3A21]">Equivalencia (opcional)</Label><Input type="number" step="0.01" min="0" value={form.equivalenceValue} onChange={(e) => setField('equivalenceValue', e.target.value)} placeholder="ej: 13" className="border-[#5C3A21]/15" /></div><div className="space-y-1.5"><Label className="text-[#5C3A21]">Unidad equiv.</Label><Select value={form.equivalenceUnit} onValueChange={(v) => setField('equivalenceUnit', v)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue /></SelectTrigger><SelectContent>{USAGE_UNITS.map((u) => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent></Select></div></div>
             {mode === 'edit' && (
-              <div className="space-y-1.5 flex items-center gap-3 pt-5"><Label className="text-[#5C3A21]">Activo</Label><Switch checked={form.isActive} onCheckedChange={(v) => setField('isActive', v)} /></div>
+              <div className="space-y-1.5 flex items-center gap-3 pt-2"><Label className="text-[#5C3A21]">Activo</Label><Switch checked={form.isActive} onCheckedChange={(v) => setField('isActive', v)} /></div>
             )}
           </div>
 
           <Separator />
-          <div className="flex items-center gap-3"><div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">2</div><h3 className="text-sm font-semibold text-[#5C3A21]">Imagen</h3></div>
+          <div className="flex items-center gap-3"><div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">3</div><h3 className="text-sm font-semibold text-[#5C3A21]">Imagen</h3></div>
           <div className="pl-10">
             <ImageUploader value={form.image || null} onChange={(url) => setField('image', url || '')} uploadUrl="/api/cocina-movil/supplies/upload-image" label="Imagen del insumo" aspectRatio="4/3" disabled={saving} />
           </div>
