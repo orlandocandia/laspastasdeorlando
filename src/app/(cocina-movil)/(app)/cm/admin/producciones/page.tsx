@@ -538,7 +538,7 @@ function ProductionFormDialog({ open, mode, item, recipes, places, onClose, onSa
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 pb-16">
           {error && (
             <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>
           )}

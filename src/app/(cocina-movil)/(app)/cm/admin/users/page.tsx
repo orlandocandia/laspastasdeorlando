@@ -665,8 +665,8 @@ function UserFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21]">
             {mode === 'create' ? 'Nuevo Usuario' : 'Editar Usuario'}
           </DialogTitle>
@@ -679,7 +679,8 @@ function UserFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-6 space-y-5 pb-6">
           {error && (
             <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">
               {error}
@@ -923,7 +924,8 @@ function UserFormDialog({
             )}
           </div>
 
-          <DialogFooter className="gap-2 pt-2 sticky bottom-0 bg-white/95 backdrop-blur-sm -mx-1 px-1 py-2 border-t border-[#5C3A21]/8">
+          </div>
+          <DialogFooter className="shrink-0 gap-2 bg-white border-t border-[#5C3A21]/8 px-6 py-3">
             <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
               Cancelar
             </Button>

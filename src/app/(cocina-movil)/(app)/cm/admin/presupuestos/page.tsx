@@ -525,8 +525,8 @@ function BudgetFormDialog({ open, mode, item, recipes, onClose, onSaved }: Budge
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
             <FileText className="h-5 w-5" />
             {mode === 'create' ? 'Nuevo Presupuesto' : 'Editar Presupuesto'}
@@ -538,7 +538,8 @@ function BudgetFormDialog({ open, mode, item, recipes, onClose, onSaved }: Budge
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-6 space-y-4 pb-6">
           {error && (
             <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>
           )}
@@ -643,7 +644,8 @@ function BudgetFormDialog({ open, mode, item, recipes, onClose, onSaved }: Budge
             )}
           </div>
 
-          <DialogFooter className="gap-2">
+          </div>
+          <DialogFooter className="shrink-0 gap-2 bg-white border-t border-[#5C3A21]/10 px-6 py-3">
             <Button type="button" variant="outline" onClick={onClose} disabled={saving}>Cancelar</Button>
             <Button type="submit" disabled={saving} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">
               {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}

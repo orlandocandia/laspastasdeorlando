@@ -536,8 +536,8 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
             {mode === 'create' ? 'Nueva Compra' : 'Editar Compra'}
@@ -547,7 +547,8 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-6 space-y-4 pb-6">
           {error && (
             <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>
           )}
@@ -721,8 +722,9 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
             )}
           </div>
 
-          {/* Footer sticky: Total + acciones */}
-          <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm -mx-6 px-6 pb-4 pt-3 border-t border-[#5C3A21]/10 flex items-center justify-between gap-2">
+          {/* Footer: Total + acciones */}
+          </div>
+          <div className="shrink-0 bg-white border-t border-[#5C3A21]/10 px-6 py-3 flex items-center justify-between gap-2">
             <div className="flex items-baseline gap-2">
               <span className="text-sm text-[#8A7E70]">Total:</span>
               <span className="text-xl font-bold text-[#5C3A21]">{fmtCurrency(total)}</span>

@@ -55,8 +55,8 @@ function SectionHeader({ num, title }: { num: number; title: string }) {
   )
 }
 
-const StickyFooter = ({ saving, onClose }: { saving: boolean; onClose: () => void }) => (
-  <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm -mx-6 px-6 pb-4 pt-3 border-t border-[#5C3A21]/10 flex justify-end gap-2">
+const FormFooter = ({ saving, onClose }: { saving: boolean; onClose: () => void }) => (
+  <div className="shrink-0 bg-white border-t border-[#5C3A21]/10 px-6 py-3 flex justify-end gap-2">
     <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
     <Button type="submit" disabled={saving} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">
       {saving && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -119,16 +119,16 @@ export function SupplierFullCreateDialog({ open, onClose, onCreated }: FullCreat
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21]">Nuevo Proveedor</DialogTitle>
           <DialogDescription>Agregar proveedor de materias primas o insumos</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden"><div className="flex-1 overflow-y-auto px-6 space-y-4 pb-6">
           {error && <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>}
 
           <SectionHeader num={1} title="Datos del Proveedor" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-10">
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Nombre *</Label><Input value={form.name} onChange={(e) => setField('name', e.target.value)} placeholder="Razón social" className="border-[#5C3A21]/15" autoFocus /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Contacto</Label><Input value={form.contactName} onChange={(e) => setField('contactName', e.target.value)} placeholder="Persona de contacto" className="border-[#5C3A21]/15" /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Teléfono</Label><Input value={form.phone} onChange={(e) => setField('phone', e.target.value)} placeholder="3754-xxxxxx" className="border-[#5C3A21]/15" /></div>
@@ -137,7 +137,7 @@ export function SupplierFullCreateDialog({ open, onClose, onCreated }: FullCreat
 
           <Separator />
           <SectionHeader num={2} title="Domicilio" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-10">
             <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Dirección</Label><Input value={form.address} onChange={(e) => setField('address', e.target.value)} placeholder="Calle, número" className="border-[#5C3A21]/15" /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">País</Label><Input value={form.country} onChange={(e) => setField('country', e.target.value)} className="border-[#5C3A21]/15" /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Provincia</Label><Input value={form.province} onChange={(e) => setField('province', e.target.value)} className="border-[#5C3A21]/15" /></div>
@@ -155,7 +155,7 @@ export function SupplierFullCreateDialog({ open, onClose, onCreated }: FullCreat
             <ImageUploader value={form.image || null} onChange={(url) => setField('image', url || '')} uploadUrl="/api/cocina-movil/suppliers/upload-image" label="Logo o foto del proveedor" aspectRatio="4/3" disabled={saving} />
           </div>
 
-          <StickyFooter saving={saving} onClose={onClose} />
+          </div><FormFooter saving={saving} onClose={onClose} />
         </form>
       </DialogContent>
     </Dialog>
@@ -230,17 +230,17 @@ export function PlaceFullCreateDialog({ open, onClose, onCreated }: FullCreateDi
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21]">Nuevo Lugar</DialogTitle>
           <DialogDescription>Creá un nuevo lugar para la Cocina Móvil</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden"><div className="flex-1 overflow-y-auto px-6 space-y-5 pb-6">
           {error && <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>}
 
           {/* Sección 1: Datos */}
           <SectionHeader num={1} title="Datos del Lugar" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-10">
             <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Nombre *</Label><Input value={form.name} onChange={(e) => setField('name', e.target.value)} placeholder="Ej: Cocina Central, Carrito Móvil Centro…" className="border-[#5C3A21]/15" autoFocus /></div>
             <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Descripción</Label><Textarea value={form.description} onChange={(e) => setField('description', e.target.value)} placeholder="Breve descripción del lugar, su función, etc." className="border-[#5C3A21]/15" rows={2} /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Responsable</Label><Input value={form.contactName} onChange={(e) => setField('contactName', e.target.value)} placeholder="Nombre y apellido" className="border-[#5C3A21]/15" /></div>
@@ -251,7 +251,7 @@ export function PlaceFullCreateDialog({ open, onClose, onCreated }: FullCreateDi
           <Separator />
           {/* Sección 2: Domicilio */}
           <SectionHeader num={2} title="Domicilio" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-10">
             <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Dirección</Label><Input value={form.address} onChange={(e) => setField('address', e.target.value)} placeholder="Calle, número, piso, depto…" className="border-[#5C3A21]/15" /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">País</Label><Input value={form.country} onChange={(e) => setField('country', e.target.value)} className="border-[#5C3A21]/15" /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Provincia</Label><Input value={form.province} onChange={(e) => setField('province', e.target.value)} className="border-[#5C3A21]/15" /></div>
@@ -273,7 +273,7 @@ export function PlaceFullCreateDialog({ open, onClose, onCreated }: FullCreateDi
           <Separator />
           {/* Sección 4: Costos Fijos */}
           <SectionHeader num={4} title="Costos Fijos" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-10">
             <div className="space-y-1.5 sm:col-span-2">
               <Label className="text-[#5C3A21]">Tipo de tenencia</Label>
               <div className="flex items-center gap-3 h-9 px-3 border border-[#5C3A21]/15 rounded-md bg-[#FFF8E7]/30">
@@ -289,7 +289,7 @@ export function PlaceFullCreateDialog({ open, onClose, onCreated }: FullCreateDi
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Otros costos fijos</Label><Input type="number" min="0" step="0.01" value={form.otherFixedCosts} onChange={(e) => setField('otherFixedCosts', e.target.value)} placeholder="0" className="border-[#5C3A21]/15" /></div>
           </div>
 
-          <StickyFooter saving={saving} onClose={onClose} />
+          </div><FormFooter saving={saving} onClose={onClose} />
         </form>
       </DialogContent>
     </Dialog>
@@ -409,16 +409,16 @@ export function IngredientFullCreateDialog({ open, onClose, onCreated }: FullCre
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21]">Nueva Materia Prima</DialogTitle>
           <DialogDescription>Agregar ingrediente para recetas y producción</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden"><div className="flex-1 overflow-y-auto px-6 space-y-4 pb-6">
           {error && <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>}
 
           <SectionHeader num={1} title="Datos de la Materia Prima" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-10">
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Nombre *</Label><Input value={form.name} onChange={(e) => setField('name', e.target.value)} className="border-[#5C3A21]/15" autoFocus /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Categoría</Label><Select value={form.category || 'none'} onValueChange={(v) => setField('category', v === 'none' ? '' : v)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Sin categoría" /></SelectTrigger><SelectContent><SelectItem value="none">— Sin categoría —</SelectItem>{ING_CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Descripción</Label><Textarea value={form.description} onChange={(e) => setField('description', e.target.value)} className="border-[#5C3A21]/15" rows={2} /></div>
@@ -461,7 +461,7 @@ export function IngredientFullCreateDialog({ open, onClose, onCreated }: FullCre
             <ImageUploader value={form.image || null} onChange={(url) => setField('image', url || '')} uploadUrl="/api/cocina-movil/ingredients/upload-image" label="Imagen de la materia prima" aspectRatio="4/3" disabled={saving} />
           </div>
 
-          <StickyFooter saving={saving} onClose={onClose} />
+          </div><FormFooter saving={saving} onClose={onClose} />
         </form>
       </DialogContent>
     </Dialog>
@@ -579,12 +579,12 @@ export function SupplyFullCreateDialog({ open, onClose, onCreated }: FullCreateD
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21]">Nuevo Insumo</DialogTitle>
           <DialogDescription>Agregar material no comestible para la operación</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden"><div className="flex-1 overflow-y-auto px-6 space-y-4 pb-6">
           {error && <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>}
 
           <SectionHeader num={1} title="Datos del Insumo" />
@@ -637,7 +637,7 @@ export function SupplyFullCreateDialog({ open, onClose, onCreated }: FullCreateD
             <ImageUploader value={form.image || null} onChange={(url) => setField('image', url || '')} uploadUrl="/api/cocina-movil/supplies/upload-image" label="Imagen del insumo" aspectRatio="4/3" disabled={saving} />
           </div>
 
-          <StickyFooter saving={saving} onClose={onClose} />
+          </div><FormFooter saving={saving} onClose={onClose} />
         </form>
       </DialogContent>
     </Dialog>
@@ -788,16 +788,16 @@ export function RecipeFullCreateDialog({ open, onClose, onCreated }: FullCreateD
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21]">Nueva Receta</DialogTitle>
           <DialogDescription>Crear una receta con ingredientes, insumos y cálculo de costos</DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden"><div className="flex-1 overflow-y-auto px-6 space-y-4 pb-6">
           {error && <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>}
 
           <SectionHeader num={1} title="Datos de la Receta" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-10">
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Título *</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} className="border-[#5C3A21]/15" autoFocus /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Categoría *</Label><Select value={category || 'none'} onValueChange={(v) => setCategory(v === 'none' ? '' : v as CmRecipeCategory)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Sin categoría" /></SelectTrigger><SelectContent><SelectItem value="none">— Sin categoría —</SelectItem>{REC_CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Descripción</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} className="border-[#5C3A21]/15" rows={2} /></div>
@@ -833,13 +833,13 @@ export function RecipeFullCreateDialog({ open, onClose, onCreated }: FullCreateD
 
           <Separator />
           <SectionHeader num={4} title="Costos" />
-          <div className="pl-10 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="pl-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-[#FBF1DC] rounded-md p-3 text-center"><p className="text-xs text-[#8A7E70]">Costo Total</p><p className="text-lg font-bold text-[#5C3A21]">{fmtCurrency(totalCost)}</p></div>
             <div className="bg-[#708238]/10 rounded-md p-3 text-center"><p className="text-xs text-[#8A7E70]">Costo por Porción</p><p className="text-lg font-bold text-[#708238]">{fmtCurrency(costPerServing)}</p></div>
             <div className="bg-[#FFF8E7] rounded-md p-3 text-center"><p className="text-xs text-[#8A7E70]">Porciones</p><p className="text-lg font-bold text-[#5C3A21]">{servingsNum}</p></div>
           </div>
 
-          <StickyFooter saving={saving} onClose={onClose} />
+          </div><FormFooter saving={saving} onClose={onClose} />
         </form>
       </DialogContent>
     </Dialog>

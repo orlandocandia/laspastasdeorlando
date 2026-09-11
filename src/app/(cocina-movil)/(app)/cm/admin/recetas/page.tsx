@@ -626,8 +626,8 @@ function RecipeFormDialog({ open, mode, item, ingredients, supplies, onClose, on
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
             <ChefHat className="h-5 w-5" />
             {mode === 'create' ? 'Nueva Receta' : 'Editar Receta'}
@@ -639,7 +639,8 @@ function RecipeFormDialog({ open, mode, item, ingredients, supplies, onClose, on
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-6 space-y-5 pb-6">
           {error && (
             <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>
           )}
@@ -935,8 +936,9 @@ function RecipeFormDialog({ open, mode, item, ingredients, supplies, onClose, on
             </div>
           )}
 
-          {/* Footer sticky: Total + acciones */}
-          <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm -mx-6 px-6 pb-4 pt-3 border-t border-[#5C3A21]/10 flex items-center justify-between gap-2">
+          {/* Footer: Total + acciones */}
+          </div>
+          <div className="shrink-0 bg-white border-t border-[#5C3A21]/10 px-6 py-3 flex items-center justify-between gap-2">
             <div className="flex flex-col">
               <span className="text-xs text-[#8A7E70]">Costo Total / Porción</span>
               <span className="text-lg font-bold text-[#5C3A21]">
