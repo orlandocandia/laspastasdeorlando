@@ -165,7 +165,7 @@ function SelectWithCreate({
           disabled={disabled}
           title={plusTitle}
           aria-label={plusTitle}
-          className={`shrink-0 border-[#5C3A21]/15 text-[#5C3A21] hover:bg-[#FBF1DC] hover:text-[#5C3A21] ${compact ? 'h-9 w-9' : 'h-9 w-9'}`}
+          className={`shrink-0 border-[#5C3A21]/15 text-[#5C3A21] hover:bg-[#FBF1DC] hover:text-[#5C3A21] ${compact ? 'h-9 w-8 px-0' : 'h-9 w-9'}`}
         >
           <Plus className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
         </Button>

@@ -615,11 +615,11 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
                 {/* Header de grilla (desktop) */}
                 <div className="hidden lg:grid grid-cols-12 gap-2 px-2 text-xs font-medium text-[#8A7E70]">
                   <div className="col-span-2">Tipo</div>
-                  <div className="col-span-4">Producto</div>
+                  <div className="col-span-5">Producto</div>
                   <div className="col-span-1 text-right">Cant.</div>
                   <div className="col-span-1">Unidad</div>
                   <div className="col-span-2 text-right">Precio/U</div>
-                  <div className="col-span-2 text-right">Subtotal</div>
+                  <div className="col-span-1 text-right">Subtotal</div>
                 </div>
 
                 <div className="space-y-2">
@@ -646,14 +646,14 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
                         </div>
 
                         {/* Producto */}
-                        <div className="col-span-2 lg:col-span-4">
+                        <div className="col-span-2 lg:col-span-5">
                           <Label className="text-[10px] text-[#8A7E70] lg:hidden">Producto</Label>
                           <SelectWithCreate
                             entity={it.itemType}
                             value={it.itemId}
                             onValueChange={(v) => onProductSelect(it.key, v)}
                             options={pool}
-                            placeholder={it.itemType === 'ingredient' ? 'Seleccionar materia prima…' : 'Seleccionar insumo…'}
+                            placeholder={it.itemType === 'ingredient' ? 'Seleccionar MP…' : 'Seleccionar insumo…'}
                             compact
                             triggerClassName="h-9 border-[#5C3A21]/15 text-xs"
                             onCreated={(r) => {
@@ -700,7 +700,7 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
                         </div>
 
                         {/* Subtotal + Remove */}
-                        <div className="col-span-2 lg:col-span-2 flex items-center justify-end gap-1">
+                        <div className="col-span-2 lg:col-span-1 flex items-center justify-end gap-1">
                           <div className="flex-1 text-right text-sm font-semibold text-[#5C3A21]">
                             {fmtCurrency(subtotal)}
                           </div>
