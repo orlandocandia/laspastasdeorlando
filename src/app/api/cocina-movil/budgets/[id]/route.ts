@@ -19,11 +19,21 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   let body: Record<string, unknown>
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 }) }
   const updates: Partial<CmBudgetInput> = {}
-  if (typeof body.recipeId === 'string') updates.recipeId = body.recipeId
   if (body.clientName !== undefined) updates.clientName = typeof body.clientName === 'string' ? body.clientName : null
-  if (typeof body.servings === 'number') updates.servings = body.servings
-  if (typeof body.pricePerServing === 'number') updates.pricePerServing = body.pricePerServing
+  if (typeof body.budgetDate === 'number') updates.budgetDate = body.budgetDate
+  if (body.validityDays !== undefined) updates.validityDays = typeof body.validityDays === 'number' ? body.validityDays : null
+  if (body.budgetNumber !== undefined) updates.budgetNumber = typeof body.budgetNumber === 'string' ? body.budgetNumber : null
   if (body.observations !== undefined) updates.observations = typeof body.observations === 'string' ? body.observations : null
+  if (Array.isArray(body.items)) {
+    updates.items = (body.items as Array<Record<string, unknown>>).map((it) => ({
+      recipeId: typeof it.recipeId === 'string' ? it.recipeId : '',
+      quantity: typeof it.quantity === 'number' ? it.quantity : 0,
+      unitPrice: typeof it.unitPrice === 'number' ? it.unitPrice : 0,
+    }))
+  }
+  if (body.discountType !== undefined) updates.discountType = body.discountType === 'percentage' || body.discountType === 'fixed' ? body.discountType : null
+  if (body.discountValue !== undefined) updates.discountValue = typeof body.discountValue === 'number' ? body.discountValue : null
+  if (body.taxRate !== undefined) updates.taxRate = typeof body.taxRate === 'number' ? body.taxRate : null
   try {
     const budget = updateBudget(id, updates)
     if (!budget) return NextResponse.json({ error: 'No encontrado' }, { status: 404 })

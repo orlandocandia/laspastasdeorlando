@@ -26,15 +26,35 @@ export async function POST(request: Request) {
   if (!auth.authorized) return auth.response!
   let body: Record<string, unknown>
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 }) }
-  if (typeof body.recipeId !== 'string' || !body.recipeId) return NextResponse.json({ error: 'La receta es obligatoria.' }, { status: 400 })
-  if (typeof body.servings !== 'number' || body.servings <= 0) return NextResponse.json({ error: 'Las porciones deben ser mayores a 0.' }, { status: 400 })
-  if (typeof body.pricePerServing !== 'number' || body.pricePerServing <= 0) return NextResponse.json({ error: 'El precio por porción debe ser mayor a 0.' }, { status: 400 })
+  if (!Array.isArray(body.items) || body.items.length === 0) return NextResponse.json({ error: 'Debe agregar al menos un item.' }, { status: 400 })
+
+  // Validate each item
+  for (const it of body.items) {
+    if (typeof it !== 'object' || it === null || typeof it.recipeId !== 'string' || !it.recipeId) {
+      return NextResponse.json({ error: 'Todos los items deben tener una receta.' }, { status: 400 })
+    }
+    if (typeof it.quantity !== 'number' || it.quantity <= 0) {
+      return NextResponse.json({ error: 'La cantidad debe ser mayor a 0.' }, { status: 400 })
+    }
+    if (typeof it.unitPrice !== 'number' || it.unitPrice < 0) {
+      return NextResponse.json({ error: 'El precio no puede ser negativo.' }, { status: 400 })
+    }
+  }
+
   const input: CmBudgetInput = {
-    recipeId: body.recipeId,
     clientName: typeof body.clientName === 'string' ? body.clientName : null,
-    servings: body.servings,
-    pricePerServing: body.pricePerServing,
+    budgetDate: typeof body.budgetDate === 'number' ? body.budgetDate : undefined,
+    validityDays: typeof body.validityDays === 'number' ? body.validityDays : null,
+    budgetNumber: typeof body.budgetNumber === 'string' ? body.budgetNumber : null,
     observations: typeof body.observations === 'string' ? body.observations : null,
+    items: (body.items as Array<{ recipeId: string; quantity: number; unitPrice: number }>).map((it) => ({
+      recipeId: it.recipeId,
+      quantity: it.quantity,
+      unitPrice: it.unitPrice,
+    })),
+    discountType: body.discountType === 'percentage' || body.discountType === 'fixed' ? body.discountType : null,
+    discountValue: typeof body.discountValue === 'number' ? body.discountValue : null,
+    taxRate: typeof body.taxRate === 'number' ? body.taxRate : null,
   }
   try {
     const budget = createBudget(input)
