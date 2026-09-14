@@ -38,6 +38,7 @@ import {
   ShoppingBag,
   Settings,
   HelpCircle,
+  ClipboardList,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { logoutCm, getCmUserFromStorage, type CmUser } from '@/lib/cocina-movil/auth-client'
@@ -58,6 +59,7 @@ const NAV_ITEMS: NavItem[] = [
   { title: 'Materias Primas', href: '/cm/admin/materias-primas', icon: Package, enabled: true },
   { title: 'Insumos', href: '/cm/admin/insumos', icon: FlaskConical, enabled: true },
   { title: 'Proveedores', href: '/cm/admin/proveedores', icon: Building2, enabled: true },
+  { title: 'Pedidos a Proveedores', href: '/cm/admin/pedidos-proveedores', icon: ClipboardList, enabled: true },
   { title: 'Compras', href: '/cm/admin/compras', icon: ShoppingCart, enabled: true },
   { title: 'Recetas', href: '/cm/admin/recetas', icon: ChefHat, enabled: true },
   { title: 'Producciones', href: '/cm/admin/producciones', icon: Factory, enabled: true },
