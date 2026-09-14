@@ -445,7 +445,7 @@ function CmComprasPageContent() {
                     <TableHead>Proveedor</TableHead>
                     <TableHead className="hidden md:table-cell">Lugar</TableHead>
                     <TableHead className="hidden lg:table-cell">Factura</TableHead>
-                    <TableHead className="hidden xl:table-cell">Pedido Origen</TableHead>
+                    <TableHead className="hidden lg:table-cell">Pedido Origen</TableHead>
                     <TableHead className="text-center">Cant. Items</TableHead>
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
@@ -462,7 +462,7 @@ function CmComprasPageContent() {
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-[#4A3F36]">{p.placeName || '—'}</TableCell>
                       <TableCell className="hidden lg:table-cell text-sm text-[#4A3F36]">{p.invoiceNumber || '—'}</TableCell>
-                      <TableCell className="hidden xl:table-cell text-sm">
+                      <TableCell className="hidden lg:table-cell text-sm">
                         {p.purchaseOrderNumber ? (
                           <Link href={`/cm/admin/pedidos-proveedores`} className="text-[#E1AD01] hover:underline font-medium">
                             {p.purchaseOrderNumber}
