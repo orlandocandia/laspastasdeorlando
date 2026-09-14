@@ -47,6 +47,8 @@ export async function POST(request: Request) {
       unit: typeof item.unit === 'string' ? item.unit : 'kg',
       pricePerUnit: typeof item.pricePerUnit === 'number' ? item.pricePerUnit : 0,
     })),
+    purchaseOrderId: typeof body.purchaseOrderId === 'string' ? body.purchaseOrderId : null,
+    purchaseOrderNumber: typeof body.purchaseOrderNumber === 'string' ? body.purchaseOrderNumber : null,
   }
 
   try {

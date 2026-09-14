@@ -37,6 +37,8 @@ export interface CmPurchaseRecord {
   observations: string | null
   items: CmPurchaseItem[]
   total: number // suma de subtotales
+  purchaseOrderId: string | null // ID del Pedido a Proveedor que originó la compra
+  purchaseOrderNumber: string | null // N° del pedido (snapshot)
   createdAt: number
   updatedAt: number
 }
@@ -54,6 +56,8 @@ export interface CmPurchaseInput {
     unit: string
     pricePerUnit: number
   }>
+  purchaseOrderId?: string | null
+  purchaseOrderNumber?: string | null
 }
 
 let purchasesStore: Map<string, CmPurchaseRecord> = new Map()
@@ -75,6 +79,8 @@ function seedDemoPurchases() {
       { id: 'pi-2', purchaseId: 'purchase-1', itemType: 'ingredient', itemId: 'ing-2', itemName: 'Carne Molida', quantity: 5, unit: 'kg', pricePerUnit: 3200, subtotal: 16000 },
     ],
     total: 20500,
+    purchaseOrderId: null,
+    purchaseOrderNumber: null,
     createdAt: now - 86400000 * 3,
     updatedAt: now - 86400000 * 3,
   }
@@ -92,6 +98,8 @@ function seedDemoPurchases() {
       { id: 'pi-4', purchaseId: 'purchase-2', itemType: 'supply', itemId: 'sup-3', itemName: 'Film Polietileno', quantity: 2, unit: 'rollo', pricePerUnit: 800, subtotal: 1600 },
     ],
     total: 9100,
+    purchaseOrderId: null,
+    purchaseOrderNumber: null,
     createdAt: now - 86400000 * 1,
     updatedAt: now - 86400000 * 1,
   }
@@ -223,6 +231,8 @@ export function createPurchase(input: CmPurchaseInput): CmPurchaseRecord {
     observations: input.observations?.trim() || null,
     items,
     total,
+    purchaseOrderId: input.purchaseOrderId || null,
+    purchaseOrderNumber: input.purchaseOrderNumber || null,
     createdAt: now,
     updatedAt: now,
   }

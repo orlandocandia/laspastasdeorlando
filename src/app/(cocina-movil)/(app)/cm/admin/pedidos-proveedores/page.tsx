@@ -1027,6 +1027,8 @@ function ConvertToPurchaseDialog({
           unit: it.unit,
           pricePerUnit: it.pricePerUnit,
         })),
+        purchaseOrderId: item.id,
+        purchaseOrderNumber: item.orderNumber,
       }
       const createRes = await fetch('/api/cocina-movil/purchases', {
         method: 'POST',
