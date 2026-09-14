@@ -16,23 +16,24 @@ export async function GET(request: Request) {
   return NextResponse.json({ error: 'Formato no soportado.' }, { status: 400 })
 }
 
-function buildRows(orders: CmPurchaseOrderRecord[]) {
-  return orders.map((o, i) => ({
+function formatDate(ts: number): string {
+  const d = new Date(ts); const pad = (n: number) => String(n).padStart(2, '0')
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`
+}
+
+async function exportExcel(orders: CmPurchaseOrderRecord[], ts: string) {
+  const XLSX = await import('xlsx')
+  const data = orders.map((o, i) => ({
     '#': i + 1,
     'N° Pedido': o.orderNumber,
     'Proveedor': o.supplierName,
-    'Fecha': new Date(o.orderDate).toLocaleDateString('es-AR'),
-    'Entrega Estimada': o.expectedDeliveryDate ? new Date(o.expectedDeliveryDate).toLocaleDateString('es-AR') : '—',
+    'Fecha': formatDate(o.orderDate),
+    'Entrega Estimada': o.expectedDeliveryDate ? formatDate(o.expectedDeliveryDate) : '—',
     'Items': o.items.length,
     'Total': o.total,
     'Estado': o.status,
     'Compra': o.purchaseId || '—',
   }))
-}
-
-async function exportExcel(orders: CmPurchaseOrderRecord[], ts: string) {
-  const XLSX = await import('xlsx')
-  const data = buildRows(orders)
   const ws = XLSX.utils.json_to_sheet(data)
   ws['!cols'] = [{ wch: 5 }, { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 15 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 15 }]
   const wb = XLSX.utils.book_new()
@@ -43,57 +44,68 @@ async function exportExcel(orders: CmPurchaseOrderRecord[], ts: string) {
   })
 }
 
-async function exportPdf(orders: CmPurchaseOrderRecord[], ts: string) {
-  const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib')
-  const doc = await PDFDocument.create()
-  const font = await doc.embedFont(StandardFonts.Helvetica)
-  const bold = await doc.embedFont(StandardFonts.HelveticaBold)
-  const page = doc.addPage([595, 842])
-  const data = buildRows(orders)
-  let y = 810
-  page.drawText('Pedidos a Proveedores', { x: 40, y, size: 16, font: bold, color: rgb(0.36, 0.23, 0.13) })
-  y -= 30
-  const headers = ['#', 'N°', 'Proveedor', 'Fecha', 'Items', 'Total', 'Estado']
-  const widths = [20, 60, 120, 60, 30, 60, 50]
-  let x = 40
-  for (let i = 0; i < headers.length; i++) {
-    page.drawText(headers[i], { x, y, size: 9, font: bold, color: rgb(0.36, 0.23, 0.13) })
-    x += widths[i]
-  }
-  y -= 15
-  for (const row of data) {
-    if (y < 50) { doc.addPage([595, 842]); y = 810 }
-    x = 40
-    const cells = [String(row['#']), row['N° Pedido'], row['Proveedor'].substring(0, 20), row['Fecha'], String(row['Items']), `$${row['Total']}`, row['Estado']]
-    for (let i = 0; i < cells.length; i++) {
-      page.drawText(cells[i], { x, y, size: 8, font, color: rgb(0.15, 0.15, 0.15) })
-      x += widths[i]
-    }
-    y -= 14
-  }
-  const buf = await doc.save()
-  return new NextResponse(buf, {
-    headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="pedidos-proveedores-${ts}.pdf"` },
-  })
+async function exportWord(orders: CmPurchaseOrderRecord[], ts: string) {
+  const docx = await import('docx')
+  const { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, WidthType, AlignmentType, HeadingLevel } = docx
+  const headers = ['#', 'N° Pedido', 'Proveedor', 'Fecha', 'Entrega', 'Items', 'Total', 'Estado', 'Compra']
+  const headerRow = new TableRow({ children: headers.map(t => new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: t, bold: true })] })], shading: { fill: '5C3A21' } })) })
+  const rows = orders.map((o, i) => new TableRow({ children: [
+    String(i + 1), o.orderNumber, o.supplierName, formatDate(o.orderDate),
+    o.expectedDeliveryDate ? formatDate(o.expectedDeliveryDate) : '—',
+    String(o.items.length), `$${o.total.toFixed(0)}`, o.status, o.purchaseId || '—',
+  ].map(t => new TableCell({ children: [new Paragraph(t)] })) }))
+  const doc = new Document({ sections: [{ properties: {}, children: [
+    new Paragraph({ heading: HeadingLevel.HEADING_1, alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Cocina Móvil — Pedidos a Proveedores', bold: true, color: '5C3A21' })] }),
+    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Generado: ${formatDate(Date.now())} · Total: ${orders.length}`, size: 18, color: '8A7E70' })] }),
+    new Paragraph({ text: '' }),
+    new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, rows: [headerRow, ...rows] }),
+  ] }] })
+  const buf = await Packer.toBuffer(doc)
+  return new NextResponse(buf, { status: 200, headers: { 'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'Content-Disposition': `attachment; filename="pedidos-proveedores-${ts}.docx"` } })
 }
 
-async function exportWord(orders: CmPurchaseOrderRecord[], ts: string) {
-  const data = buildRows(orders)
-  let html = '<html><head><meta charset="utf-8"></head><body>'
-  html += '<h1>Pedidos a Proveedores</h1>'
-  html += '<table border="1" cellpadding="5" style="border-collapse:collapse;font-family:Arial;font-size:11px">'
-  const headers = ['#', 'N° Pedido', 'Proveedor', 'Fecha', 'Entrega Estimada', 'Items', 'Total', 'Estado', 'Compra']
-  html += '<tr>' + headers.map((h) => `<th>${h}</th>`).join('') + '</tr>'
-  for (const row of data) {
-    html += '<tr>'
-    for (const h of headers) {
-      const val = (row as Record<string, unknown>)[h]
-      html += `<td>${val ?? '—'}</td>`
+async function exportPdf(orders: CmPurchaseOrderRecord[], ts: string) {
+  const { jsPDF } = await import('jspdf')
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+  const pw = 297, ph = 210, m = 14
+  doc.setFillColor(92, 58, 33); doc.rect(0, 0, pw, 25, 'F')
+  doc.setTextColor(225, 173, 1); doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.text('Cocina Móvil — Pedidos a Proveedores', m, 12)
+  doc.setTextColor(255, 248, 231); doc.setFontSize(10); doc.setFont('helvetica', 'italic'); doc.text('Listado de Pedidos a Proveedores', m, 19)
+  doc.setTextColor(60, 60, 60); doc.setFontSize(9); doc.setFont('helvetica', 'normal')
+  doc.text(`Generado: ${formatDate(Date.now())}`, 200, 12); doc.text(`Total: ${orders.length}`, 200, 17)
+  let y = 32
+  const colX = [m, m + 10, m + 30, m + 110, m + 150, m + 180, m + 210, m + 245, m + 275]
+  const headers = ['#', 'N° Pedido', 'Proveedor', 'Fecha', 'Entrega', 'Items', 'Total', 'Estado', 'Compra']
+  doc.setFillColor(92, 58, 33); doc.rect(m, y, pw - 2 * m, 8, 'F')
+  doc.setTextColor(255, 248, 231); doc.setFont('helvetica', 'bold'); doc.setFontSize(9)
+  for (let c = 0; c < headers.length; c++) doc.text(headers[c], colX[c] + 1, y + 5.5)
+  y += 8
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8)
+  orders.forEach((o, i) => {
+    if (y > ph - 20) {
+      doc.addPage(); y = 20
+      doc.setFillColor(92, 58, 33); doc.rect(m, y, pw - 2 * m, 8, 'F')
+      doc.setTextColor(255, 248, 231); doc.setFont('helvetica', 'bold'); doc.setFontSize(9)
+      for (let c = 0; c < headers.length; c++) doc.text(headers[c], colX[c] + 1, y + 5.5)
+      y += 8; doc.setFont('helvetica', 'normal'); doc.setFontSize(8)
     }
-    html += '</tr>'
-  }
-  html += '</table></body></html>'
-  return new NextResponse(html, {
-    headers: { 'Content-Type': 'application/vnd.ms-word', 'Content-Disposition': `attachment; filename="pedidos-proveedores-${ts}.doc"` },
+    if (i % 2 === 1) { doc.setFillColor(250, 243, 227); doc.rect(m, y, pw - 2 * m, 7, 'F') }
+    doc.setDrawColor(230, 218, 194); doc.setLineWidth(0.1); doc.line(m, y + 7, pw - m, y + 7)
+    doc.setTextColor(50, 50, 50)
+    const rowData = [
+      String(i + 1), o.orderNumber, o.supplierName, formatDate(o.orderDate),
+      o.expectedDeliveryDate ? formatDate(o.expectedDeliveryDate) : '—',
+      String(o.items.length), `$${o.total.toFixed(0)}`, o.status, o.purchaseId || '—',
+    ]
+    for (let c = 0; c < rowData.length; c++) doc.text(String(rowData[c]).substring(0, 30), colX[c] + 1, y + 5)
+    y += 7
   })
+  const pageCount = doc.getNumberOfPages()
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i); doc.setFontSize(8); doc.setTextColor(138, 126, 112)
+    doc.text('Pastas artesanales con sabor a tradición · Posadas, Misiones', m, ph - 5)
+    doc.text(`Página ${i} de ${pageCount}`, pw - m - 20, ph - 5)
+  }
+  const buf = doc.output('arraybuffer')
+  return new NextResponse(buf, { status: 200, headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="pedidos-proveedores-${ts}.pdf"` } })
 }
