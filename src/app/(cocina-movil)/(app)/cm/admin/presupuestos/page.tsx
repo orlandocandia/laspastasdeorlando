@@ -417,7 +417,7 @@ function CmPresupuestosPageContent() {
 
       {/* Delete Dialog */}
       <Dialog open={!!deleteItem} onOpenChange={(o) => !o && setDeleteItem(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-[#5C3A21]">¿Eliminar presupuesto?</DialogTitle>
             <DialogDescription>
@@ -525,7 +525,7 @@ function BudgetFormDialog({ open, mode, item, recipes, onClose, onSaved }: Budge
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -672,7 +672,7 @@ function BudgetDetailDialog({ item, onClose }: BudgetDetailDialogProps) {
   const meta = STATUS_META[item.status]
   return (
     <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
             <Eye className="h-5 w-5" />Detalle de Presupuesto

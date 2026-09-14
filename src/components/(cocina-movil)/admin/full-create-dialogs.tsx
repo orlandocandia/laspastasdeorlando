@@ -119,7 +119,7 @@ export function SupplierFullCreateDialog({ open, onClose, onCreated }: FullCreat
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21]">Nuevo Proveedor</DialogTitle>
           <DialogDescription>Agregar proveedor de materias primas o insumos</DialogDescription>
@@ -230,7 +230,7 @@ export function PlaceFullCreateDialog({ open, onClose, onCreated }: FullCreateDi
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21]">Nuevo Lugar</DialogTitle>
           <DialogDescription>Creá un nuevo lugar para la Cocina Móvil</DialogDescription>
@@ -409,7 +409,7 @@ export function IngredientFullCreateDialog({ open, onClose, onCreated }: FullCre
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21]">Nueva Materia Prima</DialogTitle>
           <DialogDescription>Agregar ingrediente para recetas y producción</DialogDescription>
@@ -579,7 +579,7 @@ export function SupplyFullCreateDialog({ open, onClose, onCreated }: FullCreateD
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21]">Nuevo Insumo</DialogTitle>
           <DialogDescription>Agregar material no comestible para la operación</DialogDescription>
@@ -788,7 +788,7 @@ export function RecipeFullCreateDialog({ open, onClose, onCreated }: FullCreateD
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21]">Nueva Receta</DialogTitle>
           <DialogDescription>Crear una receta con ingredientes, insumos y cálculo de costos</DialogDescription>

@@ -379,7 +379,7 @@ function CmVentasPageContent() {
 
       {/* Delete Dialog */}
       <Dialog open={!!deleteItem} onOpenChange={(o) => !o && setDeleteItem(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-[#5C3A21]">¿Eliminar venta?</DialogTitle>
             <DialogDescription>
@@ -495,7 +495,7 @@ function SaleFormDialog({ open, mode, item, recipes, places, onClose, onSaved, o
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
             <ShoppingBag className="h-5 w-5" />
@@ -655,7 +655,7 @@ function SaleDetailDialog({ item, onClose, onPrint }: SaleDetailDialogProps) {
   if (!item) return null
   return (
     <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
             <Eye className="h-5 w-5" />Detalle de Venta

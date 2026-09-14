@@ -384,7 +384,7 @@ function CmComprasPageContent() {
 
       {/* Delete Dialog */}
       <Dialog open={!!deleteItem} onOpenChange={(o) => !o && setDeleteItem(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-[#5C3A21]">¿Eliminar compra?</DialogTitle>
             <DialogDescription>
@@ -536,7 +536,7 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
@@ -750,7 +750,7 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
 function PurchaseViewDialog({ item, onClose }: { item: CmPurchaseRecord | null; onClose: () => void }) {
   return (
     <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
             <Eye className="h-5 w-5" />Detalle de Compra

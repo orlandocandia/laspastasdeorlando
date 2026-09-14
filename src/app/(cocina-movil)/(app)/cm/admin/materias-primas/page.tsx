@@ -299,7 +299,7 @@ function CmMateriasPrimasPageContent() {
       <IngredientFormDialog open={formOpen} mode={formMode} item={editItem} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); loadItems() }} />
 
       <Dialog open={!!deleteItem} onOpenChange={(o) => !o && setDeleteItem(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-[#5C3A21]">¿Eliminar materia prima?</DialogTitle>
             <DialogDescription>Estás por eliminar <strong>{deleteItem?.name}</strong>. Esta acción no se puede deshacer.</DialogDescription>
@@ -382,7 +382,7 @@ function IngredientFormDialog({ open, mode, item, onClose, onSaved }: { open: bo
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21]">{mode === 'create' ? 'Nueva Materia Prima' : 'Editar Materia Prima'}</DialogTitle>
           <DialogDescription>{mode === 'create' ? 'Agregar ingrediente para recetas y producción' : `Editando: ${item?.name}`}</DialogDescription>

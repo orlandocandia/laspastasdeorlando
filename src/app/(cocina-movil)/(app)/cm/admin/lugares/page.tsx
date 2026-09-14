@@ -506,7 +506,7 @@ function CmLugaresPageContent() {
 
       {/* ====== Modal: Confirmar Eliminación ====== */}
       <Dialog open={!!deletePlace} onOpenChange={(o) => !o && setDeletePlace(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-[#5C3A21]">¿Eliminar lugar?</DialogTitle>
             <DialogDescription>
@@ -645,7 +645,7 @@ function PlaceFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21]">
             {mode === 'create' ? 'Nuevo Lugar' : 'Editar Lugar'}

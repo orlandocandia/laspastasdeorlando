@@ -425,7 +425,7 @@ function CmProduccionesPageContent() {
 
       {/* Delete Dialog */}
       <Dialog open={!!deleteItem} onOpenChange={(o) => !o && setDeleteItem(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-[#5C3A21]">¿Eliminar producción?</DialogTitle>
             <DialogDescription>
@@ -525,7 +525,7 @@ function ProductionFormDialog({ open, mode, item, recipes, places, onClose, onSa
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
             <Factory className="h-5 w-5" />
@@ -639,7 +639,7 @@ function ProductionDetailDialog({ item, onClose }: ProductionDetailDialogProps) 
   const meta = STATUS_META[item.status]
   return (
     <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
             <Eye className="h-5 w-5" />Detalle de Producción
@@ -733,7 +733,7 @@ function RejectDialog({ item, onClose, onDone }: RejectDialogProps) {
 
   return (
     <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
             <X className="h-5 w-5 text-[#B91C1C]" />Rechazar Producción

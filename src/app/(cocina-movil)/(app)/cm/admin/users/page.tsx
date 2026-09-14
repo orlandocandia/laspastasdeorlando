@@ -522,7 +522,7 @@ export default function CmUsersPage() {
 
       {/* ====== Modal: Confirmar Eliminación ====== */}
       <Dialog open={!!deleteUser} onOpenChange={(o) => !o && setDeleteUser(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="text-[#5C3A21]">¿Eliminar usuario?</DialogTitle>
             <DialogDescription>
@@ -665,7 +665,7 @@ function UserFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21]">
             {mode === 'create' ? 'Nuevo Usuario' : 'Editar Usuario'}
@@ -1003,7 +1003,7 @@ function PasswordChangeDialog({
 
   return (
     <Dialog open={!!user} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-[#5C3A21]">Cambiar contraseña</DialogTitle>
           <DialogDescription>
