@@ -10,7 +10,7 @@ import crypto from 'crypto'
 import { getIngredientById } from '@/lib/cocina-movil/ingredients'
 import { getSupplyById } from '@/lib/cocina-movil/supplies'
 
-export type CmRecipeCategory = 'carnes' | 'pastas' | 'postres' | 'aperitivos' | 'bebidas' | 'otros'
+export type CmRecipeCategory = 'pastas' | 'salsas' | 'guisos_estofados' | 'sopas_cremas' | 'horneados' | 'postres' | 'acompanamientos' | 'bebidas' | 'otros' | (string & {})
 export type CmRecipeDifficulty = 'facil' | 'media' | 'dificil'
 
 export interface CmRecipeIngredient {
@@ -180,8 +180,9 @@ export function createRecipe(input: CmRecipeInput): CmRecipeRecord {
   if (!input.title.trim()) throw new Error('El título es obligatorio')
   if (!input.servings || input.servings <= 0) throw new Error('Las porciones deben ser mayores a 0')
 
-  const validCats: CmRecipeCategory[] = ['carnes', 'pastas', 'postres', 'aperitivos', 'bebidas', 'otros']
-  if (!validCats.includes(input.category)) throw new Error('Categoría inválida')
+  // Categories: accept the predefined ones plus any custom string (created via the + button)
+  const validCats: string[] = ['pastas', 'salsas', 'guisos_estofados', 'sopas_cremas', 'horneados', 'postres', 'acompanamientos', 'bebidas', 'otros']
+  const finalCategory = (validCats.includes(input.category) || (typeof input.category === 'string' && input.category.trim())) ? input.category : 'otros'
 
   const now = Date.now()
   const id = `recipe-${crypto.randomBytes(6).toString('hex')}`
@@ -227,7 +228,7 @@ export function createRecipe(input: CmRecipeInput): CmRecipeRecord {
     id,
     title: input.title.trim(),
     description: input.description?.trim() || null,
-    category: input.category,
+    category: finalCategory as CmRecipeCategory,
     preparationTime: input.preparationTime?.trim() || null,
     cookingTime: input.cookingTime?.trim() || null,
     difficulty: input.difficulty || null,
@@ -264,8 +265,8 @@ export function updateRecipe(id: string, updates: Partial<CmRecipeInput>): CmRec
   }
   if (updates.description !== undefined) r.description = updates.description?.trim() || null
   if (updates.category !== undefined) {
-    const validCats: CmRecipeCategory[] = ['carnes', 'pastas', 'postres', 'aperitivos', 'bebidas', 'otros']
-    if (validCats.includes(updates.category)) r.category = updates.category
+    const validCats: string[] = ['pastas', 'salsas', 'guisos_estofados', 'sopas_cremas', 'horneados', 'postres', 'acompanamientos', 'bebidas', 'otros']
+    if (validCats.includes(updates.category) || (typeof updates.category === 'string' && updates.category.trim())) r.category = updates.category
   }
   if (updates.preparationTime !== undefined) r.preparationTime = updates.preparationTime?.trim() || null
   if (updates.cookingTime !== undefined) r.cookingTime = updates.cookingTime?.trim() || null

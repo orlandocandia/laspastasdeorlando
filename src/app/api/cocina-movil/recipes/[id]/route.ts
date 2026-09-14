@@ -22,8 +22,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (typeof body.title === 'string') updates.title = body.title
   if (body.description !== undefined) updates.description = typeof body.description === 'string' ? body.description : null
   if (body.category !== undefined) {
-    const validCats: CmRecipeCategory[] = ['carnes','pastas','postres','aperitivos','bebidas','otros']
-    if (validCats.includes(body.category as CmRecipeCategory)) updates.category = body.category as CmRecipeCategory
+    const validCats: CmRecipeCategory[] = ['pastas','salsas','guisos_estofados','sopas_cremas','horneados','postres','acompanamientos','bebidas','otros']
+    if (validCats.includes(body.category as CmRecipeCategory) || (typeof body.category === 'string' && body.category.trim())) updates.category = body.category as CmRecipeCategory
   }
   if (body.preparationTime !== undefined) updates.preparationTime = typeof body.preparationTime === 'string' ? body.preparationTime : null
   if (body.cookingTime !== undefined) updates.cookingTime = typeof body.cookingTime === 'string' ? body.cookingTime : null

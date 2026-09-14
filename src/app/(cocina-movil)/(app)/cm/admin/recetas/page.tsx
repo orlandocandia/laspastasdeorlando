@@ -36,12 +36,13 @@ import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import ImageUploader from '@/components/(cocina-movil)/admin/image-uploader'
 import { SelectWithCreate, type QuickCreateEntity, type SelectOption } from '@/components/(cocina-movil)/admin/select-with-create'
+import { CategorySelectWithCreate } from '@/components/(cocina-movil)/admin/category-select-with-create'
 
 // ============================================================
 // Tipos
 // ============================================================
 
-type CmRecipeCategory = 'carnes' | 'pastas' | 'postres' | 'aperitivos' | 'bebidas' | 'otros'
+type CmRecipeCategory = string  // accepts predefined + custom categories
 type CmRecipeDifficulty = 'facil' | 'media' | 'dificil'
 
 interface CmRecipeIngredient {
@@ -116,29 +117,31 @@ type FormMode = 'create' | 'edit'
 // Constantes
 // ============================================================
 
-const CATEGORIES: { value: CmRecipeCategory; label: string }[] = [
-  { value: 'carnes', label: 'Carnes' },
+const CATEGORIES: { value: string; label: string }[] = [
   { value: 'pastas', label: 'Pastas' },
+  { value: 'salsas', label: 'Salsas' },
+  { value: 'guisos_estofados', label: 'Guisos y Estofados' },
+  { value: 'sopas_cremas', label: 'Sopas y Cremas' },
+  { value: 'horneados', label: 'Horneados' },
   { value: 'postres', label: 'Postres' },
-  { value: 'aperitivos', label: 'Aperitivos' },
+  { value: 'acompanamientos', label: 'Acompañamientos' },
   { value: 'bebidas', label: 'Bebidas' },
   { value: 'otros', label: 'Otros' },
 ]
 
+// CATEGORY_LABEL helper: maps a category value to its display label.
+// For custom categories (created via the + button), the value IS the label.
+function CATEGORY_LABEL(cat: string): string {
+  const found = CATEGORIES.find((c) => c.value === cat)
+  return found ? found.label : cat
+}
+
+// DIFFICULTIES kept for legacy compatibility (existing recipes may have this field)
 const DIFFICULTIES: { value: CmRecipeDifficulty; label: string }[] = [
   { value: 'facil', label: 'Fácil' },
   { value: 'media', label: 'Media' },
   { value: 'dificil', label: 'Difícil' },
 ]
-
-const CATEGORY_LABEL: Record<CmRecipeCategory, string> = {
-  carnes: 'Carnes',
-  pastas: 'Pastas',
-  postres: 'Postres',
-  aperitivos: 'Aperitivos',
-  bebidas: 'Bebidas',
-  otros: 'Otros',
-}
 
 // ============================================================
 // Helpers
@@ -375,7 +378,7 @@ function CmRecetasPageContent() {
                         {r.description && <p className="text-xs text-[#8A7E70] line-clamp-1">{r.description}</p>}
                       </TableCell>
                       <TableCell>
-                        <Badge className="bg-[#5C3A21]/10 text-[#5C3A21] hover:bg-[#5C3A21]/15 capitalize">{CATEGORY_LABEL[r.category]}</Badge>
+                        <Badge className="bg-[#5C3A21]/10 text-[#5C3A21] hover:bg-[#5C3A21]/15 capitalize">{CATEGORY_LABEL(r.category)}</Badge>
                       </TableCell>
                       <TableCell className="text-center text-sm text-[#4A3F36]">{r.servings}</TableCell>
                       <TableCell className="text-right text-sm font-semibold text-[#5C3A21] whitespace-nowrap">{fmtCurrency(r.totalCost)}</TableCell>
@@ -463,15 +466,16 @@ interface RecipeFormDialogProps {
 function RecipeFormDialog({ open, mode, item, ingredients, supplies, onClose, onSaved, onQuickCreated }: RecipeFormDialogProps) {
   const [title, setTitle] = React.useState('')
   const [description, setDescription] = React.useState('')
-  const [category, setCategory] = React.useState<CmRecipeCategory | ''>('')
+  const [category, setCategory] = React.useState<string>('')
   const [preparationTime, setPreparationTime] = React.useState('')
-  const [cookingTime, setCookingTime] = React.useState('')
-  const [difficulty, setDifficulty] = React.useState<CmRecipeDifficulty | '__none__'>('__none__')
   const [servings, setServings] = React.useState('1')
   const [steps, setSteps] = React.useState('')
   const [image, setImage] = React.useState<string>('')
   const [isActive, setIsActive] = React.useState(true)
   const [cookId, setCookId] = React.useState<string>('')
+
+  // Custom categories added via the "+" button (local to this form session)
+  const [customCategories, setCustomCategories] = React.useState<{ value: string; label: string }[]>([])
 
   const [ingItems, setIngItems] = React.useState<FormIngredient[]>([])
   const [supItems, setSupItems] = React.useState<FormSupply[]>([])
@@ -486,9 +490,6 @@ function RecipeFormDialog({ open, mode, item, ingredients, supplies, onClose, on
         setDescription(item.description || '')
         setCategory(item.category)
         setPreparationTime(item.preparationTime || '')
-        setCookingTime(item.cookingTime || '')
-        setDifficulty(item.difficulty || '__none__')
-        setServings(String(item.servings || 1))
         setSteps(item.steps || '')
         setImage(item.image || '')
         setIsActive(item.isActive)
@@ -518,9 +519,6 @@ function RecipeFormDialog({ open, mode, item, ingredients, supplies, onClose, on
         setDescription('')
         setCategory('')
         setPreparationTime('')
-        setCookingTime('')
-        setDifficulty('__none__')
-        setServings('1')
         setSteps('')
         setImage('')
         setIsActive(true)
@@ -535,6 +533,11 @@ function RecipeFormDialog({ open, mode, item, ingredients, supplies, onClose, on
     // button. The dropdowns load on page mount (before the dialog opens), so
     // the price lookup above already has the data it needs.
   }, [open, mode, item])
+
+  // Combined categories: predefined + custom added via "+"
+  const allCategories = React.useMemo(() => {
+    return [...CATEGORIES, ...customCategories]
+  }, [customCategories])
 
   // Cálculo dinámico de costos
   const ingredientsCost = ingItems.reduce((sum, it) => sum + (Number(it.quantity) || 0) * (Number(it.pricePerUnit) || 0), 0)
@@ -597,8 +600,6 @@ function RecipeFormDialog({ open, mode, item, ingredients, supplies, onClose, on
         description: description.trim() || null,
         category,
         preparationTime: preparationTime.trim() || null,
-        cookingTime: cookingTime.trim() || null,
-        difficulty: difficulty === '__none__' ? null : difficulty,
         servings: serv,
         steps: steps.trim() || null,
         image: image || null,
@@ -658,30 +659,17 @@ function RecipeFormDialog({ open, mode, item, ingredients, supplies, onClose, on
               </div>
               <div className="space-y-1.5">
                 <Label className="text-[#5C3A21]">Categoría *</Label>
-                <Select value={category} onValueChange={(v) => setCategory(v as CmRecipeCategory)}>
-                  <SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Seleccionar categoría" /></SelectTrigger>
-                  <SelectContent>
-                    {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <CategorySelectWithCreate
+                  value={category}
+                  onValueChange={setCategory}
+                  options={allCategories}
+                  placeholder="Seleccionar categoría"
+                  onCategoryCreated={(c) => setCustomCategories((arr) => [...arr, c])}
+                />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[#5C3A21]">Dificultad</Label>
-                <Select value={difficulty} onValueChange={(v) => setDifficulty(v as CmRecipeDifficulty | '__none__')}>
-                  <SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Seleccionar dificultad" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">— Sin especificar —</SelectItem>
-                    {DIFFICULTIES.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[#5C3A21]">Tiempo de Preparación</Label>
-                <Input value={preparationTime} onChange={(e) => setPreparationTime(e.target.value)} placeholder="30 min" className="border-[#5C3A21]/15" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[#5C3A21]">Tiempo de Cocción</Label>
-                <Input value={cookingTime} onChange={(e) => setCookingTime(e.target.value)} placeholder="15 min" className="border-[#5C3A21]/15" />
+                <Label className="text-[#5C3A21]">Tiempo Estimado</Label>
+                <Input value={preparationTime} onChange={(e) => setPreparationTime(e.target.value)} placeholder="Ej: 1 hora, 45 min" className="border-[#5C3A21]/15" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-[#5C3A21]">Porciones *</Label>

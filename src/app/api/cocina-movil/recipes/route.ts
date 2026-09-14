@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const sortOrder = (url.searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc'
   const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10))
   const pageSize = Math.max(1, Math.min(200, parseInt(url.searchParams.get('pageSize') || '50', 10)))
-  const validCats: CmRecipeCategory[] = ['carnes','pastas','postres','aperitivos','bebidas','otros']
+  const validCats: CmRecipeCategory[] = ['pastas','salsas','guisos_estofados','sopas_cremas','horneados','postres','acompanamientos','bebidas','otros']
   const category = validCats.includes(catParam as CmRecipeCategory) ? catParam as CmRecipeCategory : 'all'
   const isActive = statusParam === 'true' ? true : statusParam === 'false' ? false : 'all'
   const result = listRecipes({ search, category, isActive, sortBy, sortOrder, page, pageSize })
@@ -27,12 +27,12 @@ export async function POST(request: Request) {
   let body: Record<string, unknown>
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 }) }
   if (typeof body.title !== 'string' || !body.title.trim()) return NextResponse.json({ error: 'El título es obligatorio.' }, { status: 400 })
-  const validCats: CmRecipeCategory[] = ['carnes','pastas','postres','aperitivos','bebidas','otros']
+  const validCats: CmRecipeCategory[] = ['pastas','salsas','guisos_estofados','sopas_cremas','horneados','postres','acompanamientos','bebidas','otros']
   const validDifficulties: CmRecipeDifficulty[] = ['facil','media','dificil']
   const input: CmRecipeInput = {
     title: body.title,
     description: typeof body.description === 'string' ? body.description : null,
-    category: validCats.includes(body.category as CmRecipeCategory) ? body.category as CmRecipeCategory : 'otros',
+    category: (typeof body.category === 'string' && body.category.trim()) ? body.category as CmRecipeCategory : 'otros',
     preparationTime: typeof body.preparationTime === 'string' ? body.preparationTime : null,
     cookingTime: typeof body.cookingTime === 'string' ? body.cookingTime : null,
     difficulty: validDifficulties.includes(body.difficulty as CmRecipeDifficulty) ? body.difficulty as CmRecipeDifficulty : null,

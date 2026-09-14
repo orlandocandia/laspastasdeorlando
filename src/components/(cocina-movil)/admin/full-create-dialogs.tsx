@@ -648,13 +648,19 @@ export function SupplyFullCreateDialog({ open, onClose, onCreated }: FullCreateD
 // 5. Recipe Full Form
 // ============================================================
 
-type CmRecipeCategory = 'carnes' | 'pastas' | 'postres' | 'aperitivos' | 'bebidas' | 'otros'
+type CmRecipeCategory = string  // accepts predefined + custom categories
 type CmRecipeDifficulty = 'facil' | 'media' | 'dificil'
 
-const REC_CATEGORIES: { value: CmRecipeCategory; label: string }[] = [
-  { value: 'carnes', label: 'Carnes' }, { value: 'pastas', label: 'Pastas' },
-  { value: 'postres', label: 'Postres' }, { value: 'aperitivos', label: 'Aperitivos' },
-  { value: 'bebidas', label: 'Bebidas' }, { value: 'otros', label: 'Otros' },
+const REC_CATEGORIES: { value: string; label: string }[] = [
+  { value: 'pastas', label: 'Pastas' },
+  { value: 'salsas', label: 'Salsas' },
+  { value: 'guisos_estofados', label: 'Guisos y Estofados' },
+  { value: 'sopas_cremas', label: 'Sopas y Cremas' },
+  { value: 'horneados', label: 'Horneados' },
+  { value: 'postres', label: 'Postres' },
+  { value: 'acompanamientos', label: 'Acompañamientos' },
+  { value: 'bebidas', label: 'Bebidas' },
+  { value: 'otros', label: 'Otros' },
 ]
 
 const DIFFICULTIES: { value: CmRecipeDifficulty; label: string }[] = [
@@ -678,10 +684,8 @@ const newItemKey = (): string =>
 export function RecipeFullCreateDialog({ open, onClose, onCreated }: FullCreateDialogProps) {
   const [title, setTitle] = React.useState('')
   const [description, setDescription] = React.useState('')
-  const [category, setCategory] = React.useState<CmRecipeCategory | ''>('')
+  const [category, setCategory] = React.useState<string>('')
   const [preparationTime, setPreparationTime] = React.useState('')
-  const [cookingTime, setCookingTime] = React.useState('')
-  const [difficulty, setDifficulty] = React.useState<CmRecipeDifficulty | '__none__'>('__none__')
   const [servings, setServings] = React.useState('1')
   const [steps, setSteps] = React.useState('')
   const [image, setImage] = React.useState('')
@@ -694,8 +698,8 @@ export function RecipeFullCreateDialog({ open, onClose, onCreated }: FullCreateD
 
   React.useEffect(() => {
     if (open) {
-      setTitle(''); setDescription(''); setCategory(''); setPreparationTime(''); setCookingTime('')
-      setDifficulty('__none__'); setServings('1'); setSteps(''); setImage('')
+      setTitle(''); setDescription(''); setCategory(''); setPreparationTime('')
+      setServings('1'); setSteps(''); setImage('')
       setIngItems([]); setSupItems([]); setError(null)
       // Fetch ingredients & supplies for the dropdowns
       Promise.all([
@@ -745,8 +749,8 @@ export function RecipeFullCreateDialog({ open, onClose, onCreated }: FullCreateD
     try {
       const body = {
         title: title.trim(), description: description.trim() || null, category,
-        preparationTime: preparationTime.trim() || null, cookingTime: cookingTime.trim() || null,
-        difficulty: difficulty === '__none__' ? null : difficulty, servings: serv,
+        preparationTime: preparationTime.trim() || null,
+        servings: serv,
         steps: steps.trim() || null, image: image || null, cookId: null,
         ingredients: validIng, supplies: validSup, isActive: true,
       }
@@ -799,12 +803,10 @@ export function RecipeFullCreateDialog({ open, onClose, onCreated }: FullCreateD
           <SectionHeader num={1} title="Datos de la Receta" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-10">
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Título *</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} className="border-[#5C3A21]/15" autoFocus /></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Categoría *</Label><Select value={category || 'none'} onValueChange={(v) => setCategory(v === 'none' ? '' : v as CmRecipeCategory)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Sin categoría" /></SelectTrigger><SelectContent><SelectItem value="none">— Sin categoría —</SelectItem>{REC_CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Categoría *</Label><Select value={category || 'none'} onValueChange={(v) => setCategory(v === 'none' ? '' : v)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Sin categoría" /></SelectTrigger><SelectContent><SelectItem value="none">— Sin categoría —</SelectItem>{REC_CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
             <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Descripción</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} className="border-[#5C3A21]/15" rows={2} /></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Dificultad</Label><Select value={difficulty} onValueChange={(v) => setDifficulty(v as CmRecipeDifficulty | '__none__')}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Sin especificar" /></SelectTrigger><SelectContent><SelectItem value="__none__">— Sin especificar —</SelectItem>{DIFFICULTIES.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Tiempo Estimado</Label><Input value={preparationTime} onChange={(e) => setPreparationTime(e.target.value)} placeholder="Ej: 1 hora, 45 min" className="border-[#5C3A21]/15" /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Porciones *</Label><Input type="number" min="1" value={servings} onChange={(e) => setServings(e.target.value)} className="border-[#5C3A21]/15" /></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Tiempo de Preparación</Label><Input value={preparationTime} onChange={(e) => setPreparationTime(e.target.value)} placeholder="ej: 30 min" className="border-[#5C3A21]/15" /></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Tiempo de Cocción</Label><Input value={cookingTime} onChange={(e) => setCookingTime(e.target.value)} placeholder="ej: 45 min" className="border-[#5C3A21]/15" /></div>
             <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Pasos</Label><Textarea value={steps} onChange={(e) => setSteps(e.target.value)} placeholder="Pasos de la receta…" className="border-[#5C3A21]/15" rows={3} /></div>
             <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Imagen</Label><ImageUploader value={image || null} onChange={(url) => setImage(url || '')} uploadUrl="/api/cocina-movil/recipes/upload-image" label="Imagen de la receta" aspectRatio="4/3" disabled={saving} /></div>
           </div>
