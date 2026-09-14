@@ -453,24 +453,30 @@ function BudgetFormDialog({ open, mode, item, recipes, onClose, onSaved }: Budge
   const [clientName, setClientName] = React.useState('')
   const [servings, setServings] = React.useState<string>('1')
   const [pricePerServing, setPricePerServing] = React.useState<string>('0')
+  const [desiredMargin, setDesiredMargin] = React.useState<string>('')
   const [observations, setObservations] = React.useState('')
+  // Track if the user manually edited the price (so we don't override their edit)
+  const priceManuallyEdited = React.useRef(false)
 
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     if (open) {
+      priceManuallyEdited.current = false
       if (mode === 'edit' && item) {
         setRecipeId(item.recipeId)
         setClientName(item.clientName || '')
         setServings(String(item.servings || 1))
         setPricePerServing(String(item.pricePerServing ?? 0))
+        setDesiredMargin('')
         setObservations(item.observations || '')
       } else {
         setRecipeId('')
         setClientName('')
         setServings('1')
         setPricePerServing('0')
+        setDesiredMargin('')
         setObservations('')
       }
       setError(null)
@@ -482,6 +488,27 @@ function BudgetFormDialog({ open, mode, item, recipes, onClose, onSaved }: Budge
   const costPerServing = selectedRecipe?.costPerServing ?? 0
   const servingsNum = Number(servings) || 0
   const priceNum = Number(pricePerServing) || 0
+  const desiredMarginNum = Number(desiredMargin) || 0
+
+  // Precio sugerido = costoPorPorcion × (1 + margenDeseado / 100)
+  const suggestedPrice = costPerServing > 0 && desiredMarginNum > 0
+    ? costPerServing * (1 + desiredMarginNum / 100)
+    : 0
+
+  // When the user changes the desired margin AND hasn't manually edited the price,
+  // auto-fill pricePerServing with the suggested price.
+  React.useEffect(() => {
+    if (suggestedPrice > 0 && !priceManuallyEdited.current) {
+      setPricePerServing(suggestedPrice.toFixed(2))
+    }
+  }, [suggestedPrice])
+
+  // When recipe changes and no manual edit, also recompute from current desiredMargin
+  React.useEffect(() => {
+    if (suggestedPrice > 0 && !priceManuallyEdited.current) {
+      setPricePerServing(suggestedPrice.toFixed(2))
+    }
+  }, [costPerServing])
 
   const totalCost = costPerServing * servingsNum
   const totalPrice = priceNum * servingsNum
@@ -578,17 +605,42 @@ function BudgetFormDialog({ open, mode, item, recipes, onClose, onSaved }: Budge
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-[#5C3A21]">Precio de venta por porción *</Label>
-            <Input
-              type="number"
-              min="0"
-              step="0.01"
-              value={pricePerServing}
-              onChange={(e) => setPricePerServing(e.target.value)}
-              placeholder="0.00"
-              className="border-[#5C3A21]/15"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-[#5C3A21]">Margen deseado (%)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="any"
+                value={desiredMargin}
+                onChange={(e) => setDesiredMargin(e.target.value)}
+                placeholder="Ej: 100"
+                className="border-[#5C3A21]/15"
+              />
+              {suggestedPrice > 0 && (
+                <p className="text-xs text-[#708238]">
+                  → Precio sugerido: <strong>{fmtCurrency(suggestedPrice)}</strong>
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[#5C3A21]">Precio de venta por porción *</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={pricePerServing}
+                onChange={(e) => {
+                  priceManuallyEdited.current = true
+                  setPricePerServing(e.target.value)
+                }}
+                placeholder="0.00"
+                className="border-[#5C3A21]/15"
+              />
+              {priceManuallyEdited.current && desiredMarginNum > 0 && (
+                <p className="text-xs text-[#8A7E70]">Editado manualmente</p>
+              )}
+            </div>
           </div>
 
           <div className="space-y-1.5">
@@ -613,6 +665,22 @@ function BudgetFormDialog({ open, mode, item, recipes, onClose, onSaved }: Budge
                   <span className="text-[#5C3A21]">Costo por porción:</span>
                   <span className="font-semibold text-[#5C3A21]">{fmtCurrency(costPerServing)}</span>
                 </div>
+                {desiredMarginNum > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-[#5C3A21]">Margen deseado:</span>
+                    <span className="font-semibold text-[#5C3A21]">{fmtPercent(desiredMarginNum)}</span>
+                  </div>
+                )}
+                {suggestedPrice > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-[#5C3A21]">Precio de venta sugerido:</span>
+                    <span className="font-semibold text-[#708238]">{fmtCurrency(suggestedPrice)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[#5C3A21]">Precio de venta final:</span>
+                  <span className="font-semibold text-[#5C3A21]">{fmtCurrency(priceNum)}</span>
+                </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-[#5C3A21]">
                     Costo total: {fmtCurrency(costPerServing)} × {servingsNum} =
@@ -634,7 +702,7 @@ function BudgetFormDialog({ open, mode, item, recipes, onClose, onSaved }: Budge
                 <div className="flex items-center justify-between text-sm pt-2 mt-1 border-t border-[#5C3A21]/15">
                   <span className="text-[#5C3A21] flex items-center gap-1">
                     <TrendingUp className="h-3.5 w-3.5" />
-                    Margen: ({fmtCurrency(profit)} ÷ {fmtCurrency(totalPrice)}) × 100 =
+                    Margen real: ({fmtCurrency(profit)} ÷ {fmtCurrency(totalPrice)}) × 100 =
                   </span>
                   <span className={`text-base ${marginColor(profitPercentage)}`}>{fmtPercent(profitPercentage)}</span>
                 </div>
