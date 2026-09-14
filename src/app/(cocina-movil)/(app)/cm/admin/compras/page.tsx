@@ -66,12 +66,25 @@ interface OptionItem {
   name: string
   purchaseUnit: string
   purchasePrice: number
+  // Extended data for auto-fill when selecting a product
+  purchaseUnitType?: string | null
+  weightPerUnit?: number | null
+  weightUnit?: string | null
+  measurePerUnit?: number | null
+  measureUnit?: string | null
 }
 
 interface FormItem {
   key: string
   itemType: 'ingredient' | 'supply'
   itemId: string
+  // New: purchase detail fields (matching MP/Insumos form)
+  purchaseUnitType: string
+  unitsPurchased: number
+  weightPerUnit: number   // weight or measure per unit
+  weightUnit: string      // kg/g/l/ml (ingredient) or u/m/kg/cm/g (supply)
+  totalPrice: number       // precio total pagado
+  // Legacy (kept for API compat, computed from above)
   quantity: number
   unit: string
   pricePerUnit: number
@@ -111,6 +124,98 @@ const newItemKey = (): string =>
   typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
     ? `item-${crypto.randomUUID()}`
     : `item-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+
+// ============================================================
+// Purchase type helpers (matching MP/Insumos form)
+// ============================================================
+
+const ING_PURCHASE_TYPES = [
+  { value: 'bulto', label: 'Bulto' },
+  { value: 'caja', label: 'Caja' },
+  { value: 'botella', label: 'Botella' },
+  { value: 'unidad', label: 'Unidad' },
+  { value: 'kg_suelto', label: 'Kg suelto' },
+  { value: 'litro_suelto', label: 'Litro suelto' },
+]
+
+const SUP_PURCHASE_TYPES = [
+  { value: 'unidad', label: 'Unidad' },
+  { value: 'caja', label: 'Caja' },
+  { value: 'paquete', label: 'Paquete' },
+  { value: 'rollo', label: 'Rollo' },
+  { value: 'kg_suelto', label: 'Kg suelto' },
+  { value: 'metro_suelto', label: 'Metro suelto' },
+]
+
+const ING_WEIGHT_UNITS = [
+  { value: 'kg', label: 'kg' },
+  { value: 'g', label: 'g' },
+  { value: 'l', label: 'l' },
+  { value: 'ml', label: 'ml' },
+]
+
+const SUP_MEASURE_UNITS = [
+  { value: 'u', label: 'unidades' },
+  { value: 'm', label: 'metros' },
+  { value: 'kg', label: 'kg' },
+  { value: 'cm', label: 'cm' },
+  { value: 'g', label: 'g' },
+]
+
+function getQuantityLabel(type: string): string {
+  switch (type) {
+    case 'bulto': return 'Cant. Bultos'
+    case 'caja': return 'Cant. Cajas'
+    case 'botella': return 'Cant. Botellas'
+    case 'unidad': return 'Cant. Unidades'
+    case 'paquete': return 'Cant. Paquetes'
+    case 'rollo': return 'Cant. Rollos'
+    case 'kg_suelto': return 'Cant. Kg'
+    case 'litro_suelto': return 'Cant. Litros'
+    case 'metro_suelto': return 'Cant. Metros'
+    default: return 'Cantidad'
+  }
+}
+
+function getWeightLabel(type: string): string {
+  switch (type) {
+    case 'bulto': return 'Peso/Bulto'
+    case 'caja': return 'Peso/Caja'
+    case 'botella': return 'Vol/Botella'
+    case 'unidad': return 'Peso/Unid'
+    case 'paquete': return 'Unid/Paquete'
+    case 'rollo': return 'M/Rollo'
+    default: return 'Medida/Unid'
+  }
+}
+
+function isWeightFieldHidden(type: string): boolean {
+  return type === 'kg_suelto' || type === 'litro_suelto' || type === 'metro_suelto'
+}
+
+function getDefaultWeightUnit(type: string, itemType: 'ingredient' | 'supply'): string {
+  if (itemType === 'ingredient') {
+    switch (type) {
+      case 'bulto': return 'kg'
+      case 'caja': return 'kg'
+      case 'botella': return 'l'
+      case 'unidad': return 'g'
+      case 'kg_suelto': return 'kg'
+      case 'litro_suelto': return 'l'
+      default: return 'kg'
+    }
+  } else {
+    switch (type) {
+      case 'unidad': return 'u'
+      case 'caja': return 'u'
+      case 'paquete': return 'u'
+      case 'rollo': return 'm'
+      case 'kg_suelto': return 'kg'
+      case 'metro_suelto': return 'm'
+      default: return 'u'
+    }
+  }
+}
 
 // ============================================================
 // Página
@@ -155,8 +260,24 @@ function CmComprasPageContent() {
         ])
         setSuppliers((sData.suppliers || []).map((x: { id: string; name: string }) => ({ id: x.id, name: x.name, purchaseUnit: '', purchasePrice: 0 })))
         setPlaces((pData.places || []).map((x: { id: string; name: string }) => ({ id: x.id, name: x.name, purchaseUnit: '', purchasePrice: 0 })))
-        setIngredients((iData.ingredients || []).map((x: { id: string; name: string; purchaseUnit: string; purchasePrice: number }) => ({ id: x.id, name: x.name, purchaseUnit: x.purchaseUnit, purchasePrice: x.purchasePrice })))
-        setSupplies((supData.supplies || []).map((x: { id: string; name: string; purchaseUnit: string; purchasePrice: number }) => ({ id: x.id, name: x.name, purchaseUnit: x.purchaseUnit, purchasePrice: x.purchasePrice })))
+        setIngredients((iData.ingredients || []).map((x: {
+          id: string; name: string; purchaseUnit: string; purchasePrice: number;
+          purchaseUnitType?: string | null; weightPerUnit?: number | null; weightUnit?: string | null;
+        }) => ({
+          id: x.id, name: x.name, purchaseUnit: x.purchaseUnit, purchasePrice: x.purchasePrice,
+          purchaseUnitType: x.purchaseUnitType || null,
+          weightPerUnit: x.weightPerUnit || null,
+          weightUnit: x.weightUnit || null,
+        })))
+        setSupplies((supData.supplies || []).map((x: {
+          id: string; name: string; purchaseUnit: string; purchasePrice: number;
+          purchaseUnitType?: string | null; measurePerUnit?: number | null; measureUnit?: string | null;
+        }) => ({
+          id: x.id, name: x.name, purchaseUnit: x.purchaseUnit, purchasePrice: x.purchasePrice,
+          purchaseUnitType: x.purchaseUnitType || null,
+          measurePerUnit: x.measurePerUnit || null,
+          measureUnit: x.measureUnit || null,
+        })))
       } catch (err) {
         console.error('Error cargando dropdowns:', err)
       }
@@ -445,6 +566,11 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
           key: newItemKey(),
           itemType: it.itemType,
           itemId: it.itemId || '',
+          purchaseUnitType: '',
+          unitsPurchased: it.quantity,
+          weightPerUnit: 1,
+          weightUnit: it.unit || 'kg',
+          totalPrice: it.quantity * it.pricePerUnit,
           quantity: it.quantity,
           unit: it.unit,
           pricePerUnit: it.pricePerUnit,
@@ -455,16 +581,17 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
         setPurchaseDate(epochToDateInput(Date.now()))
         setInvoiceNumber('')
         setObservations('')
-        setItems([{ key: newItemKey(), itemType: 'ingredient', itemId: '', quantity: 1, unit: '', pricePerUnit: 0 }])
+        setItems([{ key: newItemKey(), itemType: 'ingredient', itemId: '', purchaseUnitType: '', unitsPurchased: 1, weightPerUnit: 1, weightUnit: 'kg', totalPrice: 0, quantity: 1, unit: '', pricePerUnit: 0 }])
       }
       setError(null)
     }
   }, [open, mode, item])
 
-  const total = items.reduce((sum, it) => sum + (Number(it.quantity) || 0) * (Number(it.pricePerUnit) || 0), 0)
+  // Total = sum of totalPrice for all items (what the user actually paid)
+  const total = items.reduce((sum, it) => sum + (Number(it.totalPrice) || 0), 0)
 
   const addItem = () => {
-    setItems((arr) => [...arr, { key: newItemKey(), itemType: 'ingredient', itemId: '', quantity: 1, unit: '', pricePerUnit: 0 }])
+    setItems((arr) => [...arr, { key: newItemKey(), itemType: 'ingredient', itemId: '', purchaseUnitType: '', unitsPurchased: 1, weightPerUnit: 1, weightUnit: 'kg', totalPrice: 0, quantity: 1, unit: '', pricePerUnit: 0 }])
   }
 
   const removeItem = (key: string) => {
@@ -476,7 +603,7 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
   }
 
   const onItemTypeChange = (key: string, newType: 'ingredient' | 'supply') => {
-    updateItem(key, { itemType: newType, itemId: '', unit: '', pricePerUnit: 0 })
+    updateItem(key, { itemType: newType, itemId: '', purchaseUnitType: '', unitsPurchased: 1, weightPerUnit: 1, weightUnit: getDefaultWeightUnit('', newType), totalPrice: 0, quantity: 1, unit: '', pricePerUnit: 0 })
   }
 
   const onProductSelect = (key: string, productId: string) => {
@@ -484,10 +611,21 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
     if (!it) return
     const pool = it.itemType === 'ingredient' ? ingredients : supplies
     const prod = pool.find((p) => p.id === productId)
+    if (!prod) return
+    // Auto-fill purchaseUnitType, weightPerUnit, weightUnit from product data
+    const pType = prod.purchaseUnitType || ''
+    const wPerUnit = it.itemType === 'ingredient'
+      ? (prod.weightPerUnit || 1)
+      : (prod.measurePerUnit || 1)
+    const wUnit = it.itemType === 'ingredient'
+      ? (prod.weightUnit || getDefaultWeightUnit(pType, 'ingredient'))
+      : (prod.measureUnit || getDefaultWeightUnit(pType, 'supply'))
     updateItem(key, {
       itemId: productId,
-      unit: prod?.purchaseUnit || '',
-      pricePerUnit: prod?.purchasePrice || 0,
+      purchaseUnitType: pType,
+      weightPerUnit: isWeightFieldHidden(pType) ? 1 : wPerUnit,
+      weightUnit: wUnit,
+      unit: wUnit,
     })
   }
 
@@ -495,10 +633,10 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
     e.preventDefault()
     setError(null)
     if (!supplierId) return setError('El proveedor es obligatorio')
-    const validItems = items.filter((it) => it.itemId && Number(it.quantity) > 0)
+    const validItems = items.filter((it) => it.itemId && Number(it.unitsPurchased) > 0)
     if (validItems.length === 0) return setError('Debe agregar al menos un item con producto y cantidad')
     for (const it of validItems) {
-      if (Number(it.pricePerUnit) < 0) return setError('El precio no puede ser negativo para un item')
+      if (Number(it.totalPrice) < 0) return setError('El precio total no puede ser negativo para un item')
     }
 
     setSaving(true)
@@ -509,13 +647,21 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
         purchaseDate: dateInputToEpoch(purchaseDate),
         invoiceNumber: invoiceNumber.trim() || null,
         observations: observations.trim() || null,
-        items: validItems.map((it) => ({
-          itemType: it.itemType,
-          itemId: it.itemId,
-          quantity: Number(it.quantity),
-          unit: it.unit || 'u',
-          pricePerUnit: Number(it.pricePerUnit),
-        })),
+        items: validItems.map((it) => {
+          // Compute total quantity and pricePerUnit from the purchase detail fields
+          const qty = Number(it.unitsPurchased) || 0
+          const wpu = isWeightFieldHidden(it.purchaseUnitType) ? 1 : (Number(it.weightPerUnit) || 1)
+          const totalQty = qty * wpu
+          const totalPrice = Number(it.totalPrice) || 0
+          const pricePerUnit = totalQty > 0 ? totalPrice / totalQty : 0
+          return {
+            itemType: it.itemType,
+            itemId: it.itemId,
+            quantity: totalQty,
+            unit: it.weightUnit || 'u',
+            pricePerUnit,
+          }
+        }),
       }
       const url = mode === 'create' ? '/api/cocina-movil/purchases' : `/api/cocina-movil/purchases/${item!.id}`
       const res = await fetch(url, {
@@ -611,26 +757,22 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
                 <p className="text-sm text-[#8A7E70]">No hay items. Hacé clic en &quot;Agregar Item&quot;.</p>
               </div>
             ) : (
-              <>
-                {/* Header de grilla (desktop) */}
-                <div className="hidden lg:grid grid-cols-12 gap-2 px-2 text-xs font-medium text-[#8A7E70]">
-                  <div className="col-span-2">Tipo</div>
-                  <div className="col-span-5">Producto</div>
-                  <div className="col-span-1 text-right">Cant.</div>
-                  <div className="col-span-1">Unidad</div>
-                  <div className="col-span-2 text-right">Precio/U</div>
-                  <div className="col-span-1 text-right">Subtotal</div>
-                </div>
-
-                <div className="space-y-2">
-                  {items.map((it) => {
-                    const pool = it.itemType === 'ingredient' ? ingredients : supplies
-                    const subtotal = (Number(it.quantity) || 0) * (Number(it.pricePerUnit) || 0)
-                    return (
-                      <div key={it.key} className="grid grid-cols-2 lg:grid-cols-12 gap-2 p-2 rounded-md border border-[#5C3A21]/10 bg-[#FFF8E7]/30">
-                        {/* Tipo */}
-                        <div className="col-span-2 lg:col-span-2">
-                          <Label className="text-[10px] text-[#8A7E70] lg:hidden">Tipo</Label>
+              <div className="space-y-2">
+                {items.map((it) => {
+                  const pool = it.itemType === 'ingredient' ? ingredients : supplies
+                  const pTypes = it.itemType === 'ingredient' ? ING_PURCHASE_TYPES : SUP_PURCHASE_TYPES
+                  const wUnits = it.itemType === 'ingredient' ? ING_WEIGHT_UNITS : SUP_MEASURE_UNITS
+                  const qty = Number(it.unitsPurchased) || 0
+                  const wpu = isWeightFieldHidden(it.purchaseUnitType) ? 1 : (Number(it.weightPerUnit) || 0)
+                  const totalQty = qty * wpu
+                  const totalPrice = Number(it.totalPrice) || 0
+                  const pricePerUnit = totalQty > 0 ? totalPrice / totalQty : 0
+                  return (
+                    <div key={it.key} className="p-3 rounded-md border border-[#5C3A21]/15 bg-[#FFF8E7]/30 space-y-2">
+                      {/* Row 1: Tipo + Producto + Remove */}
+                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                        <div className="sm:col-span-3">
+                          <Label className="text-[10px] text-[#8A7E70]">Tipo</Label>
                           <Select value={it.itemType} onValueChange={(v) => onItemTypeChange(it.key, v as 'ingredient' | 'supply')}>
                             <SelectTrigger className="h-9 border-[#5C3A21]/15 text-xs">
                               <span className="flex items-center gap-1.5">
@@ -644,81 +786,89 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
                             </SelectContent>
                           </Select>
                         </div>
-
-                        {/* Producto */}
-                        <div className="col-span-2 lg:col-span-5">
-                          <Label className="text-[10px] text-[#8A7E70] lg:hidden">Producto</Label>
+                        <div className="sm:col-span-8">
+                          <Label className="text-[10px] text-[#8A7E70]">Producto</Label>
                           <SelectWithCreate
                             entity={it.itemType}
                             value={it.itemId}
                             onValueChange={(v) => onProductSelect(it.key, v)}
                             options={pool}
-                            placeholder={it.itemType === 'ingredient' ? 'Seleccionar MP…' : 'Seleccionar insumo…'}
+                            placeholder={it.itemType === 'ingredient' ? 'Seleccionar materia prima…' : 'Seleccionar insumo…'}
                             compact
                             triggerClassName="h-9 border-[#5C3A21]/15 text-xs"
-                            onCreated={(r) => {
-                              onQuickCreated?.(it.itemType, r)
-                            }}
+                            onCreated={(r) => { onQuickCreated?.(it.itemType, r) }}
                           />
                         </div>
-
-                        {/* Cantidad */}
-                        <div className="col-span-1 lg:col-span-1">
-                          <Label className="text-[10px] text-[#8A7E70] lg:hidden">Cant.</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={it.quantity}
-                            onChange={(e) => updateItem(it.key, { quantity: Number(e.target.value) })}
-                            className="h-9 border-[#5C3A21]/15 text-xs text-right"
-                          />
-                        </div>
-
-                        {/* Unidad */}
-                        <div className="col-span-1 lg:col-span-1">
-                          <Label className="text-[10px] text-[#8A7E70] lg:hidden">Unidad</Label>
-                          <Input
-                            value={it.unit}
-                            onChange={(e) => updateItem(it.key, { unit: e.target.value })}
-                            placeholder="kg"
-                            className="h-9 border-[#5C3A21]/15 text-xs"
-                          />
-                        </div>
-
-                        {/* Precio/U */}
-                        <div className="col-span-2 lg:col-span-2">
-                          <Label className="text-[10px] text-[#8A7E70] lg:hidden">Precio/U</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={it.pricePerUnit}
-                            onChange={(e) => updateItem(it.key, { pricePerUnit: Number(e.target.value) })}
-                            className="h-9 border-[#5C3A21]/15 text-xs text-right"
-                          />
-                        </div>
-
-                        {/* Subtotal + Remove */}
-                        <div className="col-span-2 lg:col-span-1 flex items-center justify-end gap-1">
-                          <div className="flex-1 text-right text-sm font-semibold text-[#5C3A21]">
-                            {fmtCurrency(subtotal)}
-                          </div>
-                          <Button
-                            type="button"
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => removeItem(it.key)}
-                            className="h-8 w-8 text-[#B91C1C] hover:bg-[#B91C1C]/10"
-                          >
+                        <div className="sm:col-span-1 flex items-end justify-center">
+                          <Button type="button" size="icon" variant="ghost" onClick={() => removeItem(it.key)} className="h-8 w-8 text-[#B91C1C] hover:bg-[#B91C1C]/10">
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
                       </div>
-                    )
-                  })}
-                </div>
-              </>
+
+                      {/* Row 2: Tipo Unidad + Cantidad + Peso/Medida + Unidad + Precio Total */}
+                      <div className="grid grid-cols-2 sm:grid-cols-12 gap-2">
+                        <div className="sm:col-span-3">
+                          <Label className="text-[10px] text-[#8A7E70]">Tipo de Unidad</Label>
+                          <Select
+                            value={it.purchaseUnitType || 'none'}
+                            onValueChange={(v) => {
+                              const nt = v === 'none' ? '' : v
+                              updateItem(it.key, {
+                                purchaseUnitType: nt,
+                                weightUnit: getDefaultWeightUnit(nt, it.itemType),
+                                weightPerUnit: isWeightFieldHidden(nt) ? 1 : (Number(it.weightPerUnit) || 1),
+                                unit: getDefaultWeightUnit(nt, it.itemType),
+                              })
+                            }}
+                          >
+                            <SelectTrigger className="h-9 border-[#5C3A21]/15 text-xs"><SelectValue placeholder="Sin tipo" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">— Sin tipo —</SelectItem>
+                              {pTypes.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <Label className="text-[10px] text-[#8A7E70]">{getQuantityLabel(it.purchaseUnitType)}</Label>
+                          <Input type="number" min="0" step="any" value={it.unitsPurchased} onChange={(e) => updateItem(it.key, { unitsPurchased: Number(e.target.value) })} className="h-9 border-[#5C3A21]/15 text-xs" />
+                        </div>
+                        {!isWeightFieldHidden(it.purchaseUnitType) && (
+                          <>
+                            <div className="sm:col-span-2">
+                              <Label className="text-[10px] text-[#8A7E70]">{getWeightLabel(it.purchaseUnitType)}</Label>
+                              <Input type="number" min="0" step="any" value={it.weightPerUnit} onChange={(e) => updateItem(it.key, { weightPerUnit: Number(e.target.value) })} className="h-9 border-[#5C3A21]/15 text-xs" />
+                            </div>
+                            <div className="sm:col-span-2">
+                              <Label className="text-[10px] text-[#8A7E70]">Unidad</Label>
+                              <Select value={it.weightUnit} onValueChange={(v) => updateItem(it.key, { weightUnit: v, unit: v })}>
+                                <SelectTrigger className="h-9 border-[#5C3A21]/15 text-xs"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  {wUnits.map((u) => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </>
+                        )}
+                        <div className={`col-span-2 ${isWeightFieldHidden(it.purchaseUnitType) ? 'sm:col-span-5' : 'sm:col-span-3'}`}>
+                          <Label className="text-[10px] text-[#8A7E70]">Precio Total ($)</Label>
+                          <Input type="number" min="0" step="any" value={it.totalPrice} onChange={(e) => updateItem(it.key, { totalPrice: Number(e.target.value) })} className="h-9 border-[#5C3A21]/15 text-xs" />
+                        </div>
+                      </div>
+
+                      {/* Row 3: Calc panel */}
+                      {totalQty > 0 && totalPrice > 0 && (
+                        <div className="flex items-center gap-4 px-3 py-2 bg-[#E1AD01]/10 border border-[#E1AD01]/30 rounded-md text-xs">
+                          <span className="font-semibold text-[#7a5c00]">📊 Cálculo:</span>
+                          <span className="text-[#5C3A21]">Precio/U: <strong>{fmtCurrency(pricePerUnit)}/{it.weightUnit}</strong></span>
+                          <span className="text-[#5C3A21]">Total: <strong>{totalQty.toLocaleString('es-AR')} {it.weightUnit}</strong></span>
+                          <span className="text-[#5C3A21] ml-auto">Subtotal: <strong className="text-sm">{fmtCurrency(totalPrice)}</strong></span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             )}
           </div>
 
