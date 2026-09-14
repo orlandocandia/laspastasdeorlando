@@ -536,7 +536,7 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+      <DialogContent className="sm:max-w-5xl max-h-[90vh] flex flex-col overflow-hidden p-0">
         <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
