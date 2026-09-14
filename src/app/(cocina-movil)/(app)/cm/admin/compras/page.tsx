@@ -15,7 +15,7 @@ import { useSearchParams } from 'next/navigation'
 import {
   Plus, Search, Printer, FileText, FileDown, FileSpreadsheet,
   Pencil, Trash2, MoreHorizontal, Loader2, X, Eye,
-  ShoppingCart, Package, FlaskConical,
+  ShoppingCart, Package, FlaskConical, ClipboardList,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -564,6 +564,9 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
   const [items, setItems] = React.useState<FormItem[]>([])
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [pendingOrdersOpen, setPendingOrdersOpen] = React.useState(false)
+  const [selectedOrderId, setSelectedOrderId] = React.useState<string | null>(null)
+  const [selectedOrderNumber, setSelectedOrderNumber] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     if (open) {
@@ -623,7 +626,6 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
     const pool = it.itemType === 'ingredient' ? ingredients : supplies
     const prod = pool.find((p) => p.id === productId)
     if (!prod) return
-    // Auto-fill purchaseUnitType, weightPerUnit, weightUnit from product data
     const pType = prod.purchaseUnitType || ''
     const wPerUnit = it.itemType === 'ingredient'
       ? (prod.weightPerUnit || 1)
@@ -638,6 +640,37 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
       weightUnit: wUnit,
       unit: wUnit,
     })
+  }
+
+  // Load a pending purchase order into the form
+  const loadPendingOrder = (order: {
+    id: string
+    orderNumber: string
+    supplierId: string
+    supplierName: string
+    items: Array<{ itemType: 'ingredient' | 'supply'; itemId: string; itemName: string; quantity: number; unit: string; pricePerUnit: number }>
+  }) => {
+    setSupplierId(order.supplierId)
+    setSelectedOrderId(order.id)
+    setSelectedOrderNumber(order.orderNumber)
+    setInvoiceNumber(order.orderNumber)
+    setObservations(`Generada desde pedido ${order.orderNumber}`)
+    // Map order items to form items (simplified: just qty, unit, pricePerUnit — no purchaseUnitType)
+    setItems(order.items.map((it) => ({
+      key: newItemKey(),
+      itemType: it.itemType,
+      itemId: it.itemId,
+      purchaseUnitType: '',
+      unitsPurchased: it.quantity,
+      weightPerUnit: 1,
+      weightUnit: it.unit || 'u',
+      totalPrice: it.quantity * it.pricePerUnit,
+      quantity: it.quantity,
+      unit: it.unit || 'u',
+      pricePerUnit: it.pricePerUnit,
+    })))
+    setPendingOrdersOpen(false)
+    toast.success(`Pedido ${order.orderNumber} cargado en la compra`)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -673,6 +706,8 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
             pricePerUnit,
           }
         }),
+        purchaseOrderId: selectedOrderId,
+        purchaseOrderNumber: selectedOrderNumber,
       }
       const url = mode === 'create' ? '/api/cocina-movil/purchases' : `/api/cocina-movil/purchases/${item!.id}`
       const res = await fetch(url, {
@@ -682,6 +717,16 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status)
+
+      // If this purchase came from a pending order, mark it as bought
+      if (selectedOrderId && data.purchase?.id) {
+        await fetch(`/api/cocina-movil/purchase-orders/${selectedOrderId}/convert-to-purchase`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ purchaseId: data.purchase.id }),
+        }).catch(() => {}) // non-fatal if it fails
+      }
+
       toast.success(mode === 'create' ? 'Compra creada' : 'Compra actualizada')
       onSaved()
     } catch (err) {
@@ -749,6 +794,24 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
               <Textarea value={observations} onChange={(e) => setObservations(e.target.value)} placeholder="Notas internas sobre la compra…" rows={2} className="border-[#5C3A21]/15 resize-none" />
             </div>
           </div>
+
+          {/* Cargar desde Pedido a Proveedor */}
+          {mode === 'create' && (
+            <div className="flex items-center justify-between gap-3 p-3 rounded-md border border-[#5C3A21]/15 bg-[#FBF1DC]/50">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="h-4 w-4 text-[#5C3A21]" />
+                <span className="text-sm text-[#5C3A21]">¿Querés cargar desde un Pedido a Proveedor?</span>
+              </div>
+              <Button type="button" size="sm" variant="outline" onClick={() => setPendingOrdersOpen(true)} className="border-[#5C3A21]/20 text-[#5C3A21]">
+                Ver Pedidos Pendientes
+              </Button>
+              {selectedOrderNumber && (
+                <span className="text-xs text-[#708238] font-medium ml-auto">
+                  ✓ Pedido {selectedOrderNumber} cargado
+                </span>
+              )}
+            </div>
+          )}
 
           <Separator />
 
@@ -900,13 +963,104 @@ function PurchaseFormDialog({ open, mode, item, suppliers, places, ingredients, 
           </div>
         </form>
       </DialogContent>
+      <PendingOrdersDialog
+        open={pendingOrdersOpen}
+        onClose={() => setPendingOrdersOpen(false)}
+        onLoadOrder={loadPendingOrder}
+      />
     </Dialog>
   )
 }
 
 // ============================================================
-// View Dialog (detalle de compra)
+// Pending Orders Dialog (cargar desde pedido a proveedor)
 // ============================================================
+
+interface PendingOrder {
+  id: string
+  orderNumber: string
+  supplierId: string
+  supplierName: string
+  orderDate: number
+  items: Array<{ itemType: 'ingredient' | 'supply'; itemId: string; itemName: string; quantity: number; unit: string; pricePerUnit: number }>
+  total: number
+  status: string
+}
+
+function PendingOrdersDialog({ open, onClose, onLoadOrder }: {
+  open: boolean
+  onClose: () => void
+  onLoadOrder: (order: PendingOrder) => void
+}) {
+  const [orders, setOrders] = React.useState<PendingOrder[]>([])
+  const [loading, setLoading] = React.useState(false)
+
+  React.useEffect(() => {
+    if (open) {
+      setLoading(true)
+      fetch('/api/cocina-movil/purchase-orders?status=pendiente&pageSize=200')
+        .then((r) => r.json().catch(() => ({ orders: [] })))
+        .then((data) => {
+          setOrders(data.orders || [])
+          setLoading(false)
+        })
+        .catch(() => setLoading(false))
+    }
+  }, [open])
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
+            <ClipboardList className="h-5 w-5" />
+            Pedidos a Proveedores Pendientes
+          </DialogTitle>
+          <DialogDescription>
+            Seleccioná un pedido para cargar sus items en esta compra.
+          </DialogDescription>
+        </DialogHeader>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-[#E1AD01]" />
+          </div>
+        ) : orders.length === 0 ? (
+          <div className="text-center py-8">
+            <ClipboardList className="h-10 w-10 mx-auto mb-2 text-[#8A7E70]/40" />
+            <p className="text-sm text-[#8A7E70]">No hay pedidos pendientes.</p>
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {orders.map((o) => (
+              <div key={o.id} className="flex items-center justify-between gap-3 p-3 rounded-md border border-[#5C3A21]/10 bg-[#FFF8E7]/30">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Badge className="text-[10px] bg-[#5C3A21] hover:bg-[#5C3A21] text-white font-mono">{o.orderNumber}</Badge>
+                    <span className="text-sm font-medium text-[#5C3A21] truncate">{o.supplierName}</span>
+                  </div>
+                  <p className="text-xs text-[#8A7E70] mt-1">
+                    {o.items.length} items · Total: {fmtCurrency(o.total)} · {fmtDate(o.orderDate)}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => onLoadOrder(o)}
+                  className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611] shrink-0"
+                >
+                  Cargar
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>Cerrar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 function PurchaseViewDialog({ item, onClose }: { item: CmPurchaseRecord | null; onClose: () => void }) {
   return (
