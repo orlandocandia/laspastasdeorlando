@@ -18,17 +18,19 @@ import { useSearchParams } from 'next/navigation'
 import {
   Plus, Search, Printer, FileText, FileDown, FileSpreadsheet,
   Pencil, Trash2, MoreHorizontal, Loader2, Eye, ShoppingBag,
-  TrendingUp,
+  TrendingUp, X,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Textarea } from '@/components/ui/textarea'
+import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import { SelectWithCreate, type QuickCreateEntity, type SelectOption } from '@/components/(cocina-movil)/admin/select-with-create'
 
@@ -36,25 +38,50 @@ import { SelectWithCreate, type QuickCreateEntity, type SelectOption } from '@/c
 // Tipos
 // ============================================================
 
+interface CmSaleItem {
+  id: string
+  saleId: string
+  recipeId: string
+  recipeTitle: string
+  quantity: number
+  unitPrice: number
+  costPerUnit: number
+  subtotal: number
+  costSubtotal: number
+}
+
 interface CmSaleRecord {
   id: string
   ticketNumber: string
-  recipeId: string
-  recipeTitle: string
+  // Datos generales
+  saleDate: number
   placeId: string
   placeName: string
   clientName: string | null
-  quantity: number
-  unitPrice: number
-  totalPrice: number
-  costPerUnit: number
+  invoiceNumber: string | null
+  paymentMethod: string
+  observations: string | null
+  // Items (multi-receta)
+  items: CmSaleItem[]
+  // Cálculos (auto)
   totalCost: number
+  subtotalPrice: number
+  discountType: 'percentage' | 'fixed' | null
+  discountValue: number | null
+  discountAmount: number
+  taxRate: number | null
+  taxAmount: number
+  totalPrice: number
   profit: number
   profitPercentage: number
-  saleDate: number
-  observations: string | null
   createdAt: number
   updatedAt: number
+  // Legacy (compat)
+  recipeId: string
+  recipeTitle: string
+  quantity: number
+  unitPrice: number
+  costPerUnit: number
 }
 
 interface RecipeOption {
@@ -93,6 +120,40 @@ const marginColor = (p: number): string => {
   if (p > 30) return 'text-[#708238] font-semibold'
   if (p >= 10) return 'text-[#E1AD01] font-semibold'
   return 'text-[#B91C1C] font-semibold'
+}
+
+const PAYMENT_METHODS = [
+  { value: 'Efectivo', label: 'Efectivo' },
+  { value: 'Transferencia', label: 'Transferencia' },
+  { value: 'Tarjeta', label: 'Tarjeta' },
+  { value: 'Mercado Pago', label: 'Mercado Pago' },
+  { value: 'Cuenta Corriente', label: 'Cuenta Corriente' },
+]
+
+interface FormSaleItem {
+  key: string
+  recipeId: string
+  quantity: number
+  unitPrice: number
+}
+
+const newItemKey = (): string =>
+  typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? `item-${crypto.randomUUID()}`
+    : `item-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+
+const epochToDateInput = (epoch: number): string => {
+  const d = new Date(epoch)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+const dateInputToEpoch = (dateStr: string): number => {
+  if (!dateStr) return Date.now()
+  const [y, m, d] = dateStr.split('-').map(Number)
+  return new Date(y, (m || 1) - 1, d || 1).getTime()
 }
 
 const isEditable = (sale: CmSaleRecord): boolean =>
@@ -296,10 +357,10 @@ function CmVentasPageContent() {
                     <TableHead className="w-10">#</TableHead>
                     <TableHead>Ticket</TableHead>
                     <TableHead>Fecha</TableHead>
-                    <TableHead>Receta</TableHead>
+                    <TableHead>Recetas</TableHead>
                     <TableHead className="hidden md:table-cell">Lugar</TableHead>
                     <TableHead className="hidden lg:table-cell">Cliente</TableHead>
-                    <TableHead className="text-center">Cantidad</TableHead>
+                    <TableHead className="text-center">Items</TableHead>
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead className="text-right">Margen %</TableHead>
                     <TableHead className="text-right">Acciones</TableHead>
@@ -316,12 +377,16 @@ function CmVentasPageContent() {
                       </TableCell>
                       <TableCell className="text-sm text-[#4A3F36] whitespace-nowrap">{fmtDate(s.saleDate)}</TableCell>
                       <TableCell>
-                        <p className="text-sm font-medium text-[#5C3A21]">{s.recipeTitle}</p>
+                        <p className="text-sm font-medium text-[#5C3A21]">
+                          {s.items.length > 1 ? `${s.items[0]?.recipeTitle} +${s.items.length - 1}` : s.recipeTitle}
+                        </p>
                         {s.observations && <p className="text-xs text-[#8A7E70] line-clamp-1">{s.observations}</p>}
                       </TableCell>
                       <TableCell className="hidden md:table-cell text-sm text-[#4A3F36]">{s.placeName}</TableCell>
                       <TableCell className="hidden lg:table-cell text-sm text-[#4A3F36]">{s.clientName || '—'}</TableCell>
-                      <TableCell className="text-center text-sm text-[#4A3F36] whitespace-nowrap">{s.quantity}</TableCell>
+                      <TableCell className="text-center text-sm text-[#4A3F36] whitespace-nowrap">
+                        <Badge className="bg-[#5C3A21]/10 text-[#5C3A21] hover:bg-[#5C3A21]/15">{s.items.length}</Badge>
+                      </TableCell>
                       <TableCell className="text-right text-sm font-semibold text-[#5C3A21] whitespace-nowrap">{fmtCurrency(s.totalPrice)}</TableCell>
                       <TableCell className={`text-right text-sm whitespace-nowrap ${marginColor(s.profitPercentage)}`}>
                         <span className="inline-flex items-center gap-1">
@@ -414,12 +479,16 @@ interface SaleFormDialogProps {
 }
 
 function SaleFormDialog({ open, mode, item, recipes, places, onClose, onSaved, onQuickCreated }: SaleFormDialogProps) {
-  const [recipeId, setRecipeId] = React.useState<string>('')
   const [placeId, setPlaceId] = React.useState<string>('')
+  const [saleDate, setSaleDate] = React.useState<string>(epochToDateInput(Date.now()))
   const [clientName, setClientName] = React.useState('')
-  const [quantity, setQuantity] = React.useState<string>('1')
-  const [unitPrice, setUnitPrice] = React.useState<string>('0')
+  const [invoiceNumber, setInvoiceNumber] = React.useState('')
+  const [paymentMethod, setPaymentMethod] = React.useState<string>('Efectivo')
+  const [discountType, setDiscountType] = React.useState<'percentage' | 'fixed'>('percentage')
+  const [discountValue, setDiscountValue] = React.useState<string>('')
+  const [taxRate, setTaxRate] = React.useState<string>('')
   const [observations, setObservations] = React.useState('')
+  const [items, setItems] = React.useState<FormSaleItem[]>([])
 
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -427,54 +496,108 @@ function SaleFormDialog({ open, mode, item, recipes, places, onClose, onSaved, o
   React.useEffect(() => {
     if (open) {
       if (mode === 'edit' && item) {
-        setRecipeId(item.recipeId)
         setPlaceId(item.placeId)
+        setSaleDate(epochToDateInput(item.saleDate))
         setClientName(item.clientName || '')
-        setQuantity(String(item.quantity || 1))
-        setUnitPrice(String(item.unitPrice ?? 0))
+        setInvoiceNumber(item.invoiceNumber || '')
+        setPaymentMethod(item.paymentMethod || 'Efectivo')
+        setDiscountType(item.discountType || 'percentage')
+        setDiscountValue(item.discountValue != null ? String(item.discountValue) : '')
+        setTaxRate(item.taxRate != null ? String(item.taxRate) : '')
         setObservations(item.observations || '')
+        setItems(item.items.map((it) => ({
+          key: newItemKey(),
+          recipeId: it.recipeId,
+          quantity: it.quantity,
+          unitPrice: it.unitPrice,
+        })))
       } else {
-        setRecipeId('')
         setPlaceId('')
+        setSaleDate(epochToDateInput(Date.now()))
         setClientName('')
-        setQuantity('1')
-        setUnitPrice('0')
+        setInvoiceNumber('')
+        setPaymentMethod('Efectivo')
+        setDiscountType('percentage')
+        setDiscountValue('')
+        setTaxRate('')
         setObservations('')
+        setItems([{ key: newItemKey(), recipeId: '', quantity: 1, unitPrice: 0 }])
       }
       setError(null)
     }
   }, [open, mode, item])
 
-  // Cálculo automático de costos y márgenes en tiempo real
-  const selectedRecipe = recipes.find((r) => r.id === recipeId)
-  const costPerUnit = selectedRecipe?.costPerServing ?? 0
-  const qtyNum = Number(quantity) || 0
-  const priceNum = Number(unitPrice) || 0
+  // Cálculo automático de costos en tiempo real
+  const recipeCostMap = React.useMemo(() => {
+    const m = new Map<string, number>()
+    for (const r of recipes) m.set(r.id, r.costPerServing)
+    return m
+  }, [recipes])
 
-  const totalCost = costPerUnit * qtyNum
-  const totalPrice = priceNum * qtyNum
+  const computedItems = items.map((it) => {
+    const costPerUnit = recipeCostMap.get(it.recipeId) ?? 0
+    return {
+      ...it,
+      costPerUnit,
+      subtotal: (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0),
+      costSubtotal: (Number(it.quantity) || 0) * costPerUnit,
+    }
+  })
+
+  const totalCost = computedItems.reduce((sum, it) => sum + it.costSubtotal, 0)
+  const subtotalPrice = computedItems.reduce((sum, it) => sum + it.subtotal, 0)
+
+  const dv = Number(discountValue) || 0
+  let discountAmount = 0
+  if (dv > 0) {
+    discountAmount = discountType === 'percentage' ? subtotalPrice * (dv / 100) : Math.min(dv, subtotalPrice)
+  }
+  const afterDiscount = subtotalPrice - discountAmount
+
+  const tr = Number(taxRate) || 0
+  const taxAmount = tr > 0 ? afterDiscount * (tr / 100) : 0
+  const totalPrice = afterDiscount + taxAmount
   const profit = totalPrice - totalCost
   const profitPercentage = totalPrice > 0 ? (profit / totalPrice) * 100 : 0
+
+  const addItem = () => {
+    setItems((arr) => [...arr, { key: newItemKey(), recipeId: '', quantity: 1, unitPrice: 0 }])
+  }
+  const removeItem = (key: string) => setItems((arr) => arr.filter((it) => it.key !== key))
+  const updateItem = (key: string, patch: Partial<FormSaleItem>) =>
+    setItems((arr) => arr.map((it) => (it.key === key ? { ...it, ...patch } : it)))
+  const onRecipeSelect = (key: string, recipeId: string) => {
+    const r = recipes.find((x) => x.id === recipeId)
+    updateItem(key, { recipeId, unitPrice: r ? Math.round(r.costPerServing * 2) : 0 })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (!recipeId) return setError('La receta es obligatoria')
     if (!placeId) return setError('El lugar es obligatorio')
-    const q = Number(quantity)
-    if (!q || q <= 0) return setError('La cantidad debe ser mayor a 0')
-    const p = Number(unitPrice)
-    if (isNaN(p) || p <= 0) return setError('El precio de venta debe ser mayor a 0')
+    const validItems = items.filter((it) => it.recipeId && Number(it.quantity) > 0)
+    if (validItems.length === 0) return setError('Debe agregar al menos un item con receta y cantidad')
+    for (const it of validItems) {
+      if (Number(it.unitPrice) < 0) return setError('El precio no puede ser negativo')
+    }
 
     setSaving(true)
     try {
       const body = {
-        recipeId,
         placeId,
+        saleDate: dateInputToEpoch(saleDate),
         clientName: clientName.trim() || null,
-        quantity: q,
-        unitPrice: p,
+        invoiceNumber: invoiceNumber.trim() || null,
+        paymentMethod,
         observations: observations.trim() || null,
+        items: validItems.map((it) => ({
+          recipeId: it.recipeId,
+          quantity: Number(it.quantity),
+          unitPrice: Number(it.unitPrice),
+        })),
+        discountType: dv > 0 ? discountType : null,
+        discountValue: dv > 0 ? dv : null,
+        taxRate: tr > 0 ? tr : null,
       }
       const url = mode === 'create' ? '/api/cocina-movil/sales' : `/api/cocina-movil/sales/${item!.id}`
       const res = await fetch(url, {
@@ -495,146 +618,216 @@ function SaleFormDialog({ open, mode, item, recipes, places, onClose, onSaved, o
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
           <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
             <ShoppingBag className="h-5 w-5" />
             {mode === 'create' ? 'Nueva Venta' : 'Editar Venta'}
           </DialogTitle>
           <DialogDescription>
             {mode === 'create'
-              ? 'Cargá una nueva venta. El margen se calcula automáticamente según la receta y el precio.'
+              ? 'Cargá una venta con múltiples recetas. El costo y margen se calculan automáticamente.'
               : `Editando venta ${item?.ticketNumber ? `(${item.ticketNumber})` : ''}`}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 pb-16">
-          {error && (
-            <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>
-          )}
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[#5C3A21]">Receta *</Label>
-              <SelectWithCreate
-                entity="recipe"
-                value={recipeId}
-                onValueChange={setRecipeId}
-                options={recipes.map((r) => ({ id: r.id, name: r.title }))}
-                placeholder="Seleccionar receta"
-                onCreated={(r) => onQuickCreated?.('recipe', r)}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[#5C3A21]">Lugar *</Label>
-              <SelectWithCreate
-                entity="place"
-                value={placeId}
-                onValueChange={setPlaceId}
-                options={places}
-                placeholder="Seleccionar lugar"
-                onCreated={(r) => onQuickCreated?.('place', r)}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-[#5C3A21]">Cliente</Label>
-            <Input
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              placeholder="Opcional"
-              className="border-[#5C3A21]/15"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-[#5C3A21]">Cantidad *</Label>
-              <Input
-                type="number"
-                min="1"
-                step="1"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder="1"
-                className="border-[#5C3A21]/15"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[#5C3A21]">Precio de venta por unidad *</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
-                value={unitPrice}
-                onChange={(e) => setUnitPrice(e.target.value)}
-                placeholder="0.00"
-                className="border-[#5C3A21]/15"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-[#5C3A21]">Observaciones</Label>
-            <Textarea
-              value={observations}
-              onChange={(e) => setObservations(e.target.value)}
-              placeholder="Notas internas, forma de pago, etc."
-              rows={3}
-              className="border-[#5C3A21]/15 resize-none"
-            />
-          </div>
-
-          {/* Cálculo de costos y margen (read-only, en tiempo real) */}
-          <div className="rounded-lg border border-[#5C3A21]/15 bg-[#FFF8E7]/40 p-4 space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#8A7E70] flex items-center gap-1">
-              <TrendingUp className="h-3.5 w-3.5" />Cálculo de margen
-            </p>
-            {selectedRecipe ? (
-              <>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#5C3A21]">Costo unitario:</span>
-                  <span className="font-semibold text-[#5C3A21]">{fmtCurrency(costPerUnit)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#5C3A21]">
-                    Costo total: {fmtCurrency(costPerUnit)} × {qtyNum} =
-                  </span>
-                  <span className="font-semibold text-[#5C3A21]">{fmtCurrency(totalCost)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#5C3A21]">
-                    Precio total: {fmtCurrency(priceNum)} × {qtyNum} =
-                  </span>
-                  <span className="font-semibold text-[#5C3A21]">{fmtCurrency(totalPrice)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-[#5C3A21]">
-                    Ganancia: {fmtCurrency(totalPrice)} − {fmtCurrency(totalCost)} =
-                  </span>
-                  <span className="font-bold text-[#5C3A21] text-base">{fmtCurrency(profit)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm pt-2 mt-1 border-t border-[#5C3A21]/15">
-                  <span className="text-[#5C3A21] flex items-center gap-1">
-                    <TrendingUp className="h-3.5 w-3.5" />
-                    Margen:
-                  </span>
-                  <span className={`text-base ${marginColor(profitPercentage)}`}>{fmtPercent(profitPercentage)}</span>
-                </div>
-              </>
-            ) : (
-              <p className="text-sm text-[#8A7E70] italic">Seleccioná una receta para ver el cálculo de margen.</p>
+        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-6 space-y-5 pb-6">
+            {error && (
+              <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>
             )}
+
+            {/* ============ SECCIÓN 1: Datos de la Venta ============ */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">1</div>
+                <h3 className="text-sm font-semibold text-[#5C3A21]">Datos de la Venta</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-10">
+                <div className="space-y-1.5">
+                  <Label className="text-[#5C3A21]">Fecha de venta</Label>
+                  <Input type="date" value={saleDate} onChange={(e) => setSaleDate(e.target.value)} className="border-[#5C3A21]/15" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[#5C3A21]">Cliente</Label>
+                  <Input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Opcional" className="border-[#5C3A21]/15" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[#5C3A21]">Lugar *</Label>
+                  <SelectWithCreate
+                    entity="place"
+                    value={placeId}
+                    onValueChange={setPlaceId}
+                    options={places}
+                    placeholder="Seleccionar lugar"
+                    onCreated={(r) => onQuickCreated?.('place', r)}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[#5C3A21]">N° de ticket / factura</Label>
+                  <Input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} placeholder="Opcional" className="border-[#5C3A21]/15" />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* ============ SECCIÓN 2: Detalle de Venta ============ */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">2</div>
+                  <h3 className="text-sm font-semibold text-[#5C3A21]">Detalle de Venta</h3>
+                </div>
+                <Button type="button" size="sm" variant="outline" onClick={addItem} className="border-[#5C3A21]/20 text-[#5C3A21]">
+                  <Plus className="h-3.5 w-3.5" />Agregar Item
+                </Button>
+              </div>
+              <div className="space-y-2 pl-10">
+                {/* Header (desktop) */}
+                <div className="hidden lg:grid grid-cols-12 gap-2 px-2 text-xs font-medium text-[#8A7E70]">
+                  <div className="col-span-5">Receta</div>
+                  <div className="col-span-2 text-right">Cantidad</div>
+                  <div className="col-span-2 text-right">Precio/U</div>
+                  <div className="col-span-2 text-right">Subtotal</div>
+                  <div className="col-span-1" />
+                </div>
+                {items.map((it) => {
+                  const r = recipes.find((x) => x.id === it.recipeId)
+                  const costPerUnit = r?.costPerServing ?? 0
+                  const subtotal = (Number(it.quantity) || 0) * (Number(it.unitPrice) || 0)
+                  return (
+                    <div key={it.key} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2 rounded-md border border-[#5C3A21]/10 bg-[#FFF8E7]/30">
+                      <div className="sm:col-span-5">
+                        <Label className="text-[10px] text-[#8A7E70] sm:hidden">Receta</Label>
+                        <SelectWithCreate
+                          entity="recipe"
+                          value={it.recipeId}
+                          onValueChange={(v) => onRecipeSelect(it.key, v)}
+                          options={recipes.map((rc) => ({ id: rc.id, name: rc.title }))}
+                          placeholder="Seleccionar receta…"
+                          compact
+                          triggerClassName="h-9 border-[#5C3A21]/15 text-xs"
+                          onCreated={(rec) => onQuickCreated?.('recipe', rec)}
+                        />
+                        {r && <p className="text-[10px] text-[#8A7E70] mt-0.5">Costo: {fmtCurrency(costPerUnit)}/u</p>}
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Label className="text-[10px] text-[#8A7E70] sm:hidden">Cantidad</Label>
+                        <Input type="number" min="0" step="any" value={it.quantity} onChange={(e) => updateItem(it.key, { quantity: Number(e.target.value) })} className="h-9 border-[#5C3A21]/15 text-xs text-right" />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <Label className="text-[10px] text-[#8A7E70] sm:hidden">Precio/U</Label>
+                        <Input type="number" min="0" step="0.01" value={it.unitPrice} onChange={(e) => updateItem(it.key, { unitPrice: Number(e.target.value) })} className="h-9 border-[#5C3A21]/15 text-xs text-right" />
+                      </div>
+                      <div className="sm:col-span-2 flex items-center justify-end">
+                        <span className="text-sm font-semibold text-[#5C3A21]">{fmtCurrency(subtotal)}</span>
+                      </div>
+                      <div className="sm:col-span-1 flex items-center justify-center">
+                        <Button type="button" size="icon" variant="ghost" onClick={() => removeItem(it.key)} className="h-8 w-8 text-[#B91C1C] hover:bg-[#B91C1C]/10">
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* ============ SECCIÓN 3: Pago ============ */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">3</div>
+                <h3 className="text-sm font-semibold text-[#5C3A21]">Pago</h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pl-10">
+                <div className="space-y-1.5">
+                  <Label className="text-[#5C3A21]">Forma de pago</Label>
+                  <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                    <SelectTrigger className="border-[#5C3A21]/15"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {PAYMENT_METHODS.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[#5C3A21]">Tipo descuento</Label>
+                  <Select value={discountType} onValueChange={(v) => setDiscountType(v as 'percentage' | 'fixed')}>
+                    <SelectTrigger className="border-[#5C3A21]/15"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="percentage">Porcentaje (%)</SelectItem>
+                      <SelectItem value="fixed">Monto fijo ($)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[#5C3A21]">Descuento</Label>
+                  <Input type="number" min="0" step="any" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} placeholder={discountType === 'percentage' ? 'Ej: 10' : 'Ej: 500'} className="border-[#5C3A21]/15" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[#5C3A21]">IVA (%)</Label>
+                  <Input type="number" min="0" step="any" value={taxRate} onChange={(e) => setTaxRate(e.target.value)} placeholder="Ej: 21" className="border-[#5C3A21]/15" />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label className="text-[#5C3A21]">Observaciones</Label>
+                  <Textarea value={observations} onChange={(e) => setObservations(e.target.value)} placeholder="Notas internas, condiciones, etc." rows={2} className="border-[#5C3A21]/15 resize-none" />
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* ============ SECCIÓN 4: Panel de cálculo ============ */}
+            <div className="rounded-lg border border-[#5C3A21]/15 bg-[#FFF8E7]/40 p-4 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#8A7E70] flex items-center gap-1">
+                <TrendingUp className="h-3.5 w-3.5" />Cálculo
+              </p>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-[#5C3A21]">Costo total ({items.length} items):</span>
+                <span className="font-semibold text-[#5C3A21]">{fmtCurrency(totalCost)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-[#5C3A21]">Subtotal (precio de venta):</span>
+                <span className="font-semibold text-[#5C3A21]">{fmtCurrency(subtotalPrice)}</span>
+              </div>
+              {discountAmount > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[#B91C1C]">Descuento ({discountType === 'percentage' ? `${dv}%` : 'fijo'}):</span>
+                  <span className="font-semibold text-[#B91C1C]">−{fmtCurrency(discountAmount)}</span>
+                </div>
+              )}
+              {taxAmount > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[#5C3A21]">IVA ({tr}%):</span>
+                  <span className="font-semibold text-[#5C3A21]">+{fmtCurrency(taxAmount)}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between text-sm pt-2 mt-1 border-t border-[#5C3A21]/15">
+                <span className="text-[#5C3A21] font-semibold">Total final:</span>
+                <span className="font-bold text-[#5C3A21] text-lg">{fmtCurrency(totalPrice)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-[#5C3A21]">Ganancia:</span>
+                <span className="font-bold text-[#5C3A21]">{fmtCurrency(profit)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm pt-2 mt-1 border-t border-[#5C3A21]/15">
+                <span className="text-[#5C3A21] flex items-center gap-1">
+                  <TrendingUp className="h-3.5 w-3.5" />Margen real:
+                </span>
+                <span className={`text-base ${marginColor(profitPercentage)}`}>{fmtPercent(profitPercentage)}</span>
+              </div>
+            </div>
           </div>
 
-          <DialogFooter className="gap-2">
+          <div className="shrink-0 bg-white border-t border-[#5C3A21]/10 px-6 py-3 flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose} disabled={saving}>Cancelar</Button>
             <Button type="submit" disabled={saving} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">
               {saving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
               {mode === 'create' ? 'Crear' : 'Guardar'}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

@@ -19,14 +19,22 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   let body: Record<string, unknown>
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 }) }
   const updates: Partial<CmSaleInput> = {}
-  if (typeof body.recipeId === 'string') updates.recipeId = body.recipeId
   if (typeof body.placeId === 'string') updates.placeId = body.placeId
   if (body.clientName !== undefined) updates.clientName = typeof body.clientName === 'string' ? body.clientName : null
-  if (typeof body.quantity === 'number') updates.quantity = body.quantity
-  if (typeof body.unitPrice === 'number') updates.unitPrice = body.unitPrice
+  if (body.invoiceNumber !== undefined) updates.invoiceNumber = typeof body.invoiceNumber === 'string' ? body.invoiceNumber : null
+  if (body.paymentMethod !== undefined) updates.paymentMethod = typeof body.paymentMethod === 'string' ? body.paymentMethod : 'Efectivo'
   if (typeof body.saleDate === 'number') updates.saleDate = body.saleDate
   if (body.observations !== undefined) updates.observations = typeof body.observations === 'string' ? body.observations : null
-  if (body.paymentMethod !== undefined) updates.paymentMethod = typeof body.paymentMethod === 'string' ? body.paymentMethod : 'Efectivo'
+  if (Array.isArray(body.items)) {
+    updates.items = (body.items as Array<Record<string, unknown>>).map((it) => ({
+      recipeId: typeof it.recipeId === 'string' ? it.recipeId : '',
+      quantity: typeof it.quantity === 'number' ? it.quantity : 0,
+      unitPrice: typeof it.unitPrice === 'number' ? it.unitPrice : 0,
+    }))
+  }
+  if (body.discountType !== undefined) updates.discountType = body.discountType === 'percentage' || body.discountType === 'fixed' ? body.discountType : null
+  if (body.discountValue !== undefined) updates.discountValue = typeof body.discountValue === 'number' ? body.discountValue : null
+  if (body.taxRate !== undefined) updates.taxRate = typeof body.taxRate === 'number' ? body.taxRate : null
   try {
     const sale = updateSale(id, updates)
     if (!sale) return NextResponse.json({ error: 'No encontrada' }, { status: 404 })
