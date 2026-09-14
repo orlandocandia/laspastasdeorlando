@@ -695,15 +695,6 @@ function PurchaseOrderFormDialog({
                 </Button>
               </div>
               <div className="space-y-2 pl-10">
-                {/* Header (desktop) */}
-                <div className="hidden lg:grid grid-cols-12 gap-2 px-2 text-xs font-medium text-[#8A7E70]">
-                  <div className="col-span-2">Tipo</div>
-                  <div className="col-span-4">Producto</div>
-                  <div className="col-span-2 text-right">Cantidad</div>
-                  <div className="col-span-1 text-right">Unidad</div>
-                  <div className="col-span-2 text-right">Precio/U</div>
-                  <div className="col-span-1 text-right">Subtotal</div>
-                </div>
                 {items.length === 0 ? (
                   <div className="text-center py-6 border border-dashed border-[#5C3A21]/20 rounded-md">
                     <p className="text-sm text-[#8A7E70]">No hay items. Hacé clic en &quot;Agregar Item&quot;.</p>
@@ -713,79 +704,64 @@ function PurchaseOrderFormDialog({
                     const pool = it.itemType === 'ingredient' ? ingredients : supplies
                     const subtotal = (Number(it.quantity) || 0) * (Number(it.pricePerUnit) || 0)
                     return (
-                      <div key={it.key} className="grid grid-cols-1 sm:grid-cols-12 gap-2 p-2 rounded-md border border-[#5C3A21]/10 bg-[#FFF8E7]/30">
-                        {/* Tipo */}
-                        <div className="sm:col-span-2">
-                          <Label className="text-[10px] text-[#8A7E70] sm:hidden">Tipo</Label>
-                          <Select value={it.itemType} onValueChange={(v) => onItemTypeChange(it.key, v as 'ingredient' | 'supply')}>
-                            <SelectTrigger className="h-9 border-[#5C3A21]/15 text-xs">
-                              <span className="flex items-center gap-1.5">
-                                {it.itemType === 'ingredient' ? <Package className="h-3.5 w-3.5 text-[#708238]" /> : <FlaskConical className="h-3.5 w-3.5 text-[#E1AD01]" />}
-                                <SelectValue />
-                              </span>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="ingredient">Materia Prima</SelectItem>
-                              <SelectItem value="supply">Insumo</SelectItem>
-                            </SelectContent>
-                          </Select>
+                      <div key={it.key} className="p-3 rounded-md border border-[#5C3A21]/15 bg-[#FFF8E7]/30 space-y-2">
+                        {/* Row 1: Tipo + Producto + Remove */}
+                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                          <div className="sm:col-span-3">
+                            <Label className="text-[10px] text-[#8A7E70]">Tipo</Label>
+                            <Select value={it.itemType} onValueChange={(v) => onItemTypeChange(it.key, v as 'ingredient' | 'supply')}>
+                              <SelectTrigger className="h-9 border-[#5C3A21]/15 text-xs">
+                                <span className="flex items-center gap-1.5">
+                                  {it.itemType === 'ingredient' ? <Package className="h-3.5 w-3.5 text-[#708238]" /> : <FlaskConical className="h-3.5 w-3.5 text-[#E1AD01]" />}
+                                  <SelectValue />
+                                </span>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="ingredient">Materia Prima</SelectItem>
+                                <SelectItem value="supply">Insumo</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="sm:col-span-8">
+                            <Label className="text-[10px] text-[#8A7E70]">Producto</Label>
+                            <SelectWithCreate
+                              entity={it.itemType}
+                              value={it.itemId}
+                              onValueChange={(v) => onProductSelect(it.key, v)}
+                              options={pool}
+                              placeholder={it.itemType === 'ingredient' ? 'Seleccionar materia prima…' : 'Seleccionar insumo…'}
+                              compact
+                              triggerClassName="h-9 border-[#5C3A21]/15 text-xs"
+                              onCreated={(r) => { onQuickCreated?.(it.itemType, r) }}
+                            />
+                          </div>
+                          <div className="sm:col-span-1 flex items-end justify-center">
+                            <Button type="button" size="icon" variant="ghost" onClick={() => removeItem(it.key)} className="h-8 w-8 text-[#B91C1C] hover:bg-[#B91C1C]/10">
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
-                        {/* Producto */}
-                        <div className="sm:col-span-4">
-                          <Label className="text-[10px] text-[#8A7E70] sm:hidden">Producto</Label>
-                          <SelectWithCreate
-                            entity={it.itemType}
-                            value={it.itemId}
-                            onValueChange={(v) => onProductSelect(it.key, v)}
-                            options={pool}
-                            placeholder={it.itemType === 'ingredient' ? 'Seleccionar materia prima…' : 'Seleccionar insumo…'}
-                            compact
-                            triggerClassName="h-9 border-[#5C3A21]/15 text-xs"
-                            onCreated={(r) => { onQuickCreated?.(it.itemType, r) }}
-                          />
-                        </div>
-                        {/* Cantidad */}
-                        <div className="sm:col-span-2">
-                          <Label className="text-[10px] text-[#8A7E70] sm:hidden">Cantidad</Label>
-                          <Input
-                            type="number" min="0" step="any"
-                            value={it.quantity}
-                            onChange={(e) => updateItem(it.key, { quantity: Number(e.target.value) })}
-                            className="h-9 border-[#5C3A21]/15 text-xs text-right"
-                          />
-                        </div>
-                        {/* Unidad */}
-                        <div className="sm:col-span-1">
-                          <Label className="text-[10px] text-[#8A7E70] sm:hidden">Unidad</Label>
-                          <Input
-                            value={it.unit}
-                            onChange={(e) => updateItem(it.key, { unit: e.target.value })}
-                            placeholder="kg"
-                            className="h-9 border-[#5C3A21]/15 text-xs"
-                          />
-                        </div>
-                        {/* Precio/U */}
-                        <div className="sm:col-span-2">
-                          <Label className="text-[10px] text-[#8A7E70] sm:hidden">Precio/U</Label>
-                          <Input
-                            type="number" min="0" step="any"
-                            value={it.pricePerUnit}
-                            onChange={(e) => updateItem(it.key, { pricePerUnit: Number(e.target.value) })}
-                            placeholder="0"
-                            className="h-9 border-[#5C3A21]/15 text-xs text-right"
-                          />
-                        </div>
-                        {/* Subtotal + Remove */}
-                        <div className="sm:col-span-1 flex items-center justify-end gap-1">
-                          <span className="text-xs font-semibold text-[#5C3A21] hidden sm:inline">{fmtCurrency(subtotal)}</span>
-                          <Button type="button" size="icon" variant="ghost" onClick={() => removeItem(it.key)} className="h-8 w-8 text-[#B91C1C] hover:bg-[#B91C1C]/10">
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        {/* Subtotal (mobile) */}
-                        <div className="sm:hidden col-span-1 flex items-center justify-between text-xs">
-                          <span className="text-[#8A7E70]">Subtotal:</span>
-                          <span className="font-semibold text-[#5C3A21]">{fmtCurrency(subtotal)}</span>
+
+                        {/* Row 2: Cantidad + Unidad + Precio/U + Subtotal */}
+                        <div className="grid grid-cols-2 sm:grid-cols-12 gap-2">
+                          <div className="sm:col-span-3">
+                            <Label className="text-[10px] text-[#8A7E70]">Cantidad</Label>
+                            <Input type="number" min="0" step="any" value={it.quantity} onChange={(e) => updateItem(it.key, { quantity: Number(e.target.value) })} className="h-9 border-[#5C3A21]/15 text-xs" />
+                          </div>
+                          <div className="sm:col-span-3">
+                            <Label className="text-[10px] text-[#8A7E70]">Unidad</Label>
+                            <Input value={it.unit} onChange={(e) => updateItem(it.key, { unit: e.target.value })} placeholder="kg, u, l…" className="h-9 border-[#5C3A21]/15 text-xs" />
+                          </div>
+                          <div className="sm:col-span-3">
+                            <Label className="text-[10px] text-[#8A7E70]">Precio/U ($)</Label>
+                            <Input type="number" min="0" step="any" value={it.pricePerUnit} onChange={(e) => updateItem(it.key, { pricePerUnit: Number(e.target.value) })} className="h-9 border-[#5C3A21]/15 text-xs" />
+                          </div>
+                          <div className="sm:col-span-3">
+                            <Label className="text-[10px] text-[#8A7E70]">Subtotal</Label>
+                            <div className="h-9 flex items-center justify-end px-3 bg-[#E1AD01]/10 border border-[#E1AD01]/30 rounded-md">
+                              <span className="text-sm font-semibold text-[#5C3A21]">{fmtCurrency(subtotal)}</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )
