@@ -860,6 +860,12 @@ export function ClientFullCreateDialog({ open, onClose, onCreated }: FullCreateD
   const [email, setEmail] = React.useState('')
   const [address, setAddress] = React.useState('')
   const [city, setCity] = React.useState('')
+  const [country, setCountry] = React.useState('Argentina')
+  const [province, setProvince] = React.useState('Misiones')
+  const [department, setDepartment] = React.useState('')
+  const [municipality, setMunicipality] = React.useState('')
+  const [location, setLocation] = React.useState<string | null>(null)
+  const [avatar, setAvatar] = React.useState<string | null>(null)
   const [notes, setNotes] = React.useState('')
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -867,7 +873,9 @@ export function ClientFullCreateDialog({ open, onClose, onCreated }: FullCreateD
   React.useEffect(() => {
     if (open) {
       setFirstName(''); setLastName(''); setDni(''); setPhone(''); setEmail('')
-      setAddress(''); setCity(''); setNotes(''); setError(null)
+      setAddress(''); setCity(''); setCountry('Argentina'); setProvince('Misiones')
+      setDepartment(''); setMunicipality(''); setLocation(null); setAvatar(null)
+      setNotes(''); setError(null)
     }
   }, [open])
 
@@ -887,6 +895,12 @@ export function ClientFullCreateDialog({ open, onClose, onCreated }: FullCreateD
         email: email.trim() || null,
         address: address.trim() || null,
         city: city.trim() || null,
+        country: country.trim() || null,
+        province: province.trim() || null,
+        department: department.trim() || null,
+        municipality: municipality.trim() || null,
+        location: location || null,
+        avatar: avatar || null,
         notes: notes.trim() || null,
         isActive: true,
       }
@@ -911,16 +925,50 @@ export function ClientFullCreateDialog({ open, onClose, onCreated }: FullCreateD
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          {/* Imagen */}
+          <div className="flex items-center gap-3"><div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">1</div><h3 className="text-sm font-semibold text-[#5C3A21]">Imagen</h3></div>
+          <div className="pl-10">
+            <ImageUploader value={avatar} onChange={(url) => setAvatar(url || null)} uploadUrl="/api/cocina-movil/suppliers/upload-image" label="Foto / avatar del cliente" aspectRatio="1/1" disabled={saving} />
+          </div>
+
+          <Separator />
+
+          {/* Datos Personales */}
+          <div className="flex items-center gap-3"><div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">2</div><h3 className="text-sm font-semibold text-[#5C3A21]">Datos Personales</h3></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-10">
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Nombre *</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="border-[#5C3A21]/15" autoFocus /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Apellido *</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} className="border-[#5C3A21]/15" /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">DNI</Label><Input value={dni} onChange={(e) => setDni(e.target.value)} placeholder="30-12345678-9" className="border-[#5C3A21]/15" /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Teléfono</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="3794-xxxxxx" className="border-[#5C3A21]/15" /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@cliente.com" className="border-[#5C3A21]/15" /></div>
             <div className="space-y-1.5"><Label className="text-[#5C3A21]">Ciudad</Label><Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Posadas" className="border-[#5C3A21]/15" /></div>
-            <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Dirección</Label><Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Calle, número" className="border-[#5C3A21]/15" /></div>
-            <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Notas</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas internas…" rows={2} className="border-[#5C3A21]/15 resize-none" /></div>
           </div>
+
+          <Separator />
+
+          {/* Domicilio */}
+          <div className="flex items-center gap-3"><div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">3</div><h3 className="text-sm font-semibold text-[#5C3A21]">Domicilio</h3></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-10">
+            <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Dirección</Label><Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Calle, número" className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">País</Label><Input value={country} onChange={(e) => setCountry(e.target.value)} className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Provincia</Label><Input value={province} onChange={(e) => setProvince(e.target.value)} className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Departamento</Label><Input value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="Capital" className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Municipio</Label><Input value={municipality} onChange={(e) => setMunicipality(e.target.value)} placeholder="Posadas" className="border-[#5C3A21]/15" /></div>
+          </div>
+          <div className="pl-10">
+            <Label className="text-[#5C3A21] mb-2 block">Ubicación (mapa)</Label>
+            <LocationPicker location={location} onLocationChange={(loc) => setLocation(loc)} />
+          </div>
+
+          <Separator />
+
+          {/* Notas */}
+          <div className="flex items-center gap-3"><div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">4</div><h3 className="text-sm font-semibold text-[#5C3A21]">Notas</h3></div>
+          <div className="pl-10">
+            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas internas…" rows={2} className="border-[#5C3A21]/15 resize-none" />
+          </div>
+
           <StickyFooter saving={saving} onClose={onClose} />
         </form>
       </DialogContent>

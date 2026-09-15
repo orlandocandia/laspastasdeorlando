@@ -35,6 +35,12 @@ export async function POST(request: Request) {
     city: typeof body.city === 'string' ? body.city : null,
     birthDate: typeof body.birthDate === 'number' ? body.birthDate : null,
     notes: typeof body.notes === 'string' ? body.notes : null,
+    country: typeof body.country === 'string' ? body.country : null,
+    province: typeof body.province === 'string' ? body.province : null,
+    department: typeof body.department === 'string' ? body.department : null,
+    municipality: typeof body.municipality === 'string' ? body.municipality : null,
+    location: typeof body.location === 'string' ? body.location : null,
+    avatar: typeof body.avatar === 'string' ? body.avatar : null,
     isActive: typeof body.isActive === 'boolean' ? body.isActive : true,
   }
   try {

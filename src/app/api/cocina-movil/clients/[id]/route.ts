@@ -28,6 +28,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (body.city !== undefined) updates.city = typeof body.city === 'string' ? body.city : null
   if (body.birthDate !== undefined) updates.birthDate = typeof body.birthDate === 'number' ? body.birthDate : null
   if (body.notes !== undefined) updates.notes = typeof body.notes === 'string' ? body.notes : null
+  if (body.country !== undefined) updates.country = typeof body.country === 'string' ? body.country : null
+  if (body.province !== undefined) updates.province = typeof body.province === 'string' ? body.province : null
+  if (body.department !== undefined) updates.department = typeof body.department === 'string' ? body.department : null
+  if (body.municipality !== undefined) updates.municipality = typeof body.municipality === 'string' ? body.municipality : null
+  if (body.location !== undefined) updates.location = typeof body.location === 'string' ? body.location : null
+  if (body.avatar !== undefined) updates.avatar = typeof body.avatar === 'string' ? body.avatar : null
   if (body.isActive !== undefined) updates.isActive = typeof body.isActive === 'boolean' ? body.isActive : undefined
   try {
     const client = updateClient(id, updates)

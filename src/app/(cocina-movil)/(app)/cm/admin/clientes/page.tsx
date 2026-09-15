@@ -5,8 +5,9 @@
  * Clientes — Cocina Móvil
  * ============================================================
  * URL: /cm/admin/clientes
- * ABM completo: tabla, filtros (búsqueda + estado), exportación,
- * form modal (datos personales + dirección + notas) y baja.
+ * ABM completo: tabla con avatar, filtros (búsqueda + estado),
+ * exportación, form modal con 5 secciones (Imagen, Datos
+ * Personales, Domicilio con mapa, Notas y Estado) y baja.
  * ============================================================
  */
 
@@ -38,6 +39,8 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
+import ImageUploader from '@/components/(cocina-movil)/admin/image-uploader'
+import LocationPicker from '@/components/(cocina-movil)/admin/location-picker'
 
 // ---------------------------------------------------------------
 // Tipos
@@ -52,6 +55,12 @@ interface CmClient {
   email: string | null
   address: string | null
   city: string | null
+  country: string | null
+  province: string | null
+  department: string | null
+  municipality: string | null
+  location: string | null
+  avatar: string | null
   birthDate: number | null
   notes: string | null
   isActive: boolean
@@ -91,6 +100,26 @@ function dateInputToEpoch(value: string): number | null {
   const [yyyy, mm, dd] = parts
   const d = new Date(yyyy, mm - 1, dd, 12, 0, 0)
   return d.getTime()
+}
+
+// Paleta de colores para avatares sin imagen (iniciales)
+const AVATAR_COLORS = [
+  '#5C3A21', '#E1AD01', '#708238', '#8A7E70',
+  '#A0522D', '#D2691E', '#6B8E23', '#B8860B',
+]
+
+function getInitialsColor(name: string): string {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
+}
+
+function getInitials(firstName: string, lastName: string): string {
+  const a = (firstName?.trim()?.[0] || '').toUpperCase()
+  const b = (lastName?.trim()?.[0] || '').toUpperCase()
+  return (a + b) || '?'
 }
 
 // ===============================================================
@@ -268,6 +297,7 @@ function CmClientesPageContent() {
                 <TableHeader>
                   <TableRow className="bg-[#FBF1DC] border-[#5C3A21]/15">
                     <TableHead className="w-10">#</TableHead>
+                    <TableHead className="w-12">Avatar</TableHead>
                     <TableHead>Nombre</TableHead>
                     <TableHead className="hidden md:table-cell">DNI</TableHead>
                     <TableHead className="hidden lg:table-cell">Teléfono</TableHead>
@@ -278,48 +308,69 @@ function CmClientesPageContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.map((item, i) => (
-                    <TableRow key={item.id} className="border-[#5C3A21]/8 hover:bg-[#FBF1DC]/50">
-                      <TableCell className="text-xs text-[#8A7E70]">{i + 1}</TableCell>
-                      <TableCell>
-                        <p className="text-sm font-medium text-[#5C3A21]">{item.fullName}</p>
-                        <p className="text-xs text-[#8A7E70] md:hidden">
-                          {item.dni || '—'} · {item.phone || '—'}
-                        </p>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-sm text-[#4A3F36]">{item.dni || '—'}</TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm text-[#4A3F36]">{item.phone || '—'}</TableCell>
-                      <TableCell className="hidden xl:table-cell text-sm text-[#4A3F36] truncate max-w-xs">{item.email || '—'}</TableCell>
-                      <TableCell className="hidden md:table-cell text-sm text-[#4A3F36]">{item.city || '—'}</TableCell>
-                      <TableCell>
-                        <Badge className={`text-[10px] ${item.isActive ? 'bg-[#708238] hover:bg-[#708238]' : 'bg-[#B91C1C] hover:bg-[#B91C1C]'}`}>
-                          {item.isActive ? 'Activo' : 'Inactivo'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-[#5C3A21]">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openEdit(item)}>
-                              <Pencil className="h-4 w-4 mr-2" />Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleToggle(item)}>
-                              <Switch checked={item.isActive} className="scale-75 mr-1" />
-                              {item.isActive ? 'Desactivar' : 'Activar'}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => setDeleteItem(item)} className="text-[#B91C1C] focus:text-[#B91C1C]">
-                              <Trash2 className="h-4 w-4 mr-2" />Eliminar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {items.map((item, i) => {
+                    const initials = getInitials(item.firstName, item.lastName)
+                    const avatarColor = getInitialsColor(item.fullName)
+                    return (
+                      <TableRow key={item.id} className="border-[#5C3A21]/8 hover:bg-[#FBF1DC]/50">
+                        <TableCell className="text-xs text-[#8A7E70]">{i + 1}</TableCell>
+                        <TableCell>
+                          {item.avatar ? (
+                            <img
+                              src={item.avatar}
+                              alt={item.fullName}
+                              className="h-8 w-8 rounded-full object-cover border border-[#5C3A21]/15"
+                            />
+                          ) : (
+                            <div
+                              className="h-8 w-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
+                              style={{ backgroundColor: avatarColor }}
+                              title={item.fullName}
+                            >
+                              {initials}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <p className="text-sm font-medium text-[#5C3A21]">{item.fullName}</p>
+                          <p className="text-xs text-[#8A7E70] md:hidden">
+                            {item.dni || '—'} · {item.phone || '—'}
+                          </p>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-sm text-[#4A3F36]">{item.dni || '—'}</TableCell>
+                        <TableCell className="hidden lg:table-cell text-sm text-[#4A3F36]">{item.phone || '—'}</TableCell>
+                        <TableCell className="hidden xl:table-cell text-sm text-[#4A3F36] truncate max-w-xs">{item.email || '—'}</TableCell>
+                        <TableCell className="hidden md:table-cell text-sm text-[#4A3F36]">{item.city || '—'}</TableCell>
+                        <TableCell>
+                          <Badge className={`text-[10px] ${item.isActive ? 'bg-[#708238] hover:bg-[#708238]' : 'bg-[#B91C1C] hover:bg-[#B91C1C]'}`}>
+                            {item.isActive ? 'Activo' : 'Inactivo'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="icon" variant="ghost" className="h-8 w-8 text-[#5C3A21]">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEdit(item)}>
+                                <Pencil className="h-4 w-4 mr-2" />Editar
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleToggle(item)}>
+                                <Switch checked={item.isActive} className="scale-75 mr-1" />
+                                {item.isActive ? 'Desactivar' : 'Activar'}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => setDeleteItem(item)} className="text-[#B91C1C] focus:text-[#B91C1C]">
+                                <Trash2 className="h-4 w-4 mr-2" />Eliminar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -371,7 +422,9 @@ function ClientFormDialog({
 }) {
   const [form, setForm] = React.useState({
     firstName: '', lastName: '', dni: '', phone: '', email: '',
-    address: '', city: '', birthDate: '', notes: '', isActive: true,
+    birthDate: '', avatar: '', address: '',
+    country: 'Argentina', province: 'Misiones', department: '', municipality: '',
+    location: '', notes: '', isActive: true,
   })
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -385,16 +438,23 @@ function ClientFormDialog({
           dni: item.dni || '',
           phone: item.phone || '',
           email: item.email || '',
-          address: item.address || '',
-          city: item.city || '',
           birthDate: epochToDateInput(item.birthDate),
+          avatar: item.avatar || '',
+          address: item.address || '',
+          country: item.country || 'Argentina',
+          province: item.province || 'Misiones',
+          department: item.department || '',
+          municipality: item.municipality || '',
+          location: item.location || '',
           notes: item.notes || '',
           isActive: item.isActive,
         })
       } else {
         setForm({
           firstName: '', lastName: '', dni: '', phone: '', email: '',
-          address: '', city: '', birthDate: '', notes: '', isActive: true,
+          birthDate: '', avatar: '', address: '',
+          country: 'Argentina', province: 'Misiones', department: '', municipality: '',
+          location: '', notes: '', isActive: true,
         })
       }
       setError(null)
@@ -422,9 +482,14 @@ function ClientFormDialog({
         dni: form.dni || null,
         phone: form.phone || null,
         email: form.email || null,
-        address: form.address || null,
-        city: form.city || null,
         birthDate: form.birthDate ? dateInputToEpoch(form.birthDate) : null,
+        avatar: form.avatar || null,
+        address: form.address || null,
+        country: form.country || null,
+        province: form.province || null,
+        department: form.department || null,
+        municipality: form.municipality || null,
+        location: form.location || null,
         notes: form.notes || null,
       }
       // isActive only sent in edit mode (creation defaults to true server-side)
@@ -472,9 +537,27 @@ function ClientFormDialog({
               </div>
             )}
 
-            {/* Sección 1: Datos Personales */}
+            {/* Sección 1: Imagen */}
             <div className="flex items-center gap-3">
               <div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">1</div>
+              <h3 className="text-sm font-semibold text-[#5C3A21]">Imagen</h3>
+            </div>
+            <div className="pl-10">
+              <ImageUploader
+                value={form.avatar || null}
+                onChange={(url) => setField('avatar', url || '')}
+                uploadUrl="/api/cocina-movil/suppliers/upload-image"
+                label="Foto / avatar del cliente"
+                aspectRatio="1/1"
+                disabled={saving}
+              />
+            </div>
+
+            <Separator />
+
+            {/* Sección 2: Datos Personales */}
+            <div className="flex items-center gap-3">
+              <div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">2</div>
               <h3 className="text-sm font-semibold text-[#5C3A21]">Datos Personales</h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-10">
@@ -526,11 +609,11 @@ function ClientFormDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[#5C3A21]">Ciudad</Label>
+                <Label className="text-[#5C3A21]">Fecha de nacimiento</Label>
                 <Input
-                  value={form.city}
-                  onChange={(e) => setField('city', e.target.value)}
-                  placeholder="Posadas"
+                  type="date"
+                  value={form.birthDate}
+                  onChange={(e) => setField('birthDate', e.target.value)}
                   className="border-[#5C3A21]/15"
                 />
               </div>
@@ -538,13 +621,13 @@ function ClientFormDialog({
 
             <Separator />
 
-            {/* Sección 2: Dirección y Contacto */}
+            {/* Sección 3: Domicilio */}
             <div className="flex items-center gap-3">
-              <div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">2</div>
-              <h3 className="text-sm font-semibold text-[#5C3A21]">Dirección y Notas</h3>
+              <div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">3</div>
+              <h3 className="text-sm font-semibold text-[#5C3A21]">Domicilio</h3>
             </div>
-            <div className="grid grid-cols-1 gap-4 pl-10">
-              <div className="space-y-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-10">
+              <div className="space-y-1.5 sm:col-span-2">
                 <Label className="text-[#5C3A21]">Dirección</Label>
                 <Input
                   value={form.address}
@@ -554,20 +637,73 @@ function ClientFormDialog({
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[#5C3A21]">Notas</Label>
-                <Textarea
-                  value={form.notes}
-                  onChange={(e) => setField('notes', e.target.value)}
-                  placeholder="Observaciones, preferencias, historial…"
-                  className="border-[#5C3A21]/15 min-h-[80px] resize-y"
-                  rows={3}
+                <Label className="text-[#5C3A21]">País</Label>
+                <Input
+                  value={form.country}
+                  onChange={(e) => setField('country', e.target.value)}
+                  className="border-[#5C3A21]/15"
                 />
               </div>
+              <div className="space-y-1.5">
+                <Label className="text-[#5C3A21]">Provincia</Label>
+                <Input
+                  value={form.province}
+                  onChange={(e) => setField('province', e.target.value)}
+                  className="border-[#5C3A21]/15"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[#5C3A21]">Departamento</Label>
+                <Input
+                  value={form.department}
+                  onChange={(e) => setField('department', e.target.value)}
+                  placeholder="Capital"
+                  className="border-[#5C3A21]/15"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-[#5C3A21]">Municipio</Label>
+                <Input
+                  value={form.municipality}
+                  onChange={(e) => setField('municipality', e.target.value)}
+                  placeholder="Posadas"
+                  className="border-[#5C3A21]/15"
+                />
+              </div>
+            </div>
+            <div className="pl-10">
+              <Label className="text-[#5C3A21] mb-2 block">Ubicación (mapa)</Label>
+              <LocationPicker
+                location={form.location || null}
+                onLocationChange={(loc) => setField('location', loc || '')}
+              />
+            </div>
+
+            <Separator />
+
+            {/* Sección 4: Notas */}
+            <div className="flex items-center gap-3">
+              <div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">4</div>
+              <h3 className="text-sm font-semibold text-[#5C3A21]">Notas</h3>
+            </div>
+            <div className="pl-10">
+              <Textarea
+                value={form.notes}
+                onChange={(e) => setField('notes', e.target.value)}
+                placeholder="Observaciones, preferencias, historial…"
+                className="border-[#5C3A21]/15 min-h-[80px] resize-y"
+                rows={3}
+              />
             </div>
 
             {mode === 'edit' && (
               <>
                 <Separator />
+                {/* Sección 5: Estado */}
+                <div className="flex items-center gap-3">
+                  <div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">5</div>
+                  <h3 className="text-sm font-semibold text-[#5C3A21]">Estado</h3>
+                </div>
                 <div className="flex items-center gap-3 pl-10">
                   <Switch checked={form.isActive} onCheckedChange={(v) => setField('isActive', v)} />
                   <Label className="text-[#5C3A21] cursor-pointer">

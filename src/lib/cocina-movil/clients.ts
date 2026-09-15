@@ -17,6 +17,12 @@ export interface CmClientRecord {
   email: string | null
   address: string | null
   city: string | null
+  country: string | null
+  province: string | null
+  department: string | null
+  municipality: string | null
+  location: string | null // "lat,lng"
+  avatar: string | null
   birthDate: number | null
   notes: string | null
   isActive: boolean
@@ -32,6 +38,12 @@ export interface CmClientInput {
   email?: string | null
   address?: string | null
   city?: string | null
+  country?: string | null
+  province?: string | null
+  department?: string | null
+  municipality?: string | null
+  location?: string | null
+  avatar?: string | null
   birthDate?: number | null
   notes?: string | null
   isActive?: boolean
@@ -47,6 +59,8 @@ function seedDemoClients() {
       id: 'client-1', firstName: 'Restaurant', lastName: 'La Esquina',
       fullName: 'Restaurant La Esquina', dni: '30-12345678-9', phone: '3794112233',
       email: 'contacto@laesquina.com', address: 'Av. Mitre 1234', city: 'Posadas',
+      country: 'Argentina', province: 'Misiones', department: 'Capital', municipality: 'Posadas',
+      location: '-27.3675,-55.8967', avatar: null,
       birthDate: null, notes: 'Cliente frecuente - catering eventos',
       isActive: true, createdAt: now - 86400000 * 30, updatedAt: now - 86400000 * 5,
     },
@@ -54,6 +68,8 @@ function seedDemoClients() {
       id: 'client-2', firstName: 'Familia', lastName: 'González',
       fullName: 'Familia González', dni: '28765432', phone: '3794332211',
       email: null, address: 'Calle Alberdi 456', city: 'Posadas',
+      country: 'Argentina', province: 'Misiones', department: 'Capital', municipality: 'Posadas',
+      location: null, avatar: null,
       birthDate: null, notes: null,
       isActive: true, createdAt: now - 86400000 * 15, updatedAt: now - 86400000 * 2,
     },
@@ -61,6 +77,8 @@ function seedDemoClients() {
       id: 'client-3', firstName: 'María', lastName: 'Fernández',
       fullName: 'María Fernández', dni: '27111222', phone: '3764455667',
       email: 'maria@gmail.com', address: null, city: 'Garupá',
+      country: 'Argentina', province: 'Misiones', department: null, municipality: null,
+      location: null, avatar: null,
       birthDate: null, notes: 'Pide delivery los viernes',
       isActive: true, createdAt: now - 86400000 * 7, updatedAt: now - 86400000 * 1,
     },
@@ -68,6 +86,8 @@ function seedDemoClients() {
       id: 'client-4', firstName: 'Carlos', lastName: 'Pérez',
       fullName: 'Carlos Pérez', dni: null, phone: '3794998877',
       email: null, address: 'Barrio Centenario', city: 'Posadas',
+      country: 'Argentina', province: 'Misiones', department: null, municipality: null,
+      location: null, avatar: null,
       birthDate: null, notes: null,
       isActive: false, createdAt: now - 86400000 * 60, updatedAt: now - 86400000 * 10,
     },
@@ -137,6 +157,12 @@ export function createClient(input: CmClientInput): CmClientRecord {
     email: input.email?.trim() || null,
     address: input.address?.trim() || null,
     city: input.city?.trim() || null,
+    country: input.country?.trim() || null,
+    province: input.province?.trim() || null,
+    department: input.department?.trim() || null,
+    municipality: input.municipality?.trim() || null,
+    location: input.location || null,
+    avatar: input.avatar || null,
     birthDate: input.birthDate ?? null,
     notes: input.notes?.trim() || null,
     isActive: input.isActive ?? true,
@@ -169,6 +195,12 @@ export function updateClient(id: string, updates: Partial<CmClientInput>): CmCli
   if (updates.email !== undefined) c.email = updates.email?.trim() || null
   if (updates.address !== undefined) c.address = updates.address?.trim() || null
   if (updates.city !== undefined) c.city = updates.city?.trim() || null
+  if (updates.country !== undefined) c.country = updates.country?.trim() || null
+  if (updates.province !== undefined) c.province = updates.province?.trim() || null
+  if (updates.department !== undefined) c.department = updates.department?.trim() || null
+  if (updates.municipality !== undefined) c.municipality = updates.municipality?.trim() || null
+  if (updates.location !== undefined) c.location = updates.location || null
+  if (updates.avatar !== undefined) c.avatar = updates.avatar || null
   if (updates.birthDate !== undefined) c.birthDate = updates.birthDate
   if (updates.notes !== undefined) c.notes = updates.notes?.trim() || null
   if (updates.isActive !== undefined) c.isActive = updates.isActive
