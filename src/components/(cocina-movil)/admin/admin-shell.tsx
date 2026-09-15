@@ -64,6 +64,7 @@ const NAV_ITEMS: NavItem[] = [
   { title: 'Recetas', href: '/cm/admin/recetas', icon: ChefHat, enabled: true },
   { title: 'Producciones', href: '/cm/admin/producciones', icon: Factory, enabled: true },
   { title: 'Presupuestos', href: '/cm/admin/presupuestos', icon: FileText, enabled: true },
+  { title: 'Pedidos de Clientes', href: '/cm/admin/pedidos-clientes', icon: ClipboardList, enabled: true },
   { title: 'Ventas', href: '/cm/admin/ventas', icon: ShoppingBag, enabled: true },
   { title: 'Configuración', href: '/cm/admin/configuracion/impresoras', icon: Settings, enabled: true },
 ]

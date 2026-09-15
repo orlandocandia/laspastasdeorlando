@@ -60,6 +60,7 @@ export interface CmBudgetRecord {
   profit: number // totalPrice - totalCost
   profitPercentage: number // (profit / totalPrice) × 100
   status: CmBudgetStatus
+  clientOrderId: string | null // ID del Pedido de Cliente generado desde el presupuesto
   createdAt: number
   updatedAt: number
   // Legacy fields (mantenidos para compatibilidad con código existente
@@ -170,6 +171,7 @@ function seedDemoBudgets() {
       items,
       ...totals,
       status: 'enviado',
+      clientOrderId: null,
       createdAt: now - 86400000 * 3,
       updatedAt: now - 86400000 * 2,
       // Legacy
@@ -205,6 +207,7 @@ function seedDemoBudgets() {
       items,
       ...totals,
       status: 'borrador',
+      clientOrderId: null,
       createdAt: now - 86400000 * 1,
       updatedAt: now - 86400000 * 1,
       // Legacy
@@ -290,6 +293,7 @@ export function createBudget(input: CmBudgetInput): CmBudgetRecord {
     items,
     ...totals,
     status: 'borrador',
+    clientOrderId: null,
     createdAt: now,
     updatedAt: now,
     // Legacy

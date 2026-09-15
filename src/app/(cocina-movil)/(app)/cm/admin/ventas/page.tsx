@@ -18,7 +18,7 @@ import { useSearchParams } from 'next/navigation'
 import {
   Plus, Search, Printer, FileText, FileDown, FileSpreadsheet,
   Pencil, Trash2, MoreHorizontal, Loader2, Eye, ShoppingBag,
-  TrendingUp, X,
+  TrendingUp, X, ClipboardList,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -670,6 +670,23 @@ function SaleFormDialog({ open, mode, item, recipes, places, onClose, onSaved, o
               </div>
             </div>
 
+            {/* Cargar desde Pedido de Cliente */}
+            {mode === 'create' && (
+              <div className="flex items-center justify-between gap-3 p-3 rounded-md border border-[#5C3A21]/15 bg-[#FBF1DC]/50">
+                <div className="flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4 text-[#5C3A21]" />
+                  <span className="text-sm text-[#5C3A21]">¿Querés cargar desde un Pedido de Cliente?</span>
+                </div>
+                <PendingClientOrdersButton onLoadOrder={(order) => {
+                  setClientName(order.clientName || '')
+                  setItems(order.items.map((it: { recipeId: string; quantity: number; unitPrice: number }) => ({
+                    key: newItemKey(), recipeId: it.recipeId, quantity: it.quantity, unitPrice: it.unitPrice,
+                  })))
+                  toast.success(`Pedido ${order.orderNumber} cargado en la venta`)
+                }} />
+              </div>
+            )}
+
             <Separator />
 
             {/* ============ SECCIÓN 2: Detalle de Venta ============ */}
@@ -994,6 +1011,85 @@ function openTicketWindow(ticket: string, widthMm: string, ticketNumber: string)
   w.document.open()
   w.document.write(html)
   w.document.close()
+}
+
+// ============================================================
+// Pending Client Orders Button (cargar desde pedido de cliente)
+// ============================================================
+
+interface PendingClientOrder {
+  id: string
+  orderNumber: string
+  clientName: string | null
+  orderDate: number
+  items: Array<{ recipeId: string; quantity: number; unitPrice: number }>
+  total: number
+  status: string
+}
+
+function PendingClientOrdersButton({ onLoadOrder }: { onLoadOrder: (order: PendingClientOrder) => void }) {
+  const [open, setOpen] = React.useState(false)
+  const [orders, setOrders] = React.useState<PendingClientOrder[]>([])
+  const [loading, setLoading] = React.useState(false)
+
+  const handleOpen = () => {
+    setOpen(true)
+    setLoading(true)
+    fetch('/api/cocina-movil/client-orders?status=entregado&pageSize=200')
+      .then((r) => r.json().catch(() => ({ orders: [] })))
+      .then((data) => {
+        setOrders((data.orders || []).filter((o: PendingClientOrder) => !((o as PendingClientOrder & { saleId?: string }).saleId)))
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }
+
+  return (
+    <>
+      <Button type="button" size="sm" variant="outline" onClick={handleOpen} className="border-[#5C3A21]/20 text-[#5C3A21]">
+        Ver Pedidos Entregados
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
+              <ClipboardList className="h-5 w-5" />
+              Pedidos de Clientes Entregados
+            </DialogTitle>
+            <DialogDescription>Seleccioná un pedido para cargar sus items en esta venta.</DialogDescription>
+          </DialogHeader>
+          {loading ? (
+            <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-[#E1AD01]" /></div>
+          ) : orders.length === 0 ? (
+            <div className="text-center py-8">
+              <ClipboardList className="h-10 w-10 mx-auto mb-2 text-[#8A7E70]/40" />
+              <p className="text-sm text-[#8A7E70]">No hay pedidos entregados sin venta.</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+              {orders.map((o) => (
+                <div key={o.id} className="flex items-center justify-between gap-3 p-3 rounded-md border border-[#5C3A21]/10 bg-[#FFF8E7]/30">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Badge className="text-[10px] bg-[#5C3A21] hover:bg-[#5C3A21] text-white font-mono">{o.orderNumber}</Badge>
+                      <span className="text-sm font-medium text-[#5C3A21] truncate">{o.clientName || 'Cliente'}</span>
+                    </div>
+                    <p className="text-xs text-[#8A7E70] mt-1">
+                      {o.items.length} items · Total: {fmtCurrency(o.total)}
+                    </p>
+                  </div>
+                  <Button type="button" size="sm" onClick={() => { onLoadOrder(o); setOpen(false) }} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611] shrink-0">
+                    Cargar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          <DialogFooter><Button type="button" variant="outline" onClick={() => setOpen(false)}>Cerrar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
 }
 
 // ============================================================
