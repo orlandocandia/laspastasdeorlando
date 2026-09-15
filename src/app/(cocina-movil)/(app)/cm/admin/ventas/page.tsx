@@ -178,23 +178,27 @@ function CmVentasPageContent() {
 
   const [recipes, setRecipes] = React.useState<RecipeOption[]>([])
   const [places, setPlaces] = React.useState<PlaceOption[]>([])
+  const [clients, setClients] = React.useState<{ id: string; name: string }[]>([])
 
-  // Carga de recetas y lugares activos — una sola vez al montar
+  // Carga de recetas, lugares y clientes activos — una sola vez al montar
   React.useEffect(() => {
     const loadRefs = async () => {
       try {
-        const [rRes, pRes] = await Promise.all([
+        const [rRes, pRes, cRes] = await Promise.all([
           fetch('/api/cocina-movil/recipes?isActive=true&pageSize=200'),
           fetch('/api/cocina-movil/places?isActive=true&pageSize=200'),
+          fetch('/api/cocina-movil/clients?isActive=true&pageSize=200'),
         ])
         const rData = await rRes.json().catch(() => ({}))
         const pData = await pRes.json().catch(() => ({}))
+        const cData = await cRes.json().catch(() => ({}))
         setRecipes((rData.recipes || []).map((r: { id: string; title: string; costPerServing: number }) => ({
           id: r.id, title: r.title, costPerServing: r.costPerServing,
         })))
         setPlaces((pData.places || []).map((p: { id: string; name: string }) => ({
           id: p.id, name: p.name,
         })))
+        setClients((cData.clients || []).map((c: { id: string; fullName: string }) => ({ id: c.id, name: c.fullName })))
       } catch (err) {
         console.error('Error cargando referencias:', err)
       }
@@ -427,11 +431,13 @@ function CmVentasPageContent() {
         item={editItem}
         recipes={recipes}
         places={places}
+        clients={clients}
         onClose={() => setFormOpen(false)}
         onSaved={() => { setFormOpen(false); loadSales() }}
         onQuickCreated={(entity, record) => {
           if (entity === 'recipe') setRecipes((arr) => [...arr, { id: record.id, title: record.name, costPerServing: 0 }])
           else if (entity === 'place') setPlaces((arr) => [...arr, { id: record.id, name: record.name }])
+          else if (entity === 'client') setClients((arr) => [...arr, { id: record.id, name: record.name }])
         }}
       />
 
@@ -473,15 +479,17 @@ interface SaleFormDialogProps {
   item: CmSaleRecord | null
   recipes: RecipeOption[]
   places: PlaceOption[]
+  clients: { id: string; name: string }[]
   onClose: () => void
   onSaved: () => void
   onQuickCreated?: (entity: QuickCreateEntity, record: SelectOption) => void
 }
 
-function SaleFormDialog({ open, mode, item, recipes, places, onClose, onSaved, onQuickCreated }: SaleFormDialogProps) {
+function SaleFormDialog({ open, mode, item, recipes, places, clients, onClose, onSaved, onQuickCreated }: SaleFormDialogProps) {
   const [placeId, setPlaceId] = React.useState<string>('')
   const [saleDate, setSaleDate] = React.useState<string>(epochToDateInput(Date.now()))
   const [clientName, setClientName] = React.useState('')
+  const [clientId, setClientId] = React.useState<string>('')
   const [invoiceNumber, setInvoiceNumber] = React.useState('')
   const [paymentMethod, setPaymentMethod] = React.useState<string>('Efectivo')
   const [discountType, setDiscountType] = React.useState<'percentage' | 'fixed'>('percentage')
@@ -497,10 +505,12 @@ function SaleFormDialog({ open, mode, item, recipes, places, onClose, onSaved, o
   React.useEffect(() => {
     if (open) {
       setSelectedClientOrderId(null)
+      setClientId('')
       if (mode === 'edit' && item) {
         setPlaceId(item.placeId)
         setSaleDate(epochToDateInput(item.saleDate))
         setClientName(item.clientName || '')
+        setClientId('') // edit mode: no client id, just the name snapshot
         setInvoiceNumber(item.invoiceNumber || '')
         setPaymentMethod(item.paymentMethod || 'Efectivo')
         setDiscountType(item.discountType || 'percentage')
@@ -662,7 +672,23 @@ function SaleFormDialog({ open, mode, item, recipes, places, onClose, onSaved, o
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-[#5C3A21]">Cliente</Label>
-                  <Input value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Opcional" className="border-[#5C3A21]/15" />
+                  <SelectWithCreate
+                    entity="client"
+                    value={clientId || '__none__'}
+                    onValueChange={(v) => {
+                      if (v === '__none__') { setClientId(''); setClientName('') }
+                      else {
+                        setClientId(v)
+                        const c = clients.find((cl) => cl.id === v)
+                        setClientName(c?.name || '')
+                      }
+                    }}
+                    options={clients}
+                    placeholder="Seleccionar cliente"
+                    allowNone
+                    noneLabel="Consumidor Final"
+                    onCreated={(r) => onQuickCreated?.('client', r)}
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-[#5C3A21]">Lugar *</Label>

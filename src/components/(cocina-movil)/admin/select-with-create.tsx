@@ -22,6 +22,7 @@ import {
   IngredientFullCreateDialog,
   SupplyFullCreateDialog,
   RecipeFullCreateDialog,
+  ClientFullCreateDialog,
   type CreatedRecord,
 } from '@/components/(cocina-movil)/admin/full-create-dialogs'
 
@@ -29,7 +30,7 @@ import {
 // Types
 // ============================================================
 
-export type QuickCreateEntity = 'supplier' | 'place' | 'ingredient' | 'supply' | 'recipe'
+export type QuickCreateEntity = 'supplier' | 'place' | 'ingredient' | 'supply' | 'recipe' | 'client'
 
 export interface SelectOption {
   id: string
@@ -46,6 +47,7 @@ const ENTITY_CONFIG: Record<QuickCreateEntity, EntityConfig> = {
   ingredient: { label: 'Materia Prima' },
   supply: { label: 'Insumo' },
   recipe: { label: 'Receta' },
+  client: { label: 'Cliente' },
 }
 
 // ============================================================
@@ -71,6 +73,8 @@ function FullCreateDialog({ entity, open, onClose, onCreated }: FullFormProps) {
       return <SupplyFullCreateDialog open={open} onClose={onClose} onCreated={onCreated} />
     case 'recipe':
       return <RecipeFullCreateDialog open={open} onClose={onClose} onCreated={onCreated} />
+    case 'client':
+      return <ClientFullCreateDialog open={open} onClose={onClose} onCreated={onCreated} />
     default:
       return null
   }

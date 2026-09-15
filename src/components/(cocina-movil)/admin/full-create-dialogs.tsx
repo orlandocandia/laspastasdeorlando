@@ -847,3 +847,83 @@ export function RecipeFullCreateDialog({ open, onClose, onCreated }: FullCreateD
     </Dialog>
   )
 }
+
+// ============================================================
+// 6. Client Full Form
+// ============================================================
+
+export function ClientFullCreateDialog({ open, onClose, onCreated }: FullCreateDialogProps) {
+  const [firstName, setFirstName] = React.useState('')
+  const [lastName, setLastName] = React.useState('')
+  const [dni, setDni] = React.useState('')
+  const [phone, setPhone] = React.useState('')
+  const [email, setEmail] = React.useState('')
+  const [address, setAddress] = React.useState('')
+  const [city, setCity] = React.useState('')
+  const [notes, setNotes] = React.useState('')
+  const [saving, setSaving] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (open) {
+      setFirstName(''); setLastName(''); setDni(''); setPhone(''); setEmail('')
+      setAddress(''); setCity(''); setNotes(''); setError(null)
+    }
+  }, [open])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    if (!firstName.trim()) return setError('El nombre es obligatorio')
+    if (!lastName.trim()) return setError('El apellido es obligatorio')
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setError('El email es inválido')
+
+    setSaving(true)
+    try {
+      const body: Record<string, unknown> = {
+        firstName, lastName,
+        dni: dni.trim() || null,
+        phone: phone.trim() || null,
+        email: email.trim() || null,
+        address: address.trim() || null,
+        city: city.trim() || null,
+        notes: notes.trim() || null,
+        isActive: true,
+      }
+      const res = await fetch('/api/cocina-movil/clients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status)
+      toast.success('Cliente creado')
+      onCreated({ id: data.client.id, name: data.client.fullName })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al crear')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-[#5C3A21]">Nuevo Cliente</DialogTitle>
+          <DialogDescription>Creá un cliente con sus datos de contacto.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {error && <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Nombre *</Label><Input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="border-[#5C3A21]/15" autoFocus /></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Apellido *</Label><Input value={lastName} onChange={(e) => setLastName(e.target.value)} className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">DNI</Label><Input value={dni} onChange={(e) => setDni(e.target.value)} placeholder="30-12345678-9" className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Teléfono</Label><Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="3794-xxxxxx" className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Email</Label><Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="email@cliente.com" className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Ciudad</Label><Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Posadas" className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Dirección</Label><Input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Calle, número" className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Notas</Label><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas internas…" rows={2} className="border-[#5C3A21]/15 resize-none" /></div>
+          </div>
+          <StickyFooter saving={saving} onClose={onClose} />
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}

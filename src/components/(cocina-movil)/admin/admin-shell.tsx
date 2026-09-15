@@ -56,6 +56,7 @@ const NAV_ITEMS: NavItem[] = [
   { title: 'Dashboard', href: '/cm/admin/dashboard', icon: LayoutDashboard, enabled: true },
   { title: 'Usuarios', href: '/cm/admin/users', icon: Users, enabled: true },
   { title: 'Lugares', href: '/cm/admin/lugares', icon: MapPin, enabled: true },
+  { title: 'Clientes', href: '/cm/admin/clientes', icon: Users, enabled: true },
   { title: 'Materias Primas', href: '/cm/admin/materias-primas', icon: Package, enabled: true },
   { title: 'Insumos', href: '/cm/admin/insumos', icon: FlaskConical, enabled: true },
   { title: 'Proveedores', href: '/cm/admin/proveedores', icon: Building2, enabled: true },
