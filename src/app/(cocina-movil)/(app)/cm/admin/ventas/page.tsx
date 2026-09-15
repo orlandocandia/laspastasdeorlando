@@ -488,6 +488,7 @@ function SaleFormDialog({ open, mode, item, recipes, places, onClose, onSaved, o
   const [discountValue, setDiscountValue] = React.useState<string>('')
   const [taxRate, setTaxRate] = React.useState<string>('')
   const [observations, setObservations] = React.useState('')
+  const [selectedClientOrderId, setSelectedClientOrderId] = React.useState<string | null>(null)
   const [items, setItems] = React.useState<FormSaleItem[]>([])
 
   const [saving, setSaving] = React.useState(false)
@@ -495,6 +496,7 @@ function SaleFormDialog({ open, mode, item, recipes, places, onClose, onSaved, o
 
   React.useEffect(() => {
     if (open) {
+      setSelectedClientOrderId(null)
       if (mode === 'edit' && item) {
         setPlaceId(item.placeId)
         setSaleDate(epochToDateInput(item.saleDate))
@@ -607,6 +609,16 @@ function SaleFormDialog({ open, mode, item, recipes, places, onClose, onSaved, o
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status)
+
+      // If this sale came from a client order, mark it as vendido
+      if (selectedClientOrderId && data.sale?.id) {
+        await fetch(`/api/cocina-movil/client-orders/${selectedClientOrderId}/convert-to-sale`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ saleId: data.sale.id }),
+        }).catch(() => {}) // non-fatal
+      }
+
       toast.success(mode === 'create' ? 'Venta creada' : 'Venta actualizada')
       onSaved()
     } catch (err) {
@@ -679,6 +691,7 @@ function SaleFormDialog({ open, mode, item, recipes, places, onClose, onSaved, o
                 </div>
                 <PendingClientOrdersButton onLoadOrder={(order) => {
                   setClientName(order.clientName || '')
+                  setSelectedClientOrderId(order.id)
                   setItems(order.items.map((it: { recipeId: string; quantity: number; unitPrice: number }) => ({
                     key: newItemKey(), recipeId: it.recipeId, quantity: it.quantity, unitPrice: it.unitPrice,
                   })))
@@ -1025,6 +1038,14 @@ interface PendingClientOrder {
   items: Array<{ recipeId: string; quantity: number; unitPrice: number }>
   total: number
   status: string
+  saleId?: string | null
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  pendiente: 'Pendiente', en_preparacion: 'En preparación', entregado: 'Entregado', vendido: 'Vendido', cancelado: 'Cancelado',
+}
+const STATUS_COLORS: Record<string, string> = {
+  pendiente: 'bg-[#8A7E70]', en_preparacion: 'bg-[#E1AD01]', entregado: 'bg-blue-500', vendido: 'bg-[#708238]', cancelado: 'bg-[#B91C1C]',
 }
 
 function PendingClientOrdersButton({ onLoadOrder }: { onLoadOrder: (order: PendingClientOrder) => void }) {
@@ -1035,10 +1056,12 @@ function PendingClientOrdersButton({ onLoadOrder }: { onLoadOrder: (order: Pendi
   const handleOpen = () => {
     setOpen(true)
     setLoading(true)
-    fetch('/api/cocina-movil/client-orders?status=entregado&pageSize=200')
+    // Fetch all orders, then filter out vendido/cancelado and those with saleId
+    fetch('/api/cocina-movil/client-orders?pageSize=200')
       .then((r) => r.json().catch(() => ({ orders: [] })))
       .then((data) => {
-        setOrders((data.orders || []).filter((o: PendingClientOrder) => !((o as PendingClientOrder & { saleId?: string }).saleId)))
+        const all = (data.orders || []) as PendingClientOrder[]
+        setOrders(all.filter((o) => o.status !== 'vendido' && o.status !== 'cancelado' && !o.saleId))
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -1047,14 +1070,14 @@ function PendingClientOrdersButton({ onLoadOrder }: { onLoadOrder: (order: Pendi
   return (
     <>
       <Button type="button" size="sm" variant="outline" onClick={handleOpen} className="border-[#5C3A21]/20 text-[#5C3A21]">
-        Ver Pedidos Entregados
+        Ver Pedidos Disponibles
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
               <ClipboardList className="h-5 w-5" />
-              Pedidos de Clientes Entregados
+              Pedidos de Clientes Disponibles
             </DialogTitle>
             <DialogDescription>Seleccioná un pedido para cargar sus items en esta venta.</DialogDescription>
           </DialogHeader>
@@ -1063,7 +1086,7 @@ function PendingClientOrdersButton({ onLoadOrder }: { onLoadOrder: (order: Pendi
           ) : orders.length === 0 ? (
             <div className="text-center py-8">
               <ClipboardList className="h-10 w-10 mx-auto mb-2 text-[#8A7E70]/40" />
-              <p className="text-sm text-[#8A7E70]">No hay pedidos entregados sin venta.</p>
+              <p className="text-sm text-[#8A7E70]">No hay pedidos disponibles para vender.</p>
             </div>
           ) : (
             <div className="space-y-2 max-h-[50vh] overflow-y-auto">
@@ -1073,6 +1096,7 @@ function PendingClientOrdersButton({ onLoadOrder }: { onLoadOrder: (order: Pendi
                     <div className="flex items-center gap-2">
                       <Badge className="text-[10px] bg-[#5C3A21] hover:bg-[#5C3A21] text-white font-mono">{o.orderNumber}</Badge>
                       <span className="text-sm font-medium text-[#5C3A21] truncate">{o.clientName || 'Cliente'}</span>
+                      <Badge className={`text-[9px] ${STATUS_COLORS[o.status] || 'bg-gray-500'} text-white`}>{STATUS_LABELS[o.status] || o.status}</Badge>
                     </div>
                     <p className="text-xs text-[#8A7E70] mt-1">
                       {o.items.length} items · Total: {fmtCurrency(o.total)}

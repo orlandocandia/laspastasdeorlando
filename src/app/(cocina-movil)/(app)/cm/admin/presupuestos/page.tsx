@@ -860,8 +860,41 @@ interface BudgetDetailDialogProps {
 }
 
 function BudgetDetailDialog({ item, onClose }: BudgetDetailDialogProps) {
+  const [converting, setConverting] = React.useState(false)
   if (!item) return null
   const meta = STATUS_META[item.status]
+
+  const handleConvertToSale = async () => {
+    if (!item) return
+    setConverting(true)
+    try {
+      // Create a sale from the budget items
+      const body = {
+        placeId: '__none__',
+        saleDate: Date.now(),
+        clientName: item.clientName,
+        items: item.items.map((it) => ({
+          recipeId: it.recipeId,
+          quantity: it.quantity,
+          unitPrice: it.unitPrice,
+        })),
+      }
+      const res = await fetch('/api/cocina-movil/sales', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Error al crear venta')
+      toast.success(`Venta creada desde presupuesto`)
+      onClose()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al convertir en venta')
+    } finally {
+      setConverting(false)
+    }
+  }
+
   return (
     <Dialog open={!!item} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -875,14 +908,12 @@ function BudgetDetailDialog({ item, onClose }: BudgetDetailDialogProps) {
         </DialogHeader>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <DetailField label="Fecha" value={fmtDate(item.createdAt)} />
+          <DetailField label="Fecha" value={fmtDate(item.budgetDate || item.createdAt)} />
           <DetailField label="Estado">
             <Badge className={`text-[10px] ${meta.bg} text-white`}>{meta.label}</Badge>
           </DetailField>
-          <DetailField label="Receta" value={item.recipeTitle} />
           <DetailField label="Cliente" value={item.clientName || '—'} />
-          <DetailField label="Porciones" value={`${item.servings}`} />
-          <DetailField label="Precio por porción" value={fmtCurrency(item.pricePerServing)} />
+          <DetailField label="Items" value={String(item.items.length)} />
           <DetailField label="Costo total" value={fmtCurrency(item.totalCost)} />
           <DetailField label="Precio total" value={fmtCurrency(item.totalPrice)} />
           <DetailField label="Ganancia ($)" value={fmtCurrency(item.profit)} />
@@ -891,10 +922,49 @@ function BudgetDetailDialog({ item, onClose }: BudgetDetailDialogProps) {
               {fmtPercent(item.profitPercentage)}
             </span>
           </DetailField>
-          <div className="sm:col-span-2">
-            <DetailField label="Observaciones" value={item.observations || '—'} />
-          </div>
+          {item.observations && (
+            <div className="sm:col-span-2">
+              <DetailField label="Observaciones" value={item.observations} />
+            </div>
+          )}
         </div>
+
+        {/* Items table */}
+        <div className="rounded-md border border-[#5C3A21]/10 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-[#FBF1DC] border-[#5C3A21]/15">
+                <TableHead className="w-10">#</TableHead>
+                <TableHead>Receta</TableHead>
+                <TableHead className="text-right">Cant.</TableHead>
+                <TableHead className="text-right">Precio/U</TableHead>
+                <TableHead className="text-right">Subtotal</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {item.items.map((it, i) => (
+                <TableRow key={it.id} className="border-[#5C3A21]/8">
+                  <TableCell className="text-xs text-[#8A7E70]">{i + 1}</TableCell>
+                  <TableCell className="text-sm text-[#5C3A21]">{it.recipeName}</TableCell>
+                  <TableCell className="text-right text-sm text-[#4A3F36]">{it.quantity}</TableCell>
+                  <TableCell className="text-right text-sm text-[#4A3F36]">{fmtCurrency(it.unitPrice)}</TableCell>
+                  <TableCell className="text-right text-sm font-semibold text-[#5C3A21]">{fmtCurrency(it.subtotal)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Convertir en Venta (solo si está aprobado) */}
+        {item.status === 'aprobado' && (
+          <div className="flex items-center justify-between gap-3 p-3 rounded-md border border-[#708238]/30 bg-[#708238]/5">
+            <span className="text-sm text-[#5C3A21]">¿Convertir este presupuesto en una Venta?</span>
+            <Button type="button" onClick={handleConvertToSale} disabled={converting} className="bg-[#708238] hover:bg-[#708238]/90 text-white">
+              {converting && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+              Convertir en Venta
+            </Button>
+          </div>
+        )}
 
         <DialogFooter>
           <Button onClick={onClose}>Cerrar</Button>
