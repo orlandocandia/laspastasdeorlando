@@ -969,7 +969,7 @@ export function ClientFullCreateDialog({ open, onClose, onCreated }: FullCreateD
             <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas internas…" rows={2} className="border-[#5C3A21]/15 resize-none" />
           </div>
 
-          <StickyFooter saving={saving} onClose={onClose} />
+          <FormFooter saving={saving} onClose={onClose} />
         </form>
       </DialogContent>
     </Dialog>
