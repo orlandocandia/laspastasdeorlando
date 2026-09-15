@@ -878,6 +878,10 @@ function BudgetDetailDialog({ item, onClose }: BudgetDetailDialogProps) {
           quantity: it.quantity,
           unitPrice: it.unitPrice,
         })),
+        discountType: item.discountType,
+        discountValue: item.discountValue,
+        taxRate: item.taxRate,
+        budgetId: item.id,
       }
       const res = await fetch('/api/cocina-movil/sales', {
         method: 'POST',
@@ -886,6 +890,14 @@ function BudgetDetailDialog({ item, onClose }: BudgetDetailDialogProps) {
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || 'Error al crear venta')
+      // Link the sale back to the budget
+      if (data.sale?.id) {
+        await fetch(`/api/cocina-movil/budgets/${item.id}/convert-to-sale`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ saleId: data.sale.id }),
+        }).catch(() => {}) // non-fatal
+      }
       toast.success(`Venta creada desde presupuesto`)
       onClose()
     } catch (err) {

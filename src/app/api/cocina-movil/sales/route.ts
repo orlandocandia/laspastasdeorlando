@@ -56,6 +56,7 @@ export async function POST(request: Request) {
     discountType: body.discountType === 'percentage' || body.discountType === 'fixed' ? body.discountType : null,
     discountValue: typeof body.discountValue === 'number' ? body.discountValue : null,
     taxRate: typeof body.taxRate === 'number' ? body.taxRate : null,
+    budgetId: typeof body.budgetId === 'string' ? body.budgetId : null,
   }
   try {
     const sale = createSale(input)

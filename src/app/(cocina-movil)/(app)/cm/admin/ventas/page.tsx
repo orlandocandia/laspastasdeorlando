@@ -497,6 +497,7 @@ function SaleFormDialog({ open, mode, item, recipes, places, clients, onClose, o
   const [taxRate, setTaxRate] = React.useState<string>('')
   const [observations, setObservations] = React.useState('')
   const [selectedClientOrderId, setSelectedClientOrderId] = React.useState<string | null>(null)
+  const [selectedBudgetId, setSelectedBudgetId] = React.useState<string | null>(null)
   const [items, setItems] = React.useState<FormSaleItem[]>([])
 
   const [saving, setSaving] = React.useState(false)
@@ -505,6 +506,7 @@ function SaleFormDialog({ open, mode, item, recipes, places, clients, onClose, o
   React.useEffect(() => {
     if (open) {
       setSelectedClientOrderId(null)
+      setSelectedBudgetId(null)
       setClientId('')
       if (mode === 'edit' && item) {
         setPlaceId(item.placeId)
@@ -610,6 +612,7 @@ function SaleFormDialog({ open, mode, item, recipes, places, clients, onClose, o
         discountType: dv > 0 ? discountType : null,
         discountValue: dv > 0 ? dv : null,
         taxRate: tr > 0 ? tr : null,
+        budgetId: selectedBudgetId,
       }
       const url = mode === 'create' ? '/api/cocina-movil/sales' : `/api/cocina-movil/sales/${item!.id}`
       const res = await fetch(url, {
@@ -623,6 +626,15 @@ function SaleFormDialog({ open, mode, item, recipes, places, clients, onClose, o
       // If this sale came from a client order, mark it as vendido
       if (selectedClientOrderId && data.sale?.id) {
         await fetch(`/api/cocina-movil/client-orders/${selectedClientOrderId}/convert-to-sale`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ saleId: data.sale.id }),
+        }).catch(() => {}) // non-fatal
+      }
+
+      // If this sale came from a budget, link it
+      if (selectedBudgetId && data.sale?.id) {
+        await fetch(`/api/cocina-movil/budgets/${selectedBudgetId}/convert-to-sale`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ saleId: data.sale.id }),
@@ -722,6 +734,27 @@ function SaleFormDialog({ open, mode, item, recipes, places, clients, onClose, o
                     key: newItemKey(), recipeId: it.recipeId, quantity: it.quantity, unitPrice: it.unitPrice,
                   })))
                   toast.success(`Pedido ${order.orderNumber} cargado en la venta`)
+                }} />
+              </div>
+            )}
+
+            {/* Cargar desde Presupuesto */}
+            {mode === 'create' && (
+              <div className="flex items-center justify-between gap-3 p-3 rounded-md border border-[#5C3A21]/15 bg-[#FBF1DC]/50">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-[#5C3A21]" />
+                  <span className="text-sm text-[#5C3A21]">¿Querés cargar desde un Presupuesto?</span>
+                </div>
+                <PendingBudgetsButton onLoadBudget={(budget) => {
+                  setClientName(budget.clientName || '')
+                  setItems(budget.items.map((it: { recipeId: string; quantity: number; unitPrice: number }) => ({
+                    key: newItemKey(), recipeId: it.recipeId, quantity: it.quantity, unitPrice: it.unitPrice,
+                  })))
+                  setDiscountType(budget.discountType === 'fixed' ? 'fixed' : 'percentage')
+                  setDiscountValue(budget.discountValue != null ? String(budget.discountValue) : '')
+                  setTaxRate(budget.taxRate != null ? String(budget.taxRate) : '')
+                  setSelectedBudgetId(budget.id)
+                  toast.success(`Presupuesto cargado en la venta`)
                 }} />
               </div>
             )}
@@ -1129,6 +1162,88 @@ function PendingClientOrdersButton({ onLoadOrder }: { onLoadOrder: (order: Pendi
                     </p>
                   </div>
                   <Button type="button" size="sm" onClick={() => { onLoadOrder(o); setOpen(false) }} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611] shrink-0">
+                    Cargar
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          <DialogFooter><Button type="button" variant="outline" onClick={() => setOpen(false)}>Cerrar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
+
+// ============================================================
+// ============================================================
+// Pending Budgets Button (cargar desde presupuesto aprobado)
+// ============================================================
+
+interface PendingBudget {
+  id: string
+  clientName: string | null
+  budgetDate: number
+  items: Array<{ recipeId: string; quantity: number; unitPrice: number }>
+  total: number
+  totalPrice: number
+  discountType: 'percentage' | 'fixed' | null
+  discountValue: number | null
+  taxRate: number | null
+  status: string
+  saleId: string | null
+}
+
+function PendingBudgetsButton({ onLoadBudget }: { onLoadBudget: (budget: PendingBudget) => void }) {
+  const [open, setOpen] = React.useState(false)
+  const [budgets, setBudgets] = React.useState<PendingBudget[]>([])
+  const [loading, setLoading] = React.useState(false)
+
+  const handleOpen = () => {
+    setOpen(true)
+    setLoading(true)
+    fetch('/api/cocina-movil/budgets?pageSize=200')
+      .then((r) => r.json().catch(() => ({ budgets: [] })))
+      .then((data) => {
+        const all = (data.budgets || []) as PendingBudget[]
+        setBudgets(all.filter((b) => b.status === 'aprobado' && !b.saleId))
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }
+
+  return (
+    <>
+      <Button type="button" size="sm" variant="outline" onClick={handleOpen} className="border-[#5C3A21]/20 text-[#5C3A21]">
+        Ver Presupuestos Aprobados
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-[#5C3A21] flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Presupuestos Aprobados
+            </DialogTitle>
+            <DialogDescription>Seleccioná un presupuesto para cargar sus items en esta venta.</DialogDescription>
+          </DialogHeader>
+          {loading ? (
+            <div className="flex items-center justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-[#E1AD01]" /></div>
+          ) : budgets.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="h-10 w-10 mx-auto mb-2 text-[#8A7E70]/40" />
+              <p className="text-sm text-[#8A7E70]">No hay presupuestos aprobados disponibles.</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+              {budgets.map((b) => (
+                <div key={b.id} className="flex items-center justify-between gap-3 p-3 rounded-md border border-[#5C3A21]/10 bg-[#FFF8E7]/30">
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-medium text-[#5C3A21] truncate block">{b.clientName || 'Cliente'}</span>
+                    <p className="text-xs text-[#8A7E70] mt-1">
+                      {b.items.length} items · Total: {fmtCurrency(b.totalPrice || b.total)}
+                    </p>
+                  </div>
+                  <Button type="button" size="sm" onClick={() => { onLoadBudget(b); setOpen(false) }} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611] shrink-0">
                     Cargar
                   </Button>
                 </div>

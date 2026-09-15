@@ -48,6 +48,7 @@ export interface CmSaleRecord {
   invoiceNumber: string | null
   paymentMethod: string
   observations: string | null
+  budgetId: string | null // ID del Presupuesto que originó la venta
   // Items (multi-receta)
   items: CmSaleItem[]
   // Cálculos (auto)
@@ -83,6 +84,7 @@ export interface CmSaleInput {
   discountType?: 'percentage' | 'fixed' | null
   discountValue?: number | null
   taxRate?: number | null
+  budgetId?: string | null
 }
 
 let salesStore: Map<string, CmSaleRecord> = new Map()
@@ -180,6 +182,7 @@ function seedDemoSales() {
       invoiceNumber: null,
       paymentMethod: 'Efectivo',
       observations: null,
+      budgetId: null,
       items,
       ...totals,
       createdAt: now - 86400000 * 1,
@@ -216,6 +219,7 @@ function seedDemoSales() {
       invoiceNumber: null,
       paymentMethod: 'Efectivo',
       observations: 'Venta del día',
+      budgetId: null,
       items,
       ...totals,
       createdAt: now,
@@ -310,6 +314,7 @@ export function createSale(input: CmSaleInput): CmSaleRecord {
     invoiceNumber: input.invoiceNumber?.trim() || null,
     paymentMethod: input.paymentMethod || 'Efectivo',
     observations: input.observations?.trim() || null,
+    budgetId: input.budgetId || null,
     items,
     ...totals,
     createdAt: now,
