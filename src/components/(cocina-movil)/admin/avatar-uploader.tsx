@@ -30,7 +30,7 @@ import Image from 'next/image'
 import { Camera, Trash2, Loader2, Upload, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-type CmRole = 'admin' | 'cocinero' | 'supervisor'
+type CmRole = 'admin' | 'supervisor'
 
 interface AvatarUploaderProps {
   value: string | null
@@ -51,8 +51,6 @@ function avatarBg(role?: CmRole): string {
   switch (role) {
     case 'admin':
       return 'bg-[#5C3A21] text-[#FFF8E7]'
-    case 'cocinero':
-      return 'bg-[#708238] text-[#FFF8E7]'
     case 'supervisor':
       return 'bg-[#E1AD01] text-[#1F1611]'
     default:

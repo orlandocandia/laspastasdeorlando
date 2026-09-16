@@ -101,13 +101,11 @@ function dateInputToEpoch(s: string): number | null {
 
 function roleBadgeClass(role: CmRole): string {
   if (role === 'admin') return 'border-[#5C3A21] text-[#5C3A21] bg-[#5C3A21]/5'
-  if (role === 'cocinero') return 'border-[#708238] text-[#708238] bg-[#708238]/5'
   return 'border-[#E1AD01] text-[#7a5c00] bg-[#E1AD01]/10'
 }
 
 function avatarColorClass(role: CmRole): string {
   if (role === 'admin') return 'bg-[#5C3A21] text-[#FFF8E7]'
-  if (role === 'cocinero') return 'bg-[#708238] text-[#FFF8E7]'
   return 'bg-[#E1AD01] text-[#5C3A21]'
 }
 
@@ -151,7 +149,7 @@ function emptyForm(): UserFormState {
     location: null,
     email: '',
     password: '',
-    role: 'cocinero',
+    role: 'admin',
     isActive: true,
   }
 }
@@ -333,7 +331,6 @@ function CmUsersPageContent() {
               <SelectContent>
                 <SelectItem value="all">Todos los roles</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="cocinero">Cocinero</SelectItem>
                 <SelectItem value="supervisor">Supervisor</SelectItem>
               </SelectContent>
             </Select>
@@ -888,7 +885,6 @@ function UserFormDialog({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="cocinero">Cocinero</SelectItem>
                     <SelectItem value="supervisor">Supervisor</SelectItem>
                   </SelectContent>
                 </Select>

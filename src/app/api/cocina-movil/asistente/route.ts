@@ -67,16 +67,12 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; response: string }> = [
     response: 'Para gestionar clientes:\n1. Ve a Clientes → "Nuevo Cliente"\n2. Sección 1: Subí una imagen/avatar (opcional)\n3. Sección 2: Datos personales (nombre, apellido, DNI, teléfono, email)\n4. Sección 3: Domicilio completo con mapa (dirección, país, provincia, departamento, municipio)\n5. Sección 4: Notas internas\n6. Click en "Crear"\n\nLos clientes aparecen en los selects de Ventas, Presupuestos y Pedidos de Clientes. También podés crear clientes rápidos desde el botón "+" en el formulario de Ventas.',
   },
   {
-    keywords: ['cocinero', 'panel del cocinero', 'dashboard del cocinero'],
-    response: 'El Panel del Cocinero tiene 6 módulos:\n\n• Mi Dashboard: alertas pendientes, resumen del día, últimas producciones y lugares\n• Mis Recetas: listado con búsqueda y creación inline\n• Mis Producciones: listado con creación inline (receta, lugar, cantidad)\n• Mis Lugares: listado con creación inline\n• Consultar Stock: stock de materias primas e insumos (solo lectura)\n• Mi Perfil: datos personales con edición\n\nEl Cocinero NO tiene acceso a Compras, Ventas, Presupuestos, Usuarios, Clientes ni Configuración. Si intenta acceder a /cm/admin/*, es redirigido al Dashboard del Cocinero.',
-  },
-  {
     keywords: ['presupuesto', 'convertir', 'venta'],
     response: 'Para convertir un Presupuesto en Venta:\n1. Ve a Presupuestos → abre el detalle de un presupuesto aprobado\n2. Aparece el botón verde "Convertir en Venta"\n3. Al hacer clic: se crea una Venta con los items, descuento e IVA del presupuesto\n4. El presupuesto queda vinculado a la venta\n\nTambién desde Ventas → "Ver Presupuestos Aprobados" podés cargar un presupuesto en una nueva venta.',
   },
   {
     keywords: ['usuario', 'usuarios', 'crear', 'admin'],
-    response: 'Para gestionar usuarios:\n1. Ve a Usuarios → "Nuevo Usuario"\n2. Completa datos personales (nombre, DNI, etc.)\n3. Completa domicilio (con mapa)\n4. Define email, contraseña y rol (admin/cocinero)\n5. Click en "Crear"\n\nPara editar o cambiar contraseña: usa el menú de acciones (⋮) en la tabla.',
+    response: 'Para gestionar usuarios:\n1. Ve a Usuarios → "Nuevo Usuario"\n2. Completa datos personales (nombre, DNI, etc.)\n3. Completa domicilio (con mapa)\n4. Define email, contraseña y rol (admin/supervisor)\n5. Click en "Crear"\n\nPara editar o cambiar contraseña: usa el menú de acciones (⋮) en la tabla.',
   },
   {
     keywords: ['lugar', 'lugares', 'cocina', 'carrito'],

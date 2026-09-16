@@ -84,16 +84,9 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
       router.push('/login')
       return
     }
-    // Role guard: only admins can access /cm/admin/*
-    if (u.role !== 'admin') {
-      // Redirect non-admin users to their appropriate dashboard
-      if (u.role === 'cocinero') {
-        router.push('/cm/cocina/dashboard')
-      } else {
-        router.push('/cm/dashboard')
-      }
-      return
-    }
+    // Auth guard: cualquier usuario autenticado puede acceder.
+    // (El rol Cocinero fue eliminado; SuperAdmin+Admins se implementará después.
+    //  Por ahora todos los usuarios autenticados van al dashboard del admin.)
     setUser(u)
     setLoading(false)
   }, [router])

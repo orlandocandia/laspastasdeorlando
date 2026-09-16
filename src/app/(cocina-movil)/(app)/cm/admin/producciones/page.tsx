@@ -273,7 +273,7 @@ function CmProduccionesPageContent() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A7E70]" />
               <Input
-                placeholder="Buscar por receta, cocinero o lugar…"
+                placeholder="Buscar por receta o lugar…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9 border-[#5C3A21]/15 bg-white"

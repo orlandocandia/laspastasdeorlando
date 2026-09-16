@@ -18,7 +18,7 @@
  * Conectado a API: POST /api/cocina-movil/auth/login
  *
  * Usuarios demo:
- *  - proyectos.orlando.candia@gmail.com / cocinero123
+ *  - proyectos.orlando.candia@gmail.com / cocinero123  (rol: admin)
  *  - orlando.candia@gmail.com / admin123
  *
  * NOTA: `useSearchParams()` debe estar envuelto en <Suspense>.
@@ -67,8 +67,7 @@ function LoginContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   // Si viene ?next=... en la URL, se usa ese path (explicit redirect).
-  // Si no, se redirige según el rol del usuario:
-  //   admin → /admin/dashboard, cocinero → /cook/dashboard
+  // Si no, se redirige al dashboard del admin (todos los roles van allí).
   const explicitNext = searchParams.get('next')
 
   const [form, setForm] = React.useState<FormState>({
@@ -261,7 +260,7 @@ function LoginContent() {
           {/* Credenciales demo (solo en dev) */}
           {process.env.NODE_ENV !== 'production' && (
             <div className="text-[11px] text-[#8A7E70] bg-[#5C3A21]/5 border border-[#5C3A21]/10 rounded-md px-3 py-2 space-y-0.5">
-              <p className="font-semibold text-[#5C3A21]">Credenciales demo:</p>
+              <p className="font-semibold text-[#5C3A21]">Credenciales demo (ambas admin):</p>
               <p>proyectos.orlando.candia@gmail.com / cocinero123</p>
               <p>orlando.candia@gmail.com / admin123</p>
             </div>

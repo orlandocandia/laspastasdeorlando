@@ -48,7 +48,7 @@ const CM_ROUTE_PREFIXES = [
   '/pedidos',
   '/stock',
   '/perfil',
-  '/cm',              // prefijo exclusivo de cocina-movil (/cm/admin/*, /cm/cocina/*, etc.)
+  '/cm',              // prefijo exclusivo de cocina-movil (/cm/admin/*, etc.)
   '/cocina',          // reservado para uso futuro
   '/recepciones',     // reservado para uso futuro
   '/inventario-cm',   // reservado para uso futuro

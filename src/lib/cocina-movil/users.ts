@@ -17,7 +17,7 @@
  *     id                String   @id @default(cuid())
  *     email             String   @unique
  *     password          String
- *     role              String   // "admin" | "cocinero" | "supervisor"
+ *     role              String   // "admin" | "supervisor"
  *     // Datos personales
  *     firstName         String
  *     lastName          String
@@ -45,7 +45,7 @@
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 
-export type CmRole = 'cocinero' | 'supervisor' | 'admin'
+export type CmRole = 'supervisor' | 'admin'
 
 export type CmGender = 'masculino' | 'femenino' | 'otro' | null
 export type CmMaritalStatus = 'soltero' | 'casado' | 'divorciado' | 'viudo' | null
@@ -138,7 +138,7 @@ function seedDemoUsers() {
   const cocinero: CmUserWithPassword = {
     id: 'cocinero-1',
     email: 'proyectos.orlando.candia@gmail.com',
-    role: 'cocinero',
+    role: 'admin',
     firstName: 'Cocinero',
     lastName: 'Demo',
     dni: '87654321',

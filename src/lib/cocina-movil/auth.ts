@@ -18,7 +18,7 @@
  * más una firma HMAC. No requiere estado servidor.
  *
  * Usuarios demo hardcodeados para pruebas:
- *  - proyectos.orlando.candia@gmail.com / cocinero123  (rol: cocinero)
+ *  - proyectos.orlando.candia@gmail.com / cocinero123  (rol: admin)
  *  - orlando.candia@gmail.com   / admin123    (rol: admin)
  * ============================================================
  */
@@ -27,7 +27,7 @@ import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { getUserWithPasswordByEmail } from '@/lib/cocina-movil/users'
 
-export type CmRole = 'cocinero' | 'supervisor' | 'admin'
+export type CmRole = 'supervisor' | 'admin'
 
 export interface CmUser {
   id: string
@@ -44,7 +44,9 @@ export interface CmSession {
   expiresAt: number // epoch ms
 }
 
-// ----- Usuarios demo (reemplazar por consulta a Prisma) -----
+// ----- Usuarios demo (legacy — el login real usa users.ts via getUserWithPasswordByEmail) -----
+// Mantenemos este mapa solo como referencia; la autenticación real
+// consulta el store de users.ts para incluir usuarios creados vía UI.
 const DEMO_USERS: Record<string, { password: string; user: CmUser }> = {
   'proyectos.orlando.candia@gmail.com': {
     password: '$2b$10$v0mNx1l/bcU/MJSq.mtAleHRtmoPcgGUoOx5v3zx.13JfxAqK1nt6',
@@ -52,7 +54,7 @@ const DEMO_USERS: Record<string, { password: string; user: CmUser }> = {
       id: 'cocinero-1',
       email: 'proyectos.orlando.candia@gmail.com',
       name: 'Cocinero',
-      role: 'cocinero',
+      role: 'admin',
       avatar: null,
       isActive: true,
     },
@@ -90,21 +92,13 @@ function getCmAuthSecret(): string {
  * Se usa cuando no hay ?next= explícito en la URL de login.
  *
  *  - admin      → /cm/admin/dashboard
- *  - cocinero   → /cm/cocina/dashboard
- *  - supervisor → /cm/supervisor/dashboard
- *  - fallback   → /cm/dashboard
+ *  - supervisor → /cm/admin/dashboard  (transicional: todos van al admin)
+ *  - fallback   → /cm/admin/dashboard
  */
 export function getRedirectPathByRole(role: CmRole | undefined | null): string {
-  switch (role) {
-    case 'admin':
-      return '/cm/admin/dashboard'
-    case 'cocinero':
-      return '/cm/cocina/dashboard'
-    case 'supervisor':
-      return '/cm/supervisor/dashboard'
-    default:
-      return '/cm/dashboard'
-  }
+  // Todos los usuarios autenticados van al dashboard del admin.
+  // (El rol Cocinero fue eliminado; SuperAdmin+Admins se implementará después.)
+  return '/cm/admin/dashboard'
 }
 
 /**

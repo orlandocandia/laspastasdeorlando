@@ -14,7 +14,7 @@
  * ============================================================
  */
 
-export type CmRole = 'cocinero' | 'supervisor' | 'admin'
+export type CmRole = 'supervisor' | 'admin'
 
 export interface CmUser {
   id: string
@@ -37,25 +37,17 @@ const DEFAULT_AVATAR = '/images/(cocina-movil)/default-avatar.png'
  * Path de redirección según el rol del usuario.
  * Se usa cuando no hay ?next= explícito en la URL de login.
  *
- *  - admin      → /admin/dashboard
- *  - cocinero   → /cook/dashboard
- *  - supervisor → /supervisor/dashboard
- *  - fallback   → /dashboard
+ *  - admin      → /cm/admin/dashboard
+ *  - supervisor → /cm/admin/dashboard  (transicional)
+ *  - fallback   → /cm/admin/dashboard
  *
  * Duplicada del servidor (src/lib/cocina-movil/auth.ts) para
  * uso client-side sin necesidad de importar código de servidor.
  */
 export function getRedirectPathByRole(role: CmRole | undefined | null): string {
-  switch (role) {
-    case 'admin':
-      return '/cm/admin/dashboard'
-    case 'cocinero':
-      return '/cm/cocina/dashboard'
-    case 'supervisor':
-      return '/cm/supervisor/dashboard'
-    default:
-      return '/cm/dashboard'
-  }
+  // Todos los usuarios autenticados van al dashboard del admin.
+  // (El rol Cocinero fue eliminado; SuperAdmin+Admins se implementará después.)
+  return '/cm/admin/dashboard'
 }
 
 /**

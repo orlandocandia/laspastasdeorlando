@@ -59,7 +59,7 @@ export async function PUT(
   }
   // role
   if (body.role !== undefined) {
-    const validRoles: CmRole[] = ['admin', 'cocinero', 'supervisor']
+    const validRoles: CmRole[] = ['admin', 'supervisor']
     if (validRoles.includes(body.role as CmRole)) {
       updates.role = body.role as CmRole
     }
