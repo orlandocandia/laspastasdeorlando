@@ -7,6 +7,13 @@ export async function GET(request: Request) {
   const auth = requireAuth(request)
   if (!auth.authorized) return auth.response!
   const url = new URL(request.url)
+  // Determine ownerId filter based on role
+  const sessionUser = auth.session!.user
+  const ownerIdParam = url.searchParams.get('ownerId') || 'all'
+  const ownerId: string | 'all' =
+    sessionUser.role === 'superadmin'
+      ? (ownerIdParam === 'all' ? 'all' : ownerIdParam)
+      : sessionUser.id  // admin sees only own data
   const search = url.searchParams.get('search') || undefined
   const catParam = url.searchParams.get('category') || 'all'
   const statusParam = url.searchParams.get('isActive') || 'all'
@@ -17,13 +24,14 @@ export async function GET(request: Request) {
   const validCats: CmSupplyCategory[] = ['envases','limpieza','descartables','otros']
   const category = validCats.includes(catParam as CmSupplyCategory) ? catParam as CmSupplyCategory : 'all'
   const isActive = statusParam === 'true' ? true : statusParam === 'false' ? false : 'all'
-  const result = listSupplies({ search, category, isActive, sortBy, sortOrder, page, pageSize })
+  const result = listSupplies({ search, category, isActive, sortBy, sortOrder, page, pageSize, ownerId })
   return NextResponse.json(result)
 }
 
 export async function POST(request: Request) {
   const auth = requireAdmin(request)
   if (!auth.authorized) return auth.response!
+  const sessionUser = auth.session!.user
   let body: Record<string, unknown>
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 }) }
   if (typeof body.name !== 'string' || !body.name.trim()) return NextResponse.json({ error: 'El nombre es obligatorio.' }, { status: 400 })
@@ -49,6 +57,7 @@ export async function POST(request: Request) {
     image: typeof body.image === 'string' ? body.image : null,
     supplierId: typeof body.supplierId === 'string' ? body.supplierId : null,
     isActive: typeof body.isActive === 'boolean' ? body.isActive : true,
+    ownerId: sessionUser.role === 'superadmin' && typeof body.ownerId === 'string' ? body.ownerId : sessionUser.id,
   }
   try {
     const sup = createSupply(input)

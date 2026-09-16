@@ -7,6 +7,13 @@ export async function GET(request: Request) {
   const auth = requireAdmin(request)
   if (!auth.authorized) return auth.response!
   const url = new URL(request.url)
+  // Determine ownerId filter based on role
+  const sessionUser = auth.session!.user
+  const ownerIdParam = url.searchParams.get('ownerId') || 'all'
+  const ownerId: string | 'all' =
+    sessionUser.role === 'superadmin'
+      ? (ownerIdParam === 'all' ? 'all' : ownerIdParam)
+      : sessionUser.id  // admin sees only own data
   const search = url.searchParams.get('search') || undefined
   const recipeId = url.searchParams.get('recipeId') || null
   const placeId = url.searchParams.get('placeId') || null
@@ -16,13 +23,14 @@ export async function GET(request: Request) {
   const sortOrder = (url.searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc'
   const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10))
   const pageSize = Math.max(1, Math.min(200, parseInt(url.searchParams.get('pageSize') || '50', 10)))
-  const result = listSales({ search, recipeId, placeId, dateFrom, dateTo, sortBy, sortOrder, page, pageSize })
+  const result = listSales({ search, recipeId, placeId, dateFrom, dateTo, sortBy, sortOrder, page, pageSize, ownerId })
   return NextResponse.json(result)
 }
 
 export async function POST(request: Request) {
   const auth = requireAdmin(request)
   if (!auth.authorized) return auth.response!
+  const sessionUser = auth.session!.user
   let body: Record<string, unknown>
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 }) }
   if (typeof body.placeId !== 'string' || !body.placeId) return NextResponse.json({ error: 'El lugar es obligatorio.' }, { status: 400 })
@@ -57,6 +65,7 @@ export async function POST(request: Request) {
     discountValue: typeof body.discountValue === 'number' ? body.discountValue : null,
     taxRate: typeof body.taxRate === 'number' ? body.taxRate : null,
     budgetId: typeof body.budgetId === 'string' ? body.budgetId : null,
+    ownerId: sessionUser.role === 'superadmin' && typeof body.ownerId === 'string' ? body.ownerId : sessionUser.id,
   }
   try {
     const sale = createSale(input)

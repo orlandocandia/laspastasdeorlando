@@ -7,6 +7,13 @@ export async function GET(request: Request) {
   const auth = requireAuth(request)
   if (!auth.authorized) return auth.response!
   const url = new URL(request.url)
+  // Determine ownerId filter based on role
+  const sessionUser = auth.session!.user
+  const ownerIdParam = url.searchParams.get('ownerId') || 'all'
+  const ownerId: string | 'all' =
+    sessionUser.role === 'superadmin'
+      ? (ownerIdParam === 'all' ? 'all' : ownerIdParam)
+      : sessionUser.id  // admin sees only own data
   const search = url.searchParams.get('search') || undefined
   const catParam = url.searchParams.get('category') || 'all'
   const statusParam = url.searchParams.get('isActive') || 'all'
@@ -17,13 +24,14 @@ export async function GET(request: Request) {
   const validCats: CmRecipeCategory[] = ['pastas','salsas','guisos_estofados','sopas_cremas','horneados','postres','acompanamientos','bebidas','otros']
   const category = validCats.includes(catParam as CmRecipeCategory) ? catParam as CmRecipeCategory : 'all'
   const isActive = statusParam === 'true' ? true : statusParam === 'false' ? false : 'all'
-  const result = listRecipes({ search, category, isActive, sortBy, sortOrder, page, pageSize })
+  const result = listRecipes({ search, category, isActive, sortBy, sortOrder, page, pageSize, ownerId })
   return NextResponse.json(result)
 }
 
 export async function POST(request: Request) {
   const auth = requireAdmin(request)
   if (!auth.authorized) return auth.response!
+  const sessionUser = auth.session!.user
   let body: Record<string, unknown>
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 }) }
   if (typeof body.title !== 'string' || !body.title.trim()) return NextResponse.json({ error: 'El título es obligatorio.' }, { status: 400 })
@@ -51,6 +59,7 @@ export async function POST(request: Request) {
       unit: typeof item.unit === 'string' ? item.unit : 'u',
     })) : [],
     isActive: typeof body.isActive === 'boolean' ? body.isActive : true,
+    ownerId: sessionUser.role === 'superadmin' && typeof body.ownerId === 'string' ? body.ownerId : sessionUser.id,
   }
   try {
     const recipe = createRecipe(input)

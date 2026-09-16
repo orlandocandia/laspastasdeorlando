@@ -35,6 +35,7 @@ export interface CmRecipeSupply {
 
 export interface CmRecipeRecord {
   id: string
+  ownerId: string
   title: string
   description: string | null
   category: CmRecipeCategory
@@ -58,6 +59,7 @@ export interface CmRecipeRecord {
 
 export interface CmRecipeInput {
   title: string
+  ownerId?: string
   description?: string | null
   category: CmRecipeCategory
   preparationTime?: string | null
@@ -79,6 +81,7 @@ function seedDemoRecipes() {
   const now = Date.now()
   const r1: CmRecipeRecord = {
     id: 'recipe-1',
+    ownerId: 'cocinero-1',
     title: 'Sorrentinos de Ricotta y Espinaca',
     description: 'Pasta rellena clásica con salsa de tomate',
     category: 'pastas',
@@ -107,6 +110,7 @@ function seedDemoRecipes() {
   }
   const r2: CmRecipeRecord = {
     id: 'recipe-2',
+    ownerId: 'cocinero-1',
     title: 'Ravioles de Carne',
     description: 'Ravioles rellenos de carne molida',
     category: 'pastas',
@@ -141,6 +145,7 @@ seedDemoRecipes()
  */
 export function listRecipes(options?: {
   search?: string
+  ownerId?: string | 'all'
   category?: CmRecipeCategory | 'all'
   isActive?: boolean | 'all'
   sortBy?: 'title' | 'totalCost' | 'createdAt'
@@ -148,8 +153,9 @@ export function listRecipes(options?: {
   page?: number
   pageSize?: number
 }): { recipes: CmRecipeRecord[]; total: number; page: number; pageSize: number } {
-  const { search, category = 'all', isActive = 'all', sortBy = 'title', sortOrder = 'asc', page = 1, pageSize = 50 } = options || {}
+  const { search, ownerId = 'all', category = 'all', isActive = 'all', sortBy = 'title', sortOrder = 'asc', page = 1, pageSize = 50 } = options || {}
   let items = Array.from(recipesStore.values())
+  if (ownerId !== 'all') items = items.filter((r) => r.ownerId === ownerId)
   if (search?.trim()) {
     const q = search.trim().toLowerCase()
     items = items.filter((r) => r.title.toLowerCase().includes(q) || (r.description || '').toLowerCase().includes(q))
@@ -226,6 +232,7 @@ export function createRecipe(input: CmRecipeInput): CmRecipeRecord {
 
   const recipe: CmRecipeRecord = {
     id,
+    ownerId: input.ownerId || 'orlando-superadmin',
     title: input.title.trim(),
     description: input.description?.trim() || null,
     category: finalCategory as CmRecipeCategory,

@@ -71,8 +71,8 @@ const FALLBACK_RESPONSES: Array<{ keywords: string[]; response: string }> = [
     response: 'Para convertir un Presupuesto en Venta:\n1. Ve a Presupuestos → abre el detalle de un presupuesto aprobado\n2. Aparece el botón verde "Convertir en Venta"\n3. Al hacer clic: se crea una Venta con los items, descuento e IVA del presupuesto\n4. El presupuesto queda vinculado a la venta\n\nTambién desde Ventas → "Ver Presupuestos Aprobados" podés cargar un presupuesto en una nueva venta.',
   },
   {
-    keywords: ['usuario', 'usuarios', 'crear', 'admin'],
-    response: 'Para gestionar usuarios:\n1. Ve a Usuarios → "Nuevo Usuario"\n2. Completa datos personales (nombre, DNI, etc.)\n3. Completa domicilio (con mapa)\n4. Define email, contraseña y rol (admin/supervisor)\n5. Click en "Crear"\n\nPara editar o cambiar contraseña: usa el menú de acciones (⋮) en la tabla.',
+    keywords: ['usuario', 'usuarios', 'crear', 'admin', 'superadmin'],
+    response: 'Para gestionar usuarios:\n1. Ve a Usuarios → "Nuevo Usuario" (solo SuperAdmin)\n2. Completa datos personales (nombre, DNI, etc.)\n3. Completa domicilio (con mapa)\n4. Define email, contraseña y rol (admin/supervisor)\n5. Click en "Crear"\n\nEl SuperAdmin puede crear, editar y eliminar Admins. Un Admin NO puede crear otros Admins. El SuperAdmin también tiene un Panel de SuperAdmin (/cm/superadmin/dashboard) con KPIs globales y un resumen por dueño.\n\nPara editar o cambiar contraseña: usa el menú de acciones (⋮) en la tabla.',
   },
   {
     keywords: ['lugar', 'lugares', 'cocina', 'carrito'],

@@ -27,7 +27,7 @@ import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 import { getUserWithPasswordByEmail } from '@/lib/cocina-movil/users'
 
-export type CmRole = 'supervisor' | 'admin'
+export type CmRole = 'superadmin' | 'supervisor' | 'admin'
 
 export interface CmUser {
   id: string
@@ -48,6 +48,17 @@ export interface CmSession {
 // Mantenemos este mapa solo como referencia; la autenticación real
 // consulta el store de users.ts para incluir usuarios creados vía UI.
 const DEMO_USERS: Record<string, { password: string; user: CmUser }> = {
+  'laspastasdeorlando@gmail.com': {
+    password: '$2b$10$F0YZI53Xg2X8I37Y/z1B7e8MknoxQfzdqNyV7W.zBaAK.d4ONG.Bu',
+    user: {
+      id: 'orlando-superadmin',
+      email: 'laspastasdeorlando@gmail.com',
+      name: 'Orlando SuperAdmin',
+      role: 'superadmin',
+      avatar: null,
+      isActive: true,
+    },
+  },
   'proyectos.orlando.candia@gmail.com': {
     password: '$2b$10$v0mNx1l/bcU/MJSq.mtAleHRtmoPcgGUoOx5v3zx.13JfxAqK1nt6',
     user: {
@@ -91,13 +102,13 @@ function getCmAuthSecret(): string {
  * Path de redirección según el rol del usuario.
  * Se usa cuando no hay ?next= explícito en la URL de login.
  *
+ *  - superadmin → /cm/superadmin/dashboard
  *  - admin      → /cm/admin/dashboard
- *  - supervisor → /cm/admin/dashboard  (transicional: todos van al admin)
+ *  - supervisor → /cm/admin/dashboard  (transicional)
  *  - fallback   → /cm/admin/dashboard
  */
 export function getRedirectPathByRole(role: CmRole | undefined | null): string {
-  // Todos los usuarios autenticados van al dashboard del admin.
-  // (El rol Cocinero fue eliminado; SuperAdmin+Admins se implementará después.)
+  if (role === 'superadmin') return '/cm/superadmin/dashboard'
   return '/cm/admin/dashboard'
 }
 

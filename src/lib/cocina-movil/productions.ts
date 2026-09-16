@@ -15,6 +15,7 @@ export type CmProductionStatus = 'pending' | 'confirmed' | 'rejected'
 
 export interface CmProductionRecord {
   id: string
+  ownerId: string
   recipeId: string
   recipeTitle: string // snapshot
   recipeCostPerServing: number // snapshot del costo al momento de crear
@@ -33,6 +34,7 @@ export interface CmProductionRecord {
 
 export interface CmProductionInput {
   recipeId: string
+  ownerId?: string
   placeId: string
   cookId?: string | null
   cookName?: string | null
@@ -52,6 +54,7 @@ function seedDemoProductions() {
   if (recipe1 && place1) {
     const prod1: CmProductionRecord = {
       id: 'prod-1',
+      ownerId: 'cocinero-1',
       recipeId: 'recipe-1',
       recipeTitle: recipe1.title,
       recipeCostPerServing: recipe1.costPerServing,
@@ -73,6 +76,7 @@ function seedDemoProductions() {
   if (recipe2 && place1) {
     const prod2: CmProductionRecord = {
       id: 'prod-2',
+      ownerId: 'cocinero-1',
       recipeId: 'recipe-2',
       recipeTitle: recipe2.title,
       recipeCostPerServing: recipe2.costPerServing,
@@ -95,6 +99,7 @@ seedDemoProductions()
 
 export function listProductions(options?: {
   search?: string
+  ownerId?: string | 'all'
   placeId?: string | null
   status?: CmProductionStatus | 'all'
   dateFrom?: number | null
@@ -104,8 +109,9 @@ export function listProductions(options?: {
   page?: number
   pageSize?: number
 }): { productions: CmProductionRecord[]; total: number; page: number; pageSize: number } {
-  const { search, placeId, status = 'all', dateFrom, dateTo, sortBy = 'createdAt', sortOrder = 'desc', page = 1, pageSize = 50 } = options || {}
+  const { search, ownerId = 'all', placeId, status = 'all', dateFrom, dateTo, sortBy = 'createdAt', sortOrder = 'desc', page = 1, pageSize = 50 } = options || {}
   let items = Array.from(productionsStore.values())
+  if (ownerId !== 'all') items = items.filter((p) => p.ownerId === ownerId)
   if (search?.trim()) {
     const q = search.trim().toLowerCase()
     items = items.filter((p) => p.recipeTitle.toLowerCase().includes(q) || (p.cookName || '').toLowerCase().includes(q) || (p.placeName || '').toLowerCase().includes(q))
@@ -147,6 +153,7 @@ export function createProduction(input: CmProductionInput): CmProductionRecord {
 
   const production: CmProductionRecord = {
     id,
+    ownerId: input.ownerId || 'orlando-superadmin',
     recipeId: input.recipeId,
     recipeTitle: recipe.title,
     recipeCostPerServing: recipe.costPerServing,

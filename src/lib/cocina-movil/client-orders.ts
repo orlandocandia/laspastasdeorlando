@@ -25,6 +25,7 @@ export interface CmClientOrderItem {
 
 export interface CmClientOrderRecord {
   id: string
+  ownerId: string
   orderNumber: string // ej: "PC-000001"
   clientName: string | null
   clientPhone: string | null
@@ -49,6 +50,7 @@ export interface CmClientOrderItemInput {
 }
 
 export interface CmClientOrderInput {
+  ownerId?: string
   clientName?: string | null
   clientPhone?: string | null
   clientEmail?: string | null
@@ -105,7 +107,7 @@ function seedDemoOrders() {
       quantity: 10, unitPrice: 1200, costPerUnit: recipe1.costPerServing, subtotal: 12000,
     }]
     const o1: CmClientOrderRecord = {
-      id: 'co-1', orderNumber: generateOrderNumber(),
+      id: 'co-1', ownerId: 'orlando-superadmin', orderNumber: generateOrderNumber(),
       clientName: 'Restaurant La Esquina', clientPhone: '3794112233', clientEmail: null,
       orderDate: now - 86400000 * 2, expectedDeliveryDate: now + 86400000,
       status: 'entregado', observations: 'Catering evento sábado',
@@ -121,7 +123,7 @@ function seedDemoOrders() {
       quantity: 5, unitPrice: 1500, costPerUnit: recipe2.costPerServing, subtotal: 7500,
     }]
     const o2: CmClientOrderRecord = {
-      id: 'co-2', orderNumber: generateOrderNumber(),
+      id: 'co-2', ownerId: 'orlando-superadmin', orderNumber: generateOrderNumber(),
       clientName: 'Familia González', clientPhone: null, clientEmail: null,
       orderDate: now - 86400000 * 1, expectedDeliveryDate: now + 86400000 * 3,
       status: 'pendiente', observations: null,
@@ -139,6 +141,7 @@ seedDemoOrders()
 
 export function listClientOrders(options?: {
   search?: string
+  ownerId?: string | 'all'
   status?: CmClientOrderStatus | 'all'
   dateFrom?: number | null
   dateTo?: number | null
@@ -147,8 +150,9 @@ export function listClientOrders(options?: {
   page?: number
   pageSize?: number
 }): { orders: CmClientOrderRecord[]; total: number; page: number; pageSize: number } {
-  const { search, status = 'all', dateFrom, dateTo, sortBy = 'orderDate', sortOrder = 'desc', page = 1, pageSize = 50 } = options || {}
+  const { search, ownerId = 'all', status = 'all', dateFrom, dateTo, sortBy = 'orderDate', sortOrder = 'desc', page = 1, pageSize = 50 } = options || {}
   let items = Array.from(ordersStore.values())
+  if (ownerId !== 'all') items = items.filter((o) => o.ownerId === ownerId)
   if (search?.trim()) {
     const q = search.trim().toLowerCase()
     items = items.filter((o) =>
@@ -193,7 +197,7 @@ export function createClientOrder(input: CmClientOrderInput): CmClientOrderRecor
   const total = items.reduce((sum, it) => sum + it.subtotal, 0)
 
   const order: CmClientOrderRecord = {
-    id, orderNumber: generateOrderNumber(),
+    id, ownerId: input.ownerId || 'orlando-superadmin', orderNumber: generateOrderNumber(),
     clientName: input.clientName?.trim() || null,
     clientPhone: input.clientPhone?.trim() || null,
     clientEmail: input.clientEmail?.trim() || null,

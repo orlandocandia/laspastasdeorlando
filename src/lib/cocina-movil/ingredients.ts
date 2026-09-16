@@ -16,6 +16,7 @@ export type CmWeightUnit = 'kg' | 'g' | 'l' | 'ml'
 
 export interface CmIngredientRecord {
   id: string
+  ownerId: string
   name: string
   description: string | null
   category: CmIngredientCategory | null
@@ -41,6 +42,7 @@ export interface CmIngredientRecord {
 
 export interface CmIngredientInput {
   name: string
+  ownerId?: string
   description?: string | null
   category?: CmIngredientCategory | null
   // Campos originales
@@ -95,10 +97,10 @@ function seedDemoIngredients() {
   if (ingredientsStore.size > 0) return
   const now = Date.now()
   const demos: CmIngredientRecord[] = [
-    { id: 'ing-1', name: 'Harina 000', description: 'Harina de trigo para pastas', category: 'harinas', purchaseUnit: 'kg', purchasePrice: 18, gramsPerUnit: 1000, image: null, supplierId: null, isActive: true, purchaseUnitType: 'bulto', unitsPurchased: 1, weightPerUnit: 25, weightUnit: 'kg', totalPrice: 450, pricePerUnit: 18, totalGrams: 25000, createdAt: now, updatedAt: now },
-    { id: 'ing-2', name: 'Carne Molida', description: 'Carne molida común', category: 'carnes', purchaseUnit: 'kg', purchasePrice: 3200, gramsPerUnit: 1000, image: null, supplierId: null, isActive: true, purchaseUnitType: 'kg_suelto', unitsPurchased: 1, weightPerUnit: 1, weightUnit: 'kg', totalPrice: 3200, pricePerUnit: 3200, totalGrams: 1000, createdAt: now, updatedAt: now },
-    { id: 'ing-3', name: 'Queso Mozzarella', description: 'Muzzarella barra', category: 'lacteos', purchaseUnit: 'kg', purchasePrice: 2800, gramsPerUnit: 1000, image: null, supplierId: null, isActive: true, purchaseUnitType: 'unidad', unitsPurchased: 1, weightPerUnit: 1, weightUnit: 'kg', totalPrice: 2800, pricePerUnit: 2800, totalGrams: 1000, createdAt: now, updatedAt: now },
-    { id: 'ing-4', name: 'Huevos', description: 'Huevos frescos', category: 'otros', purchaseUnit: 'docena', purchasePrice: 150, gramsPerUnit: 50, image: null, supplierId: null, isActive: true, purchaseUnitType: 'caja', unitsPurchased: 1, weightPerUnit: 0.05, weightUnit: 'kg', totalPrice: 1800, pricePerUnit: 150, totalGrams: 50, createdAt: now, updatedAt: now },
+    { id: 'ing-1', ownerId: 'orlando-superadmin', name: 'Harina 000', description: 'Harina de trigo para pastas', category: 'harinas', purchaseUnit: 'kg', purchasePrice: 18, gramsPerUnit: 1000, image: null, supplierId: null, isActive: true, purchaseUnitType: 'bulto', unitsPurchased: 1, weightPerUnit: 25, weightUnit: 'kg', totalPrice: 450, pricePerUnit: 18, totalGrams: 25000, createdAt: now, updatedAt: now },
+    { id: 'ing-2', ownerId: 'orlando-superadmin', name: 'Carne Molida', description: 'Carne molida común', category: 'carnes', purchaseUnit: 'kg', purchasePrice: 3200, gramsPerUnit: 1000, image: null, supplierId: null, isActive: true, purchaseUnitType: 'kg_suelto', unitsPurchased: 1, weightPerUnit: 1, weightUnit: 'kg', totalPrice: 3200, pricePerUnit: 3200, totalGrams: 1000, createdAt: now, updatedAt: now },
+    { id: 'ing-3', ownerId: 'orlando-superadmin', name: 'Queso Mozzarella', description: 'Muzzarella barra', category: 'lacteos', purchaseUnit: 'kg', purchasePrice: 2800, gramsPerUnit: 1000, image: null, supplierId: null, isActive: true, purchaseUnitType: 'unidad', unitsPurchased: 1, weightPerUnit: 1, weightUnit: 'kg', totalPrice: 2800, pricePerUnit: 2800, totalGrams: 1000, createdAt: now, updatedAt: now },
+    { id: 'ing-4', ownerId: 'orlando-superadmin', name: 'Huevos', description: 'Huevos frescos', category: 'otros', purchaseUnit: 'docena', purchasePrice: 150, gramsPerUnit: 50, image: null, supplierId: null, isActive: true, purchaseUnitType: 'caja', unitsPurchased: 1, weightPerUnit: 0.05, weightUnit: 'kg', totalPrice: 1800, pricePerUnit: 150, totalGrams: 50, createdAt: now, updatedAt: now },
   ]
   for (const ing of demos) ingredientsStore.set(ing.id, ing)
 }
@@ -106,6 +108,7 @@ seedDemoIngredients()
 
 export function listIngredients(options?: {
   search?: string
+  ownerId?: string | 'all'
   category?: CmIngredientCategory | 'all'
   isActive?: boolean | 'all'
   sortBy?: 'name' | 'purchasePrice' | 'createdAt'
@@ -113,8 +116,9 @@ export function listIngredients(options?: {
   page?: number
   pageSize?: number
 }): { ingredients: CmIngredientRecord[]; total: number; page: number; pageSize: number } {
-  const { search, category = 'all', isActive = 'all', sortBy = 'name', sortOrder = 'asc', page = 1, pageSize = 50 } = options || {}
+  const { search, ownerId = 'all', category = 'all', isActive = 'all', sortBy = 'name', sortOrder = 'asc', page = 1, pageSize = 50 } = options || {}
   let items = Array.from(ingredientsStore.values())
+  if (ownerId !== 'all') items = items.filter((i) => i.ownerId === ownerId)
   if (search?.trim()) {
     const q = search.trim().toLowerCase()
     items = items.filter((i) => i.name.toLowerCase().includes(q) || (i.description || '').toLowerCase().includes(q))
@@ -164,6 +168,7 @@ export function createIngredient(input: CmIngredientInput): CmIngredientRecord {
 
   const ing: CmIngredientRecord = {
     id,
+    ownerId: input.ownerId || 'orlando-superadmin',
     name: input.name.trim(),
     description: input.description?.trim() || null,
     category: input.category || null,

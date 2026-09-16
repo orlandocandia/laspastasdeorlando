@@ -28,6 +28,7 @@ export interface CmPurchaseOrderItem {
 
 export interface CmPurchaseOrderRecord {
   id: string
+  ownerId: string
   orderNumber: string // ej: "PP-000001"
   supplierId: string
   supplierName: string // snapshot
@@ -51,6 +52,7 @@ export interface CmPurchaseOrderItemInput {
 }
 
 export interface CmPurchaseOrderInput {
+  ownerId?: string
   supplierId: string
   orderDate?: number
   expectedDeliveryDate?: number | null
@@ -110,6 +112,7 @@ function seedDemoOrders() {
     ]
     const o1: CmPurchaseOrderRecord = {
       id: 'po-1',
+      ownerId: 'orlando-superadmin',
       orderNumber: generateOrderNumber(),
       supplierId: 'sup-1',
       supplierName: supplier1.name,
@@ -132,6 +135,7 @@ function seedDemoOrders() {
     ]
     const o2: CmPurchaseOrderRecord = {
       id: 'po-2',
+      ownerId: 'orlando-superadmin',
       orderNumber: generateOrderNumber(),
       supplierId: 'sup-2',
       supplierName: supplier2.name,
@@ -156,6 +160,7 @@ seedDemoOrders()
 
 export function listPurchaseOrders(options?: {
   search?: string
+  ownerId?: string | 'all'
   supplierId?: string | null
   status?: CmPurchaseOrderStatus | 'all'
   dateFrom?: number | null
@@ -165,8 +170,9 @@ export function listPurchaseOrders(options?: {
   page?: number
   pageSize?: number
 }): { orders: CmPurchaseOrderRecord[]; total: number; page: number; pageSize: number } {
-  const { search, supplierId, status = 'all', dateFrom, dateTo, sortBy = 'orderDate', sortOrder = 'desc', page = 1, pageSize = 50 } = options || {}
+  const { search, ownerId = 'all', supplierId, status = 'all', dateFrom, dateTo, sortBy = 'orderDate', sortOrder = 'desc', page = 1, pageSize = 50 } = options || {}
   let items = Array.from(ordersStore.values())
+  if (ownerId !== 'all') items = items.filter((o) => o.ownerId === ownerId)
   if (search?.trim()) {
     const q = search.trim().toLowerCase()
     items = items.filter((o) =>
@@ -217,6 +223,7 @@ export function createPurchaseOrder(input: CmPurchaseOrderInput): CmPurchaseOrde
 
   const order: CmPurchaseOrderRecord = {
     id,
+    ownerId: input.ownerId || 'orlando-superadmin',
     orderNumber: generateOrderNumber(),
     supplierId: input.supplierId,
     supplierName: supplier.name,

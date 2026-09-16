@@ -17,6 +17,7 @@ export type CmUsageUnit = 'u' | 'g' | 'cm'
 
 export interface CmSupplyRecord {
   id: string
+  ownerId: string
   name: string
   description: string | null
   category: CmSupplyCategory | null
@@ -46,6 +47,7 @@ export interface CmSupplyRecord {
 
 export interface CmSupplyInput {
   name: string
+  ownerId?: string
   description?: string | null
   category?: CmSupplyCategory | null
   // Legacy
@@ -73,9 +75,9 @@ function seedDemoSupplies() {
   if (suppliesStore.size > 0) return
   const now = Date.now()
   const demos: CmSupplyRecord[] = [
-    { id: 'sup-1', name: 'Bandejas de Aluminio', description: 'Bandejas descartables para delivery', category: 'descartables', purchaseUnit: 'paquete', purchasePrice: 2500, image: null, supplierId: null, isActive: true, purchaseUnitType: 'paquete', unitsPurchased: 1, measurePerUnit: 100, measureUnit: 'u', totalPrice: 2500, usageUnit: 'u', equivalenceValue: null, equivalenceUnit: null, pricePerPurchaseUnit: 2500, pricePerUsageUnit: null, createdAt: now, updatedAt: now },
-    { id: 'sup-2', name: 'Lavandina', description: 'Lavandina concentrada 1L', category: 'limpieza', purchaseUnit: 'u', purchasePrice: 350, image: null, supplierId: null, isActive: true, purchaseUnitType: 'unidad', unitsPurchased: 1, measurePerUnit: null, measureUnit: null, totalPrice: 350, usageUnit: 'u', equivalenceValue: null, equivalenceUnit: null, pricePerPurchaseUnit: 350, pricePerUsageUnit: null, createdAt: now, updatedAt: now },
-    { id: 'sup-3', name: 'Film Polietileno', description: 'Rollo de film 30cm', category: 'envases', purchaseUnit: 'rollo', purchasePrice: 800, image: null, supplierId: null, isActive: true, purchaseUnitType: 'rollo', unitsPurchased: 1, measurePerUnit: 800, measureUnit: 'm', totalPrice: 800, usageUnit: 'cm', equivalenceValue: null, equivalenceUnit: null, pricePerPurchaseUnit: 1, pricePerUsageUnit: null, createdAt: now, updatedAt: now },
+    { id: 'sup-1', ownerId: 'orlando-superadmin', name: 'Bandejas de Aluminio', description: 'Bandejas descartables para delivery', category: 'descartables', purchaseUnit: 'paquete', purchasePrice: 2500, image: null, supplierId: null, isActive: true, purchaseUnitType: 'paquete', unitsPurchased: 1, measurePerUnit: 100, measureUnit: 'u', totalPrice: 2500, usageUnit: 'u', equivalenceValue: null, equivalenceUnit: null, pricePerPurchaseUnit: 2500, pricePerUsageUnit: null, createdAt: now, updatedAt: now },
+    { id: 'sup-2', ownerId: 'orlando-superadmin', name: 'Lavandina', description: 'Lavandina concentrada 1L', category: 'limpieza', purchaseUnit: 'u', purchasePrice: 350, image: null, supplierId: null, isActive: true, purchaseUnitType: 'unidad', unitsPurchased: 1, measurePerUnit: null, measureUnit: null, totalPrice: 350, usageUnit: 'u', equivalenceValue: null, equivalenceUnit: null, pricePerPurchaseUnit: 350, pricePerUsageUnit: null, createdAt: now, updatedAt: now },
+    { id: 'sup-3', ownerId: 'orlando-superadmin', name: 'Film Polietileno', description: 'Rollo de film 30cm', category: 'envases', purchaseUnit: 'rollo', purchasePrice: 800, image: null, supplierId: null, isActive: true, purchaseUnitType: 'rollo', unitsPurchased: 1, measurePerUnit: 800, measureUnit: 'm', totalPrice: 800, usageUnit: 'cm', equivalenceValue: null, equivalenceUnit: null, pricePerPurchaseUnit: 1, pricePerUsageUnit: null, createdAt: now, updatedAt: now },
   ]
   for (const sup of demos) suppliesStore.set(sup.id, sup)
 }
@@ -83,6 +85,7 @@ seedDemoSupplies()
 
 export function listSupplies(options?: {
   search?: string
+  ownerId?: string | 'all'
   category?: CmSupplyCategory | 'all'
   isActive?: boolean | 'all'
   sortBy?: 'name' | 'purchasePrice' | 'createdAt'
@@ -90,8 +93,9 @@ export function listSupplies(options?: {
   page?: number
   pageSize?: number
 }): { supplies: CmSupplyRecord[]; total: number; page: number; pageSize: number } {
-  const { search, category = 'all', isActive = 'all', sortBy = 'name', sortOrder = 'asc', page = 1, pageSize = 50 } = options || {}
+  const { search, ownerId = 'all', category = 'all', isActive = 'all', sortBy = 'name', sortOrder = 'asc', page = 1, pageSize = 50 } = options || {}
   let items = Array.from(suppliesStore.values())
+  if (ownerId !== 'all') items = items.filter((i) => i.ownerId === ownerId)
   if (search?.trim()) {
     const q = search.trim().toLowerCase()
     items = items.filter((i) => i.name.toLowerCase().includes(q) || (i.description || '').toLowerCase().includes(q))
@@ -160,6 +164,7 @@ export function createSupply(input: CmSupplyInput): CmSupplyRecord {
 
   const sup: CmSupplyRecord = {
     id,
+    ownerId: input.ownerId || 'orlando-superadmin',
     name: input.name.trim(),
     description: input.description?.trim() || null,
     category: input.category || null,

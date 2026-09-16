@@ -31,7 +31,7 @@
  */
 
 import * as React from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import {
   Plus, Search, Printer, FileText, FileSpreadsheet, FileDown,
   Pencil, Trash2, Key, MoreHorizontal, Loader2, Users as UsersIcon,
@@ -66,6 +66,7 @@ import {
   getFullName, getInitials,
   type CmUserRecord, type CmRole, type CmGender, type CmMaritalStatus,
 } from '@/lib/cocina-movil/users'
+import { getCmUserFromStorage } from '@/lib/cocina-movil/auth-client'
 
 type FormMode = 'create' | 'edit'
 
@@ -100,11 +101,13 @@ function dateInputToEpoch(s: string): number | null {
 }
 
 function roleBadgeClass(role: CmRole): string {
+  if (role === 'superadmin') return 'border-[#B91C1C] text-[#B91C1C] bg-[#B91C1C]/5'
   if (role === 'admin') return 'border-[#5C3A21] text-[#5C3A21] bg-[#5C3A21]/5'
   return 'border-[#E1AD01] text-[#7a5c00] bg-[#E1AD01]/10'
 }
 
 function avatarColorClass(role: CmRole): string {
+  if (role === 'superadmin') return 'bg-[#B91C1C] text-[#FFF8E7]'
   if (role === 'admin') return 'bg-[#5C3A21] text-[#FFF8E7]'
   return 'bg-[#E1AD01] text-[#5C3A21]'
 }
@@ -181,6 +184,7 @@ function formFromUser(u: CmUserRecord): UserFormState {
 // ============================================================
 function CmUsersPageContent() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [users, setUsers] = React.useState<CmUserRecord[]>([])
   const [total, setTotal] = React.useState(0)
   const [loading, setLoading] = React.useState(true)
@@ -198,6 +202,16 @@ function CmUsersPageContent() {
 
   // Abrir modal de creación si viene ?action=new
   React.useEffect(() => {
+    // Role guard: only SuperAdmin can manage users. Admin → redirect to own profile.
+    const sessionUser = getCmUserFromStorage()
+    if (!sessionUser) {
+      router.push('/login')
+      return
+    }
+    if (sessionUser.role !== 'superadmin') {
+      router.push('/cm/profile')
+      return
+    }
     if (searchParams.get('action') === 'new') {
       openCreateForm()
     }
@@ -330,6 +344,7 @@ function CmUsersPageContent() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos los roles</SelectItem>
+                <SelectItem value="superadmin">SuperAdmin</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="supervisor">Supervisor</SelectItem>
               </SelectContent>

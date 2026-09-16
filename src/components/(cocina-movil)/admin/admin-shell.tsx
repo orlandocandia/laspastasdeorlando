@@ -39,6 +39,7 @@ import {
   Settings,
   HelpCircle,
   ClipboardList,
+  ShieldCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { logoutCm, getCmUserFromStorage, type CmUser } from '@/lib/cocina-movil/auth-client'
@@ -84,9 +85,8 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
       router.push('/login')
       return
     }
-    // Auth guard: cualquier usuario autenticado puede acceder.
-    // (El rol Cocinero fue eliminado; SuperAdmin+Admins se implementará después.
-    //  Por ahora todos los usuarios autenticados van al dashboard del admin.)
+    // Auth guard: cualquier admin o superadmin autenticado puede acceder a /cm/admin/*.
+    // (El superadmin también accede aquí para ver/editar los datos de cualquier admin.)
     setUser(u)
     setLoading(false)
   }, [router])
@@ -145,7 +145,7 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
         <div className="flex items-center gap-3">
           <div className="hidden sm:block text-right">
             <div className="text-xs font-semibold text-[#FFF8E7]">{user?.name}</div>
-            <div className="text-[10px] text-[#FFF8E7]/60 capitalize">{user?.role}</div>
+            <div className="text-[10px] text-[#FFF8E7]/60 capitalize">{user?.role === 'superadmin' ? 'SuperAdmin' : user?.role}</div>
           </div>
           <Link
             href="/cm/profile"
@@ -192,7 +192,11 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
                 Módulos
               </p>
             </div>
-            {NAV_ITEMS.map((item) => {
+            {NAV_ITEMS.filter((item) => {
+              // "Usuarios" (ABM de Admins) is SuperAdmin-only
+              if (item.href === '/cm/admin/users' && user?.role !== 'superadmin') return false
+              return true
+            }).map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
               const Icon = item.icon
               return (
@@ -231,6 +235,21 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
 
           {/* Ayuda + Profile links */}
           <div className="px-2 pt-2 mt-2 border-t border-[#5C3A21]/10">
+            {user?.role === 'superadmin' && (
+              <Link
+                href="/cm/superadmin/dashboard"
+                onClick={() => setSidebarOpen(false)}
+                className={cn(
+                  'flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full mb-1',
+                  pathname.startsWith('/cm/superadmin')
+                    ? 'bg-[#B91C1C] text-[#FFF8E7]'
+                    : 'text-[#B91C1C] hover:bg-[#B91C1C]/8 font-semibold'
+                )}
+              >
+                <ShieldCheck className="h-4 w-4 shrink-0" />
+                <span className="flex-1 text-left">Panel de SuperAdmin</span>
+              </Link>
+            )}
             <Link
               href="/cm/ayuda"
               onClick={() => setSidebarOpen(false)}

@@ -18,8 +18,9 @@
  * Conectado a API: POST /api/cocina-movil/auth/login
  *
  * Usuarios demo:
+ *  - laspastasdeorlando@gmail.com / superadmin123  (rol: superadmin)
+ *  - orlando.candia@gmail.com / admin123  (rol: admin)
  *  - proyectos.orlando.candia@gmail.com / cocinero123  (rol: admin)
- *  - orlando.candia@gmail.com / admin123
  *
  * NOTA: `useSearchParams()` debe estar envuelto en <Suspense>.
  * El componente principal exporta un <Suspense> que envuelve a
@@ -260,9 +261,10 @@ function LoginContent() {
           {/* Credenciales demo (solo en dev) */}
           {process.env.NODE_ENV !== 'production' && (
             <div className="text-[11px] text-[#8A7E70] bg-[#5C3A21]/5 border border-[#5C3A21]/10 rounded-md px-3 py-2 space-y-0.5">
-              <p className="font-semibold text-[#5C3A21]">Credenciales demo (ambas admin):</p>
-              <p>proyectos.orlando.candia@gmail.com / cocinero123</p>
+              <p className="font-semibold text-[#5C3A21]">Credenciales demo:</p>
+              <p>laspastasdeorlando@gmail.com / superadmin123 <span className="text-[#B91C1C]">(SuperAdmin)</span></p>
               <p>orlando.candia@gmail.com / admin123</p>
+              <p>proyectos.orlando.candia@gmail.com / cocinero123</p>
             </div>
           )}
         </CardContent>

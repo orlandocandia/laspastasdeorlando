@@ -79,11 +79,32 @@ export function requireAdmin(request: Request): AuthResult {
   const auth = requireAuth(request)
   if (!auth.authorized) return auth
 
-  if (auth.session?.user.role !== 'admin') {
+  if (auth.session?.user.role !== 'admin' && auth.session?.user.role !== 'superadmin') {
     return {
       authorized: false,
       response: NextResponse.json(
         { error: 'Acceso denegado. Se requiere rol de administrador.' },
+        { status: 403 }
+      ),
+    }
+  }
+
+  return auth
+}
+
+/**
+ * Validates that the request is from a SuperAdmin user.
+ * Use in superadmin-only API routes (e.g. create admin user).
+ */
+export function requireSuperAdmin(request: Request): AuthResult {
+  const auth = requireAuth(request)
+  if (!auth.authorized) return auth
+
+  if (auth.session?.user.role !== 'superadmin') {
+    return {
+      authorized: false,
+      response: NextResponse.json(
+        { error: 'Acceso denegado. Se requiere rol de SuperAdmin.' },
         { status: 403 }
       ),
     }

@@ -18,6 +18,7 @@ import crypto from 'crypto'
 
 export interface CmPlaceRecord {
   id: string
+  ownerId: string
   name: string
   description: string | null
   isActive: boolean
@@ -51,6 +52,7 @@ export interface CmPlaceRecord {
 
 export interface CmPlaceInput {
   name: string
+  ownerId?: string
   description?: string | null
   contactName?: string | null
   contactPhone?: string | null
@@ -78,6 +80,7 @@ function seedDemoPlaces() {
   const now = Date.now()
   const cocina1: CmPlaceRecord = {
     id: 'place-1',
+    ownerId: 'orlando-superadmin',
     name: 'Cocina Central',
     description: 'Cocina principal de producción',
     isActive: true,
@@ -100,6 +103,7 @@ function seedDemoPlaces() {
   }
   const cocina2: CmPlaceRecord = {
     id: 'place-2',
+    ownerId: 'orlando-superadmin',
     name: 'Carrito Móvil Centro',
     description: 'Carrito para eventos en el centro',
     isActive: true,
@@ -131,6 +135,7 @@ seedDemoPlaces()
  */
 export function listPlaces(options?: {
   search?: string
+  ownerId?: string | 'all'
   isActive?: boolean | 'all'
   sortBy?: 'name' | 'createdAt' | 'rentCost'
   sortOrder?: 'asc' | 'desc'
@@ -139,6 +144,7 @@ export function listPlaces(options?: {
 }): { places: CmPlaceRecord[]; total: number; page: number; pageSize: number } {
   const {
     search,
+    ownerId = 'all',
     isActive = 'all',
     sortBy = 'name',
     sortOrder = 'asc',
@@ -148,6 +154,7 @@ export function listPlaces(options?: {
 
   let places = Array.from(placesStore.values())
 
+  if (ownerId !== 'all') places = places.filter((p) => p.ownerId === ownerId)
   if (search && search.trim()) {
     const q = search.trim().toLowerCase()
     places = places.filter(
@@ -197,6 +204,7 @@ export function createPlace(input: CmPlaceInput): CmPlaceRecord {
   const id = `place-${crypto.randomBytes(6).toString('hex')}`
   const place: CmPlaceRecord = {
     id,
+    ownerId: input.ownerId || 'orlando-superadmin',
     name: input.name.trim(),
     description: input.description?.trim() || null,
     isActive: input.isActive ?? true,

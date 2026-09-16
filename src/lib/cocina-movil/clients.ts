@@ -9,6 +9,7 @@ import crypto from 'crypto'
 
 export interface CmClientRecord {
   id: string
+  ownerId: string
   firstName: string
   lastName: string
   fullName: string // firstName + ' ' + lastName (computed)
@@ -32,6 +33,7 @@ export interface CmClientRecord {
 
 export interface CmClientInput {
   firstName: string
+  ownerId?: string
   lastName: string
   dni?: string | null
   phone?: string | null
@@ -56,7 +58,7 @@ function seedDemoClients() {
   const now = Date.now()
   const clients: CmClientRecord[] = [
     {
-      id: 'client-1', firstName: 'Restaurant', lastName: 'La Esquina',
+      id: 'client-1', ownerId: 'orlando-superadmin', firstName: 'Restaurant', lastName: 'La Esquina',
       fullName: 'Restaurant La Esquina', dni: '30-12345678-9', phone: '3794112233',
       email: 'contacto@laesquina.com', address: 'Av. Mitre 1234', city: 'Posadas',
       country: 'Argentina', province: 'Misiones', department: 'Capital', municipality: 'Posadas',
@@ -65,7 +67,7 @@ function seedDemoClients() {
       isActive: true, createdAt: now - 86400000 * 30, updatedAt: now - 86400000 * 5,
     },
     {
-      id: 'client-2', firstName: 'Familia', lastName: 'González',
+      id: 'client-2', ownerId: 'orlando-superadmin', firstName: 'Familia', lastName: 'González',
       fullName: 'Familia González', dni: '28765432', phone: '3794332211',
       email: null, address: 'Calle Alberdi 456', city: 'Posadas',
       country: 'Argentina', province: 'Misiones', department: 'Capital', municipality: 'Posadas',
@@ -74,7 +76,7 @@ function seedDemoClients() {
       isActive: true, createdAt: now - 86400000 * 15, updatedAt: now - 86400000 * 2,
     },
     {
-      id: 'client-3', firstName: 'María', lastName: 'Fernández',
+      id: 'client-3', ownerId: 'orlando-superadmin', firstName: 'María', lastName: 'Fernández',
       fullName: 'María Fernández', dni: '27111222', phone: '3764455667',
       email: 'maria@gmail.com', address: null, city: 'Garupá',
       country: 'Argentina', province: 'Misiones', department: null, municipality: null,
@@ -83,7 +85,7 @@ function seedDemoClients() {
       isActive: true, createdAt: now - 86400000 * 7, updatedAt: now - 86400000 * 1,
     },
     {
-      id: 'client-4', firstName: 'Carlos', lastName: 'Pérez',
+      id: 'client-4', ownerId: 'orlando-superadmin', firstName: 'Carlos', lastName: 'Pérez',
       fullName: 'Carlos Pérez', dni: null, phone: '3794998877',
       email: null, address: 'Barrio Centenario', city: 'Posadas',
       country: 'Argentina', province: 'Misiones', department: null, municipality: null,
@@ -102,14 +104,16 @@ seedDemoClients()
 
 export function listClients(options?: {
   search?: string
+  ownerId?: string | 'all'
   isActive?: boolean | 'all'
   sortBy?: 'fullName' | 'createdAt'
   sortOrder?: 'asc' | 'desc'
   page?: number
   pageSize?: number
 }): { clients: CmClientRecord[]; total: number; page: number; pageSize: number } {
-  const { search, isActive = 'all', sortBy = 'fullName', sortOrder = 'asc', page = 1, pageSize = 50 } = options || {}
+  const { search, ownerId = 'all', isActive = 'all', sortBy = 'fullName', sortOrder = 'asc', page = 1, pageSize = 50 } = options || {}
   let items = Array.from(clientsStore.values())
+  if (ownerId !== 'all') items = items.filter((c) => c.ownerId === ownerId)
   if (search?.trim()) {
     const q = search.trim().toLowerCase()
     items = items.filter((c) =>
@@ -149,6 +153,7 @@ export function createClient(input: CmClientInput): CmClientRecord {
   const id = `client-${crypto.randomBytes(6).toString('hex')}`
   const client: CmClientRecord = {
     id,
+    ownerId: input.ownerId || 'orlando-superadmin',
     firstName: input.firstName.trim(),
     lastName: input.lastName.trim(),
     fullName: `${input.firstName.trim()} ${input.lastName.trim()}`,

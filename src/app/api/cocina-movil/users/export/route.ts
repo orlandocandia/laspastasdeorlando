@@ -26,7 +26,7 @@ export async function GET(request: Request) {
   const roleParam = url.searchParams.get('role') || 'all'
   const statusParam = url.searchParams.get('isActive') || 'all'
 
-  const role = ['admin', 'supervisor'].includes(roleParam) ? roleParam : 'all'
+  const role = ['superadmin', 'admin', 'supervisor'].includes(roleParam) ? roleParam : 'all'
   const isActive = statusParam === 'true' ? true : statusParam === 'false' ? false : 'all'
 
   const { users } = listUsers({

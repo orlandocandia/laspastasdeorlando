@@ -7,6 +7,13 @@ export async function GET(request: Request) {
   const auth = requireAdmin(request)
   if (!auth.authorized) return auth.response!
   const url = new URL(request.url)
+  // Determine ownerId filter based on role
+  const sessionUser = auth.session!.user
+  const ownerIdParam = url.searchParams.get('ownerId') || 'all'
+  const ownerId: string | 'all' =
+    sessionUser.role === 'superadmin'
+      ? (ownerIdParam === 'all' ? 'all' : ownerIdParam)
+      : sessionUser.id  // admin sees only own data
   const search = url.searchParams.get('search') || undefined
   const statusParam = url.searchParams.get('status') || 'all'
   const dateFrom = url.searchParams.get('dateFrom') ? parseInt(url.searchParams.get('dateFrom')!, 10) : null
@@ -17,13 +24,14 @@ export async function GET(request: Request) {
   const pageSize = Math.max(1, Math.min(200, parseInt(url.searchParams.get('pageSize') || '50', 10)))
   const validStatuses: CmClientOrderStatus[] = ['pendiente', 'en_preparacion', 'entregado', 'vendido', 'cancelado']
   const status = validStatuses.includes(statusParam as CmClientOrderStatus) ? statusParam as CmClientOrderStatus : 'all'
-  const result = listClientOrders({ search, status, dateFrom, dateTo, sortBy, sortOrder, page, pageSize })
+  const result = listClientOrders({ search, status, dateFrom, dateTo, sortBy, sortOrder, page, pageSize, ownerId })
   return NextResponse.json(result)
 }
 
 export async function POST(request: Request) {
   const auth = requireAdmin(request)
   if (!auth.authorized) return auth.response!
+  const sessionUser = auth.session!.user
   let body: Record<string, unknown>
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 }) }
   if (!Array.isArray(body.items) || body.items.length === 0) return NextResponse.json({ error: 'Debe agregar al menos un item.' }, { status: 400 })
@@ -49,6 +57,7 @@ export async function POST(request: Request) {
     })),
     budgetId: typeof body.budgetId === 'string' ? body.budgetId : null,
     budgetNumber: typeof body.budgetNumber === 'string' ? body.budgetNumber : null,
+    ownerId: sessionUser.role === 'superadmin' && typeof body.ownerId === 'string' ? body.ownerId : sessionUser.id,
   }
   try {
     const order = createClientOrder(input)

@@ -45,7 +45,7 @@
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
 
-export type CmRole = 'supervisor' | 'admin'
+export type CmRole = 'superadmin' | 'supervisor' | 'admin'
 
 export type CmGender = 'masculino' | 'femenino' | 'otro' | null
 export type CmMaritalStatus = 'soltero' | 'casado' | 'divorciado' | 'viudo' | null
@@ -158,6 +158,30 @@ function seedDemoUsers() {
     updatedAt: now,
     password: '$2b$10$b3ijFWAo7jWQc7Wb.E24lueyPyiQs1eGG/5nIQRHGzwahBSHGx.ta',
   }
+  const superadmin: CmUserWithPassword = {
+    id: 'orlando-superadmin',
+    email: 'laspastasdeorlando@gmail.com',
+    role: 'superadmin',
+    firstName: 'Orlando',
+    lastName: 'SuperAdmin',
+    dni: '99999999',
+    birthDate: null,
+    gender: 'masculino',
+    maritalStatus: 'casado',
+    avatar: null,
+    address: 'Posadas',
+    country: 'Argentina',
+    province: 'Misiones',
+    department: 'Capital',
+    municipality: 'Posadas',
+    location: '-27.3675,-55.8967',
+    isActive: true,
+    lastLoginAt: null,
+    createdAt: now,
+    updatedAt: now,
+    password: '$2b$10$F0YZI53Xg2X8I37Y/z1B7e8MknoxQfzdqNyV7W.zBaAK.d4ONG.Bu', // bcrypt('superadmin123')
+  }
+  usersStore.set(superadmin.id, superadmin)
   usersStore.set(admin.id, admin)
   usersStore.set(cocinero.id, cocinero)
 }
@@ -415,9 +439,9 @@ export function setUserStatus(id: string, isActive: boolean): CmUserRecord | nul
 export function deleteUser(id: string): boolean {
   const u = usersStore.get(id)
   if (!u) return false
-  if (u.role === 'admin' && u.isActive) {
+  if ((u.role === 'admin' || u.role === 'superadmin') && u.isActive) {
     const activeAdmins = Array.from(usersStore.values()).filter(
-      (x) => x.role === 'admin' && x.isActive && x.id !== id
+      (x) => (x.role === 'admin' || x.role === 'superadmin') && x.isActive && x.id !== id
     )
     if (activeAdmins.length === 0) {
       throw new Error('No se puede eliminar el último administrador activo')

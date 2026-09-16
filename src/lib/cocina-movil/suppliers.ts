@@ -11,6 +11,7 @@ import crypto from 'crypto'
 
 export interface CmSupplierRecord {
   id: string
+  ownerId: string
   name: string
   contactName: string | null
   phone: string | null
@@ -29,6 +30,7 @@ export interface CmSupplierRecord {
 
 export interface CmSupplierInput {
   name: string
+  ownerId?: string
   contactName?: string | null
   phone?: string | null
   email?: string | null
@@ -50,6 +52,7 @@ function seedDemoSuppliers() {
   const demos: CmSupplierRecord[] = [
     {
       id: 'sup-1',
+      ownerId: 'orlando-superadmin',
       name: 'Distribuidora Misiones',
       contactName: 'Carlos Gómez',
       phone: '3754-555123',
@@ -67,6 +70,7 @@ function seedDemoSuppliers() {
     },
     {
       id: 'sup-2',
+      ownerId: 'orlando-superadmin',
       name: 'Molino del Norte',
       contactName: 'María Fernández',
       phone: '3751-444567',
@@ -84,6 +88,7 @@ function seedDemoSuppliers() {
     },
     {
       id: 'sup-3',
+      ownerId: 'orlando-superadmin',
       name: 'Envases Posadas SA',
       contactName: 'Roberto Silva',
       phone: '3754-333890',
@@ -106,14 +111,16 @@ seedDemoSuppliers()
 
 export function listSuppliers(options?: {
   search?: string
+  ownerId?: string | 'all'
   isActive?: boolean | 'all'
   sortBy?: 'name' | 'createdAt'
   sortOrder?: 'asc' | 'desc'
   page?: number
   pageSize?: number
 }): { suppliers: CmSupplierRecord[]; total: number; page: number; pageSize: number } {
-  const { search, isActive = 'all', sortBy = 'name', sortOrder = 'asc', page = 1, pageSize = 50 } = options || {}
+  const { search, ownerId = 'all', isActive = 'all', sortBy = 'name', sortOrder = 'asc', page = 1, pageSize = 50 } = options || {}
   let items = Array.from(suppliersStore.values())
+  if (ownerId !== 'all') items = items.filter((s) => s.ownerId === ownerId)
   if (search?.trim()) {
     const q = search.trim().toLowerCase()
     items = items.filter(
@@ -149,6 +156,7 @@ export function createSupplier(input: CmSupplierInput): CmSupplierRecord {
   const id = `supplier-${crypto.randomBytes(6).toString('hex')}`
   const sup: CmSupplierRecord = {
     id,
+    ownerId: input.ownerId || 'orlando-superadmin',
     name: input.name.trim(),
     contactName: input.contactName?.trim() || null,
     phone: input.phone?.trim() || null,

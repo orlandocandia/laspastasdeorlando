@@ -40,6 +40,7 @@ export interface CmBudgetItemInput {
 
 export interface CmBudgetRecord {
   id: string
+  ownerId: string
   // Datos generales
   budgetDate: number
   clientName: string | null
@@ -74,6 +75,7 @@ export interface CmBudgetRecord {
 }
 
 export interface CmBudgetInput {
+  ownerId?: string
   clientName?: string | null
   budgetDate?: number
   validityDays?: number | null
@@ -164,6 +166,7 @@ function seedDemoBudgets() {
     const totals = computeTotals(items, null, null, null)
     const b1: CmBudgetRecord = {
       id: 'budget-1',
+      ownerId: 'orlando-superadmin',
       budgetDate: now - 86400000 * 3,
       clientName: 'Restaurant La Esquina',
       validityDays: 15,
@@ -201,6 +204,7 @@ function seedDemoBudgets() {
     const totals = computeTotals(items, null, null, null)
     const b2: CmBudgetRecord = {
       id: 'budget-2',
+      ownerId: 'orlando-superadmin',
       budgetDate: now - 86400000 * 1,
       clientName: 'Familia González',
       validityDays: 30,
@@ -231,6 +235,7 @@ seedDemoBudgets()
 
 export function listBudgets(options?: {
   search?: string
+  ownerId?: string | 'all'
   status?: CmBudgetStatus | 'all'
   dateFrom?: number | null
   dateTo?: number | null
@@ -239,8 +244,9 @@ export function listBudgets(options?: {
   page?: number
   pageSize?: number
 }): { budgets: CmBudgetRecord[]; total: number; page: number; pageSize: number } {
-  const { search, status = 'all', dateFrom, dateTo, sortBy = 'createdAt', sortOrder = 'desc', page = 1, pageSize = 50 } = options || {}
+  const { search, ownerId = 'all', status = 'all', dateFrom, dateTo, sortBy = 'createdAt', sortOrder = 'desc', page = 1, pageSize = 50 } = options || {}
   let items = Array.from(budgetsStore.values())
+  if (ownerId !== 'all') items = items.filter((b) => b.ownerId === ownerId)
   if (search?.trim()) {
     const q = search.trim().toLowerCase()
     items = items.filter((b) =>
@@ -288,6 +294,7 @@ export function createBudget(input: CmBudgetInput): CmBudgetRecord {
 
   const budget: CmBudgetRecord = {
     id,
+    ownerId: input.ownerId || 'orlando-superadmin',
     budgetDate: input.budgetDate || now,
     clientName: input.clientName?.trim() || null,
     validityDays: input.validityDays ?? null,

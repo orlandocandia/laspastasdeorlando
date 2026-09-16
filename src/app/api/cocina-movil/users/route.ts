@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10))
   const pageSize = Math.max(1, Math.min(200, parseInt(url.searchParams.get('pageSize') || '50', 10)))
 
-  const role: CmRole | 'all' = (['admin', 'supervisor'].includes(roleParam) ? roleParam : 'all') as CmRole | 'all'
+  const role: CmRole | 'all' = (['superadmin', 'admin', 'supervisor'].includes(roleParam) ? roleParam : 'all') as CmRole | 'all'
   const isActive: boolean | 'all' =
     statusParam === 'true' ? true : statusParam === 'false' ? false : 'all'
 
@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'firstName, lastName, email y password son obligatorios.' }, { status: 400 })
   }
 
-  const validRoles: CmRole[] = ['admin', 'supervisor']
+  const validRoles: CmRole[] = ['superadmin', 'admin', 'supervisor']
   const userRole: CmRole = validRoles.includes(role as CmRole) ? (role as CmRole) : 'admin'
 
   // Parse optional fields with type safety

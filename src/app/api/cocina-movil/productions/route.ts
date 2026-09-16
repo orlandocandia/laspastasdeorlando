@@ -7,6 +7,13 @@ export async function GET(request: Request) {
   const auth = requireAuth(request)
   if (!auth.authorized) return auth.response!
   const url = new URL(request.url)
+  // Determine ownerId filter based on role
+  const sessionUser = auth.session!.user
+  const ownerIdParam = url.searchParams.get('ownerId') || 'all'
+  const ownerId: string | 'all' =
+    sessionUser.role === 'superadmin'
+      ? (ownerIdParam === 'all' ? 'all' : ownerIdParam)
+      : sessionUser.id  // admin sees only own data
   const search = url.searchParams.get('search') || undefined
   const placeId = url.searchParams.get('placeId') || null
   const statusParam = url.searchParams.get('status') || 'all'
@@ -18,13 +25,14 @@ export async function GET(request: Request) {
   const pageSize = Math.max(1, Math.min(200, parseInt(url.searchParams.get('pageSize') || '50', 10)))
   const validStatuses: CmProductionStatus[] = ['pending', 'confirmed', 'rejected']
   const status = validStatuses.includes(statusParam as CmProductionStatus) ? statusParam as CmProductionStatus : 'all'
-  const result = listProductions({ search, placeId, status, dateFrom, dateTo, sortBy, sortOrder, page, pageSize })
+  const result = listProductions({ search, placeId, status, dateFrom, dateTo, sortBy, sortOrder, page, pageSize, ownerId })
   return NextResponse.json(result)
 }
 
 export async function POST(request: Request) {
   const auth = requireAdmin(request)
   if (!auth.authorized) return auth.response!
+  const sessionUser = auth.session!.user
   let body: Record<string, unknown>
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 }) }
   if (typeof body.recipeId !== 'string' || !body.recipeId) return NextResponse.json({ error: 'La receta es obligatoria.' }, { status: 400 })
@@ -37,6 +45,7 @@ export async function POST(request: Request) {
     cookName: typeof body.cookName === 'string' ? body.cookName : null,
     quantity: body.quantity,
     observations: typeof body.observations === 'string' ? body.observations : null,
+    ownerId: sessionUser.role === 'superadmin' && typeof body.ownerId === 'string' ? body.ownerId : sessionUser.id,
   }
   try {
     const prod = createProduction(input)

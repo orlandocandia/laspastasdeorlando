@@ -14,7 +14,7 @@
  * ============================================================
  */
 
-export type CmRole = 'supervisor' | 'admin'
+export type CmRole = 'superadmin' | 'supervisor' | 'admin'
 
 export interface CmUser {
   id: string
@@ -37,6 +37,7 @@ const DEFAULT_AVATAR = '/images/(cocina-movil)/default-avatar.png'
  * Path de redirección según el rol del usuario.
  * Se usa cuando no hay ?next= explícito en la URL de login.
  *
+ *  - superadmin → /cm/superadmin/dashboard
  *  - admin      → /cm/admin/dashboard
  *  - supervisor → /cm/admin/dashboard  (transicional)
  *  - fallback   → /cm/admin/dashboard
@@ -45,8 +46,7 @@ const DEFAULT_AVATAR = '/images/(cocina-movil)/default-avatar.png'
  * uso client-side sin necesidad de importar código de servidor.
  */
 export function getRedirectPathByRole(role: CmRole | undefined | null): string {
-  // Todos los usuarios autenticados van al dashboard del admin.
-  // (El rol Cocinero fue eliminado; SuperAdmin+Admins se implementará después.)
+  if (role === 'superadmin') return '/cm/superadmin/dashboard'
   return '/cm/admin/dashboard'
 }
 

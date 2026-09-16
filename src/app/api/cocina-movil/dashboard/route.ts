@@ -36,22 +36,36 @@ import { requireAuth } from '@/lib/cocina-movil/auth-middleware'
 
 export const runtime = 'nodejs'
 
-export async function GET() {
-  // Fetch all data in parallel
+export async function GET(request: Request) {
+  const auth = requireAuth(request)
+  if (!auth.authorized) return auth.response!
+  const sessionUser = auth.session!.user
+
+  // Determine ownerId filter based on role:
+  // - admin: sees only own data
+  // - superadmin: sees all by default, or filter by ?ownerId=<id>
+  const url = new URL(request.url)
+  const ownerIdParam = url.searchParams.get('ownerId') || 'all'
+  const ownerId: string | 'all' =
+    sessionUser.role === 'superadmin'
+      ? (ownerIdParam === 'all' ? 'all' : ownerIdParam)
+      : sessionUser.id
+
+  // Fetch all data in parallel (filtered by ownerId)
   const [
     usersData, placesData, ingredientsData, suppliesData, suppliersData,
     recipesData, productionsData, budgetsData, salesData, purchasesData,
   ] = await Promise.all([
     Promise.resolve(listUsers({ pageSize: 1000 })),
-    Promise.resolve(listPlaces({ pageSize: 1000 })),
-    Promise.resolve(listIngredients({ pageSize: 1000 })),
-    Promise.resolve(listSupplies({ pageSize: 1000 })),
-    Promise.resolve(listSuppliers({ pageSize: 1000 })),
-    Promise.resolve(listRecipes({ pageSize: 1000 })),
-    Promise.resolve(listProductions({ pageSize: 1000 })),
-    Promise.resolve(listBudgets({ pageSize: 1000 })),
-    Promise.resolve(listSales({ pageSize: 1000 })),
-    Promise.resolve(listPurchases({ pageSize: 1000 })),
+    Promise.resolve(listPlaces({ pageSize: 1000, ownerId })),
+    Promise.resolve(listIngredients({ pageSize: 1000, ownerId })),
+    Promise.resolve(listSupplies({ pageSize: 1000, ownerId })),
+    Promise.resolve(listSuppliers({ pageSize: 1000, ownerId })),
+    Promise.resolve(listRecipes({ pageSize: 1000, ownerId })),
+    Promise.resolve(listProductions({ pageSize: 1000, ownerId })),
+    Promise.resolve(listBudgets({ pageSize: 1000, ownerId })),
+    Promise.resolve(listSales({ pageSize: 1000, ownerId })),
+    Promise.resolve(listPurchases({ pageSize: 1000, ownerId })),
   ])
 
   const users = usersData.users

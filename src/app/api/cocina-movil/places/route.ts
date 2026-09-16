@@ -8,6 +8,13 @@ export async function GET(request: Request) {
   const auth = requireAuth(request)
   if (!auth.authorized) return auth.response!
   const url = new URL(request.url)
+  // Determine ownerId filter based on role
+  const sessionUser = auth.session!.user
+  const ownerIdParam = url.searchParams.get('ownerId') || 'all'
+  const ownerId: string | 'all' =
+    sessionUser.role === 'superadmin'
+      ? (ownerIdParam === 'all' ? 'all' : ownerIdParam)
+      : sessionUser.id  // admin sees only own data
   const search = url.searchParams.get('search') || undefined
   const statusParam = url.searchParams.get('isActive') || 'all'
   const sortBy = (url.searchParams.get('sortBy') as 'name' | 'createdAt' | 'rentCost') || 'name'
@@ -18,13 +25,14 @@ export async function GET(request: Request) {
   const isActive: boolean | 'all' =
     statusParam === 'true' ? true : statusParam === 'false' ? false : 'all'
 
-  const result = listPlaces({ search, isActive, sortBy, sortOrder, page, pageSize })
+  const result = listPlaces({ search, isActive, sortBy, sortOrder, page, pageSize, ownerId })
   return NextResponse.json(result)
 }
 
 export async function POST(request: Request) {
   const auth = requireAdmin(request)
   if (!auth.authorized) return auth.response!
+  const sessionUser = auth.session!.user
   let body: Record<string, unknown>
   try {
     body = await request.json()
@@ -53,6 +61,7 @@ export async function POST(request: Request) {
     rentCost: typeof body.rentCost === 'number' ? body.rentCost : null,
     utilityCost: typeof body.utilityCost === 'number' ? body.utilityCost : null,
     otherFixedCosts: typeof body.otherFixedCosts === 'number' ? body.otherFixedCosts : null,
+    ownerId: sessionUser.role === 'superadmin' && typeof body.ownerId === 'string' ? body.ownerId : sessionUser.id,
   }
 
   try {

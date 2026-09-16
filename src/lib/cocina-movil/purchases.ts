@@ -28,6 +28,7 @@ export interface CmPurchaseItem {
 
 export interface CmPurchaseRecord {
   id: string
+  ownerId: string
   supplierId: string
   supplierName: string // snapshot
   placeId: string | null
@@ -44,6 +45,7 @@ export interface CmPurchaseRecord {
 }
 
 export interface CmPurchaseInput {
+  ownerId?: string
   supplierId: string
   placeId?: string | null
   purchaseDate?: number
@@ -67,6 +69,7 @@ function seedDemoPurchases() {
   const now = Date.now()
   const p1: CmPurchaseRecord = {
     id: 'purchase-1',
+    ownerId: 'orlando-superadmin',
     supplierId: 'sup-1',
     supplierName: 'Distribuidora Misiones',
     placeId: 'place-1',
@@ -86,6 +89,7 @@ function seedDemoPurchases() {
   }
   const p2: CmPurchaseRecord = {
     id: 'purchase-2',
+    ownerId: 'orlando-superadmin',
     supplierId: 'sup-3',
     supplierName: 'Envases Posadas SA',
     placeId: 'place-1',
@@ -113,6 +117,7 @@ seedDemoPurchases()
  */
 export function listPurchases(options?: {
   search?: string
+  ownerId?: string | 'all'
   supplierId?: string | null
   placeId?: string | null
   dateFrom?: number | null
@@ -124,6 +129,7 @@ export function listPurchases(options?: {
 }): { purchases: CmPurchaseRecord[]; total: number; page: number; pageSize: number } {
   const {
     search,
+    ownerId = 'all',
     supplierId,
     placeId,
     dateFrom,
@@ -136,6 +142,7 @@ export function listPurchases(options?: {
 
   let items = Array.from(purchasesStore.values())
 
+  if (ownerId !== 'all') items = items.filter((p) => p.ownerId === ownerId)
   if (search?.trim()) {
     const q = search.trim().toLowerCase()
     items = items.filter(
@@ -222,6 +229,7 @@ export function createPurchase(input: CmPurchaseInput): CmPurchaseRecord {
 
   const purchase: CmPurchaseRecord = {
     id,
+    ownerId: input.ownerId || 'orlando-superadmin',
     supplierId: input.supplierId,
     supplierName: supplier.name,
     placeId: input.placeId || null,

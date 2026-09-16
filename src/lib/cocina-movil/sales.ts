@@ -39,6 +39,7 @@ export interface CmSaleItemInput {
 
 export interface CmSaleRecord {
   id: string
+  ownerId: string
   ticketNumber: string // ej: "CM-000001"
   // Datos generales
   saleDate: number
@@ -74,6 +75,7 @@ export interface CmSaleRecord {
 }
 
 export interface CmSaleInput {
+  ownerId?: string
   placeId: string
   clientName?: string | null
   invoiceNumber?: string | null
@@ -174,6 +176,7 @@ function seedDemoSales() {
     const totals = computeTotals(items, null, null, null)
     const s1: CmSaleRecord = {
       id: 'sale-1',
+      ownerId: 'orlando-superadmin',
       ticketNumber: generateTicketNumber(),
       saleDate: now - 86400000 * 1,
       placeId: 'place-1',
@@ -211,6 +214,7 @@ function seedDemoSales() {
     const totals = computeTotals(items, null, null, null)
     const s2: CmSaleRecord = {
       id: 'sale-2',
+      ownerId: 'orlando-superadmin',
       ticketNumber: generateTicketNumber(),
       saleDate: now,
       placeId: 'place-1',
@@ -242,6 +246,7 @@ seedDemoSales()
 
 export function listSales(options?: {
   search?: string
+  ownerId?: string | 'all'
   recipeId?: string | null
   placeId?: string | null
   dateFrom?: number | null
@@ -251,8 +256,9 @@ export function listSales(options?: {
   page?: number
   pageSize?: number
 }): { sales: CmSaleRecord[]; total: number; page: number; pageSize: number } {
-  const { search, recipeId, placeId, dateFrom, dateTo, sortBy = 'saleDate', sortOrder = 'desc', page = 1, pageSize = 50 } = options || {}
+  const { search, ownerId = 'all', recipeId, placeId, dateFrom, dateTo, sortBy = 'saleDate', sortOrder = 'desc', page = 1, pageSize = 50 } = options || {}
   let items = Array.from(salesStore.values())
+  if (ownerId !== 'all') items = items.filter((s) => s.ownerId === ownerId)
   if (search?.trim()) {
     const q = search.trim().toLowerCase()
     items = items.filter((s) =>
@@ -306,6 +312,7 @@ export function createSale(input: CmSaleInput): CmSaleRecord {
 
   const sale: CmSaleRecord = {
     id,
+    ownerId: input.ownerId || 'orlando-superadmin',
     ticketNumber: generateTicketNumber(),
     saleDate: input.saleDate || now,
     placeId: input.placeId,

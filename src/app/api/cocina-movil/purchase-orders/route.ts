@@ -7,6 +7,13 @@ export async function GET(request: Request) {
   const auth = requireAdmin(request)
   if (!auth.authorized) return auth.response!
   const url = new URL(request.url)
+  // Determine ownerId filter based on role
+  const sessionUser = auth.session!.user
+  const ownerIdParam = url.searchParams.get('ownerId') || 'all'
+  const ownerId: string | 'all' =
+    sessionUser.role === 'superadmin'
+      ? (ownerIdParam === 'all' ? 'all' : ownerIdParam)
+      : sessionUser.id  // admin sees only own data
   const search = url.searchParams.get('search') || undefined
   const supplierId = url.searchParams.get('supplierId') || null
   const statusParam = url.searchParams.get('status') || 'all'
@@ -18,13 +25,14 @@ export async function GET(request: Request) {
   const pageSize = Math.max(1, Math.min(200, parseInt(url.searchParams.get('pageSize') || '50', 10)))
   const validStatuses: CmPurchaseOrderStatus[] = ['pendiente', 'enviado', 'recibido', 'comprado', 'cancelado']
   const status = validStatuses.includes(statusParam as CmPurchaseOrderStatus) ? statusParam as CmPurchaseOrderStatus : 'all'
-  const result = listPurchaseOrders({ search, supplierId, status, dateFrom, dateTo, sortBy, sortOrder, page, pageSize })
+  const result = listPurchaseOrders({ search, supplierId, status, dateFrom, dateTo, sortBy, sortOrder, page, pageSize, ownerId })
   return NextResponse.json(result)
 }
 
 export async function POST(request: Request) {
   const auth = requireAdmin(request)
   if (!auth.authorized) return auth.response!
+  const sessionUser = auth.session!.user
   let body: Record<string, unknown>
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Cuerpo inválido.' }, { status: 400 }) }
   if (typeof body.supplierId !== 'string' || !body.supplierId) return NextResponse.json({ error: 'El proveedor es obligatorio.' }, { status: 400 })
@@ -51,6 +59,7 @@ export async function POST(request: Request) {
       unit: typeof it.unit === 'string' ? it.unit : 'u',
       pricePerUnit: typeof it.pricePerUnit === 'number' ? it.pricePerUnit : 0,
     })),
+    ownerId: sessionUser.role === 'superadmin' && typeof body.ownerId === 'string' ? body.ownerId : sessionUser.id,
   }
   try {
     const order = createPurchaseOrder(input)
