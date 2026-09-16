@@ -1,0 +1,895 @@
+     1→'use client'
+     2→
+     3→/**
+     4→ * ============================================================
+     5→ * Gestión de Lugares (ABM) — Cocina Móvil
+     6→ * ============================================================
+     7→ * URL: /cm/admin/lugares
+     8→ *
+     9→ * Funcionalidades:
+    10→ *  - Tabla de lugares con columnas: #, Imagen, Nombre (con
+    11→ *    descripción), Dirección, Responsable, Estado, Acciones
+    12→ *  - Búsqueda por nombre / descripción / dirección / contacto
+    13→ *    (debounce 250ms)
+    14→ *  - Filtro por estado (Todos/Activos/Inactivos)
+    15→ *  - Acciones por fila (dropdown): Editar, Activar/Desactivar,
+    16→ *    Eliminar
+    17→ *  - Botón "Nuevo Lugar" (abre modal)
+    18→ *  - Exportación: Imprimir, PDF, Word, Excel
+    19→ *
+    20→ * Modal de formulario (Crear/Editar) con 4 secciones:
+    21→ *   1. Datos del Lugar (name, description, contactName,
+    22→ *      contactPhone, contactEmail)
+    23→ *   2. Domicilio (address, country, province, department,
+    24→ *      municipality, location con LocationPicker/Leaflet)
+    25→ *   3. Imagen (ImageUploader rectangular, 4:3)
+    26→ *   4. Costos Fijos (isOwned [Propio/Alquilado], rentCost
+    27→ *      [solo si alquilado], utilityCost, otherFixedCosts)
+    28→ *
+    29→ * Paleta: marron #5C3A21, mostaza #E1AD01, crema #FFF8E7,
+    30→ *         oliva #708238, rojo #B91C1C, gris medio #8A7E70
+    31→ * ============================================================
+    32→ */
+    33→
+    34→import * as React from 'react'
+    35→import { Suspense } from 'react'
+    36→import { useSearchParams } from 'next/navigation'
+    37→import {
+    38→  Plus, Search, Printer, FileText, FileSpreadsheet, FileDown,
+    39→  Pencil, Trash2, MoreHorizontal, Loader2, MapPin, Building,
+    40→  Home,
+    41→} from 'lucide-react'
+    42→import { Card, CardContent } from '@/components/ui/card'
+    43→import { Button } from '@/components/ui/button'
+    44→import { Input } from '@/components/ui/input'
+    45→import { Label } from '@/components/ui/label'
+    46→import { Badge } from '@/components/ui/badge'
+    47→import {
+    48→  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+    49→} from '@/components/ui/select'
+    50→import {
+    51→  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+    52→} from '@/components/ui/table'
+    53→import {
+    54→  Dialog, DialogContent, DialogDescription, DialogFooter,
+    55→  DialogHeader, DialogTitle,
+    56→} from '@/components/ui/dialog'
+    57→import {
+    58→  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+    59→  DropdownMenuSeparator, DropdownMenuTrigger,
+    60→} from '@/components/ui/dropdown-menu'
+    61→import { Switch } from '@/components/ui/switch'
+    62→import { Separator } from '@/components/ui/separator'
+    63→import { Textarea } from '@/components/ui/textarea'
+    64→import { toast } from 'sonner'
+    65→
+    66→import LocationPicker from '@/components/(cocina-movil)/admin/location-picker'
+    67→import ImageUploader from '@/components/(cocina-movil)/admin/image-uploader'
+    68→import { type CmPlaceRecord } from '@/lib/cocina-movil/places'
+    69→
+    70→type FormMode = 'create' | 'edit'
+    71→
+    72→const DEFAULT_COUNTRY = 'Argentina'
+    73→const DEFAULT_PROVINCE = 'Misiones'
+    74→
+    75→// ============================================================
+    76→// Helpers
+    77→// ============================================================
+    78→
+    79→// Convierte un valor string de input number a number | null
+    80→// (vacío => null, NaN => null)
+    81→function toNumberOrNull(value: string): number | null {
+    82→  if (!value.trim()) return null
+    83→  const n = Number(value)
+    84→  return isNaN(n) ? null : n
+    85→}
+    86→
+    87→// ============================================================
+    88→// Estado del formulario (campos strings para inputs controlados)
+    89→// ============================================================
+    90→interface PlaceFormState {
+    91→  name: string
+    92→  description: string
+    93→  contactName: string
+    94→  contactPhone: string
+    95→  contactEmail: string
+    96→  address: string
+    97→  country: string
+    98→  province: string
+    99→  department: string
+   100→  municipality: string
+   101→  location: string | null // 'lat,lng'
+   102→  image: string | null
+   103→  isOwned: boolean
+   104→  rentCost: string // string para input, se convierte al guardar
+   105→  utilityCost: string
+   106→  otherFixedCosts: string
+   107→  isActive: boolean
+   108→}
+   109→
+   110→function emptyForm(): PlaceFormState {
+   111→  return {
+   112→    name: '',
+   113→    description: '',
+   114→    contactName: '',
+   115→    contactPhone: '',
+   116→    contactEmail: '',
+   117→    address: '',
+   118→    country: DEFAULT_COUNTRY,
+   119→    province: DEFAULT_PROVINCE,
+   120→    department: '',
+   121→    municipality: '',
+   122→    location: null,
+   123→    image: null,
+   124→    isOwned: true,
+   125→    rentCost: '',
+   126→    utilityCost: '',
+   127→    otherFixedCosts: '',
+   128→    isActive: true,
+   129→  }
+   130→}
+   131→
+   132→function formFromPlace(p: CmPlaceRecord): PlaceFormState {
+   133→  return {
+   134→    name: p.name,
+   135→    description: p.description || '',
+   136→    contactName: p.contactName || '',
+   137→    contactPhone: p.contactPhone || '',
+   138→    contactEmail: p.contactEmail || '',
+   139→    address: p.address || '',
+   140→    country: p.country || DEFAULT_COUNTRY,
+   141→    province: p.province || DEFAULT_PROVINCE,
+   142→    department: p.department || '',
+   143→    municipality: p.municipality || '',
+   144→    location: p.location,
+   145→    image: p.image,
+   146→    isOwned: p.isOwned,
+   147→    rentCost: p.rentCost != null ? String(p.rentCost) : '',
+   148→    utilityCost: p.utilityCost != null ? String(p.utilityCost) : '',
+   149→    otherFixedCosts: p.otherFixedCosts != null ? String(p.otherFixedCosts) : '',
+   150→    isActive: p.isActive,
+   151→  }
+   152→}
+   153→
+   154→// ============================================================
+   155→// Componente principal (wrapper con Suspense)
+   156→// ============================================================
+   157→export default function CmLugaresPage() {
+   158→  return (
+   159→    <Suspense
+   160→      fallback={
+   161→        <div className="flex items-center justify-center py-16">
+   162→          <Loader2 className="h-6 w-6 animate-spin text-[#E1AD01]" />
+   163→          <span className="ml-2 text-sm text-[#8A7E70]">Cargando…</span>
+   164→        </div>
+   165→      }
+   166→    >
+   167→      <CmLugaresPageContent />
+   168→    </Suspense>
+   169→  )
+   170→}
+   171→
+   172→function CmLugaresPageContent() {
+   173→  const searchParams = useSearchParams()
+   174→  const [places, setPlaces] = React.useState<CmPlaceRecord[]>([])
+   175→  const [total, setTotal] = React.useState(0)
+   176→  const [loading, setLoading] = React.useState(true)
+   177→
+   178→  const [search, setSearch] = React.useState('')
+   179→  const [statusFilter, setStatusFilter] = React.useState<'all' | 'active' | 'inactive'>('all')
+   180→
+   181→  // Modales
+   182→  const [formOpen, setFormOpen] = React.useState(false)
+   183→  const [formMode, setFormMode] = React.useState<FormMode>('create')
+   184→  const [editingPlace, setEditingPlace] = React.useState<CmPlaceRecord | null>(null)
+   185→  const [deletePlace, setDeletePlace] = React.useState<CmPlaceRecord | null>(null)
+   186→
+   187→  // Abrir modal de creación si viene ?action=new
+   188→  const openCreateForm = React.useCallback(() => {
+   189→    setFormMode('create')
+   190→    setEditingPlace(null)
+   191→    setFormOpen(true)
+   192→  }, [])
+   193→
+   194→  React.useEffect(() => {
+   195→    if (searchParams.get('action') === 'new') {
+   196→      openCreateForm()
+   197→    }
+   198→  }, [searchParams, openCreateForm])
+   199→
+   200→  const loadPlaces = React.useCallback(async () => {
+   201→    setLoading(true)
+   202→    try {
+   203→      const params = new URLSearchParams()
+   204→      if (search) params.set('search', search)
+   205→      if (statusFilter === 'active') params.set('isActive', 'true')
+   206→      if (statusFilter === 'inactive') params.set('isActive', 'false')
+   207→      params.set('pageSize', '200')
+   208→      const res = await fetch(`/api/cocina-movil/places?${params.toString()}`)
+   209→      if (!res.ok) throw new Error('HTTP ' + res.status)
+   210→      const data = await res.json()
+   211→      setPlaces(data.places || [])
+   212→      setTotal(data.total || 0)
+   213→    } catch (err) {
+   214→      console.error('[CmLugares] Error loading places:', err)
+   215→      toast.error('Error al cargar lugares')
+   216→    } finally {
+   217→      setLoading(false)
+   218→    }
+   219→  }, [search, statusFilter])
+   220→
+   221→  React.useEffect(() => {
+   222→    const id = setTimeout(loadPlaces, 250)
+   223→    return () => clearTimeout(id)
+   224→  }, [loadPlaces])
+   225→
+   226→  // ----- Handlers -----
+   227→  const openEditForm = (p: CmPlaceRecord) => {
+   228→    setFormMode('edit')
+   229→    setEditingPlace(p)
+   230→    setFormOpen(true)
+   231→  }
+   232→
+   233→  const handleToggleActive = async (p: CmPlaceRecord) => {
+   234→    try {
+   235→      const res = await fetch(`/api/cocina-movil/places/${p.id}/status`, {
+   236→        method: 'PUT',
+   237→        headers: { 'Content-Type': 'application/json' },
+   238→        body: JSON.stringify({ isActive: !p.isActive }),
+   239→      })
+   240→      if (!res.ok) throw new Error('HTTP ' + res.status)
+   241→      toast.success(`Lugar ${p.isActive ? 'desactivado' : 'activado'}`)
+   242→      loadPlaces()
+   243→    } catch (err) {
+   244→      toast.error('Error al cambiar estado')
+   245→      console.error(err)
+   246→    }
+   247→  }
+   248→
+   249→  const handleDelete = async () => {
+   250→    if (!deletePlace) return
+   251→    try {
+   252→      const res = await fetch(`/api/cocina-movil/places/${deletePlace.id}`, { method: 'DELETE' })
+   253→      if (!res.ok) {
+   254→        const data = await res.json().catch(() => ({}))
+   255→        throw new Error(data.error || 'HTTP ' + res.status)
+   256→      }
+   257→      toast.success('Lugar eliminado')
+   258→      setDeletePlace(null)
+   259→      loadPlaces()
+   260→    } catch (err) {
+   261→      toast.error(err instanceof Error ? err.message : 'Error al eliminar')
+   262→    }
+   263→  }
+   264→
+   265→  const handleExport = (format: 'pdf' | 'word' | 'excel') => {
+   266→    const params = new URLSearchParams({ format })
+   267→    if (search) params.set('search', search)
+   268→    if (statusFilter === 'active') params.set('isActive', 'true')
+   269→    if (statusFilter === 'inactive') params.set('isActive', 'false')
+   270→    window.open(`/api/cocina-movil/places/export?${params.toString()}`, '_blank')
+   271→  }
+   272→
+   273→  const handlePrint = () => {
+   274→    window.print()
+   275→  }
+   276→
+   277→  // ----- Render -----
+   278→  return (
+   279→    <div className="space-y-4">
+   280→      {/* Header */}
+   281→      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+   282→        <div>
+   283→          <h1 className="text-2xl font-bold text-[#5C3A21] flex items-center gap-2">
+   284→            <MapPin className="h-6 w-6" />
+   285→            Lugares
+   286→          </h1>
+   287→          <p className="text-sm text-[#8A7E70]">
+   288→            {total} lugar{total !== 1 ? 'es' : ''} en total
+   289→          </p>
+   290→        </div>
+   291→        <Button onClick={openCreateForm} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">
+   292→          <Plus className="h-4 w-4" />
+   293→          Nuevo Lugar
+   294→        </Button>
+   295→      </div>
+   296→
+   297→      {/* Filtros + búsqueda + export */}
+   298→      <Card className="border-[#5C3A21]/10 shadow-sm">
+   299→        <CardContent className="p-4 space-y-3">
+   300→          <div className="flex flex-col lg:flex-row gap-3">
+   301→            {/* Search */}
+   302→            <div className="relative flex-1">
+   303→              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A7E70]" />
+   304→              <Input
+   305→                placeholder="Buscar por nombre, dirección o responsable…"
+   306→                value={search}
+   307→                onChange={(e) => setSearch(e.target.value)}
+   308→                className="pl-9 border-[#5C3A21]/15 bg-white"
+   309→              />
+   310→            </div>
+   311→            {/* Estado filter */}
+   312→            <Select
+   313→              value={statusFilter}
+   314→              onValueChange={(v) => setStatusFilter(v as 'all' | 'active' | 'inactive')}
+   315→            >
+   316→              <SelectTrigger className="w-full lg:w-44 border-[#5C3A21]/15">
+   317→                <SelectValue placeholder="Estado" />
+   318→              </SelectTrigger>
+   319→              <SelectContent>
+   320→                <SelectItem value="all">Todos</SelectItem>
+   321→                <SelectItem value="active">Activos</SelectItem>
+   322→                <SelectItem value="inactive">Inactivos</SelectItem>
+   323→              </SelectContent>
+   324→            </Select>
+   325→          </div>
+   326→
+   327→          {/* Export buttons */}
+   328→          <div className="flex flex-wrap gap-2 pt-2 border-t border-[#5C3A21]/8">
+   329→            <span className="text-xs text-[#8A7E70] self-center mr-1">Exportar:</span>
+   330→            <Button
+   331→              size="sm"
+   332→              variant="outline"
+   333→              onClick={handlePrint}
+   334→              className="border-[#5C3A21]/20 text-[#5C3A21]"
+   335→            >
+   336→              <Printer className="h-3.5 w-3.5" />
+   337→              Imprimir
+   338→            </Button>
+   339→            <Button
+   340→              size="sm"
+   341→              variant="outline"
+   342→              onClick={() => handleExport('pdf')}
+   343→              className="border-[#5C3A21]/20 text-[#5C3A21]"
+   344→            >
+   345→              <FileText className="h-3.5 w-3.5" />
+   346→              PDF
+   347→            </Button>
+   348→            <Button
+   349→              size="sm"
+   350→              variant="outline"
+   351→              onClick={() => handleExport('word')}
+   352→              className="border-[#5C3A21]/20 text-[#5C3A21]"
+   353→            >
+   354→              <FileDown className="h-3.5 w-3.5" />
+   355→              Word
+   356→            </Button>
+   357→            <Button
+   358→              size="sm"
+   359→              variant="outline"
+   360→              onClick={() => handleExport('excel')}
+   361→              className="border-[#5C3A21]/20 text-[#5C3A21]"
+   362→            >
+   363→              <FileSpreadsheet className="h-3.5 w-3.5" />
+   364→              Excel
+   365→            </Button>
+   366→          </div>
+   367→        </CardContent>
+   368→      </Card>
+   369→
+   370→      {/* Tabla de lugares */}
+   371→      <Card className="border-[#5C3A21]/10 shadow-sm">
+   372→        <CardContent className="p-0">
+   373→          {loading ? (
+   374→            <div className="flex items-center justify-center py-16">
+   375→              <Loader2 className="h-6 w-6 animate-spin text-[#E1AD01]" />
+   376→              <span className="ml-2 text-sm text-[#8A7E70]">Cargando lugares…</span>
+   377→            </div>
+   378→          ) : places.length === 0 ? (
+   379→            <div className="py-16 text-center">
+   380→              <MapPin className="h-10 w-10 mx-auto mb-2 text-[#8A7E70]/40" />
+   381→              <p className="text-sm text-[#8A7E70]">No se encontraron lugares.</p>
+   382→              <p className="text-xs text-[#8A7E70]/70 mt-1">
+   383→                Probá cambiar los filtros o crear uno nuevo.
+   384→              </p>
+   385→            </div>
+   386→          ) : (
+   387→            <div className="overflow-x-auto">
+   388→              <Table>
+   389→                <TableHeader>
+   390→                  <TableRow className="bg-[#FBF1DC] border-[#5C3A21]/15">
+   391→                    <TableHead className="w-10">#</TableHead>
+   392→                    <TableHead className="w-[100px]">Imagen</TableHead>
+   393→                    <TableHead>Nombre</TableHead>
+   394→                    <TableHead className="hidden md:table-cell">Dirección</TableHead>
+   395→                    <TableHead className="hidden md:table-cell">Responsable</TableHead>
+   396→                    <TableHead>Estado</TableHead>
+   397→                    <TableHead className="text-right">Acciones</TableHead>
+   398→                  </TableRow>
+   399→                </TableHeader>
+   400→                <TableBody>
+   401→                  {places.map((p, i) => (
+   402→                    <TableRow key={p.id} className="border-[#5C3A21]/8 hover:bg-[#FBF1DC]/50">
+   403→                      <TableCell className="text-xs text-[#8A7E70]">{i + 1}</TableCell>
+   404→                      <TableCell>
+   405→                        <div className="h-[60px] w-[80px] rounded-md overflow-hidden bg-[#FBF1DC] ring-1 ring-[#5C3A21]/10 flex items-center justify-center shrink-0">
+   406→                          {p.image ? (
+   407→                            // eslint-disable-next-line @next/next/no-img-element
+   408→                            <img
+   409→                              src={p.image}
+   410→                              alt={p.name}
+   411→                              className="h-full w-full object-cover"
+   412→                              onError={(e) => {
+   413→                                // Si falla la carga, ocultar img y mostrar ícono
+   414→                                ;(e.currentTarget as HTMLImageElement).style.display = 'none'
+   415→                              }}
+   416→                            />
+   417→                          ) : (
+   418→                            <Building className="h-6 w-6 text-[#8A7E70]/50" />
+   419→                          )}
+   420→                        </div>
+   421→                      </TableCell>
+   422→                      <TableCell>
+   423→                        <div className="min-w-0">
+   424→                          <p className="text-sm font-medium text-[#5C3A21] truncate">{p.name}</p>
+   425→                          {p.description && (
+   426→                            <p className="text-xs text-[#8A7E70] truncate max-w-[260px]">
+   427→                              {p.description}
+   428→                            </p>
+   429→                          )}
+   430→                        </div>
+   431→                      </TableCell>
+   432→                      <TableCell className="hidden md:table-cell text-sm text-[#4A3F36]">
+   433→                        {p.address || (
+   434→                          <span className="text-[#8A7E70]/60">—</span>
+   435→                        )}
+   436→                      </TableCell>
+   437→                      <TableCell className="hidden md:table-cell text-sm text-[#4A3F36]">
+   438→                        {p.contactName || (
+   439→                          <span className="text-[#8A7E70]/60">—</span>
+   440→                        )}
+   441→                      </TableCell>
+   442→                      <TableCell>
+   443→                        <Badge
+   444→                          className={`text-[10px] ${
+   445→                            p.isActive
+   446→                              ? 'bg-[#708238] hover:bg-[#708238]'
+   447→                              : 'bg-[#8A7E70] hover:bg-[#8A7E70]'
+   448→                          }`}
+   449→                        >
+   450→                          {p.isActive ? 'Activo' : 'Inactivo'}
+   451→                        </Badge>
+   452→                      </TableCell>
+   453→                      <TableCell className="text-right">
+   454→                        <div className="flex items-center justify-end gap-1">
+   455→                          <DropdownMenu>
+   456→                            <DropdownMenuTrigger asChild>
+   457→                              <Button
+   458→                                size="icon"
+   459→                                variant="ghost"
+   460→                                className="h-8 w-8 text-[#5C3A21]"
+   461→                              >
+   462→                                <MoreHorizontal className="h-4 w-4" />
+   463→                              </Button>
+   464→                            </DropdownMenuTrigger>
+   465→                            <DropdownMenuContent align="end">
+   466→                              <DropdownMenuItem onClick={() => openEditForm(p)}>
+   467→                                <Pencil className="h-4 w-4 mr-2" />
+   468→                                Editar
+   469→                              </DropdownMenuItem>
+   470→                              <DropdownMenuItem onClick={() => handleToggleActive(p)}>
+   471→                                <Switch checked={p.isActive} className="scale-75 mr-1" />
+   472→                                {p.isActive ? 'Desactivar' : 'Activar'}
+   473→                              </DropdownMenuItem>
+   474→                              <DropdownMenuSeparator />
+   475→                              <DropdownMenuItem
+   476→                                onClick={() => setDeletePlace(p)}
+   477→                                className="text-[#B91C1C] focus:text-[#B91C1C]"
+   478→                              >
+   479→                                <Trash2 className="h-4 w-4 mr-2" />
+   480→                                Eliminar
+   481→                              </DropdownMenuItem>
+   482→                            </DropdownMenuContent>
+   483→                          </DropdownMenu>
+   484→                        </div>
+   485→                      </TableCell>
+   486→                    </TableRow>
+   487→                  ))}
+   488→                </TableBody>
+   489→              </Table>
+   490→            </div>
+   491→          )}
+   492→        </CardContent>
+   493→      </Card>
+   494→
+   495→      {/* ====== Modal: Crear/Editar Lugar ====== */}
+   496→      <PlaceFormDialog
+   497→        open={formOpen}
+   498→        mode={formMode}
+   499→        place={editingPlace}
+   500→        onClose={() => setFormOpen(false)}
+   501→        onSaved={() => {
+   502→          setFormOpen(false)
+   503→          loadPlaces()
+   504→        }}
+   505→      />
+   506→
+   507→      {/* ====== Modal: Confirmar Eliminación ====== */}
+   508→      <Dialog open={!!deletePlace} onOpenChange={(o) => !o && setDeletePlace(null)}>
+   509→        <DialogContent className="sm:max-w-md">
+   510→          <DialogHeader>
+   511→            <DialogTitle className="text-[#5C3A21]">¿Eliminar lugar?</DialogTitle>
+   512→            <DialogDescription>
+   513→              Estás por eliminar <strong>{deletePlace?.name}</strong>.
+   514→              Esta acción no se puede deshacer.
+   515→            </DialogDescription>
+   516→          </DialogHeader>
+   517→          <DialogFooter className="gap-2">
+   518→            <Button variant="outline" onClick={() => setDeletePlace(null)}>
+   519→              Cancelar
+   520→            </Button>
+   521→            <Button
+   522→              onClick={handleDelete}
+   523→              className="bg-[#B91C1C] hover:bg-[#B91C1C]/90 text-white"
+   524→            >
+   525→              <Trash2 className="h-4 w-4" />
+   526→              Eliminar
+   527→            </Button>
+   528→          </DialogFooter>
+   529→        </DialogContent>
+   530→      </Dialog>
+   531→    </div>
+   532→  )
+   533→}
+   534→
+   535→// ============================================================
+   536→// Sub-componente: header de sección numerada
+   537→// ============================================================
+   538→function SectionHeader({ num, title, hint }: { num: number; title: string; hint?: string }) {
+   539→  return (
+   540→    <div className="flex items-center gap-2">
+   541→      <div className="h-6 w-6 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold shrink-0">
+   542→        {num}
+   543→      </div>
+   544→      <h3 className="text-sm font-semibold text-[#5C3A21]">{title}</h3>
+   545→      {hint && <span className="text-xs text-[#8A7E70]">{hint}</span>}
+   546→    </div>
+   547→  )
+   548→}
+   549→
+   550→// ============================================================
+   551→// Sub-componente: Form Dialog (Crear/Editar) — 4 secciones
+   552→// ============================================================
+   553→function PlaceFormDialog({
+   554→  open,
+   555→  mode,
+   556→  place,
+   557→  onClose,
+   558→  onSaved,
+   559→}: {
+   560→  open: boolean
+   561→  mode: FormMode
+   562→  place: CmPlaceRecord | null
+   563→  onClose: () => void
+   564→  onSaved: () => void
+   565→}) {
+   566→  const [form, setForm] = React.useState<PlaceFormState>(emptyForm)
+   567→  const [saving, setSaving] = React.useState(false)
+   568→  const [error, setError] = React.useState<string | null>(null)
+   569→
+   570→  // Sincronizar form cuando se abre el modal
+   571→  React.useEffect(() => {
+   572→    if (open) {
+   573→      if (mode === 'edit' && place) {
+   574→        setForm(formFromPlace(place))
+   575→      } else {
+   576→        setForm(emptyForm())
+   577→      }
+   578→      setError(null)
+   579→    }
+   580→  }, [open, mode, place])
+   581→
+   582→  // Helper para actualizar un campo
+   583→  const setField = <K extends keyof PlaceFormState>(key: K, value: PlaceFormState[K]) => {
+   584→    setForm((prev) => ({ ...prev, [key]: value }))
+   585→  }
+   586→
+   587→  const handleSubmit = async (e: React.FormEvent) => {
+   588→    e.preventDefault()
+   589→    setError(null)
+   590→
+   591→    // Validaciones
+   592→    if (!form.name.trim()) return setError('El nombre es obligatorio')
+   593→    if (form.contactEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactEmail.trim())) {
+   594→      return setError('El email de contacto es inválido')
+   595→    }
+   596→
+   597→    setSaving(true)
+   598→    try {
+   599→      const url = mode === 'create'
+   600→        ? '/api/cocina-movil/places'
+   601→        : `/api/cocina-movil/places/${place!.id}`
+   602→      const body: Record<string, unknown> = {
+   603→        name: form.name.trim(),
+   604→        description: form.description.trim() || null,
+   605→        contactName: form.contactName.trim() || null,
+   606→        contactPhone: form.contactPhone.trim() || null,
+   607→        contactEmail: form.contactEmail.trim() || null,
+   608→        // Domicilio
+   609→        address: form.address.trim() || null,
+   610→        country: form.country.trim() || null,
+   611→        province: form.province.trim() || null,
+   612→        department: form.department.trim() || null,
+   613→        municipality: form.municipality.trim() || null,
+   614→        location: form.location,
+   615→        // Imagen
+   616→        image: form.image || null,
+   617→        // Costos
+   618→        isOwned: form.isOwned,
+   619→        rentCost: form.isOwned ? null : toNumberOrNull(form.rentCost),
+   620→        utilityCost: toNumberOrNull(form.utilityCost),
+   621→        otherFixedCosts: toNumberOrNull(form.otherFixedCosts),
+   622→      }
+   623→      if (mode === 'create') {
+   624→        body.isActive = true
+   625→      } else {
+   626→        body.isActive = form.isActive
+   627→      }
+   628→
+   629→      const res = await fetch(url, {
+   630→        method: mode === 'create' ? 'POST' : 'PUT',
+   631→        headers: { 'Content-Type': 'application/json' },
+   632→        body: JSON.stringify(body),
+   633→      })
+   634→      const data = await res.json().catch(() => ({}))
+   635→      if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status)
+   636→
+   637→      toast.success(mode === 'create' ? 'Lugar creado' : 'Lugar actualizado')
+   638→      onSaved()
+   639→    } catch (err) {
+   640→      setError(err instanceof Error ? err.message : 'Error al guardar')
+   641→    } finally {
+   642→      setSaving(false)
+   643→    }
+   644→  }
+   645→
+   646→  return (
+   647→    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+   648→      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+   649→        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
+   650→          <DialogTitle className="text-[#5C3A21]">
+   651→            {mode === 'create' ? 'Nuevo Lugar' : 'Editar Lugar'}
+   652→          </DialogTitle>
+   653→          <DialogDescription>
+   654→            {mode === 'create'
+   655→              ? 'Creá un nuevo lugar para la Cocina Móvil'
+   656→              : place
+   657→              ? `Editando «${place.name}»`
+   658→              : 'Editar lugar'}
+   659→          </DialogDescription>
+   660→        </DialogHeader>
+   661→
+   662→        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+   663→          <div className="flex-1 overflow-y-auto px-6 space-y-5 pb-6">
+   664→          {error && (
+   665→            <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">
+   666→              {error}
+   667→            </div>
+   668→          )}
+   669→
+   670→          {/* ====== Sección 1: Datos del Lugar ====== */}
+   671→          <div className="space-y-3">
+   672→            <SectionHeader num={1} title="Datos del Lugar" />
+   673→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-8 sm:pl-0">
+   674→              <div className="space-y-1.5 sm:col-span-2">
+   675→                <Label className="text-[#5C3A21]">Nombre *</Label>
+   676→                <Input
+   677→                  value={form.name}
+   678→                  onChange={(e) => setField('name', e.target.value)}
+   679→                  placeholder="Ej: Cocina Central, Carrito Móvil Centro…"
+   680→                  className="border-[#5C3A21]/15"
+   681→                  autoFocus
+   682→                />
+   683→              </div>
+   684→              <div className="space-y-1.5 sm:col-span-2">
+   685→                <Label className="text-[#5C3A21]">Descripción</Label>
+   686→                <Textarea
+   687→                  value={form.description}
+   688→                  onChange={(e) => setField('description', e.target.value)}
+   689→                  placeholder="Breve descripción del lugar, su función, etc."
+   690→                  className="border-[#5C3A21]/15 min-h-[72px]"
+   691→                  rows={2}
+   692→                />
+   693→              </div>
+   694→              <div className="space-y-1.5">
+   695→                <Label className="text-[#5C3A21]">Responsable</Label>
+   696→                <Input
+   697→                  value={form.contactName}
+   698→                  onChange={(e) => setField('contactName', e.target.value)}
+   699→                  placeholder="Nombre y apellido"
+   700→                  className="border-[#5C3A21]/15"
+   701→                />
+   702→              </div>
+   703→              <div className="space-y-1.5">
+   704→                <Label className="text-[#5C3A21]">Teléfono</Label>
+   705→                <Input
+   706→                  value={form.contactPhone}
+   707→                  onChange={(e) => setField('contactPhone', e.target.value)}
+   708→                  placeholder="3754-419324"
+   709→                  className="border-[#5C3A21]/15"
+   710→                />
+   711→              </div>
+   712→              <div className="space-y-1.5 sm:col-span-2">
+   713→                <Label className="text-[#5C3A21]">Email de contacto</Label>
+   714→                <Input
+   715→                  type="email"
+   716→                  value={form.contactEmail}
+   717→                  onChange={(e) => setField('contactEmail', e.target.value)}
+   718→                  placeholder="responsable@ejemplo.com"
+   719→                  className="border-[#5C3A21]/15"
+   720→                />
+   721→              </div>
+   722→            </div>
+   723→          </div>
+   724→
+   725→          <Separator className="bg-[#5C3A21]/15" />
+   726→
+   727→          {/* ====== Sección 2: Domicilio ====== */}
+   728→          <div className="space-y-3">
+   729→            <SectionHeader num={2} title="Domicilio" />
+   730→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-8 sm:pl-0">
+   731→              <div className="space-y-1.5 sm:col-span-2">
+   732→                <Label className="text-[#5C3A21]">Dirección</Label>
+   733→                <Input
+   734→                  value={form.address}
+   735→                  onChange={(e) => setField('address', e.target.value)}
+   736→                  placeholder="Calle, número, piso, depto…"
+   737→                  className="border-[#5C3A21]/15"
+   738→                />
+   739→              </div>
+   740→              <div className="space-y-1.5">
+   741→                <Label className="text-[#5C3A21]">País</Label>
+   742→                <Input
+   743→                  value={form.country}
+   744→                  onChange={(e) => setField('country', e.target.value)}
+   745→                  className="border-[#5C3A21]/15"
+   746→                />
+   747→              </div>
+   748→              <div className="space-y-1.5">
+   749→                <Label className="text-[#5C3A21]">Provincia</Label>
+   750→                <Input
+   751→                  value={form.province}
+   752→                  onChange={(e) => setField('province', e.target.value)}
+   753→                  className="border-[#5C3A21]/15"
+   754→                />
+   755→              </div>
+   756→              <div className="space-y-1.5">
+   757→                <Label className="text-[#5C3A21]">Departamento</Label>
+   758→                <Input
+   759→                  value={form.department}
+   760→                  onChange={(e) => setField('department', e.target.value)}
+   761→                  placeholder="Capital, Iguazú…"
+   762→                  className="border-[#5C3A21]/15"
+   763→                />
+   764→              </div>
+   765→              <div className="space-y-1.5">
+   766→                <Label className="text-[#5C3A21]">Municipio</Label>
+   767→                <Input
+   768→                  value={form.municipality}
+   769→                  onChange={(e) => setField('municipality', e.target.value)}
+   770→                  placeholder="Posadas, Oberá…"
+   771→                  className="border-[#5C3A21]/15"
+   772→                />
+   773→              </div>
+   774→            </div>
+   775→
+   776→            <div className="space-y-1.5 pl-8 sm:pl-0">
+   777→              <Label className="text-[#5C3A21]">Ubicación (mapa)</Label>
+   778→              <LocationPicker
+   779→                location={form.location}
+   780→                onLocationChange={(loc) => setField('location', loc)}
+   781→              />
+   782→            </div>
+   783→          </div>
+   784→
+   785→          <Separator className="bg-[#5C3A21]/15" />
+   786→
+   787→          {/* ====== Sección 3: Imagen ====== */}
+   788→          <div className="space-y-3">
+   789→            <SectionHeader num={3} title="Imagen" />
+   790→            <div className="pl-8 sm:pl-0">
+   791→              <ImageUploader
+   792→                value={form.image}
+   793→                onChange={(url) => setField('image', url)}
+   794→                uploadUrl="/api/cocina-movil/places/upload-image"
+   795→                aspectRatio="4/3"
+   796→                label="Imagen del lugar"
+   797→                disabled={saving}
+   798→              />
+   799→            </div>
+   800→          </div>
+   801→
+   802→          <Separator className="bg-[#5C3A21]/15" />
+   803→
+   804→          {/* ====== Sección 4: Costos Fijos ====== */}
+   805→          <div className="space-y-3">
+   806→            <SectionHeader num={4} title="Costos Fijos" />
+   807→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-8 sm:pl-0">
+   808→              <div className="space-y-1.5 sm:col-span-2">
+   809→                <Label className="text-[#5C3A21]">Tipo de tenencia</Label>
+   810→                <div className="flex items-center gap-3 h-9 px-3 border border-[#5C3A21]/15 rounded-md bg-[#FFF8E7]/30">
+   811→                  <Home className="h-4 w-4 text-[#5C3A21]" />
+   812→                  <Switch
+   813→                    checked={form.isOwned}
+   814→                    onCheckedChange={(c) => setField('isOwned', c)}
+   815→                  />
+   816→                  <span className="text-sm text-[#5C3A21]">
+   817→                    {form.isOwned ? 'Propio' : 'Alquilado'}
+   818→                  </span>
+   819→                </div>
+   820→              </div>
+   821→              {!form.isOwned && (
+   822→                <div className="space-y-1.5">
+   823→                  <Label className="text-[#5C3A21]">Costo de alquiler</Label>
+   824→                  <Input
+   825→                    type="number"
+   826→                    min="0"
+   827→                    step="0.01"
+   828→                    value={form.rentCost}
+   829→                    onChange={(e) => setField('rentCost', e.target.value)}
+   830→                    placeholder="0"
+   831→                    className="border-[#5C3A21]/15"
+   832→                  />
+   833→                </div>
+   834→              )}
+   835→              <div className="space-y-1.5">
+   836→                <Label className="text-[#5C3A21]">Costo de servicios</Label>
+   837→                <Input
+   838→                  type="number"
+   839→                  min="0"
+   840→                  step="0.01"
+   841→                  value={form.utilityCost}
+   842→                  onChange={(e) => setField('utilityCost', e.target.value)}
+   843→                  placeholder="0"
+   844→                  className="border-[#5C3A21]/15"
+   845→                />
+   846→              </div>
+   847→              <div className="space-y-1.5">
+   848→                <Label className="text-[#5C3A21]">Otros costos fijos</Label>
+   849→                <Input
+   850→                  type="number"
+   851→                  min="0"
+   852→                  step="0.01"
+   853→                  value={form.otherFixedCosts}
+   854→                  onChange={(e) => setField('otherFixedCosts', e.target.value)}
+   855→                  placeholder="0"
+   856→                  className="border-[#5C3A21]/15"
+   857→                />
+   858→              </div>
+   859→              {mode === 'edit' && (
+   860→                <div className="space-y-1.5 sm:col-span-2">
+   861→                  <Label className="text-[#5C3A21]">Estado</Label>
+   862→                  <div className="flex items-center gap-2 h-9 px-3 border border-[#5C3A21]/15 rounded-md bg-[#FFF8E7]/30">
+   863→                    <Switch
+   864→                      checked={form.isActive}
+   865→                      onCheckedChange={(c) => setField('isActive', c)}
+   866→                    />
+   867→                    <span className="text-sm text-[#5C3A21]">
+   868→                      {form.isActive ? 'Activo' : 'Inactivo'}
+   869→                    </span>
+   870→                  </div>
+   871→                </div>
+   872→              )}
+   873→            </div>
+   874→          </div>
+   875→
+   876→          </div>
+   877→          <DialogFooter className="shrink-0 gap-2 bg-white border-t border-[#5C3A21]/8 px-6 py-3">
+   878→            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+   879→              Cancelar
+   880→            </Button>
+   881→            <Button
+   882→              type="submit"
+   883→              disabled={saving}
+   884→              className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]"
+   885→            >
+   886→              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+   887→              {mode === 'create' ? 'Crear' : 'Guardar'}
+   888→            </Button>
+   889→          </DialogFooter>
+   890→        </form>
+   891→      </DialogContent>
+   892→    </Dialog>
+   893→  )
+   894→}
+   895→

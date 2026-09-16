@@ -1,0 +1,461 @@
+     1→'use client'
+     2→
+     3→/**
+     4→ * ============================================================
+     5→ * Materias Primas — Cocina Móvil
+     6→ * ============================================================
+     7→ * URL: /cm/admin/materias-primas
+     8→ * ABM completo: tabla, filtros, form modal, exportación.
+     9→ * ============================================================
+    10→ */
+    11→
+    12→import * as React from 'react'
+    13→import { useSearchParams } from 'next/navigation'
+    14→import { Plus, Search, Printer, FileText, FileDown, FileSpreadsheet, Pencil, Trash2, MoreHorizontal, Loader2, Package } from 'lucide-react'
+    15→import { Card, CardContent } from '@/components/ui/card'
+    16→import { Button } from '@/components/ui/button'
+    17→import { Input } from '@/components/ui/input'
+    18→import { Label } from '@/components/ui/label'
+    19→import { Badge } from '@/components/ui/badge'
+    20→import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+    21→import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+    22→import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+    23→import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+    24→import { Switch } from '@/components/ui/switch'
+    25→import { Textarea } from '@/components/ui/textarea'
+    26→import { Separator } from '@/components/ui/separator'
+    27→import { toast } from 'sonner'
+    28→import ImageUploader from '@/components/(cocina-movil)/admin/image-uploader'
+    29→
+    30→type CmIngredientCategory = 'harinas' | 'carnes' | 'lacteos' | 'verduras' | 'especias' | 'aceites' | 'otros'
+    31→type CmUnit = 'kg' | 'g' | 'l' | 'ml' | 'u' | 'paquete' | 'docena'
+    32→
+    33→interface CmIngredient {
+    34→  id: string
+    35→  name: string
+    36→  description: string | null
+    37→  category: CmIngredientCategory | null
+    38→  purchaseUnit: CmUnit
+    39→  purchasePrice: number
+    40→  gramsPerUnit: number | null
+    41→  image: string | null
+    42→  supplierId: string | null
+    43→  isActive: boolean
+    44→  // New fields for auto-calc
+    45→  purchaseUnitType: string | null
+    46→  unitsPurchased: number | null
+    47→  weightPerUnit: number | null
+    48→  weightUnit: string | null
+    49→  totalPrice: number | null
+    50→  pricePerUnit: number | null
+    51→  totalGrams: number | null
+    52→  createdAt: number
+    53→  updatedAt: number
+    54→}
+    55→
+    56→type FormMode = 'create' | 'edit'
+    57→
+    58→const CATEGORIES: { value: CmIngredientCategory; label: string }[] = [
+    59→  { value: 'harinas', label: 'Harinas' },
+    60→  { value: 'carnes', label: 'Carnes' },
+    61→  { value: 'lacteos', label: 'Lácteos' },
+    62→  { value: 'verduras', label: 'Verduras' },
+    63→  { value: 'especias', label: 'Especias' },
+    64→  { value: 'aceites', label: 'Aceites' },
+    65→  { value: 'otros', label: 'Otros' },
+    66→]
+    67→
+    68→const UNITS: CmUnit[] = ['kg', 'g', 'l', 'ml', 'u', 'paquete', 'docena']
+    69→
+    70→const PURCHASE_TYPES = [
+    71→  { value: 'bulto', label: 'Bulto' },
+    72→  { value: 'caja', label: 'Caja' },
+    73→  { value: 'botella', label: 'Botella' },
+    74→  { value: 'unidad', label: 'Unidad' },
+    75→  { value: 'kg_suelto', label: 'Kg suelto' },
+    76→  { value: 'litro_suelto', label: 'Litro suelto' },
+    77→]
+    78→
+    79→// Dynamic labels based on purchase unit type
+    80→function getQuantityLabel(type: string): string {
+    81→  switch (type) {
+    82→    case 'bulto': return 'Cantidad de Bultos'
+    83→    case 'caja': return 'Cantidad de Cajas'
+    84→    case 'botella': return 'Cantidad de Botellas'
+    85→    case 'unidad': return 'Cantidad de Unidades'
+    86→    case 'kg_suelto': return 'Cantidad de Kg'
+    87→    case 'litro_suelto': return 'Cantidad de Litros'
+    88→    default: return 'Cantidad de Unidades'
+    89→  }
+    90→}
+    91→
+    92→function getWeightLabel(type: string): string {
+    93→  switch (type) {
+    94→    case 'bulto': return 'Peso por Bulto (kg)'
+    95→    case 'caja': return 'Peso por Caja (kg)'
+    96→    case 'botella': return 'Volumen por Botella (l)'
+    97→    case 'unidad': return 'Peso por Unidad (g)'
+    98→    default: return 'Peso/Volumen por Unidad'
+    99→  }
+   100→}
+   101→
+   102→function isWeightFieldHidden(type: string): boolean {
+   103→  return type === 'kg_suelto' || type === 'litro_suelto'
+   104→}
+   105→
+   106→// For kg_suelto / litro_suelto: the "quantity" IS the weight/volume
+   107→function getDefaultWeightUnit(type: string): string {
+   108→  switch (type) {
+   109→    case 'bulto': return 'kg'
+   110→    case 'caja': return 'kg'
+   111→    case 'botella': return 'l'
+   112→    case 'unidad': return 'g'
+   113→    case 'kg_suelto': return 'kg'
+   114→    case 'litro_suelto': return 'l'
+   115→    default: return 'kg'
+   116→  }
+   117→}
+   118→
+   119→const WEIGHT_UNITS = [
+   120→  { value: 'kg', label: 'kg' },
+   121→  { value: 'g', label: 'g' },
+   122→  { value: 'l', label: 'l' },
+   123→  { value: 'ml', label: 'ml' },
+   124→]
+   125→
+   126→const fmtCurrency = (v: number) => '$' + v.toLocaleString('es-AR', { maximumFractionDigits: 2 })
+   127→
+   128→function CmMateriasPrimasPageContent() {
+   129→  const searchParams = useSearchParams()
+   130→  const [items, setItems] = React.useState<CmIngredient[]>([])
+   131→  const [total, setTotal] = React.useState(0)
+   132→  const [loading, setLoading] = React.useState(true)
+   133→  const [search, setSearch] = React.useState('')
+   134→  const [catFilter, setCatFilter] = React.useState<string>('all')
+   135→  const [statusFilter, setStatusFilter] = React.useState<'all' | 'active' | 'inactive'>('all')
+   136→  const [formOpen, setFormOpen] = React.useState(false)
+   137→  const [formMode, setFormMode] = React.useState<FormMode>('create')
+   138→  const [editItem, setEditItem] = React.useState<CmIngredient | null>(null)
+   139→  const [deleteItem, setDeleteItem] = React.useState<CmIngredient | null>(null)
+   140→
+   141→  React.useEffect(() => {
+   142→    if (searchParams.get('action') === 'new') { setFormMode('create'); setEditItem(null); setFormOpen(true) }
+   143→  }, [searchParams])
+   144→
+   145→  const loadItems = React.useCallback(async () => {
+   146→    setLoading(true)
+   147→    try {
+   148→      const params = new URLSearchParams()
+   149→      if (search) params.set('search', search)
+   150→      if (catFilter !== 'all') params.set('category', catFilter)
+   151→      if (statusFilter === 'active') params.set('isActive', 'true')
+   152→      if (statusFilter === 'inactive') params.set('isActive', 'false')
+   153→      params.set('pageSize', '200')
+   154→      const res = await fetch(`/api/cocina-movil/ingredients?${params.toString()}`)
+   155→      if (!res.ok) throw new Error('HTTP ' + res.status)
+   156→      const data = await res.json()
+   157→      setItems(data.ingredients || [])
+   158→      setTotal(data.total || 0)
+   159→    } catch (err) {
+   160→      console.error(err); toast.error('Error al cargar materias primas')
+   161→    } finally { setLoading(false) }
+   162→  }, [search, catFilter, statusFilter])
+   163→
+   164→  React.useEffect(() => { const id = setTimeout(loadItems, 250); return () => clearTimeout(id) }, [loadItems])
+   165→
+   166→  const openCreate = () => { setFormMode('create'); setEditItem(null); setFormOpen(true) }
+   167→  const openEdit = (item: CmIngredient) => { setFormMode('edit'); setEditItem(item); setFormOpen(true) }
+   168→
+   169→  const handleToggle = async (item: CmIngredient) => {
+   170→    try {
+   171→      const res = await fetch(`/api/cocina-movil/ingredients/${item.id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ isActive: !item.isActive }) })
+   172→      if (!res.ok) throw new Error()
+   173→      toast.success(`Materia prima ${item.isActive ? 'desactivada' : 'activada'}`)
+   174→      loadItems()
+   175→    } catch { toast.error('Error al cambiar estado') }
+   176→  }
+   177→
+   178→  const handleDelete = async () => {
+   179→    if (!deleteItem) return
+   180→    try {
+   181→      const res = await fetch(`/api/cocina-movil/ingredients/${deleteItem.id}`, { method: 'DELETE' })
+   182→      if (!res.ok) throw new Error()
+   183→      toast.success('Eliminada'); setDeleteItem(null); loadItems()
+   184→    } catch { toast.error('Error al eliminar') }
+   185→  }
+   186→
+   187→  const handleExport = (format: 'pdf' | 'word' | 'excel') => {
+   188→    const params = new URLSearchParams({ format })
+   189→    if (search) params.set('search', search)
+   190→    if (catFilter !== 'all') params.set('category', catFilter)
+   191→    if (statusFilter === 'active') params.set('isActive', 'true')
+   192→    if (statusFilter === 'inactive') params.set('isActive', 'false')
+   193→    window.open(`/api/cocina-movil/ingredients/export?${params.toString()}`, '_blank')
+   194→  }
+   195→
+   196→  return (
+   197→    <div className="space-y-4">
+   198→      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+   199→        <div>
+   200→          <h1 className="text-2xl font-bold text-[#5C3A21] flex items-center gap-2"><Package className="h-6 w-6" />Materias Primas</h1>
+   201→          <p className="text-sm text-[#8A7E70]">{total} en total</p>
+   202→        </div>
+   203→        <Button onClick={openCreate} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]"><Plus className="h-4 w-4" />Nueva Materia Prima</Button>
+   204→      </div>
+   205→
+   206→      <Card className="border-[#5C3A21]/10 shadow-sm">
+   207→        <CardContent className="p-4 space-y-3">
+   208→          <div className="flex flex-col lg:flex-row gap-3">
+   209→            <div className="relative flex-1">
+   210→              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A7E70]" />
+   211→              <Input placeholder="Buscar por nombre o descripción…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 border-[#5C3A21]/15 bg-white" />
+   212→            </div>
+   213→            <Select value={catFilter} onValueChange={setCatFilter}>
+   214→              <SelectTrigger className="w-full lg:w-44 border-[#5C3A21]/15"><SelectValue placeholder="Categoría" /></SelectTrigger>
+   215→              <SelectContent>
+   216→                <SelectItem value="all">Todas las categorías</SelectItem>
+   217→                {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+   218→              </SelectContent>
+   219→            </Select>
+   220→            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as 'all' | 'active' | 'inactive')}>
+   221→              <SelectTrigger className="w-full lg:w-40 border-[#5C3A21]/15"><SelectValue placeholder="Estado" /></SelectTrigger>
+   222→              <SelectContent>
+   223→                <SelectItem value="all">Todos</SelectItem>
+   224→                <SelectItem value="active">Activos</SelectItem>
+   225→                <SelectItem value="inactive">Inactivos</SelectItem>
+   226→              </SelectContent>
+   227→            </Select>
+   228→          </div>
+   229→          <div className="flex flex-wrap gap-2 pt-2 border-t border-[#5C3A21]/8">
+   230→            <span className="text-xs text-[#8A7E70] self-center mr-1">Exportar:</span>
+   231→            <Button size="sm" variant="outline" onClick={() => window.print()} className="border-[#5C3A21]/20 text-[#5C3A21]"><Printer className="h-3.5 w-3.5" />Imprimir</Button>
+   232→            <Button size="sm" variant="outline" onClick={() => handleExport('pdf')} className="border-[#5C3A21]/20 text-[#5C3A21]"><FileText className="h-3.5 w-3.5" />PDF</Button>
+   233→            <Button size="sm" variant="outline" onClick={() => handleExport('word')} className="border-[#5C3A21]/20 text-[#5C3A21]"><FileDown className="h-3.5 w-3.5" />Word</Button>
+   234→            <Button size="sm" variant="outline" onClick={() => handleExport('excel')} className="border-[#5C3A21]/20 text-[#5C3A21]"><FileSpreadsheet className="h-3.5 w-3.5" />Excel</Button>
+   235→          </div>
+   236→        </CardContent>
+   237→      </Card>
+   238→
+   239→      <Card className="border-[#5C3A21]/10 shadow-sm">
+   240→        <CardContent className="p-0">
+   241→          {loading ? (
+   242→            <div className="flex items-center justify-center py-16"><Loader2 className="h-6 w-6 animate-spin text-[#E1AD01]" /><span className="ml-2 text-sm text-[#8A7E70]">Cargando…</span></div>
+   243→          ) : items.length === 0 ? (
+   244→            <div className="py-16 text-center"><Package className="h-10 w-10 mx-auto mb-2 text-[#8A7E70]/40" /><p className="text-sm text-[#8A7E70]">No se encontraron materias primas.</p></div>
+   245→          ) : (
+   246→            <div className="overflow-x-auto">
+   247→              <Table>
+   248→                <TableHeader>
+   249→                  <TableRow className="bg-[#FBF1DC] border-[#5C3A21]/15">
+   250→                    <TableHead className="w-10">#</TableHead>
+   251→                    <TableHead>Imagen</TableHead>
+   252→                    <TableHead>Nombre</TableHead>
+   253→                    <TableHead className="hidden md:table-cell">Categoría</TableHead>
+   254→                    <TableHead>Unidad</TableHead>
+   255→                    <TableHead>Precio</TableHead>
+   256→                    <TableHead>Estado</TableHead>
+   257→                    <TableHead className="text-right">Acciones</TableHead>
+   258→                  </TableRow>
+   259→                </TableHeader>
+   260→                <TableBody>
+   261→                  {items.map((item, i) => (
+   262→                    <TableRow key={item.id} className="border-[#5C3A21]/8 hover:bg-[#FBF1DC]/50">
+   263→                      <TableCell className="text-xs text-[#8A7E70]">{i + 1}</TableCell>
+   264→                      <TableCell>
+   265→                        <div className="h-10 w-12 rounded overflow-hidden bg-[#FBF1DC] flex items-center justify-center">
+   266→                          {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : <Package className="h-5 w-5 text-[#8A7E70]/40" />}
+   267→                        </div>
+   268→                      </TableCell>
+   269→                      <TableCell>
+   270→                        <p className="text-sm font-medium text-[#5C3A21]">{item.name}</p>
+   271→                        {item.description && <p className="text-xs text-[#8A7E70] truncate max-w-xs">{item.description}</p>}
+   272→                      </TableCell>
+   273→                      <TableCell className="hidden md:table-cell">
+   274→                        {item.category && <Badge variant="outline" className="text-[10px] capitalize border-[#5C3A21]/20">{item.category}</Badge>}
+   275→                      </TableCell>
+   276→                      <TableCell className="text-sm text-[#4A3F36]">{item.purchaseUnit}</TableCell>
+   277→                      <TableCell className="text-sm font-medium text-[#5C3A21]">${(item.pricePerUnit || item.purchasePrice).toLocaleString('es-AR', { maximumFractionDigits: 2 })}</TableCell>
+   278→                      <TableCell><Badge className={`text-[10px] ${item.isActive ? 'bg-[#708238] hover:bg-[#708238]' : 'bg-[#8A7E70] hover:bg-[#8A7E70]'}`}>{item.isActive ? 'Activo' : 'Inactivo'}</Badge></TableCell>
+   279→                      <TableCell className="text-right">
+   280→                        <DropdownMenu>
+   281→                          <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-8 w-8 text-[#5C3A21]"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+   282→                          <DropdownMenuContent align="end">
+   283→                            <DropdownMenuItem onClick={() => openEdit(item)}><Pencil className="h-4 w-4 mr-2" />Editar</DropdownMenuItem>
+   284→                            <DropdownMenuItem onClick={() => handleToggle(item)}><Switch checked={item.isActive} className="scale-75 mr-1" />{item.isActive ? 'Desactivar' : 'Activar'}</DropdownMenuItem>
+   285→                            <DropdownMenuSeparator />
+   286→                            <DropdownMenuItem onClick={() => setDeleteItem(item)} className="text-[#B91C1C] focus:text-[#B91C1C]"><Trash2 className="h-4 w-4 mr-2" />Eliminar</DropdownMenuItem>
+   287→                          </DropdownMenuContent>
+   288→                        </DropdownMenu>
+   289→                      </TableCell>
+   290→                    </TableRow>
+   291→                  ))}
+   292→                </TableBody>
+   293→              </Table>
+   294→            </div>
+   295→          )}
+   296→        </CardContent>
+   297→      </Card>
+   298→
+   299→      <IngredientFormDialog open={formOpen} mode={formMode} item={editItem} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); loadItems() }} />
+   300→
+   301→      <Dialog open={!!deleteItem} onOpenChange={(o) => !o && setDeleteItem(null)}>
+   302→        <DialogContent className="sm:max-w-md">
+   303→          <DialogHeader>
+   304→            <DialogTitle className="text-[#5C3A21]">¿Eliminar materia prima?</DialogTitle>
+   305→            <DialogDescription>Estás por eliminar <strong>{deleteItem?.name}</strong>. Esta acción no se puede deshacer.</DialogDescription>
+   306→          </DialogHeader>
+   307→          <DialogFooter className="gap-2">
+   308→            <Button variant="outline" onClick={() => setDeleteItem(null)}>Cancelar</Button>
+   309→            <Button onClick={handleDelete} className="bg-[#B91C1C] hover:bg-[#B91C1C]/90 text-white"><Trash2 className="h-4 w-4" />Eliminar</Button>
+   310→          </DialogFooter>
+   311→        </DialogContent>
+   312→      </Dialog>
+   313→    </div>
+   314→  )
+   315→}
+   316→
+   317→function IngredientFormDialog({ open, mode, item, onClose, onSaved }: { open: boolean; mode: FormMode; item: CmIngredient | null; onClose: () => void; onSaved: () => void }) {
+   318→  const [form, setForm] = React.useState({
+   319→    name: '', description: '', category: '' as string,
+   320→    purchaseUnit: 'kg' as CmUnit, purchasePrice: '', gramsPerUnit: '',
+   321→    purchaseUnitType: '' as string, unitsPurchased: '', weightPerUnit: '',
+   322→    weightUnit: 'kg' as string, totalPrice: '',
+   323→    image: '' as string, isActive: true,
+   324→  })
+   325→  const [saving, setSaving] = React.useState(false)
+   326→  const [error, setError] = React.useState<string | null>(null)
+   327→
+   328→  React.useEffect(() => {
+   329→    if (open) {
+   330→      if (mode === 'edit' && item) {
+   331→        setForm({
+   332→          name: item.name, description: item.description || '', category: item.category || '',
+   333→          purchaseUnit: item.purchaseUnit, purchasePrice: String(item.purchasePrice),
+   334→          gramsPerUnit: item.gramsPerUnit ? String(item.gramsPerUnit) : '',
+   335→          purchaseUnitType: item.purchaseUnitType || '', unitsPurchased: item.unitsPurchased ? String(item.unitsPurchased) : '',
+   336→          weightPerUnit: item.weightPerUnit ? String(item.weightPerUnit) : '',
+   337→          weightUnit: item.weightUnit || 'kg', totalPrice: item.totalPrice ? String(item.totalPrice) : '',
+   338→          image: item.image || '', isActive: item.isActive,
+   339→        })
+   340→      } else {
+   341→        setForm({ name: '', description: '', category: '', purchaseUnit: 'kg', purchasePrice: '', gramsPerUnit: '', image: '', isActive: true })
+   342→      }
+   343→      setError(null)
+   344→    }
+   345→  }, [open, mode, item])
+   346→
+   347→  const setField = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => setForm((f) => ({ ...f, [key]: value }))
+   348→
+   349→  const handleSubmit = async (e: React.FormEvent) => {
+   350→    e.preventDefault()
+   351→    setError(null)
+   352→    if (!form.name.trim()) return setError('El nombre es obligatorio')
+   353→    // Validate totalPrice (the new field the user fills in)
+   354→    // purchasePrice is auto-calculated in the backend from totalPrice
+   355→    const totalPrice = parseFloat(form.totalPrice)
+   356→    if (form.totalPrice && (isNaN(totalPrice) || totalPrice < 0)) {
+   357→      return setError('El precio total debe ser un número válido')
+   358→    }
+   359→
+   360→    setSaving(true)
+   361→    try {
+   362→      const body: Record<string, unknown> = {
+   363→        name: form.name, description: form.description || null,
+   364→        category: form.category || null, purchaseUnit: form.purchaseUnit,
+   365→        gramsPerUnit: form.gramsPerUnit ? parseFloat(form.gramsPerUnit) : null,
+   366→        purchaseUnitType: form.purchaseUnitType || null,
+   367→        unitsPurchased: form.unitsPurchased ? parseFloat(form.unitsPurchased) : null,
+   368→        weightPerUnit: form.weightPerUnit ? parseFloat(form.weightPerUnit) : null,
+   369→        weightUnit: form.weightUnit || null,
+   370→        totalPrice: form.totalPrice ? parseFloat(form.totalPrice) : null,
+   371→        image: form.image || null, isActive: form.isActive,
+   372→      }
+   373→      const url = mode === 'create' ? '/api/cocina-movil/ingredients' : `/api/cocina-movil/ingredients/${item!.id}`
+   374→      const res = await fetch(url, { method: mode === 'create' ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+   375→      const data = await res.json().catch(() => ({}))
+   376→      if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status)
+   377→      toast.success(mode === 'create' ? 'Materia prima creada' : 'Materia prima actualizada')
+   378→      onSaved()
+   379→    } catch (err) { setError(err instanceof Error ? err.message : 'Error al guardar') }
+   380→    finally { setSaving(false) }
+   381→  }
+   382→
+   383→  return (
+   384→    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+   385→      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+   386→        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
+   387→          <DialogTitle className="text-[#5C3A21]">{mode === 'create' ? 'Nueva Materia Prima' : 'Editar Materia Prima'}</DialogTitle>
+   388→          <DialogDescription>{mode === 'create' ? 'Agregar ingrediente para recetas y producción' : `Editando: ${item?.name}`}</DialogDescription>
+   389→        </DialogHeader>
+   390→        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+   391→          <div className="flex-1 overflow-y-auto px-6 space-y-4 pb-6">
+   392→          {error && <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>}
+   393→
+   394→          <div className="flex items-center gap-3"><div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">1</div><h3 className="text-sm font-semibold text-[#5C3A21]">Datos de la Materia Prima</h3></div>
+   395→          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-10">
+   396→            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Nombre *</Label><Input value={form.name} onChange={(e) => setField('name', e.target.value)} className="border-[#5C3A21]/15" autoFocus /></div>
+   397→            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Categoría</Label><Select value={form.category || 'none'} onValueChange={(v) => setField('category', v === 'none' ? '' : v)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Sin categoría" /></SelectTrigger><SelectContent><SelectItem value="none">— Sin categoría —</SelectItem>{CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
+   398→            <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Descripción</Label><Textarea value={form.description} onChange={(e) => setField('description', e.target.value)} className="border-[#5C3A21]/15" rows={2} /></div>
+   399→            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Tipo de Unidad de Compra</Label><Select value={form.purchaseUnitType || 'none'} onValueChange={(v) => {
+   400→              const newType = v === 'none' ? '' : v
+   401→              setField('purchaseUnitType', newType)
+   402→              // Auto-set weight unit based on type
+   403→              if (newType) setField('weightUnit', getDefaultWeightUnit(newType))
+   404→              // For kg_suelto/litro_suelto: weightPerUnit = 1 (quantity IS the weight)
+   405→              if (isWeightFieldHidden(newType)) setField('weightPerUnit', '1')
+   406→            }}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Sin tipo" /></SelectTrigger><SelectContent><SelectItem value="none">— Sin tipo —</SelectItem>{PURCHASE_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent></Select></div>
+   407→            <div className="space-y-1.5"><Label className="text-[#5C3A21]">{getQuantityLabel(form.purchaseUnitType)}</Label><Input type="number" step="0.01" min="0" value={form.unitsPurchased} onChange={(e) => setField('unitsPurchased', e.target.value)} placeholder={form.purchaseUnitType === 'kg_suelto' ? 'ej: 5 (5 kg sueltos)' : form.purchaseUnitType === 'litro_suelto' ? 'ej: 3 (3 litros sueltos)' : 'ej: 1 (bulto), 6 (botellas)'} className="border-[#5C3A21]/15" /></div>
+   408→            {!isWeightFieldHidden(form.purchaseUnitType) && (
+   409→              <div className="space-y-1.5 grid grid-cols-2 gap-2">
+   410→                <div className="space-y-1.5"><Label className="text-[#5C3A21]">{getWeightLabel(form.purchaseUnitType)}</Label><Input type="number" step="0.01" min="0" value={form.weightPerUnit} onChange={(e) => setField('weightPerUnit', e.target.value)} placeholder="ej: 25" className="border-[#5C3A21]/15" /></div>
+   411→                <div className="space-y-1.5"><Label className="text-[#5C3A21]">Unidad</Label><Select value={form.weightUnit} onValueChange={(v) => setField('weightUnit', v)}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue /></SelectTrigger><SelectContent>{WEIGHT_UNITS.map((u) => <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>)}</SelectContent></Select></div>
+   412→              </div>
+   413→            )}
+   414→            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Precio Total Pagado ($)</Label><Input type="number" step="0.01" min="0" value={form.totalPrice} onChange={(e) => setField('totalPrice', e.target.value)} placeholder="ej: 450" className="border-[#5C3A21]/15" /></div>
+   415→            {form.unitsPurchased && form.totalPrice && parseFloat(form.unitsPurchased) > 0 && parseFloat(form.totalPrice) > 0 && (
+   416→              <div className="bg-[#E1AD01]/10 border border-[#E1AD01]/30 rounded-md p-3 space-y-1">
+   417→                <p className="text-xs font-semibold text-[#7a5c00]">📊 Cálculo automático:</p>
+   418→                {(() => {
+   419→                  const qty = parseFloat(form.unitsPurchased)
+   420→                  const wpu = isWeightFieldHidden(form.purchaseUnitType) ? 1 : (form.weightPerUnit ? parseFloat(form.weightPerUnit) : 0)
+   421→                  const wu = form.weightUnit || 'kg'
+   422→                  const total = qty * wpu
+   423→                  const pricePerUnit = total > 0 ? parseFloat(form.totalPrice) / total : 0
+   424→                  const totalGrams = wu === 'kg' ? total * 1000 : wu === 'l' ? total * 1000 : wu === 'g' ? total : total
+   425→                  return (<>
+   426→                    <p className="text-sm text-[#5C3A21]">Precio por {wu}: <strong>{fmtCurrency(pricePerUnit)}</strong></p>
+   427→                    <p className="text-sm text-[#5C3A21]">Total: <strong>{total.toLocaleString('es-AR')} {wu}</strong> ({totalGrams.toLocaleString('es-AR')} g)</p>
+   428→                  </>)
+   429→                })()}
+   430→              </div>
+   431→            )}
+   432→            {mode === 'edit' && (
+   433→              <div className="space-y-1.5 flex items-center gap-3 pt-5"><Label className="text-[#5C3A21]">Activo</Label><Switch checked={form.isActive} onCheckedChange={(v) => setField('isActive', v)} /></div>
+   434→            )}
+   435→          </div>
+   436→
+   437→          <Separator />
+   438→          <div className="flex items-center gap-3"><div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">2</div><h3 className="text-sm font-semibold text-[#5C3A21]">Imagen</h3></div>
+   439→          <div className="pl-10">
+   440→            <ImageUploader value={form.image || null} onChange={(url) => setField('image', url || '')} uploadUrl="/api/cocina-movil/ingredients/upload-image" label="Imagen de la materia prima" aspectRatio="4/3" disabled={saving} />
+   441→          </div>
+   442→
+   443→          </div>
+   444→          <div className="shrink-0 bg-white border-t border-[#5C3A21]/10 px-6 py-3 flex justify-end gap-2">
+   445→            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+   446→            <Button type="submit" disabled={saving} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}{mode === 'create' ? 'Crear' : 'Guardar'}</Button>
+   447→          </div>
+   448→        </form>
+   449→      </DialogContent>
+   450→    </Dialog>
+   451→  )
+   452→}
+   453→
+   454→export default function CmMateriasPrimasPage() {
+   455→  return (
+   456→    <React.Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#E1AD01]" /></div>}>
+   457→      <CmMateriasPrimasPageContent />
+   458→    </React.Suspense>
+   459→  )
+   460→}
+   461→
