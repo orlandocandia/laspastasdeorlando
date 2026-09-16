@@ -280,7 +280,7 @@ export function updateRecipe(id: string, updates: Partial<CmRecipeInput>): CmRec
   if (updates.cookId !== undefined) r.cookId = updates.cookId || null
   if (updates.isActive !== undefined) r.isActive = updates.isActive
 
-  if (updates.ingredients !== undefined && updates.ingredients.length > 0) {
+  if (updates.ingredients !== undefined) {
     r.ingredients = updates.ingredients.map((item) => {
       const ing = getIngredientById(item.ingredientId)
       if (!ing) throw new Error(`Materia prima no encontrada: ${item.ingredientId}`)
@@ -297,7 +297,7 @@ export function updateRecipe(id: string, updates: Partial<CmRecipeInput>): CmRec
     })
   }
 
-  if (updates.supplies !== undefined && updates.supplies.length > 0) {
+  if (updates.supplies !== undefined) {
     r.supplies = updates.supplies.map((item) => {
       const sup = getSupplyById(item.supplyId)
       if (!sup) throw new Error(`Insumo no encontrado: ${item.supplyId}`)

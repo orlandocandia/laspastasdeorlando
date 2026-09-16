@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 import { listBudgets, type CmBudgetRecord } from '@/lib/cocina-movil/budgets'
-import { requireAuth } from '@/lib/cocina-movil/auth-middleware'
+import { requireAdmin } from '@/lib/cocina-movil/auth-middleware'
 export const runtime = 'nodejs'
 
 export async function GET(request: Request) {
-  const auth = requireAuth(request)
+  const auth = requireAdmin(request)
   if (!auth.authorized) return auth.response!
   const url = new URL(request.url)
   const format = (url.searchParams.get('format') || 'excel').toLowerCase()

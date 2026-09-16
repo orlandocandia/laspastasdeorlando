@@ -181,7 +181,7 @@ function formFromUser(u: CmUserRecord): UserFormState {
 // ============================================================
 // Componente principal
 // ============================================================
-export default function CmUsersPage() {
+function CmUsersPageContent() {
   const searchParams = useSearchParams()
   const [users, setUsers] = React.useState<CmUserRecord[]>([])
   const [total, setTotal] = React.useState(0)
@@ -1073,5 +1073,13 @@ function PasswordChangeDialog({
         </form>
       </DialogContent>
     </Dialog>
+  )
+}
+
+export default function CmUsersPage() {
+  return (
+    <React.Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#E1AD01]" /></div>}>
+      <CmUsersPageContent />
+    </React.Suspense>
   )
 }

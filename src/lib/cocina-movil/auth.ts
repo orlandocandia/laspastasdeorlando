@@ -380,7 +380,17 @@ export async function requestPasswordReset(email: string): Promise<{ token: stri
 
   const token = createPasswordResetToken(normalizedEmail)
   console.log(`[CocinaMóvil-Auth] Password reset token created for: ${normalizedEmail}`)
-  return { token, user: record.user }
+  // CmUserWithPassword extends CmUserRecord which has all CmUser fields plus more
+  // Construct CmUser from the record fields directly
+  const user: CmUser = {
+    id: record.id,
+    email: record.email,
+    name: `${record.firstName} ${record.lastName}`.trim(),
+    role: record.role,
+    avatar: record.avatar,
+    isActive: record.isActive,
+  }
+  return { token, user }
 }
 
 /**

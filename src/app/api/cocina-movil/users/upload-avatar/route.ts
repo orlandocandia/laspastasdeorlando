@@ -13,12 +13,12 @@
  * ============================================================
  */
 import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/cocina-movil/auth-middleware'
+import { requireAdmin } from '@/lib/cocina-movil/auth-middleware'
 
 export const runtime = 'nodejs'
 
 export async function POST(request: Request) {
-  const auth = requireAuth(request)
+  const auth = requireAdmin(request)
   if (!auth.authorized) return auth.response!
   try {
     const formData = await request.formData()

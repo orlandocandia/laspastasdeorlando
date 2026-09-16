@@ -65,3 +65,29 @@ export function requireAuth(request: Request): AuthResult {
 
   return { authorized: true, session }
 }
+
+/**
+ * Validates that the request is from an authenticated admin user.
+ * Returns { authorized: true, session } if valid admin,
+ * or { authorized: false, response: 401/403 } if not.
+ *
+ * Use in admin-only API routes:
+ *   const auth = requireAdmin(request)
+ *   if (!auth.authorized) return auth.response!
+ */
+export function requireAdmin(request: Request): AuthResult {
+  const auth = requireAuth(request)
+  if (!auth.authorized) return auth
+
+  if (auth.session?.user.role !== 'admin') {
+    return {
+      authorized: false,
+      response: NextResponse.json(
+        { error: 'Acceso denegado. Se requiere rol de administrador.' },
+        { status: 403 }
+      ),
+    }
+  }
+
+  return auth
+}

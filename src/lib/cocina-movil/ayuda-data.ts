@@ -239,7 +239,6 @@ export const AYUDA_SECCIONES: AyudaSeccion[] = [
     ],
     tips: ['Los tickets se imprimen desde el detalle de cada venta.', 'Las etiquetas se imprimen desde el detalle de cada producción.'],
   },
-,
   {
     id: 'perfil',
     titulo: 'Mi Perfil',

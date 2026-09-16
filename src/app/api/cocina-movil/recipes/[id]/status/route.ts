@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { setRecipeStatus } from '@/lib/cocina-movil/recipes'
-import { requireAuth } from '@/lib/cocina-movil/auth-middleware'
+import { requireAdmin } from '@/lib/cocina-movil/auth-middleware'
 export const runtime = 'nodejs'
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = requireAuth(request)
+  const auth = requireAdmin(request)
   if (!auth.authorized) return auth.response!
   const { id } = await params
   let body: { isActive?: unknown }
