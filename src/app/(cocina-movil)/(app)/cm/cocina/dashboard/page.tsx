@@ -90,12 +90,6 @@ export default function CookDashboardPage() {
         </Card>
       </div>
 
-      {/* Quick actions */}
-      <div className="flex flex-wrap gap-3">
-        <Link href="/cm/cocina/recetas"><Button className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]"><Plus className="h-4 w-4" />Nueva Receta</Button></Link>
-        <Link href="/cm/cocina/producciones"><Button variant="outline" className="border-[#5C3A21]/20 text-[#5C3A21]"><Factory className="h-4 w-4" />Registrar Producción</Button></Link>
-      </div>
-
       {/* Recent productions */}
       <Card className="border-[#5C3A21]/10 shadow-sm">
         <CardContent className="p-0">
