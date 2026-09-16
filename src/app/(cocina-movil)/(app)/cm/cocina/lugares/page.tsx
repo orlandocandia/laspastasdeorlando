@@ -30,6 +30,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { toast } from 'sonner'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
 
 // ============================================================
 // Tipos
@@ -70,6 +72,7 @@ function CookLugaresPageContent() {
   const [places, setPlaces] = React.useState<CmPlaceListItem[]>([])
   const [total, setTotal] = React.useState(0)
   const [loading, setLoading] = React.useState(true)
+  const [formOpen, setFormOpen] = React.useState(false)
   const [search, setSearch] = React.useState('')
 
   const loadPlaces = React.useCallback(async () => {
@@ -112,10 +115,8 @@ function CookLugaresPageContent() {
           </h1>
           <p className="text-sm text-[#8A7E70]">{total} en total</p>
         </div>
-        <Button asChild className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">
-          <Link href="/cm/admin/lugares?action=new">
-            <Plus className="h-4 w-4" />Nuevo Lugar
-          </Link>
+        <Button onClick={() => setFormOpen(true)} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">
+          <Plus className="h-4 w-4" />Nuevo Lugar
         </Button>
       </div>
 
@@ -205,8 +206,8 @@ function CookLugaresPageContent() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Button asChild size="sm" variant="outline" className="h-8 border-[#5C3A21]/20 text-[#5C3A21]">
-                            <Link href="/cm/admin/lugares">
-                              <Pencil className="h-3.5 w-3.5" />Editar
+                            <Link href="/cm/cocina/lugares">
+                              <Pencil className="h-3.5 w-3.5" />Ver
                             </Link>
                           </Button>
                         </TableCell>
@@ -219,6 +220,47 @@ function CookLugaresPageContent() {
           )}
         </CardContent>
       </Card>
+
+      {/* Simple creation dialog */}
+      <SimplePlaceDialog open={formOpen} onClose={() => setFormOpen(false)} onCreated={loadPlaces} />
     </div>
+  )
+}
+
+function SimplePlaceDialog({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
+  const [name, setName] = React.useState('')
+  const [description, setDescription] = React.useState('')
+  const [saving, setSaving] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => { if (open) { setName(''); setDescription(''); setError(null) } }, [open])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!name.trim()) return setError('El nombre es obligatorio')
+    setSaving(true)
+    try {
+      const res = await fetch('/api/cocina-movil/places', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, description: description.trim() || null, isOwned: true }) })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status)
+      toast.success('Lugar creado')
+      onCreated()
+      onClose()
+    } catch (err) { setError(err instanceof Error ? err.message : 'Error') }
+    finally { setSaving(false) }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader><DialogTitle className="text-[#5C3A21]">Nuevo Lugar</DialogTitle><DialogDescription>Creá un lugar de producción.</DialogDescription></DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {error && <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>}
+          <div className="space-y-1.5"><Label className="text-[#5C3A21]">Nombre *</Label><Input value={name} onChange={(e) => setName(e.target.value)} className="border-[#5C3A21]/15" autoFocus /></div>
+          <div className="space-y-1.5"><Label className="text-[#5C3A21]">Descripción</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="border-[#5C3A21]/15 resize-none" /></div>
+          <DialogFooter><Button type="button" variant="outline" onClick={onClose}>Cancelar</Button><Button type="submit" disabled={saving} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">{saving ? 'Guardando…' : 'Crear'}</Button></DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }

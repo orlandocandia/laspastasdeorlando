@@ -37,6 +37,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { toast } from 'sonner'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 // ============================================================
 // Tipos
@@ -119,6 +120,7 @@ function CookProduccionesPageContent() {
   const [productions, setProductions] = React.useState<CmProductionListItem[]>([])
   const [total, setTotal] = React.useState(0)
   const [loading, setLoading] = React.useState(true)
+  const [formOpen, setFormOpen] = React.useState(false)
 
   const [search, setSearch] = React.useState('')
   const [dateFrom, setDateFrom] = React.useState('')
@@ -225,10 +227,8 @@ function CookProduccionesPageContent() {
           </h1>
           <p className="text-sm text-[#8A7E70]">{total} en total</p>
         </div>
-        <Button asChild className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">
-          <Link href="/cm/admin/producciones?action=new">
-            <Plus className="h-4 w-4" />Nueva Producción
-          </Link>
+        <Button onClick={() => setFormOpen(true)} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">
+          <Plus className="h-4 w-4" />Nueva Producción
         </Button>
       </div>
 
@@ -388,8 +388,8 @@ function CookProduccionesPageContent() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Button asChild size="sm" variant="outline" className="h-8 border-[#5C3A21]/20 text-[#5C3A21]">
-                            <Link href="/cm/admin/producciones">
-                              <Pencil className="h-3.5 w-3.5" />Editar
+                            <Link href="/cm/cocina/producciones">
+                              <Pencil className="h-3.5 w-3.5" />Ver
                             </Link>
                           </Button>
                         </TableCell>
@@ -402,6 +402,50 @@ function CookProduccionesPageContent() {
           )}
         </CardContent>
       </Card>
+
+      {/* Simple creation dialog */}
+      <SimpleProductionDialog open={formOpen} onClose={() => setFormOpen(false)} onCreated={loadProductions} recipes={recipes} places={places} />
     </div>
+  )
+}
+
+function SimpleProductionDialog({ open, onClose, onCreated, recipes, places }: { open: boolean; onClose: () => void; onCreated: () => void; recipes: { id: string; title: string; costPerServing: number }[]; places: { id: string; name: string }[] }) {
+  const [recipeId, setRecipeId] = React.useState('')
+  const [placeId, setPlaceId] = React.useState('')
+  const [quantity, setQuantity] = React.useState('1')
+  const [saving, setSaving] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => { if (open) { setRecipeId(''); setPlaceId(''); setQuantity('1'); setError(null) } }, [open])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!recipeId) return setError('La receta es obligatoria')
+    if (!placeId) return setError('El lugar es obligatorio')
+    setSaving(true)
+    try {
+      const res = await fetch('/api/cocina-movil/productions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipeId, placeId, quantity: Number(quantity) || 1 }) })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status)
+      toast.success('Producción creada')
+      onCreated()
+      onClose()
+    } catch (err) { setError(err instanceof Error ? err.message : 'Error') }
+    finally { setSaving(false) }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader><DialogTitle className="text-[#5C3A21]">Nueva Producción</DialogTitle><DialogDescription>Registrá una nueva producción.</DialogDescription></DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {error && <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>}
+          <div className="space-y-1.5"><Label className="text-[#5C3A21]">Receta *</Label><Select value={recipeId || 'none'} onValueChange={setRecipeId}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Seleccionar…" /></SelectTrigger><SelectContent><SelectItem value="none">— Seleccionar —</SelectItem>{recipes.map((r) => <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>)}</SelectContent></Select></div>
+          <div className="space-y-1.5"><Label className="text-[#5C3A21]">Lugar *</Label><Select value={placeId || 'none'} onValueChange={setPlaceId}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue placeholder="Seleccionar…" /></SelectTrigger><SelectContent><SelectItem value="none">— Seleccionar —</SelectItem>{places.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select></div>
+          <div className="space-y-1.5"><Label className="text-[#5C3A21]">Cantidad *</Label><Input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} className="border-[#5C3A21]/15" /></div>
+          <DialogFooter><Button type="button" variant="outline" onClick={onClose}>Cancelar</Button><Button type="submit" disabled={saving} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">{saving ? 'Guardando…' : 'Crear'}</Button></DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }

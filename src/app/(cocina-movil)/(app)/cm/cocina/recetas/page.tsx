@@ -25,6 +25,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -32,6 +33,8 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 
 // ============================================================
@@ -102,6 +105,7 @@ function CookRecetasPageContent() {
   const [loading, setLoading] = React.useState(true)
   const [search, setSearch] = React.useState('')
   const [catFilter, setCatFilter] = React.useState<string>('all')
+  const [formOpen, setFormOpen] = React.useState(false)
 
   const loadRecipes = React.useCallback(async () => {
     setLoading(true)
@@ -147,10 +151,8 @@ function CookRecetasPageContent() {
           </h1>
           <p className="text-sm text-[#8A7E70]">{total} en total</p>
         </div>
-        <Button asChild className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">
-          <Link href="/cm/admin/recetas?action=new">
-            <Plus className="h-4 w-4" />Nueva Receta
-          </Link>
+        <Button onClick={() => setFormOpen(true)} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">
+          <Plus className="h-4 w-4" />Nueva Receta
         </Button>
       </div>
 
@@ -252,8 +254,8 @@ function CookRecetasPageContent() {
                       </TableCell>
                       <TableCell className="text-right">
                         <Button asChild size="sm" variant="outline" className="h-8 border-[#5C3A21]/20 text-[#5C3A21]">
-                          <Link href="/cm/admin/recetas">
-                            <Pencil className="h-3.5 w-3.5" />Editar
+                          <Link href="/cm/cocina/recetas">
+                            <Pencil className="h-3.5 w-3.5" />Ver
                           </Link>
                         </Button>
                       </TableCell>
@@ -265,6 +267,51 @@ function CookRecetasPageContent() {
           )}
         </CardContent>
       </Card>
+
+      {/* Simple creation dialog */}
+      <SimpleRecipeDialog open={formOpen} onClose={() => setFormOpen(false)} onCreated={loadRecipes} />
     </div>
+  )
+}
+
+function SimpleRecipeDialog({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
+  const [title, setTitle] = React.useState('')
+  const [category, setCategory] = React.useState('otros')
+  const [servings, setServings] = React.useState('1')
+  const [description, setDescription] = React.useState('')
+  const [saving, setSaving] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+
+  React.useEffect(() => { if (open) { setTitle(''); setCategory('otros'); setServings('1'); setDescription(''); setError(null) } }, [open])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title.trim()) return setError('El título es obligatorio')
+    setSaving(true)
+    try {
+      const res = await fetch('/api/cocina-movil/recipes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, category, servings: Number(servings) || 1, description: description.trim() || null }) })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status)
+      toast.success('Receta creada')
+      onCreated()
+      onClose()
+    } catch (err) { setError(err instanceof Error ? err.message : 'Error') }
+    finally { setSaving(false) }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader><DialogTitle className="text-[#5C3A21]">Nueva Receta</DialogTitle><DialogDescription>Creá una receta básica. Podés completar más detalles desde el panel Admin.</DialogDescription></DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {error && <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">{error}</div>}
+          <div className="space-y-1.5"><Label className="text-[#5C3A21]">Título *</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} className="border-[#5C3A21]/15" autoFocus /></div>
+          <div className="space-y-1.5"><Label className="text-[#5C3A21]">Categoría</Label><Select value={category} onValueChange={setCategory}><SelectTrigger className="border-[#5C3A21]/15"><SelectValue /></SelectTrigger><SelectContent>{CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent></Select></div>
+          <div className="space-y-1.5"><Label className="text-[#5C3A21]">Porciones</Label><Input type="number" min="1" value={servings} onChange={(e) => setServings(e.target.value)} className="border-[#5C3A21]/15" /></div>
+          <div className="space-y-1.5"><Label className="text-[#5C3A21]">Descripción</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="border-[#5C3A21]/15 resize-none" /></div>
+          <DialogFooter><Button type="button" variant="outline" onClick={onClose}>Cancelar</Button><Button type="submit" disabled={saving} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">{saving ? 'Guardando…' : 'Crear'}</Button></DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
