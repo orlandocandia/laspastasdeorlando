@@ -77,6 +77,8 @@ function CookProfilePageContent() {
   React.useEffect(() => {
     const localUser = getCmUserFromStorage()
     if (!localUser) {
+      // Don't leave the spinner running if navigation stalls.
+      setLoading(false)
       router.push('/login')
       return
     }

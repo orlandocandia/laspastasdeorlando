@@ -363,7 +363,10 @@ function CookProduccionesPageContent() {
                 </TableHeader>
                 <TableBody>
                   {productions.map((p, i) => {
-                    const meta = STATUS_META[p.status]
+                    // Defensive: also accept Spanish status values returned by the
+                    // dashboard seed. Prevents undefined access when status is e.g.
+                    // 'pendiente' (es) instead of 'pending' (en).
+                    const meta = STATUS_META[p.status as CmProductionStatus] ?? { label: p.status || '—', bg: 'bg-[#8A7E70]' }
                     return (
                       <TableRow key={p.id} className="border-[#5C3A21]/8 hover:bg-[#FBF1DC]/50">
                         <TableCell className="text-xs text-[#8A7E70]">{i + 1}</TableCell>

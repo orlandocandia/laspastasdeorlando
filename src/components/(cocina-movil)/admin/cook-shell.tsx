@@ -42,6 +42,18 @@ export default function CmCookShell({ children }: { children: React.ReactNode })
   React.useEffect(() => {
     const u = getCmUserFromStorage()
     if (!u) { router.push('/login'); return }
+    // Role guard: only cocinero can access /cm/cocina/*.
+    // Redirect admin/supervisor to their own dashboards to avoid
+    // accidental cross-role rendering (mirrors admin-shell pattern).
+    if (u.role === 'admin') {
+      router.push('/cm/admin/dashboard')
+      return
+    }
+    if (u.role !== 'cocinero') {
+      // supervisor or unknown role → send to fallback dashboard
+      router.push('/cm/dashboard')
+      return
+    }
     setUser(u)
     setLoading(false)
   }, [router])

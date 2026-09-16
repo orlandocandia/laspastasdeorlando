@@ -2,9 +2,10 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { ChefHat, Factory, TrendingUp, Package, Eye, MapPin, CheckCircle, AlertTriangle, Clock } from 'lucide-react'
+import { ChefHat, Factory, TrendingUp, Package, Eye, MapPin, CheckCircle, AlertTriangle, Clock, Loader2 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
 import { getCmUserFromStorage } from '@/lib/cocina-movil/auth-client'
 
 const fmtCurrency = (v: number) => `$${Number(v || 0).toLocaleString('es-AR', { maximumFractionDigits: 2 })}`
@@ -39,6 +40,20 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 }
 
 export default function CookDashboardPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-[#E1AD01]" />
+        </div>
+      }
+    >
+      <CookDashboardContent />
+    </React.Suspense>
+  )
+}
+
+function CookDashboardContent() {
   const [user, setUser] = React.useState<{ firstName?: string; role?: string } | null>(null)
   const [stats, setStats] = React.useState({ recipes: 0, productionsToday: 0, portionsToday: 0, estimatedCost: 0, lowStock: 0 })
   const [recentProductions, setRecentProductions] = React.useState<Array<{ id: string; recipeTitle: string; placeName: string; quantity: number; cost: number; status: string; productionDate: number }>>([])
@@ -49,30 +64,37 @@ export default function CookDashboardPage() {
   React.useEffect(() => {
     const u = getCmUserFromStorage()
     setUser(u)
+    // Fetch helper: returns parsed JSON only when res.ok, else null.
+    // Avoids silently swallowing 401/403 as "empty data".
+    const safeJson = async (res: Response) => (res.ok ? res.json() : null)
     Promise.all([
-      fetch('/api/cocina-movil/recipes?isActive=true&pageSize=200').then(r => r.json()).catch(() => ({})),
-      fetch('/api/cocina-movil/productions?pageSize=200').then(r => r.json()).catch(() => ({})),
-      fetch('/api/cocina-movil/ingredients?isActive=true&pageSize=200').then(r => r.json()).catch(() => ({})),
-      fetch('/api/cocina-movil/supplies?isActive=true&pageSize=200').then(r => r.json()).catch(() => ({})),
-      fetch('/api/cocina-movil/places?isActive=true&pageSize=200').then(r => r.json()).catch(() => ({})),
+      fetch('/api/cocina-movil/recipes?isActive=true&pageSize=200').then(safeJson).catch(() => null),
+      fetch('/api/cocina-movil/productions?pageSize=200').then(safeJson).catch(() => null),
+      fetch('/api/cocina-movil/ingredients?isActive=true&pageSize=200').then(safeJson).catch(() => null),
+      fetch('/api/cocina-movil/supplies?isActive=true&pageSize=200').then(safeJson).catch(() => null),
+      fetch('/api/cocina-movil/places?isActive=true&pageSize=200').then(safeJson).catch(() => null),
     ]).then(([rData, pData, iData, sData, plData]) => {
-      const recipes = rData.recipes || []
-      const allProductions = pData.productions || []
+      // Detect total failure (e.g. session expired) and surface it.
+      if (!rData && !pData && !iData && !sData && !plData) {
+        toast.error('No se pudieron cargar los datos del dashboard. Verificá tu sesión.')
+      }
+      const recipes = rData?.recipes || []
+      const allProductions = pData?.productions || []
       const today = new Date(); today.setHours(0,0,0,0)
       const todayMs = today.getTime()
       const todayProductions = allProductions.filter((p: { productionDate: number }) => p.productionDate && p.productionDate >= todayMs)
       const portionsToday = todayProductions.reduce((sum: number, p: { quantity: number }) => sum + (p.quantity || 0), 0)
       const costToday = todayProductions.reduce((sum: number, p: { cost: number }) => sum + (p.cost || 0), 0)
       const lowStockItems = [
-        ...(iData.ingredients || []).filter((i: { gramsPerUnit: number | null }) => !i.gramsPerUnit || i.gramsPerUnit < 500),
-        ...(sData.supplies || []).filter((s: { purchasePrice: number }) => s.purchasePrice < 100),
+        ...(iData?.ingredients || []).filter((i: { gramsPerUnit: number | null }) => !i.gramsPerUnit || i.gramsPerUnit < 500),
+        ...(sData?.supplies || []).filter((s: { purchasePrice: number }) => s.purchasePrice < 100),
       ]
       const pending = allProductions.filter((p: { status: string }) => p.status === 'pendiente' || p.status === 'pending').length
 
       // Places with production count this month
       const now = new Date()
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime()
-      const placeList = (plData.places || []).map((pl: { id: string; name: string }) => ({
+      const placeList = (plData?.places || []).map((pl: { id: string; name: string }) => ({
         id: pl.id,
         name: pl.name,
         productionsCount: allProductions.filter((p: { placeId: string; productionDate: number }) => p.placeId === pl.id && p.productionDate >= monthStart).length,
@@ -82,6 +104,11 @@ export default function CookDashboardPage() {
       setPendingProductions(pending)
       setRecentProductions(allProductions.slice(0, 5))
       setPlaces(placeList.slice(0, 5))
+      setLoading(false)
+    }).catch((err) => {
+      // Defensive: never leave the page stuck on the spinner.
+      console.error('[CookDashboard] load error:', err)
+      toast.error('Ocurrió un error al cargar el dashboard.')
       setLoading(false)
     })
   }, [])

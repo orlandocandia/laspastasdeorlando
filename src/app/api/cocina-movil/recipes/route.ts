@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
 import { listRecipes, createRecipe, type CmRecipeCategory, type CmRecipeDifficulty, type CmRecipeInput } from '@/lib/cocina-movil/recipes'
-import { requireAdmin } from '@/lib/cocina-movil/auth-middleware'
+import { requireAdmin, requireAuth } from '@/lib/cocina-movil/auth-middleware'
 export const runtime = 'nodejs'
 
 export async function GET(request: Request) {
-  const auth = requireAdmin(request)
+  const auth = requireAuth(request)
   if (!auth.authorized) return auth.response!
   const url = new URL(request.url)
   const search = url.searchParams.get('search') || undefined

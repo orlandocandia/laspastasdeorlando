@@ -165,19 +165,24 @@ function CookStockPageContent() {
   }, [supSearch])
 
   // Carga ingredientes cuando cambia la búsqueda o categoría
+  const [ingLoading, setIngLoading] = React.useState(true)
   const loadIngredients = React.useCallback(async () => {
+    setIngLoading(true)
     try {
       const params = new URLSearchParams()
       if (ingSearchDebounced) params.set('search', ingSearchDebounced)
       if (ingCat !== 'all') params.set('category', ingCat)
       params.set('pageSize', '200')
       const res = await fetch(`/api/cocina-movil/ingredients?${params.toString()}`)
-      if (!res.ok) return
+      if (!res.ok) throw new Error('HTTP ' + res.status)
       const data = await res.json()
       setIngredients(data.ingredients || [])
     } catch (err) {
-      console.error(err)
+      console.error('[Stock/Ingredients]', err)
       toast.error('Error al cargar materias primas')
+      setIngredients([])
+    } finally {
+      setIngLoading(false)
     }
   }, [ingSearchDebounced, ingCat])
 
@@ -187,19 +192,24 @@ function CookStockPageContent() {
   }, [loadIngredients])
 
   // Carga supplies cuando cambia la búsqueda o categoría
+  const [supLoading, setSupLoading] = React.useState(true)
   const loadSupplies = React.useCallback(async () => {
+    setSupLoading(true)
     try {
       const params = new URLSearchParams()
       if (supSearchDebounced) params.set('search', supSearchDebounced)
       if (supCat !== 'all') params.set('category', supCat)
       params.set('pageSize', '200')
       const res = await fetch(`/api/cocina-movil/supplies?${params.toString()}`)
-      if (!res.ok) return
+      if (!res.ok) throw new Error('HTTP ' + res.status)
       const data = await res.json()
       setSupplies(data.supplies || [])
     } catch (err) {
-      console.error(err)
+      console.error('[Stock/Supplies]', err)
       toast.error('Error al cargar insumos')
+      setSupplies([])
+    } finally {
+      setSupLoading(false)
     }
   }, [supSearchDebounced, supCat])
 
@@ -208,8 +218,9 @@ function CookStockPageContent() {
     return () => clearTimeout(id)
   }, [loadSupplies])
 
-  // Loading state derivado: si ambos estados están vacíos pero la búsqueda ya se disparó
-  const loading = ingredients.length === 0 && supplies.length === 0 && !ingSearchDebounced && !supSearchDebounced
+  // Loading state derivado: spinner solo mientras la primera carga
+  // no ha completado ninguna de las dos pestañas.
+  const loading = ingLoading && supLoading && !ingSearchDebounced && !supSearchDebounced
 
   // Filas destacadas (stock bajo)
   const lowStockIngCount = ingredients.filter((i) => {
