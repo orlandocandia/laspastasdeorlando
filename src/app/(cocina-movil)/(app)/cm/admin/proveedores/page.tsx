@@ -27,9 +27,12 @@ import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import ImageUploader from '@/components/(cocina-movil)/admin/image-uploader'
 import LocationPicker from '@/components/(cocina-movil)/admin/location-picker'
+import OwnerSelector from '@/components/(cocina-movil)/admin/owner-selector'
+import { useOwnerFilter, ownerQueryParam } from '@/lib/cocina-movil/owner-filter'
 
 interface CmSupplier {
   id: string
+  ownerId?: string
   name: string
   contactName: string | null
   phone: string | null
@@ -59,6 +62,7 @@ function CmProveedoresPageContent() {
   const [formMode, setFormMode] = React.useState<FormMode>('create')
   const [editItem, setEditItem] = React.useState<CmSupplier | null>(null)
   const [deleteItem, setDeleteItem] = React.useState<CmSupplier | null>(null)
+  const { isSuperadmin, selectedOwner, ownerNameById } = useOwnerFilter()
 
   React.useEffect(() => {
     if (searchParams.get('action') === 'new') { setFormMode('create'); setEditItem(null); setFormOpen(true) }
@@ -72,7 +76,7 @@ function CmProveedoresPageContent() {
       if (statusFilter === 'active') params.set('isActive', 'true')
       if (statusFilter === 'inactive') params.set('isActive', 'false')
       params.set('pageSize', '200')
-      const res = await fetch(`/api/cocina-movil/suppliers?${params.toString()}`)
+      const res = await fetch(`/api/cocina-movil/suppliers?${params.toString()}${ownerQueryParam(selectedOwner)}`)
       if (!res.ok) throw new Error('HTTP ' + res.status)
       const data = await res.json()
       setItems(data.suppliers || [])
@@ -80,7 +84,7 @@ function CmProveedoresPageContent() {
     } catch (err) {
       console.error(err); toast.error('Error al cargar proveedores')
     } finally { setLoading(false) }
-  }, [search, statusFilter])
+  }, [search, statusFilter, selectedOwner])
 
   React.useEffect(() => { const id = setTimeout(loadItems, 250); return () => clearTimeout(id) }, [loadItems])
 
@@ -122,6 +126,8 @@ function CmProveedoresPageContent() {
         </div>
         <Button onClick={openCreate} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]"><Plus className="h-4 w-4" />Nuevo Proveedor</Button>
       </div>
+
+      <OwnerSelector />
 
       <Card className="border-[#5C3A21]/10 shadow-sm">
         <CardContent className="p-4 space-y-3">
@@ -167,6 +173,7 @@ function CmProveedoresPageContent() {
                     <TableHead className="hidden lg:table-cell">Teléfono</TableHead>
                     <TableHead className="hidden xl:table-cell">Email</TableHead>
                     <TableHead>Estado</TableHead>
+                    {isSuperadmin && <TableHead className="hidden lg:table-cell">Dueño</TableHead>}
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -187,6 +194,7 @@ function CmProveedoresPageContent() {
                       <TableCell className="hidden lg:table-cell text-sm text-[#4A3F36]">{item.phone || '—'}</TableCell>
                       <TableCell className="hidden xl:table-cell text-sm text-[#4A3F36] truncate max-w-xs">{item.email || '—'}</TableCell>
                       <TableCell><Badge className={`text-[10px] ${item.isActive ? 'bg-[#708238] hover:bg-[#708238]' : 'bg-[#8A7E70] hover:bg-[#8A7E70]'}`}>{item.isActive ? 'Activo' : 'Inactivo'}</Badge></TableCell>
+                      {isSuperadmin && <TableCell className="hidden lg:table-cell text-xs text-[#8A7E70]">{ownerNameById(item.ownerId)}</TableCell>}
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-8 w-8 text-[#5C3A21]"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>

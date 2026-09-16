@@ -66,6 +66,8 @@ import { toast } from 'sonner'
 import LocationPicker from '@/components/(cocina-movil)/admin/location-picker'
 import ImageUploader from '@/components/(cocina-movil)/admin/image-uploader'
 import { type CmPlaceRecord } from '@/lib/cocina-movil/places'
+import OwnerSelector from '@/components/(cocina-movil)/admin/owner-selector'
+import { useOwnerFilter, ownerQueryParam } from '@/lib/cocina-movil/owner-filter'
 
 type FormMode = 'create' | 'edit'
 
@@ -183,6 +185,7 @@ function CmLugaresPageContent() {
   const [formMode, setFormMode] = React.useState<FormMode>('create')
   const [editingPlace, setEditingPlace] = React.useState<CmPlaceRecord | null>(null)
   const [deletePlace, setDeletePlace] = React.useState<CmPlaceRecord | null>(null)
+  const { isSuperadmin, selectedOwner, ownerNameById } = useOwnerFilter()
 
   // Abrir modal de creación si viene ?action=new
   const openCreateForm = React.useCallback(() => {
@@ -205,7 +208,7 @@ function CmLugaresPageContent() {
       if (statusFilter === 'active') params.set('isActive', 'true')
       if (statusFilter === 'inactive') params.set('isActive', 'false')
       params.set('pageSize', '200')
-      const res = await fetch(`/api/cocina-movil/places?${params.toString()}`)
+      const res = await fetch(`/api/cocina-movil/places?${params.toString()}${ownerQueryParam(selectedOwner)}`)
       if (!res.ok) throw new Error('HTTP ' + res.status)
       const data = await res.json()
       setPlaces(data.places || [])
@@ -216,7 +219,7 @@ function CmLugaresPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [search, statusFilter])
+  }, [search, statusFilter, selectedOwner])
 
   React.useEffect(() => {
     const id = setTimeout(loadPlaces, 250)
@@ -293,6 +296,8 @@ function CmLugaresPageContent() {
           Nuevo Lugar
         </Button>
       </div>
+
+      <OwnerSelector />
 
       {/* Filtros + búsqueda + export */}
       <Card className="border-[#5C3A21]/10 shadow-sm">
@@ -394,6 +399,7 @@ function CmLugaresPageContent() {
                     <TableHead className="hidden md:table-cell">Dirección</TableHead>
                     <TableHead className="hidden md:table-cell">Responsable</TableHead>
                     <TableHead>Estado</TableHead>
+                    {isSuperadmin && <TableHead className="hidden lg:table-cell">Dueño</TableHead>}
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -450,6 +456,7 @@ function CmLugaresPageContent() {
                           {p.isActive ? 'Activo' : 'Inactivo'}
                         </Badge>
                       </TableCell>
+                      {isSuperadmin && <TableCell className="hidden lg:table-cell text-xs text-[#8A7E70]">{ownerNameById(p.ownerId)}</TableCell>}
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
                           <DropdownMenu>

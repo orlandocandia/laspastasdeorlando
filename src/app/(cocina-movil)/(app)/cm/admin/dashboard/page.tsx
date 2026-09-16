@@ -27,6 +27,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getInitials } from '@/lib/cocina-movil/users'
+import OwnerSelector from '@/components/(cocina-movil)/admin/owner-selector'
+import { useOwnerFilter } from '@/lib/cocina-movil/owner-filter'
 
 interface DashboardData {
   kpis: {
@@ -79,11 +81,13 @@ export default function CmAdminDashboardPage() {
   const [data, setData] = React.useState<DashboardData | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const { selectedOwner } = useOwnerFilter()
 
   React.useEffect(() => {
     async function load() {
       try {
-        const res = await fetch('/api/cocina-movil/dashboard')
+        const ownerIdParam = selectedOwner !== 'all' ? `?ownerId=${encodeURIComponent(selectedOwner)}` : ''
+        const res = await fetch(`/api/cocina-movil/dashboard${ownerIdParam}`)
         if (!res.ok) throw new Error('HTTP ' + res.status)
         const json = await res.json()
         setData(json)
@@ -95,7 +99,7 @@ export default function CmAdminDashboardPage() {
       }
     }
     load()
-  }, [])
+  }, [selectedOwner])
 
   if (loading) {
     return (
@@ -171,6 +175,8 @@ export default function CmAdminDashboardPage() {
           </Button>
         </div>
       </div>
+
+      <OwnerSelector />
 
       {/* Main KPIs (4 cards) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

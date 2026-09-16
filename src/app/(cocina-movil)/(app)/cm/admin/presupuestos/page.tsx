@@ -36,6 +36,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import { SelectWithCreate, type QuickCreateEntity, type SelectOption } from '@/components/(cocina-movil)/admin/select-with-create'
+import OwnerSelector from '@/components/(cocina-movil)/admin/owner-selector'
+import { useOwnerFilter, ownerQueryParam } from '@/lib/cocina-movil/owner-filter'
 
 // ============================================================
 // Tipos
@@ -57,6 +59,7 @@ interface CmBudgetItem {
 
 interface CmBudgetRecord {
   id: string
+  ownerId?: string
   // Datos generales
   budgetDate: number
   clientName: string | null
@@ -187,6 +190,7 @@ function CmPresupuestosPageContent() {
   const [detailItem, setDetailItem] = React.useState<CmBudgetRecord | null>(null)
 
   const [recipes, setRecipes] = React.useState<RecipeOption[]>([])
+  const { isSuperadmin, selectedOwner, ownerNameById } = useOwnerFilter()
 
   // Carga de recetas activas — una sola vez al montar
   React.useEffect(() => {
@@ -221,7 +225,7 @@ function CmPresupuestosPageContent() {
       params.set('pageSize', '200')
       params.set('sortBy', 'createdAt')
       params.set('sortOrder', 'desc')
-      const res = await fetch(`/api/cocina-movil/budgets?${params.toString()}`)
+      const res = await fetch(`/api/cocina-movil/budgets?${params.toString()}${ownerQueryParam(selectedOwner)}`)
       if (!res.ok) throw new Error('HTTP ' + res.status)
       const data = await res.json()
       setBudgets(data.budgets || [])
@@ -232,7 +236,7 @@ function CmPresupuestosPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [search, statusFilter])
+  }, [search, statusFilter, selectedOwner])
 
   React.useEffect(() => {
     const id = setTimeout(loadBudgets, 250)
@@ -321,6 +325,8 @@ function CmPresupuestosPageContent() {
         </Button>
       </div>
 
+      <OwnerSelector />
+
       {/* Filtros */}
       <Card className="border-[#5C3A21]/10 shadow-sm">
         <CardContent className="p-4 space-y-3">
@@ -377,6 +383,7 @@ function CmPresupuestosPageContent() {
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead className="text-right">Margen %</TableHead>
                     <TableHead className="text-center">Estado</TableHead>
+                    {isSuperadmin && <TableHead className="hidden lg:table-cell">Dueño</TableHead>}
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -413,6 +420,7 @@ function CmPresupuestosPageContent() {
                             {meta.label}
                           </Badge>
                         </TableCell>
+                        {isSuperadmin && <TableCell className="hidden lg:table-cell text-xs text-[#8A7E70]">{ownerNameById(b.ownerId)}</TableCell>}
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

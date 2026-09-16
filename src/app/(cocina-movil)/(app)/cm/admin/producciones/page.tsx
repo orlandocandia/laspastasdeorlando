@@ -33,6 +33,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { SelectWithCreate, type QuickCreateEntity, type SelectOption } from '@/components/(cocina-movil)/admin/select-with-create'
+import OwnerSelector from '@/components/(cocina-movil)/admin/owner-selector'
+import { useOwnerFilter, ownerQueryParam } from '@/lib/cocina-movil/owner-filter'
 
 // ============================================================
 // Tipos
@@ -42,6 +44,7 @@ type CmProductionStatus = 'pending' | 'confirmed' | 'rejected'
 
 interface CmProductionRecord {
   id: string
+  ownerId?: string
   recipeId: string
   recipeTitle: string
   recipeCostPerServing: number
@@ -127,6 +130,7 @@ function CmProduccionesPageContent() {
 
   const [recipes, setRecipes] = React.useState<RecipeOption[]>([])
   const [places, setPlaces] = React.useState<PlaceOption[]>([])
+  const { isSuperadmin, selectedOwner, ownerNameById } = useOwnerFilter()
 
   // Carga de dropdowns (recetas y lugares activos) — una sola vez al montar
   React.useEffect(() => {
@@ -171,7 +175,7 @@ function CmProduccionesPageContent() {
       params.set('pageSize', '200')
       params.set('sortBy', 'createdAt')
       params.set('sortOrder', 'desc')
-      const res = await fetch(`/api/cocina-movil/productions?${params.toString()}`)
+      const res = await fetch(`/api/cocina-movil/productions?${params.toString()}${ownerQueryParam(selectedOwner)}`)
       if (!res.ok) throw new Error('HTTP ' + res.status)
       const data = await res.json()
       setProductions(data.productions || [])
@@ -182,7 +186,7 @@ function CmProduccionesPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [search, placeFilter, statusFilter])
+  }, [search, placeFilter, statusFilter, selectedOwner])
 
   React.useEffect(() => {
     const id = setTimeout(loadProductions, 250)
@@ -266,6 +270,8 @@ function CmProduccionesPageContent() {
         </Button>
       </div>
 
+      <OwnerSelector />
+
       {/* Filtros */}
       <Card className="border-[#5C3A21]/10 shadow-sm">
         <CardContent className="p-4 space-y-3">
@@ -329,6 +335,7 @@ function CmProduccionesPageContent() {
                     <TableHead className="text-center">Cantidad</TableHead>
                     <TableHead className="text-right">Costo Total</TableHead>
                     <TableHead className="text-center">Estado</TableHead>
+                    {isSuperadmin && <TableHead className="hidden lg:table-cell">Dueño</TableHead>}
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -357,6 +364,7 @@ function CmProduccionesPageContent() {
                             {meta.label}
                           </Badge>
                         </TableCell>
+                        {isSuperadmin && <TableCell className="hidden lg:table-cell text-xs text-[#8A7E70]">{ownerNameById(p.ownerId)}</TableCell>}
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

@@ -35,6 +35,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import ImageUploader from '@/components/(cocina-movil)/admin/image-uploader'
+import OwnerSelector from '@/components/(cocina-movil)/admin/owner-selector'
+import { useOwnerFilter, ownerQueryParam } from '@/lib/cocina-movil/owner-filter'
 import { SelectWithCreate, type QuickCreateEntity, type SelectOption } from '@/components/(cocina-movil)/admin/select-with-create'
 import { CategorySelectWithCreate } from '@/components/(cocina-movil)/admin/category-select-with-create'
 
@@ -67,6 +69,7 @@ interface CmRecipeSupply {
 
 interface CmRecipeRecord {
   id: string
+  ownerId?: string
   title: string
   description: string | null
   category: CmRecipeCategory
@@ -175,6 +178,7 @@ function CmRecetasPageContent() {
 
   const [ingredients, setIngredients] = React.useState<OptionItem[]>([])
   const [supplies, setSupplies] = React.useState<OptionItem[]>([])
+  const { isSuperadmin, selectedOwner, ownerNameById } = useOwnerFilter()
 
   // Carga de dropdowns (una sola vez al montar)
   React.useEffect(() => {
@@ -218,7 +222,7 @@ function CmRecetasPageContent() {
       if (statusFilter === 'active') params.set('isActive', 'true')
       if (statusFilter === 'inactive') params.set('isActive', 'false')
       params.set('pageSize', '200')
-      const res = await fetch(`/api/cocina-movil/recipes?${params.toString()}`)
+      const res = await fetch(`/api/cocina-movil/recipes?${params.toString()}${ownerQueryParam(selectedOwner)}`)
       if (!res.ok) throw new Error('HTTP ' + res.status)
       const data = await res.json()
       setRecipes(data.recipes || [])
@@ -229,7 +233,7 @@ function CmRecetasPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [search, catFilter, statusFilter])
+  }, [search, catFilter, statusFilter, selectedOwner])
 
   React.useEffect(() => {
     const id = setTimeout(loadRecipes, 250)
@@ -290,6 +294,8 @@ function CmRecetasPageContent() {
           <Plus className="h-4 w-4" />Nueva Receta
         </Button>
       </div>
+
+      <OwnerSelector />
 
       {/* Filtros */}
       <Card className="border-[#5C3A21]/10 shadow-sm">
@@ -356,6 +362,7 @@ function CmRecetasPageContent() {
                     <TableHead className="text-right">Costo Total</TableHead>
                     <TableHead className="text-right">Costo/Porción</TableHead>
                     <TableHead className="text-center">Estado</TableHead>
+                    {isSuperadmin && <TableHead className="hidden lg:table-cell">Dueño</TableHead>}
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -388,6 +395,7 @@ function CmRecetasPageContent() {
                           {r.isActive ? 'Activo' : 'Inactivo'}
                         </Badge>
                       </TableCell>
+                      {isSuperadmin && <TableCell className="hidden lg:table-cell text-xs text-[#8A7E70]">{ownerNameById(r.ownerId)}</TableCell>}
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

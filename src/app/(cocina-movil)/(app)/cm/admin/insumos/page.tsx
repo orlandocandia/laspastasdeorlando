@@ -26,12 +26,15 @@ import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import ImageUploader from '@/components/(cocina-movil)/admin/image-uploader'
+import OwnerSelector from '@/components/(cocina-movil)/admin/owner-selector'
+import { useOwnerFilter, ownerQueryParam } from '@/lib/cocina-movil/owner-filter'
 
 type CmSupplyCategory = 'envases' | 'limpieza' | 'descartables' | 'otros'
 type CmSupplyUnit = 'u' | 'm' | 'kg' | 'paquete' | 'caja' | 'rollo'
 
 interface CmSupply {
   id: string
+  ownerId?: string
   name: string
   description: string | null
   category: CmSupplyCategory | null
@@ -141,6 +144,7 @@ function CmInsumosPageContent() {
   const [formMode, setFormMode] = React.useState<FormMode>('create')
   const [editItem, setEditItem] = React.useState<CmSupply | null>(null)
   const [deleteItem, setDeleteItem] = React.useState<CmSupply | null>(null)
+  const { isSuperadmin, selectedOwner, ownerNameById } = useOwnerFilter()
 
   React.useEffect(() => {
     if (searchParams.get('action') === 'new') { setFormMode('create'); setEditItem(null); setFormOpen(true) }
@@ -155,7 +159,7 @@ function CmInsumosPageContent() {
       if (statusFilter === 'active') params.set('isActive', 'true')
       if (statusFilter === 'inactive') params.set('isActive', 'false')
       params.set('pageSize', '200')
-      const res = await fetch(`/api/cocina-movil/supplies?${params.toString()}`)
+      const res = await fetch(`/api/cocina-movil/supplies?${params.toString()}${ownerQueryParam(selectedOwner)}`)
       if (!res.ok) throw new Error('HTTP ' + res.status)
       const data = await res.json()
       setItems(data.supplies || [])
@@ -163,7 +167,7 @@ function CmInsumosPageContent() {
     } catch (err) {
       console.error(err); toast.error('Error al cargar insumos')
     } finally { setLoading(false) }
-  }, [search, catFilter, statusFilter])
+  }, [search, catFilter, statusFilter, selectedOwner])
 
   React.useEffect(() => { const id = setTimeout(loadItems, 250); return () => clearTimeout(id) }, [loadItems])
 
@@ -206,6 +210,8 @@ function CmInsumosPageContent() {
         </div>
         <Button onClick={openCreate} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]"><Plus className="h-4 w-4" />Nuevo Insumo</Button>
       </div>
+
+      <OwnerSelector />
 
       <Card className="border-[#5C3A21]/10 shadow-sm">
         <CardContent className="p-4 space-y-3">
@@ -258,6 +264,7 @@ function CmInsumosPageContent() {
                     <TableHead>Unidad</TableHead>
                     <TableHead>Precio</TableHead>
                     <TableHead>Estado</TableHead>
+                    {isSuperadmin && <TableHead className="hidden lg:table-cell">Dueño</TableHead>}
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -280,6 +287,7 @@ function CmInsumosPageContent() {
                       <TableCell className="text-sm text-[#4A3F36]">{item.purchaseUnit}</TableCell>
                       <TableCell className="text-sm font-medium text-[#5C3A21]">${(item.pricePerPurchaseUnit || item.purchasePrice).toLocaleString('es-AR', { maximumFractionDigits: 2 })}</TableCell>
                       <TableCell><Badge className={`text-[10px] ${item.isActive ? 'bg-[#708238] hover:bg-[#708238]' : 'bg-[#8A7E70] hover:bg-[#8A7E70]'}`}>{item.isActive ? 'Activo' : 'Inactivo'}</Badge></TableCell>
+                      {isSuperadmin && <TableCell className="hidden lg:table-cell text-xs text-[#8A7E70]">{ownerNameById(item.ownerId)}</TableCell>}
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild><Button size="icon" variant="ghost" className="h-8 w-8 text-[#5C3A21]"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>

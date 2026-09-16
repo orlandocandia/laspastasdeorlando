@@ -41,12 +41,15 @@ import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import ImageUploader from '@/components/(cocina-movil)/admin/image-uploader'
 import LocationPicker from '@/components/(cocina-movil)/admin/location-picker'
+import OwnerSelector from '@/components/(cocina-movil)/admin/owner-selector'
+import { useOwnerFilter, ownerQueryParam } from '@/lib/cocina-movil/owner-filter'
 
 // ---------------------------------------------------------------
 // Tipos
 // ---------------------------------------------------------------
 interface CmClient {
   id: string
+  ownerId?: string
   firstName: string
   lastName: string
   fullName: string
@@ -136,6 +139,7 @@ function CmClientesPageContent() {
   const [formMode, setFormMode] = React.useState<FormMode>('create')
   const [editItem, setEditItem] = React.useState<CmClient | null>(null)
   const [deleteItem, setDeleteItem] = React.useState<CmClient | null>(null)
+  const { isSuperadmin, selectedOwner, ownerNameById } = useOwnerFilter()
 
   // Deep link ?action=new
   React.useEffect(() => {
@@ -154,7 +158,7 @@ function CmClientesPageContent() {
       if (statusFilter === 'active') params.set('isActive', 'true')
       if (statusFilter === 'inactive') params.set('isActive', 'false')
       params.set('pageSize', '200')
-      const res = await fetch(`/api/cocina-movil/clients?${params.toString()}`)
+      const res = await fetch(`/api/cocina-movil/clients?${params.toString()}${ownerQueryParam(selectedOwner)}`)
       if (!res.ok) throw new Error('HTTP ' + res.status)
       const data = await res.json()
       setItems(data.clients || [])
@@ -165,7 +169,7 @@ function CmClientesPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [search, statusFilter])
+  }, [search, statusFilter, selectedOwner])
 
   // Debounce 250ms
   React.useEffect(() => {
@@ -236,6 +240,8 @@ function CmClientesPageContent() {
         </Button>
       </div>
 
+      <OwnerSelector />
+
       {/* Filtros */}
       <Card className="border-[#5C3A21]/10 shadow-sm">
         <CardContent className="p-4 space-y-3">
@@ -304,6 +310,7 @@ function CmClientesPageContent() {
                     <TableHead className="hidden xl:table-cell">Email</TableHead>
                     <TableHead className="hidden md:table-cell">Ciudad</TableHead>
                     <TableHead>Estado</TableHead>
+                    {isSuperadmin && <TableHead className="hidden lg:table-cell">Dueño</TableHead>}
                     <TableHead className="text-right">Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -346,6 +353,7 @@ function CmClientesPageContent() {
                             {item.isActive ? 'Activo' : 'Inactivo'}
                           </Badge>
                         </TableCell>
+                        {isSuperadmin && <TableCell className="hidden lg:table-cell text-xs text-[#8A7E70]">{ownerNameById(item.ownerId)}</TableCell>}
                         <TableCell className="text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
