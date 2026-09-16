@@ -26,8 +26,6 @@ import { Button } from '@/components/ui/button'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
-import OwnerSelector from '@/components/(cocina-movil)/admin/owner-selector'
-import { useOwnerFilter } from '@/lib/cocina-movil/owner-filter'
 
 interface OwnerInfo {
   id: string
@@ -96,17 +94,14 @@ export default function SuperadminDashboardPage() {
 }
 
 function SuperadminDashboardContent() {
-  const { selectedOwner, ownerNameById } = useOwnerFilter()
   const [data, setData] = React.useState<SuperadminDashboardData | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     async function load() {
-      setLoading(true)
       try {
-        const ownerParam = selectedOwner !== 'all' ? `?ownerId=${encodeURIComponent(selectedOwner)}` : ''
-        const res = await fetch(`/api/cocina-movil/superadmin/dashboard${ownerParam}`)
+        const res = await fetch('/api/cocina-movil/superadmin/dashboard')
         if (!res.ok) throw new Error('HTTP ' + res.status)
         const json = await res.json()
         setData(json)
@@ -118,7 +113,7 @@ function SuperadminDashboardContent() {
       }
     }
     load()
-  }, [selectedOwner])
+  }, [])
 
   if (loading) {
     return (
@@ -168,15 +163,8 @@ function SuperadminDashboardContent() {
           <ShieldCheck className="h-6 w-6 text-[#B91C1C]" />
           Panel de SuperAdmin
         </h1>
-        <p className="text-sm text-[#8A7E70]">
-          {selectedOwner === 'all'
-            ? 'Vista global de todos los Admins y sus datos'
-            : `Datos de ${ownerNameById(selectedOwner)}`}
-        </p>
+        <p className="text-sm text-[#8A7E70]">Vista global de todos los Admins y sus datos</p>
       </div>
-
-      {/* Owner selector */}
-      <OwnerSelector />
 
       {/* Global KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -202,14 +190,8 @@ function SuperadminDashboardContent() {
       {/* Module quick-links */}
       <Card className="border-[#5C3A21]/10 shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-[#5C3A21]">
-            Resumen de Módulos{selectedOwner === 'all' ? ' (Global)' : ` (${ownerNameById(selectedOwner)})`}
-          </CardTitle>
-          <CardDescription className="text-xs">
-            {selectedOwner === 'all'
-              ? 'Datos sumados de todos los Admins'
-              : 'Datos del dueño seleccionado'}
-          </CardDescription>
+          <CardTitle className="text-base text-[#5C3A21]">Resumen de Módulos (Global)</CardTitle>
+          <CardDescription className="text-xs">Datos sumados de todos los Admins</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {moduleKpis.map((sk) => {
@@ -234,8 +216,7 @@ function SuperadminDashboardContent() {
         </CardContent>
       </Card>
 
-      {/* Per-owner breakdown table — only shown in global view */}
-      {selectedOwner === 'all' && (
+      {/* Per-owner breakdown table */}
       <Card className="border-[#5C3A21]/10 shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-base text-[#5C3A21] flex items-center gap-2">
@@ -290,7 +271,6 @@ function SuperadminDashboardContent() {
           )}
         </CardContent>
       </Card>
-      )}
     </div>
   )
 }
