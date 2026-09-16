@@ -93,8 +93,18 @@ export default function CookDashboardPage() {
   const hasAlerts = pendingProductions > 0 || stats.lowStock > 0
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div
+      className="space-y-6 relative min-h-[calc(100vh-120px)] rounded-lg"
+      style={{
+        backgroundImage:
+          'linear-gradient(rgba(255,248,231,0.88), rgba(255,248,231,0.92)), url("/images/(cocina-movil)/fondo-cocina.jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      <div className="relative z-10">
         <h1 className="text-2xl font-bold text-[#5C3A21]">¡Hola, {user?.firstName || 'Cocinero'}! 👨‍🍳</h1>
         <p className="text-sm text-[#8A7E70]">Bienvenido a tu panel de trabajo.</p>
       </div>

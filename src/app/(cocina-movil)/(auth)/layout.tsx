@@ -4,8 +4,9 @@
  * ============================================================
  *
  * Layout para las páginas de autenticación (login, recover-password).
- * Usa la imagen de fondo login-bg.jpg con overlay sutil para
- * mantener la legibilidad del formulario.
+ * Usa la imagen de fondo fondo-cocina.jpg (mesa rústica con
+ * verduras e ingredientes frescos) con un overlay oscuro al ~40%
+ * para mantener la legibilidad del formulario y dar contraste.
  *
  * Centra el contenido vertical y horizontalmente, con un
  * contenedor mobile-first (max-w-sm / max-w-md).
@@ -20,13 +21,14 @@ export default function CmAuthLayout({
 }) {
   return (
     <main
-      className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden"
+      className="flex-1 flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden bg-[#1F1611]"
       style={{
         backgroundImage:
-          'linear-gradient(135deg, rgba(92,58,33,0.82) 0%, rgba(58,38,20,0.78) 50%, rgba(225,173,1,0.55) 100%), url("/images/(cocina-movil)/login-bg.jpg")',
+          'linear-gradient(135deg, rgba(31,22,17,0.55) 0%, rgba(31,22,17,0.45) 50%, rgba(31,22,17,0.55) 100%), url("/images/(cocina-movil)/fondo-cocina.jpg")',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
       }}
     >
       {/* Contenedor mobile-first con ancho máximo tipo teléfono/tablet */}

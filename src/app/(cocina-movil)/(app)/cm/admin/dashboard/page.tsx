@@ -145,9 +145,19 @@ export default function CmAdminDashboardPage() {
   ]
 
   return (
-    <div className="space-y-6">
+    <div
+      className="space-y-6 relative min-h-[calc(100vh-120px)] rounded-lg"
+      style={{
+        backgroundImage:
+          'linear-gradient(rgba(255,248,231,0.88), rgba(255,248,231,0.92)), url("/images/(cocina-movil)/fondo-cocina.jpg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
         <div>
           <h1 className="text-2xl font-bold text-[#5C3A21]">Dashboard</h1>
           <p className="text-sm text-[#8A7E70]">Resumen general de la Cocina Móvil</p>
