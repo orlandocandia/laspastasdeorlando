@@ -18,6 +18,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Users, ChefHat, Factory, MapPin, Plus, ArrowRight, Activity,
   Package, FlaskConical, Building2, ShoppingCart, Receipt,
@@ -29,6 +30,7 @@ import { Badge } from '@/components/ui/badge'
 import { getInitials } from '@/lib/cocina-movil/users'
 import OwnerSelector from '@/components/(cocina-movil)/admin/owner-selector'
 import { useOwnerFilter } from '@/lib/cocina-movil/owner-filter'
+import { clearCmSession } from '@/lib/cocina-movil/auth-client'
 
 interface DashboardData {
   kpis: {
@@ -78,6 +80,7 @@ interface DashboardData {
 }
 
 export default function CmAdminDashboardPage() {
+  const router = useRouter()
   const [data, setData] = React.useState<DashboardData | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -88,6 +91,12 @@ export default function CmAdminDashboardPage() {
       try {
         const ownerIdParam = selectedOwner !== 'all' ? `?ownerId=${encodeURIComponent(selectedOwner)}` : ''
         const res = await fetch(`/api/cocina-movil/dashboard${ownerIdParam}`)
+        if (res.status === 401) {
+          // Session expired → clear localStorage and redirect to login
+          clearCmSession()
+          router.push('/login')
+          return
+        }
         if (!res.ok) throw new Error('HTTP ' + res.status)
         const json = await res.json()
         setData(json)
@@ -99,7 +108,7 @@ export default function CmAdminDashboardPage() {
       }
     }
     load()
-  }, [selectedOwner])
+  }, [selectedOwner, router])
 
   if (loading) {
     return (

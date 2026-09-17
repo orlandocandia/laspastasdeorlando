@@ -16,6 +16,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Users, ChefHat, Factory, MapPin, Receipt, TrendingUp,
   Package, FlaskConical, Building2, ShoppingCart, FileText,
@@ -26,6 +27,7 @@ import { Button } from '@/components/ui/button'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
+import { clearCmSession } from '@/lib/cocina-movil/auth-client'
 
 interface OwnerInfo {
   id: string
@@ -94,6 +96,7 @@ export default function SuperadminDashboardPage() {
 }
 
 function SuperadminDashboardContent() {
+  const router = useRouter()
   const [data, setData] = React.useState<SuperadminDashboardData | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -102,6 +105,12 @@ function SuperadminDashboardContent() {
     async function load() {
       try {
         const res = await fetch('/api/cocina-movil/superadmin/dashboard')
+        if (res.status === 401) {
+          // Session expired → clear localStorage and redirect to login
+          clearCmSession()
+          router.push('/login')
+          return
+        }
         if (!res.ok) throw new Error('HTTP ' + res.status)
         const json = await res.json()
         setData(json)
@@ -113,7 +122,7 @@ function SuperadminDashboardContent() {
       }
     }
     load()
-  }, [])
+  }, [router])
 
   if (loading) {
     return (

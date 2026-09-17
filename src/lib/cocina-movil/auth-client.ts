@@ -109,6 +109,11 @@ export async function logoutCm(): Promise<void> {
 
 /**
  * Verifica si hay una sesión activa consultando el endpoint /verify.
+ *
+ * IMPORTANTE: Usar en shells/guards para detectar sesiones expiradas.
+ * La cookie HttpOnly cm_session tiene un TTL de 8 horas. localStorage
+ * persiste entre reinicios del navegador, así que getCmUserFromStorage()
+ * puede devolver un usuario aunque la cookie ya haya expirado.
  */
 export async function verifyCmSession(): Promise<{ valid: boolean; user?: CmUser }> {
   try {
@@ -120,6 +125,23 @@ export async function verifyCmSession(): Promise<{ valid: boolean; user?: CmUser
     return { valid: !!data.valid, user: data.user }
   } catch {
     return { valid: false }
+  }
+}
+
+/**
+ * Limpia la sesión del cliente (solo localStorage, sin llamar al API).
+ * Usar cuando se detecta un 401 (sesión expirada) para limpiar el estado
+ * local antes de redirigir al login.
+ *
+ * NOTA sobre renovación de cookie: la sesión es stateless (token HMAC-SHA256
+ * firmado embebido en la cookie cm_session, TTL 8 horas). No hay endpoint
+ * de refresh — cuando expira, el usuario debe volver a iniciar sesión.
+ * El admin-shell verifica la sesión en cada montaje via verifyCmSession()
+ * y redirige automáticamente al login si expiró.
+ */
+export function clearCmSession(): void {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('cm_user')
   }
 }
 

@@ -42,7 +42,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { logoutCm, getCmUserFromStorage, type CmUser } from '@/lib/cocina-movil/auth-client'
+import { logoutCm, getCmUserFromStorage, verifyCmSession, clearCmSession, type CmUser } from '@/lib/cocina-movil/auth-client'
 import { cn } from '@/lib/utils'
 import AsistenteChat from '@/components/(cocina-movil)/asistente/asistente-chat'
 
@@ -81,14 +81,24 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
   React.useEffect(() => {
     const u = getCmUserFromStorage()
     if (!u) {
-      // No hay sesión → redirect a login
+      // No hay sesión en localStorage → redirect a login
       router.push('/login')
       return
     }
-    // Auth guard: cualquier admin o superadmin autenticado puede acceder a /cm/admin/*.
-    // (El superadmin también accede aquí para ver/editar los datos de cualquier admin.)
-    setUser(u)
-    setLoading(false)
+    // Verify the session cookie is still valid (not expired).
+    // localStorage persists across browser restarts, but the HttpOnly
+    // cm_session cookie has an 8-hour TTL. If it expired, we redirect
+    // to login instead of rendering the dashboard (which would get 401).
+    verifyCmSession().then(({ valid }) => {
+      if (!valid) {
+        // Session expired or invalid → clear localStorage and redirect
+        clearCmSession()
+        router.push('/login')
+        return
+      }
+      setUser(u)
+      setLoading(false)
+    })
   }, [router])
 
   const handleLogout = async () => {
