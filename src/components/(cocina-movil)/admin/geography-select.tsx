@@ -203,16 +203,16 @@ export default function GeographySelect({ country, province, department, municip
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {/* País */}
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <Label className="text-[#5C3A21]">País</Label>
         <Select
           value={paisId !== null ? String(paisId) : ''}
           onValueChange={handlePaisChange}
           disabled={loadingPaises}
         >
-          <SelectTrigger className="border-[#5C3A21]/15">
+          <SelectTrigger className="w-full border-[#5C3A21]/15">
             <SelectValue placeholder={loadingPaises ? 'Cargando…' : 'Seleccionar país'} />
           </SelectTrigger>
           <SelectContent>
@@ -224,14 +224,14 @@ export default function GeographySelect({ country, province, department, municip
       </div>
 
       {/* Provincia */}
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <Label className="text-[#5C3A21]">Provincia</Label>
         <Select
           value={provinciaId !== null ? String(provinciaId) : ''}
           onValueChange={handleProvinciaChange}
           disabled={paisId === null || loadingProv}
         >
-          <SelectTrigger className="border-[#5C3A21]/15">
+          <SelectTrigger className="w-full border-[#5C3A21]/15">
             <SelectValue placeholder={paisId === null ? 'Seleccioná país primero' : loadingProv ? 'Cargando…' : 'Seleccionar provincia'} />
           </SelectTrigger>
           <SelectContent>
@@ -243,14 +243,14 @@ export default function GeographySelect({ country, province, department, municip
       </div>
 
       {/* Departamento */}
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <Label className="text-[#5C3A21]">Departamento</Label>
         <Select
           value={departamentoId !== null ? String(departamentoId) : ''}
           onValueChange={handleDepartamentoChange}
           disabled={provinciaId === null || loadingDep}
         >
-          <SelectTrigger className="border-[#5C3A21]/15">
+          <SelectTrigger className="w-full border-[#5C3A21]/15">
             <SelectValue placeholder={provinciaId === null ? 'Seleccioná provincia primero' : loadingDep ? 'Cargando…' : 'Seleccionar departamento'} />
           </SelectTrigger>
           <SelectContent>
@@ -262,14 +262,14 @@ export default function GeographySelect({ country, province, department, municip
       </div>
 
       {/* Municipio */}
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <Label className="text-[#5C3A21]">Municipio</Label>
         <Select
           value={municipios.find((m) => m.nombre === municipality) ? String(municipios.find((m) => m.nombre === municipality)!.id) : ''}
           onValueChange={handleMunicipioChange}
           disabled={departamentoId === null || loadingMun}
         >
-          <SelectTrigger className="border-[#5C3A21]/15">
+          <SelectTrigger className="w-full border-[#5C3A21]/15">
             <SelectValue placeholder={departamentoId === null ? 'Seleccioná depto. primero' : loadingMun ? 'Cargando…' : 'Seleccionar municipio'} />
           </SelectTrigger>
           <SelectContent>
