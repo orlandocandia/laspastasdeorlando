@@ -204,15 +204,15 @@ function CmUsersPageContent() {
 
   // Abrir modal de creación si viene ?action=new
   React.useEffect(() => {
-    // Auth guard: SuperAdmin can manage all users; Admin can only create supervisors.
-    // Other roles → redirect to own profile.
+    // Auth guard: ONLY SuperAdmin can manage users.
+    // Admin and other roles → redirect to dashboard.
     const sessionUser = getCmUserFromStorage()
     if (!sessionUser) {
       router.push('/login')
       return
     }
-    if (sessionUser.role !== 'superadmin' && sessionUser.role !== 'admin') {
-      router.push('/cm/profile')
+    if (sessionUser.role !== 'superadmin') {
+      router.push('/cm/admin/dashboard')
       return
     }
     setSessionRole(sessionUser.role)

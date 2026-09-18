@@ -155,7 +155,18 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
         <div className="flex items-center gap-3">
           <div className="hidden sm:block text-right">
             <div className="text-xs font-semibold text-[#FFF8E7]">{user?.name}</div>
-            <div className="text-[10px] text-[#FFF8E7]/60 capitalize">{user?.role === 'superadmin' ? 'SuperAdmin' : user?.role}</div>
+            <div className="text-[10px]">
+              <span className={cn(
+                'inline-block px-1.5 py-0.5 rounded font-medium',
+                user?.role === 'superadmin'
+                  ? 'bg-[#B91C1C]/20 text-[#FFB3B3] border border-[#B91C1C]/40'
+                  : user?.role === 'admin'
+                    ? 'bg-[#5C3A21]/30 text-[#FFF8E7]/80'
+                    : 'bg-[#E1AD01]/20 text-[#E1AD01]'
+              )}>
+                {user?.role === 'superadmin' ? 'Super Administrador' : user?.role === 'admin' ? 'Administrador' : user?.role === 'supervisor' ? 'Supervisor' : user?.role}
+              </span>
+            </div>
           </div>
           <Link
             href="/cm/profile"
@@ -203,8 +214,8 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
               </p>
             </div>
             {NAV_ITEMS.filter((item) => {
-              // "Usuarios" (ABM de Admins) is SuperAdmin-only
-              if (item.href === '/cm/admin/users' && user?.role !== 'superadmin' && user?.role !== 'admin') return false
+              // "Usuarios" (ABM de Usuarios) is SuperAdmin-only
+              if (item.href === '/cm/admin/users' && user?.role !== 'superadmin') return false
               return true
             }).map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
