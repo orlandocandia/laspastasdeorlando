@@ -17,7 +17,7 @@
  */
 
 import * as React from 'react'
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, useMapEvents, LayersControl } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { MapPin, X, Search, Loader2 } from 'lucide-react'
@@ -160,10 +160,48 @@ export default function LocationPicker({
             if (map) mapRef.current = map
           }}
         >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; OpenStreetMap'
-          />
+          <LayersControl position="topright">
+            <LayersControl.BaseLayer checked name="Estándar (OSM)">
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; OpenStreetMap'
+              />
+            </LayersControl.BaseLayer>
+            <LayersControl.BaseLayer name="Satélite (Esri)">
+              <TileLayer
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                attribution='&copy; Esri World Imagery'
+              />
+            </LayersControl.BaseLayer>
+            <LayersControl.BaseLayer name="Ciclismo (CyclOSM)">
+              <TileLayer
+                url="https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png"
+                attribution='&copy; CyclOSM'
+                maxZoom={20}
+              />
+            </LayersControl.BaseLayer>
+            <LayersControl.BaseLayer name="Transporte">
+              <TileLayer
+                url="https://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png"
+                attribution='&copy; Thunderforest, OpenStreetMap'
+                maxZoom={20}
+              />
+            </LayersControl.BaseLayer>
+            <LayersControl.BaseLayer name="Relieve (OpenTopoMap)">
+              <TileLayer
+                url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
+                attribution='&copy; OpenTopoMap (CC-BY-SA)'
+                maxZoom={17}
+              />
+            </LayersControl.BaseLayer>
+            <LayersControl.BaseLayer name="Oscuro (CartoDB)">
+              <TileLayer
+                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+                attribution='&copy; CartoDB Dark Matter'
+                maxZoom={20}
+              />
+            </LayersControl.BaseLayer>
+          </LayersControl>
           <ClickHandler onClick={handleMapClick} />
           {parsed && <Marker position={parsed} icon={cmIcon} />}
         </MapContainer>
