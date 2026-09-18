@@ -62,6 +62,7 @@ import { toast } from 'sonner'
 
 import LocationPicker from '@/components/(cocina-movil)/admin/location-picker'
 import AvatarUploader from '@/components/(cocina-movil)/admin/avatar-uploader'
+import GeographySelect from '@/components/(cocina-movil)/admin/geography-select'
 import {
   getFullName, getInitials,
   type CmUserRecord, type CmRole, type CmGender, type CmMaritalStatus,
@@ -815,38 +816,14 @@ function UserFormDialog({
                   className="border-[#5C3A21]/15"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-[#5C3A21]">País</Label>
-                <Input
-                  value={form.country}
-                  onChange={(e) => setField('country', e.target.value)}
-                  className="border-[#5C3A21]/15"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[#5C3A21]">Provincia</Label>
-                <Input
-                  value={form.province}
-                  onChange={(e) => setField('province', e.target.value)}
-                  className="border-[#5C3A21]/15"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[#5C3A21]">Departamento</Label>
-                <Input
-                  value={form.department}
-                  onChange={(e) => setField('department', e.target.value)}
-                  placeholder="Capital, Iguazú…"
-                  className="border-[#5C3A21]/15"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[#5C3A21]">Municipio</Label>
-                <Input
-                  value={form.municipality}
-                  onChange={(e) => setField('municipality', e.target.value)}
-                  placeholder="Posadas, Oberá…"
-                  className="border-[#5C3A21]/15"
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label className="text-[#5C3A21]">Ubicación geográfica</Label>
+                <GeographySelect
+                  country={form.country}
+                  province={form.province}
+                  department={form.department}
+                  municipality={form.municipality}
+                  onChange={(field, value) => setField(field, value)}
                 />
               </div>
             </div>
