@@ -135,7 +135,7 @@ interface UserFormState {
   isActive: boolean
 }
 
-function emptyForm(): UserFormState {
+function emptyForm(defaultRole: CmRole = 'admin'): UserFormState {
   return {
     firstName: '',
     lastName: '',
@@ -152,7 +152,7 @@ function emptyForm(): UserFormState {
     location: null,
     email: '',
     password: '',
-    role: 'admin',
+    role: defaultRole,
     isActive: true,
   }
 }
@@ -199,19 +199,22 @@ function CmUsersPageContent() {
   const [editingUser, setEditingUser] = React.useState<CmUserRecord | null>(null)
   const [passwordUser, setPasswordUser] = React.useState<CmUserRecord | null>(null)
   const [deleteUser, setDeleteUser] = React.useState<CmUserRecord | null>(null)
+  const [sessionRole, setSessionRole] = React.useState<CmRole | null>(null)
 
   // Abrir modal de creación si viene ?action=new
   React.useEffect(() => {
-    // Role guard: only SuperAdmin can manage users. Admin → redirect to own profile.
+    // Auth guard: SuperAdmin can manage all users; Admin can only create supervisors.
+    // Other roles → redirect to own profile.
     const sessionUser = getCmUserFromStorage()
     if (!sessionUser) {
       router.push('/login')
       return
     }
-    if (sessionUser.role !== 'superadmin') {
+    if (sessionUser.role !== 'superadmin' && sessionUser.role !== 'admin') {
       router.push('/cm/profile')
       return
     }
+    setSessionRole(sessionUser.role)
     if (searchParams.get('action') === 'new') {
       openCreateForm()
     }
@@ -512,6 +515,7 @@ function CmUsersPageContent() {
         open={formOpen}
         mode={formMode}
         user={editingUser}
+        sessionRole={sessionRole}
         onClose={() => setFormOpen(false)}
         onSaved={() => {
           setFormOpen(false)
@@ -579,6 +583,7 @@ function UserFormDialog({
   open,
   mode,
   user,
+  sessionRole,
   onClose,
   onSaved,
   onRequestPasswordChange,
@@ -586,6 +591,7 @@ function UserFormDialog({
   open: boolean
   mode: FormMode
   user: CmUserRecord | null
+  sessionRole: CmRole | null
   onClose: () => void
   onSaved: () => void
   onRequestPasswordChange: (u: CmUserRecord) => void
@@ -601,11 +607,14 @@ function UserFormDialog({
       if (mode === 'edit' && user) {
         setForm(formFromUser(user))
       } else {
-        setForm(emptyForm())
+        // Admin can only create supervisors; default to supervisor for them.
+        // SuperAdmin defaults to admin (the most common creation case).
+        const defaultRole = sessionRole === 'admin' ? 'supervisor' : 'admin'
+        setForm(emptyForm(defaultRole))
       }
       setError(null)
     }
-  }, [open, mode, user])
+  }, [open, mode, user, sessionRole])
 
   // Helper para actualizar un campo
   const setField = <K extends keyof UserFormState>(key: K, value: UserFormState[K]) => {
@@ -899,7 +908,8 @@ function UserFormDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="admin">Admin</SelectItem>
+                    {sessionRole === 'superadmin' && <SelectItem value="superadmin">SuperAdmin</SelectItem>}
+                    {sessionRole === 'superadmin' && <SelectItem value="admin">Admin</SelectItem>}
                     <SelectItem value="supervisor">Supervisor</SelectItem>
                   </SelectContent>
                 </Select>

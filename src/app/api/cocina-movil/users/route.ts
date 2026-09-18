@@ -49,7 +49,17 @@ export async function POST(request: Request) {
   }
 
   const validRoles: CmRole[] = ['superadmin', 'admin', 'supervisor']
-  const userRole: CmRole = validRoles.includes(role as CmRole) ? (role as CmRole) : 'admin'
+  // Server-side role enforcement:
+  // - SuperAdmin can assign any role.
+  // - Admin can ONLY create supervisors (cannot create other admins or superadmins).
+  const sessionRole = auth.session?.user.role
+  let userRole: CmRole
+  if (sessionRole === 'superadmin') {
+    userRole = validRoles.includes(role as CmRole) ? (role as CmRole) : 'admin'
+  } else {
+    // Admin (or any non-superadmin) can only create supervisors
+    userRole = 'supervisor'
+  }
 
   // Parse optional fields with type safety
   const input: CmUserInput = {

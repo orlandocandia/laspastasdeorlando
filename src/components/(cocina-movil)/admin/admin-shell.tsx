@@ -204,7 +204,7 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
             </div>
             {NAV_ITEMS.filter((item) => {
               // "Usuarios" (ABM de Admins) is SuperAdmin-only
-              if (item.href === '/cm/admin/users' && user?.role !== 'superadmin') return false
+              if (item.href === '/cm/admin/users' && user?.role !== 'superadmin' && user?.role !== 'admin') return false
               return true
             }).map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
