@@ -22,6 +22,7 @@ import {
   Users, ChefHat, Factory, MapPin, Receipt, TrendingUp, TrendingDown,
   Package, FlaskConical, Building2, ShoppingCart, FileText,
   ShieldCheck, Loader2, Eye, Pencil, AlertTriangle, Clock, BarChart3,
+  Trophy, Settings, ArrowRight,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -85,6 +86,18 @@ interface SuperadminDashboardData {
 }
 
 const fmtCurrency = (v: number) => `$${v.toLocaleString('es-AR', { maximumFractionDigits: 0 })}`
+const fmtRelative = (ts: number) => {
+  const diff = Date.now() - ts
+  if (diff < 0) return 'Próximamente'
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'Hace un momento'
+  if (mins < 60) return `Hace ${mins} min`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `Hace ${hours}h`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `Hace ${days}d`
+  return new Date(ts).toLocaleDateString('es-AR')
+}
 
 // Mock trend percentages (in a real app these would come from the API comparing
 // the current period vs the previous one). Using deterministic pseudo-random
@@ -115,6 +128,7 @@ function SuperadminDashboardContent() {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [period, setPeriod] = React.useState<string>('month')
+  const [globalActivity, setGlobalActivity] = React.useState<Array<{ type: string; description: string; timestamp: number; ownerName: string }>>([])
 
   React.useEffect(() => {
     async function load() {
@@ -136,6 +150,11 @@ function SuperadminDashboardContent() {
       }
     }
     load()
+    // Load global activity in parallel
+    fetch('/api/cocina-movil/superadmin/activity')
+      .then((r) => r.ok ? r.json() : { activity: [] })
+      .then((d) => setGlobalActivity(d.activity || []))
+      .catch(() => {})
   }, [router, period])
 
   if (loading) {
@@ -244,6 +263,30 @@ function SuperadminDashboardContent() {
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      {/* Quick access buttons */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Link href="/cm/admin/users" className="flex items-center gap-2 p-3 rounded-lg border border-[#5C3A21]/8 bg-[#FFF8E7]/50 hover:bg-[#FBF1DC] hover:border-[#E1AD01]/30 transition-colors">
+          <Users className="h-4 w-4 text-[#5C3A21]" />
+          <span className="text-xs font-medium text-[#5C3A21]">Ver Admins</span>
+          <ArrowRight className="h-3 w-3 text-[#8A7E70] ml-auto" />
+        </Link>
+        <Link href="/cm/superadmin/comparativa" className="flex items-center gap-2 p-3 rounded-lg border border-[#5C3A21]/8 bg-[#FFF8E7]/50 hover:bg-[#FBF1DC] hover:border-[#E1AD01]/30 transition-colors">
+          <Trophy className="h-4 w-4 text-[#E1AD01]" />
+          <span className="text-xs font-medium text-[#5C3A21]">Comparar</span>
+          <ArrowRight className="h-3 w-3 text-[#8A7E70] ml-auto" />
+        </Link>
+        <Link href="/cm/superadmin/reportes" className="flex items-center gap-2 p-3 rounded-lg border border-[#5C3A21]/8 bg-[#FFF8E7]/50 hover:bg-[#FBF1DC] hover:border-[#E1AD01]/30 transition-colors">
+          <FileText className="h-4 w-4 text-[#708238]" />
+          <span className="text-xs font-medium text-[#5C3A21]">Reportes</span>
+          <ArrowRight className="h-3 w-3 text-[#8A7E70] ml-auto" />
+        </Link>
+        <Link href="/cm/superadmin/configuracion" className="flex items-center gap-2 p-3 rounded-lg border border-[#5C3A21]/8 bg-[#FFF8E7]/50 hover:bg-[#FBF1DC] hover:border-[#E1AD01]/30 transition-colors">
+          <Settings className="h-4 w-4 text-[#5C3A21]" />
+          <span className="text-xs font-medium text-[#5C3A21]">Configuración</span>
+          <ArrowRight className="h-3 w-3 text-[#8A7E70] ml-auto" />
+        </Link>
       </div>
 
       {/* Alerts section */}
@@ -451,6 +494,33 @@ function SuperadminDashboardContent() {
           )}
         </CardContent>
       </Card>
+
+      {/* Global recent activity */}
+      {globalActivity.length > 0 && (
+        <Card className="border-[#5C3A21]/10 shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base text-[#5C3A21] flex items-center gap-2">
+              <Clock className="h-4 w-4" />
+              Actividad Reciente Global
+            </CardTitle>
+            <CardDescription className="text-xs">Últimas 10 acciones de todos los Admins</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-[#5C3A21]/8 max-h-80 overflow-y-auto">
+              {globalActivity.map((a, i) => (
+                <div key={i} className="px-4 py-2.5 flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-[#5C3A21]">
+                      <span className="font-medium">{a.ownerName}</span> {a.description.toLowerCase()}
+                    </p>
+                    <p className="text-xs text-[#8A7E70]">{fmtRelative(a.timestamp)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
