@@ -175,14 +175,6 @@ export default function CmAdminDashboardPage() {
           <h1 className="text-2xl font-bold text-[#5C3A21]">Dashboard</h1>
           <p className="text-sm text-[#8A7E70]">Resumen general de la Cocina Móvil</p>
         </div>
-        <div className="flex gap-2">
-          <Button asChild size="sm" className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">
-            <Link href="/cm/admin/ventas?action=new"><Plus className="h-4 w-4" />Nueva Venta</Link>
-          </Button>
-          <Button asChild size="sm" variant="outline" className="border-[#5C3A21]/20 text-[#5C3A21]">
-            <Link href="/cm/admin/producciones"><Factory className="h-4 w-4" />Producciones</Link>
-          </Button>
-        </div>
       </div>
 
       <OwnerSelector />
