@@ -117,6 +117,12 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
     )
   }
 
+  // Dashboard link depends on role: superadmin → /cm/superadmin/dashboard, admin → /cm/admin/dashboard
+  const dashboardHref = user?.role === 'superadmin' ? '/cm/superadmin/dashboard' : '/cm/admin/dashboard'
+  const navItems = NAV_ITEMS.map((item) =>
+    item.href === '/cm/admin/dashboard' ? { ...item, href: dashboardHref } : item
+  )
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FFF8E7]">
       {/* ====== Header ====== */}
@@ -132,7 +138,7 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
           </button>
 
           {/* Logo */}
-          <Link href="/cm/admin/dashboard" className="flex items-center gap-2.5 group">
+          <Link href={dashboardHref} className="flex items-center gap-2.5 group">
             <div className="h-9 w-9 rounded-lg overflow-hidden bg-[#FFF8E7] ring-1 ring-[#E1AD01]/40">
               <Image
                 src="/images/(cocina-movil)/logo.png"
@@ -213,7 +219,7 @@ export default function CmAdminShell({ children }: { children: React.ReactNode }
                 Módulos
               </p>
             </div>
-            {NAV_ITEMS.filter((item) => {
+            {navItems.filter((item) => {
               // "Usuarios" (ABM de Usuarios) is SuperAdmin-only
               if (item.href === '/cm/admin/users' && user?.role !== 'superadmin') return false
               return true
