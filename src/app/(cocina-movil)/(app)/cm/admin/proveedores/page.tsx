@@ -27,6 +27,7 @@ import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import ImageUploader from '@/components/(cocina-movil)/admin/image-uploader'
 import LocationPicker from '@/components/(cocina-movil)/admin/location-picker'
+import GeographySelect from '@/components/(cocina-movil)/admin/geography-select'
 import OwnerSelector from '@/components/(cocina-movil)/admin/owner-selector'
 import { useOwnerFilter, ownerQueryParam } from '@/lib/cocina-movil/owner-filter'
 
@@ -314,10 +315,16 @@ function SupplierFormDialog({ open, mode, item, onClose, onSaved }: { open: bool
           <div className="flex items-center gap-3"><div className="h-7 w-7 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold">2</div><h3 className="text-sm font-semibold text-[#5C3A21]">Domicilio</h3></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-10">
             <div className="space-y-1.5 sm:col-span-2"><Label className="text-[#5C3A21]">Dirección</Label><Input value={form.address} onChange={(e) => setField('address', e.target.value)} placeholder="Calle, número" className="border-[#5C3A21]/15" /></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">País</Label><Input value={form.country} onChange={(e) => setField('country', e.target.value)} className="border-[#5C3A21]/15" /></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Provincia</Label><Input value={form.province} onChange={(e) => setField('province', e.target.value)} className="border-[#5C3A21]/15" /></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Departamento</Label><Input value={form.department} onChange={(e) => setField('department', e.target.value)} className="border-[#5C3A21]/15" /></div>
-            <div className="space-y-1.5"><Label className="text-[#5C3A21]">Municipio</Label><Input value={form.municipality} onChange={(e) => setField('municipality', e.target.value)} className="border-[#5C3A21]/15" /></div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label className="text-[#5C3A21]">Ubicación geográfica</Label>
+              <GeographySelect
+                country={form.country || ''}
+                province={form.province || ''}
+                department={form.department || ''}
+                municipality={form.municipality || ''}
+                onChange={(field, value) => setField(field, value)}
+              />
+            </div>
           </div>
           <div className="pl-10">
             <Label className="text-[#5C3A21] mb-2 block">Ubicación (mapa)</Label>
