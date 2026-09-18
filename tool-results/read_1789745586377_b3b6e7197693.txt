@@ -1,0 +1,1084 @@
+     1→'use client'
+     2→
+     3→/**
+     4→ * ============================================================
+     5→ * Gestión de Usuarios (ABM) — Cocina Móvil
+     6→ * ============================================================
+     7→ * URL: /cm/admin/users
+     8→ *
+     9→ * Funcionalidades:
+    10→ *  - Tabla de usuarios con columnas: #, Usuario (avatar+nombre), Email,
+    11→ *    DNI, Rol (badge), Estado (badge), Último Acceso, Acciones
+    12→ *  - Búsqueda por nombre / email / DNI (debounce 250ms)
+    13→ *  - Filtros por rol (Todos/Admin/Cocinero/Supervisor) y estado
+    14→ *    (Todos/Activos/Inactivos)
+    15→ *  - Acciones por fila (dropdown): Editar, Cambiar contraseña,
+    16→ *    Activar/Desactivar, Eliminar
+    17→ *  - Botón "Nuevo Usuario" (abre modal)
+    18→ *  - Exportación: Imprimir, PDF, Word, Excel
+    19→ *
+    20→ * Modal de formulario (Crear/Editar) con 3 secciones:
+    21→ *   1. Datos Personales (firstName, lastName, dni, birthDate,
+    22→ *      gender, maritalStatus, avatar)
+    23→ *   2. Domicilio (address, country, province, department,
+    24→ *      municipality, location con LocationPicker/Leaflet)
+    25→ *   3. Acceso (email, password [solo create], role, isActive
+    26→ *      [solo edit] + botón "Modificar Contraseña" en edit)
+    27→ *
+    28→ * Paleta: marron #5C3A21, mostaza #E1AD01, crema #FFF8E7,
+    29→ *         oliva #708238, rojo #B91C1C, gris medio #8A7E70
+    30→ * ============================================================
+    31→ */
+    32→
+    33→import * as React from 'react'
+    34→import { useSearchParams, useRouter } from 'next/navigation'
+    35→import {
+    36→  Plus, Search, Printer, FileText, FileSpreadsheet, FileDown,
+    37→  Pencil, Trash2, Key, MoreHorizontal, Loader2, Users as UsersIcon,
+    38→  Eye, EyeOff,
+    39→} from 'lucide-react'
+    40→import { Card, CardContent } from '@/components/ui/card'
+    41→import { Button } from '@/components/ui/button'
+    42→import { Input } from '@/components/ui/input'
+    43→import { Label } from '@/components/ui/label'
+    44→import { Badge } from '@/components/ui/badge'
+    45→import {
+    46→  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+    47→} from '@/components/ui/select'
+    48→import {
+    49→  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+    50→} from '@/components/ui/table'
+    51→import {
+    52→  Dialog, DialogContent, DialogDescription, DialogFooter,
+    53→  DialogHeader, DialogTitle,
+    54→} from '@/components/ui/dialog'
+    55→import {
+    56→  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+    57→  DropdownMenuSeparator, DropdownMenuTrigger,
+    58→} from '@/components/ui/dropdown-menu'
+    59→import { Switch } from '@/components/ui/switch'
+    60→import { Separator } from '@/components/ui/separator'
+    61→import { toast } from 'sonner'
+    62→
+    63→import LocationPicker from '@/components/(cocina-movil)/admin/location-picker'
+    64→import AvatarUploader from '@/components/(cocina-movil)/admin/avatar-uploader'
+    65→import GeographySelect from '@/components/(cocina-movil)/admin/geography-select'
+    66→import {
+    67→  getFullName, getInitials,
+    68→  type CmUserRecord, type CmRole, type CmGender, type CmMaritalStatus,
+    69→} from '@/lib/cocina-movil/users'
+    70→import { getCmUserFromStorage } from '@/lib/cocina-movil/auth-client'
+    71→
+    72→type FormMode = 'create' | 'edit'
+    73→
+    74→const DEFAULT_COUNTRY = 'Argentina'
+    75→const DEFAULT_PROVINCE = 'Misiones'
+    76→
+    77→const NONE = 'none' // sentinel for "no selection" in Select components
+    78→
+    79→// ============================================================
+    80→// Helpers
+    81→// ============================================================
+    82→function formatDate(ts: number): string {
+    83→  const d = new Date(ts)
+    84→  const pad = (n: number) => String(n).padStart(2, '0')
+    85→  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+    86→}
+    87→
+    88→// epoch ms -> 'YYYY-MM-DD' para input[type=date]
+    89→function epochToDateInput(ts: number | null | undefined): string {
+    90→  if (!ts) return ''
+    91→  const d = new Date(ts)
+    92→  if (isNaN(d.getTime())) return ''
+    93→  const pad = (n: number) => String(n).padStart(2, '0')
+    94→  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+    95→}
+    96→
+    97→// 'YYYY-MM-DD' -> epoch ms (a la medianoche local)
+    98→function dateInputToEpoch(s: string): number | null {
+    99→  if (!s) return null
+   100→  const ts = new Date(s + 'T00:00:00').getTime()
+   101→  return isNaN(ts) ? null : ts
+   102→}
+   103→
+   104→function roleBadgeClass(role: CmRole): string {
+   105→  if (role === 'superadmin') return 'border-[#B91C1C] text-[#B91C1C] bg-[#B91C1C]/5'
+   106→  if (role === 'admin') return 'border-[#5C3A21] text-[#5C3A21] bg-[#5C3A21]/5'
+   107→  return 'border-[#E1AD01] text-[#7a5c00] bg-[#E1AD01]/10'
+   108→}
+   109→
+   110→function avatarColorClass(role: CmRole): string {
+   111→  if (role === 'superadmin') return 'bg-[#B91C1C] text-[#FFF8E7]'
+   112→  if (role === 'admin') return 'bg-[#5C3A21] text-[#FFF8E7]'
+   113→  return 'bg-[#E1AD01] text-[#5C3A21]'
+   114→}
+   115→
+   116→// ============================================================
+   117→// Estado del formulario (campos strings para inputs controlados)
+   118→// ============================================================
+   119→interface UserFormState {
+   120→  firstName: string
+   121→  lastName: string
+   122→  dni: string
+   123→  birthDate: string // 'YYYY-MM-DD' o ''
+   124→  gender: CmGender
+   125→  maritalStatus: CmMaritalStatus
+   126→  avatar: string
+   127→  address: string
+   128→  country: string
+   129→  province: string
+   130→  department: string
+   131→  municipality: string
+   132→  location: string | null // 'lat,lng'
+   133→  email: string
+   134→  password: string
+   135→  role: CmRole
+   136→  isActive: boolean
+   137→}
+   138→
+   139→function emptyForm(defaultRole: CmRole = 'admin'): UserFormState {
+   140→  return {
+   141→    firstName: '',
+   142→    lastName: '',
+   143→    dni: '',
+   144→    birthDate: '',
+   145→    gender: null,
+   146→    maritalStatus: null,
+   147→    avatar: '',
+   148→    address: '',
+   149→    country: DEFAULT_COUNTRY,
+   150→    province: DEFAULT_PROVINCE,
+   151→    department: '',
+   152→    municipality: '',
+   153→    location: null,
+   154→    email: '',
+   155→    password: '',
+   156→    role: defaultRole,
+   157→    isActive: true,
+   158→  }
+   159→}
+   160→
+   161→function formFromUser(u: CmUserRecord): UserFormState {
+   162→  return {
+   163→    firstName: u.firstName,
+   164→    lastName: u.lastName,
+   165→    dni: u.dni || '',
+   166→    birthDate: epochToDateInput(u.birthDate),
+   167→    gender: u.gender,
+   168→    maritalStatus: u.maritalStatus,
+   169→    avatar: u.avatar || '',
+   170→    address: u.address || '',
+   171→    country: u.country || DEFAULT_COUNTRY,
+   172→    province: u.province || DEFAULT_PROVINCE,
+   173→    department: u.department || '',
+   174→    municipality: u.municipality || '',
+   175→    location: u.location,
+   176→    email: u.email,
+   177→    password: '',
+   178→    role: u.role,
+   179→    isActive: u.isActive,
+   180→  }
+   181→}
+   182→
+   183→// ============================================================
+   184→// Componente principal
+   185→// ============================================================
+   186→function CmUsersPageContent() {
+   187→  const searchParams = useSearchParams()
+   188→  const router = useRouter()
+   189→  const [users, setUsers] = React.useState<CmUserRecord[]>([])
+   190→  const [total, setTotal] = React.useState(0)
+   191→  const [loading, setLoading] = React.useState(true)
+   192→
+   193→  const [search, setSearch] = React.useState('')
+   194→  const [roleFilter, setRoleFilter] = React.useState<'all' | CmRole>('all')
+   195→  const [statusFilter, setStatusFilter] = React.useState<'all' | 'active' | 'inactive'>('all')
+   196→
+   197→  // Modales
+   198→  const [formOpen, setFormOpen] = React.useState(false)
+   199→  const [formMode, setFormMode] = React.useState<FormMode>('create')
+   200→  const [editingUser, setEditingUser] = React.useState<CmUserRecord | null>(null)
+   201→  const [passwordUser, setPasswordUser] = React.useState<CmUserRecord | null>(null)
+   202→  const [deleteUser, setDeleteUser] = React.useState<CmUserRecord | null>(null)
+   203→  const [sessionRole, setSessionRole] = React.useState<CmRole | null>(null)
+   204→
+   205→  // Abrir modal de creación si viene ?action=new
+   206→  React.useEffect(() => {
+   207→    // Auth guard: SuperAdmin can manage all users; Admin can only create supervisors.
+   208→    // Other roles → redirect to own profile.
+   209→    const sessionUser = getCmUserFromStorage()
+   210→    if (!sessionUser) {
+   211→      router.push('/login')
+   212→      return
+   213→    }
+   214→    if (sessionUser.role !== 'superadmin' && sessionUser.role !== 'admin') {
+   215→      router.push('/cm/profile')
+   216→      return
+   217→    }
+   218→    setSessionRole(sessionUser.role)
+   219→    if (searchParams.get('action') === 'new') {
+   220→      openCreateForm()
+   221→    }
+   222→    // eslint-disable-next-line react-hooks/exhaustive-deps
+   223→  }, [searchParams])
+   224→
+   225→  const loadUsers = React.useCallback(async () => {
+   226→    setLoading(true)
+   227→    try {
+   228→      const params = new URLSearchParams()
+   229→      if (search) params.set('search', search)
+   230→      if (roleFilter !== 'all') params.set('role', roleFilter)
+   231→      if (statusFilter === 'active') params.set('isActive', 'true')
+   232→      if (statusFilter === 'inactive') params.set('isActive', 'false')
+   233→      params.set('pageSize', '200')
+   234→      const res = await fetch(`/api/cocina-movil/users?${params.toString()}`)
+   235→      if (!res.ok) throw new Error('HTTP ' + res.status)
+   236→      const data = await res.json()
+   237→      setUsers(data.users || [])
+   238→      setTotal(data.total || 0)
+   239→    } catch (err) {
+   240→      console.error('[CmUsers] Error loading users:', err)
+   241→      toast.error('Error al cargar usuarios')
+   242→    } finally {
+   243→      setLoading(false)
+   244→    }
+   245→  }, [search, roleFilter, statusFilter])
+   246→
+   247→  React.useEffect(() => {
+   248→    const id = setTimeout(loadUsers, 250)
+   249→    return () => clearTimeout(id)
+   250→  }, [loadUsers])
+   251→
+   252→  // ----- Handlers -----
+   253→  const openCreateForm = () => {
+   254→    setFormMode('create')
+   255→    setEditingUser(null)
+   256→    setFormOpen(true)
+   257→  }
+   258→
+   259→  const openEditForm = (u: CmUserRecord) => {
+   260→    setFormMode('edit')
+   261→    setEditingUser(u)
+   262→    setFormOpen(true)
+   263→  }
+   264→
+   265→  const handleToggleActive = async (u: CmUserRecord) => {
+   266→    try {
+   267→      const res = await fetch(`/api/cocina-movil/users/${u.id}/status`, {
+   268→        method: 'PUT',
+   269→        headers: { 'Content-Type': 'application/json' },
+   270→        body: JSON.stringify({ isActive: !u.isActive }),
+   271→      })
+   272→      if (!res.ok) throw new Error('HTTP ' + res.status)
+   273→      toast.success(`Usuario ${u.isActive ? 'desactivado' : 'activado'}`)
+   274→      loadUsers()
+   275→    } catch (err) {
+   276→      toast.error('Error al cambiar estado')
+   277→      console.error(err)
+   278→    }
+   279→  }
+   280→
+   281→  const handleDelete = async () => {
+   282→    if (!deleteUser) return
+   283→    try {
+   284→      const res = await fetch(`/api/cocina-movil/users/${deleteUser.id}`, { method: 'DELETE' })
+   285→      if (!res.ok) {
+   286→        const data = await res.json().catch(() => ({}))
+   287→        throw new Error(data.error || 'HTTP ' + res.status)
+   288→      }
+   289→      toast.success('Usuario eliminado')
+   290→      setDeleteUser(null)
+   291→      loadUsers()
+   292→    } catch (err) {
+   293→      toast.error(err instanceof Error ? err.message : 'Error al eliminar')
+   294→    }
+   295→  }
+   296→
+   297→  const handleExport = (format: 'pdf' | 'word' | 'excel') => {
+   298→    const params = new URLSearchParams({ format })
+   299→    if (search) params.set('search', search)
+   300→    if (roleFilter !== 'all') params.set('role', roleFilter)
+   301→    if (statusFilter === 'active') params.set('isActive', 'true')
+   302→    if (statusFilter === 'inactive') params.set('isActive', 'false')
+   303→    window.open(`/api/cocina-movil/users/export?${params.toString()}`, '_blank')
+   304→  }
+   305→
+   306→  const handlePrint = () => {
+   307→    window.print()
+   308→  }
+   309→
+   310→  // ----- Render -----
+   311→  return (
+   312→    <div className="space-y-4">
+   313→      {/* Header */}
+   314→      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+   315→        <div>
+   316→          <h1 className="text-2xl font-bold text-[#5C3A21] flex items-center gap-2">
+   317→            <UsersIcon className="h-6 w-6" />
+   318→            Usuarios
+   319→          </h1>
+   320→          <p className="text-sm text-[#8A7E70]">
+   321→            {total} usuario{total !== 1 ? 's' : ''} en total
+   322→          </p>
+   323→        </div>
+   324→        <Button onClick={openCreateForm} className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]">
+   325→          <Plus className="h-4 w-4" />
+   326→          Nuevo Usuario
+   327→        </Button>
+   328→      </div>
+   329→
+   330→      {/* Filtros + búsqueda + export */}
+   331→      <Card className="border-[#5C3A21]/10 shadow-sm">
+   332→        <CardContent className="p-4 space-y-3">
+   333→          <div className="flex flex-col lg:flex-row gap-3">
+   334→            {/* Search */}
+   335→            <div className="relative flex-1">
+   336→              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A7E70]" />
+   337→              <Input
+   338→                placeholder="Buscar por nombre, email o DNI…"
+   339→                value={search}
+   340→                onChange={(e) => setSearch(e.target.value)}
+   341→                className="pl-9 border-[#5C3A21]/15 bg-white"
+   342→              />
+   343→            </div>
+   344→            {/* Rol filter */}
+   345→            <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as 'all' | CmRole)}>
+   346→              <SelectTrigger className="w-full lg:w-40 border-[#5C3A21]/15">
+   347→                <SelectValue placeholder="Rol" />
+   348→              </SelectTrigger>
+   349→              <SelectContent>
+   350→                <SelectItem value="all">Todos los roles</SelectItem>
+   351→                <SelectItem value="superadmin">SuperAdmin</SelectItem>
+   352→                <SelectItem value="admin">Admin</SelectItem>
+   353→                <SelectItem value="supervisor">Supervisor</SelectItem>
+   354→              </SelectContent>
+   355→            </Select>
+   356→            {/* Estado filter */}
+   357→            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as 'all' | 'active' | 'inactive')}>
+   358→              <SelectTrigger className="w-full lg:w-40 border-[#5C3A21]/15">
+   359→                <SelectValue placeholder="Estado" />
+   360→              </SelectTrigger>
+   361→              <SelectContent>
+   362→                <SelectItem value="all">Todos</SelectItem>
+   363→                <SelectItem value="active">Activos</SelectItem>
+   364→                <SelectItem value="inactive">Inactivos</SelectItem>
+   365→              </SelectContent>
+   366→            </Select>
+   367→          </div>
+   368→
+   369→          {/* Export buttons */}
+   370→          <div className="flex flex-wrap gap-2 pt-2 border-t border-[#5C3A21]/8">
+   371→            <span className="text-xs text-[#8A7E70] self-center mr-1">Exportar:</span>
+   372→            <Button size="sm" variant="outline" onClick={handlePrint} className="border-[#5C3A21]/20 text-[#5C3A21]">
+   373→              <Printer className="h-3.5 w-3.5" />
+   374→              Imprimir
+   375→            </Button>
+   376→            <Button size="sm" variant="outline" onClick={() => handleExport('pdf')} className="border-[#5C3A21]/20 text-[#5C3A21]">
+   377→              <FileText className="h-3.5 w-3.5" />
+   378→              PDF
+   379→            </Button>
+   380→            <Button size="sm" variant="outline" onClick={() => handleExport('word')} className="border-[#5C3A21]/20 text-[#5C3A21]">
+   381→              <FileDown className="h-3.5 w-3.5" />
+   382→              Word
+   383→            </Button>
+   384→            <Button size="sm" variant="outline" onClick={() => handleExport('excel')} className="border-[#5C3A21]/20 text-[#5C3A21]">
+   385→              <FileSpreadsheet className="h-3.5 w-3.5" />
+   386→              Excel
+   387→            </Button>
+   388→          </div>
+   389→        </CardContent>
+   390→      </Card>
+   391→
+   392→      {/* Tabla de usuarios */}
+   393→      <Card className="border-[#5C3A21]/10 shadow-sm">
+   394→        <CardContent className="p-0">
+   395→          {loading ? (
+   396→            <div className="flex items-center justify-center py-16">
+   397→              <Loader2 className="h-6 w-6 animate-spin text-[#E1AD01]" />
+   398→              <span className="ml-2 text-sm text-[#8A7E70]">Cargando usuarios…</span>
+   399→            </div>
+   400→          ) : users.length === 0 ? (
+   401→            <div className="py-16 text-center">
+   402→              <UsersIcon className="h-10 w-10 mx-auto mb-2 text-[#8A7E70]/40" />
+   403→              <p className="text-sm text-[#8A7E70]">No se encontraron usuarios.</p>
+   404→              <p className="text-xs text-[#8A7E70]/70 mt-1">Probá cambiar los filtros o crear uno nuevo.</p>
+   405→            </div>
+   406→          ) : (
+   407→            <div className="overflow-x-auto">
+   408→              <Table>
+   409→                <TableHeader>
+   410→                  <TableRow className="bg-[#FBF1DC] border-[#5C3A21]/15">
+   411→                    <TableHead className="w-10">#</TableHead>
+   412→                    <TableHead>Usuario</TableHead>
+   413→                    <TableHead className="hidden md:table-cell">Email</TableHead>
+   414→                    <TableHead className="hidden md:table-cell">DNI</TableHead>
+   415→                    <TableHead>Rol</TableHead>
+   416→                    <TableHead>Estado</TableHead>
+   417→                    <TableHead className="hidden lg:table-cell">Último Acceso</TableHead>
+   418→                    <TableHead className="text-right">Acciones</TableHead>
+   419→                  </TableRow>
+   420→                </TableHeader>
+   421→                <TableBody>
+   422→                  {users.map((u, i) => (
+   423→                    <TableRow key={u.id} className="border-[#5C3A21]/8 hover:bg-[#FBF1DC]/50">
+   424→                      <TableCell className="text-xs text-[#8A7E70]">{i + 1}</TableCell>
+   425→                      <TableCell>
+   426→                        <div className="flex items-center gap-2.5">
+   427→                          <div className="h-8 w-8 rounded-full overflow-hidden shrink-0 ring-1 ring-[#5C3A21]/10">
+   428→                            {u.avatar ? (
+   429→                              // eslint-disable-next-line @next/next/no-img-element
+   430→                              <img
+   431→                                src={u.avatar}
+   432→                                alt={getFullName(u)}
+   433→                                className="h-full w-full object-cover"
+   434→                                onError={(e) => {
+   435→                                  // Si falla la carga, ocultar img y mostrar iniciales
+   436→                                  ;(e.currentTarget as HTMLImageElement).style.display = 'none'
+   437→                                }}
+   438→                              />
+   439→                            ) : (
+   440→                              <div className={`h-full w-full flex items-center justify-center text-xs font-bold ${avatarColorClass(u.role)}`}>
+   441→                                {getInitials(u)}
+   442→                              </div>
+   443→                            )}
+   444→                          </div>
+   445→                          <div className="min-w-0">
+   446→                            <p className="text-sm font-medium text-[#5C3A21] truncate">{getFullName(u)}</p>
+   447→                            <p className="text-xs text-[#8A7E70] truncate md:hidden">{u.email}</p>
+   448→                          </div>
+   449→                        </div>
+   450→                      </TableCell>
+   451→                      <TableCell className="hidden md:table-cell text-sm text-[#4A3F36]">{u.email}</TableCell>
+   452→                      <TableCell className="hidden md:table-cell text-sm text-[#4A3F36]">
+   453→                        {u.dni || <span className="text-[#8A7E70]/60">—</span>}
+   454→                      </TableCell>
+   455→                      <TableCell>
+   456→                        <Badge variant="outline" className={`text-[10px] capitalize ${roleBadgeClass(u.role)}`}>
+   457→                          {u.role}
+   458→                        </Badge>
+   459→                      </TableCell>
+   460→                      <TableCell>
+   461→                        <Badge
+   462→                          className={`text-[10px] ${
+   463→                            u.isActive ? 'bg-[#708238] hover:bg-[#708238]' : 'bg-[#8A7E70] hover:bg-[#8A7E70]'
+   464→                          }`}
+   465→                        >
+   466→                          {u.isActive ? 'Activo' : 'Inactivo'}
+   467→                        </Badge>
+   468→                      </TableCell>
+   469→                      <TableCell className="hidden lg:table-cell text-xs text-[#8A7E70]">
+   470→                        {u.lastLoginAt ? formatDate(u.lastLoginAt) : 'Nunca'}
+   471→                      </TableCell>
+   472→                      <TableCell className="text-right">
+   473→                        <div className="flex items-center justify-end gap-1">
+   474→                          <DropdownMenu>
+   475→                            <DropdownMenuTrigger asChild>
+   476→                              <Button size="icon" variant="ghost" className="h-8 w-8 text-[#5C3A21]">
+   477→                                <MoreHorizontal className="h-4 w-4" />
+   478→                              </Button>
+   479→                            </DropdownMenuTrigger>
+   480→                            <DropdownMenuContent align="end">
+   481→                              <DropdownMenuItem onClick={() => openEditForm(u)}>
+   482→                                <Pencil className="h-4 w-4 mr-2" />
+   483→                                Editar
+   484→                              </DropdownMenuItem>
+   485→                              <DropdownMenuItem onClick={() => setPasswordUser(u)}>
+   486→                                <Key className="h-4 w-4 mr-2" />
+   487→                                Cambiar contraseña
+   488→                              </DropdownMenuItem>
+   489→                              <DropdownMenuItem onClick={() => handleToggleActive(u)}>
+   490→                                <Switch checked={u.isActive} className="scale-75 mr-1" />
+   491→                                {u.isActive ? 'Desactivar' : 'Activar'}
+   492→                              </DropdownMenuItem>
+   493→                              <DropdownMenuSeparator />
+   494→                              <DropdownMenuItem
+   495→                                onClick={() => setDeleteUser(u)}
+   496→                                className="text-[#B91C1C] focus:text-[#B91C1C]"
+   497→                              >
+   498→                                <Trash2 className="h-4 w-4 mr-2" />
+   499→                                Eliminar
+   500→                              </DropdownMenuItem>
+   501→                            </DropdownMenuContent>
+   502→                          </DropdownMenu>
+   503→                        </div>
+   504→                      </TableCell>
+   505→                    </TableRow>
+   506→                  ))}
+   507→                </TableBody>
+   508→              </Table>
+   509→            </div>
+   510→          )}
+   511→        </CardContent>
+   512→      </Card>
+   513→
+   514→      {/* ====== Modal: Crear/Editar Usuario ====== */}
+   515→      <UserFormDialog
+   516→        open={formOpen}
+   517→        mode={formMode}
+   518→        user={editingUser}
+   519→        sessionRole={sessionRole}
+   520→        onClose={() => setFormOpen(false)}
+   521→        onSaved={() => {
+   522→          setFormOpen(false)
+   523→          loadUsers()
+   524→        }}
+   525→        onRequestPasswordChange={(u) => {
+   526→          setPasswordUser(u)
+   527→        }}
+   528→      />
+   529→
+   530→      {/* ====== Modal: Cambiar Contraseña ====== */}
+   531→      <PasswordChangeDialog
+   532→        user={passwordUser}
+   533→        onClose={() => setPasswordUser(null)}
+   534→        onSaved={() => {
+   535→          setPasswordUser(null)
+   536→          loadUsers()
+   537→        }}
+   538→      />
+   539→
+   540→      {/* ====== Modal: Confirmar Eliminación ====== */}
+   541→      <Dialog open={!!deleteUser} onOpenChange={(o) => !o && setDeleteUser(null)}>
+   542→        <DialogContent className="sm:max-w-md">
+   543→          <DialogHeader>
+   544→            <DialogTitle className="text-[#5C3A21]">¿Eliminar usuario?</DialogTitle>
+   545→            <DialogDescription>
+   546→              Estás por eliminar a <strong>{deleteUser ? getFullName(deleteUser) : ''}</strong> ({deleteUser?.email}).
+   547→              Esta acción no se puede deshacer.
+   548→            </DialogDescription>
+   549→          </DialogHeader>
+   550→          <DialogFooter className="gap-2">
+   551→            <Button variant="outline" onClick={() => setDeleteUser(null)}>
+   552→              Cancelar
+   553→            </Button>
+   554→            <Button onClick={handleDelete} className="bg-[#B91C1C] hover:bg-[#B91C1C]/90 text-white">
+   555→              <Trash2 className="h-4 w-4" />
+   556→              Eliminar
+   557→            </Button>
+   558→          </DialogFooter>
+   559→        </DialogContent>
+   560→      </Dialog>
+   561→    </div>
+   562→  )
+   563→}
+   564→
+   565→// ============================================================
+   566→// Sub-componente: header de sección numerada
+   567→// ============================================================
+   568→function SectionHeader({ num, title, hint }: { num: number; title: string; hint?: string }) {
+   569→  return (
+   570→    <div className="flex items-center gap-2">
+   571→      <div className="h-6 w-6 rounded-full bg-[#5C3A21] text-[#FFF8E7] flex items-center justify-center text-xs font-bold shrink-0">
+   572→        {num}
+   573→      </div>
+   574→      <h3 className="text-sm font-semibold text-[#5C3A21]">{title}</h3>
+   575→      {hint && <span className="text-xs text-[#8A7E70]">{hint}</span>}
+   576→    </div>
+   577→  )
+   578→}
+   579→
+   580→// ============================================================
+   581→// Sub-componente: Form Dialog (Crear/Editar) — 3 secciones
+   582→// ============================================================
+   583→function UserFormDialog({
+   584→  open,
+   585→  mode,
+   586→  user,
+   587→  sessionRole,
+   588→  onClose,
+   589→  onSaved,
+   590→  onRequestPasswordChange,
+   591→}: {
+   592→  open: boolean
+   593→  mode: FormMode
+   594→  user: CmUserRecord | null
+   595→  sessionRole: CmRole | null
+   596→  onClose: () => void
+   597→  onSaved: () => void
+   598→  onRequestPasswordChange: (u: CmUserRecord) => void
+   599→}) {
+   600→  const [form, setForm] = React.useState<UserFormState>(emptyForm)
+   601→  const [saving, setSaving] = React.useState(false)
+   602→  const [error, setError] = React.useState<string | null>(null)
+   603→  const [showPassword, setShowPassword] = React.useState(false)
+   604→
+   605→  // Sincronizar form cuando se abre el modal
+   606→  React.useEffect(() => {
+   607→    if (open) {
+   608→      if (mode === 'edit' && user) {
+   609→        setForm(formFromUser(user))
+   610→      } else {
+   611→        // Admin can only create supervisors; default to supervisor for them.
+   612→        // SuperAdmin defaults to admin (the most common creation case).
+   613→        const defaultRole = sessionRole === 'admin' ? 'supervisor' : 'admin'
+   614→        setForm(emptyForm(defaultRole))
+   615→      }
+   616→      setError(null)
+   617→    }
+   618→  }, [open, mode, user, sessionRole])
+   619→
+   620→  // Helper para actualizar un campo
+   621→  const setField = <K extends keyof UserFormState>(key: K, value: UserFormState[K]) => {
+   622→    setForm((prev) => ({ ...prev, [key]: value }))
+   623→  }
+   624→
+   625→  const handleSubmit = async (e: React.FormEvent) => {
+   626→    e.preventDefault()
+   627→    setError(null)
+   628→
+   629→    // Validaciones
+   630→    if (!form.firstName.trim()) return setError('El nombre es obligatorio')
+   631→    if (!form.lastName.trim()) return setError('El apellido es obligatorio')
+   632→    if (!form.email.trim()) return setError('El email es obligatorio')
+   633→    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+   634→      return setError('Email inválido')
+   635→    }
+   636→    if (mode === 'create' && form.password.length < 6) {
+   637→      return setError('La contraseña debe tener al menos 6 caracteres')
+   638→    }
+   639→
+   640→    setSaving(true)
+   641→    try {
+   642→      const url = mode === 'create'
+   643→        ? '/api/cocina-movil/users'
+   644→        : `/api/cocina-movil/users/${user!.id}`
+   645→      const body: Record<string, unknown> = {
+   646→        firstName: form.firstName.trim(),
+   647→        lastName: form.lastName.trim(),
+   648→        email: form.email.trim(),
+   649→        role: form.role,
+   650→        // Datos personales opcionales
+   651→        dni: form.dni.trim() || null,
+   652→        birthDate: dateInputToEpoch(form.birthDate),
+   653→        gender: form.gender,
+   654→        maritalStatus: form.maritalStatus,
+   655→        avatar: form.avatar.trim() || null,
+   656→        // Domicilio
+   657→        address: form.address.trim() || null,
+   658→        country: form.country.trim() || null,
+   659→        province: form.province.trim() || null,
+   660→        department: form.department.trim() || null,
+   661→        municipality: form.municipality.trim() || null,
+   662→        location: form.location,
+   663→      }
+   664→      if (mode === 'create') {
+   665→        body.password = form.password
+   666→        body.isActive = true
+   667→      } else {
+   668→        body.isActive = form.isActive
+   669→      }
+   670→
+   671→      const res = await fetch(url, {
+   672→        method: mode === 'create' ? 'POST' : 'PUT',
+   673→        headers: { 'Content-Type': 'application/json' },
+   674→        body: JSON.stringify(body),
+   675→      })
+   676→      const data = await res.json().catch(() => ({}))
+   677→      if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status)
+   678→
+   679→      toast.success(mode === 'create' ? 'Usuario creado' : 'Usuario actualizado')
+   680→      onSaved()
+   681→    } catch (err) {
+   682→      setError(err instanceof Error ? err.message : 'Error al guardar')
+   683→    } finally {
+   684→      setSaving(false)
+   685→    }
+   686→  }
+   687→
+   688→  return (
+   689→    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+   690→      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col overflow-hidden p-0">
+   691→        <DialogHeader className="px-6 pt-6 pb-4 shrink-0">
+   692→          <DialogTitle className="text-[#5C3A21]">
+   693→            {mode === 'create' ? 'Nuevo Usuario' : 'Editar Usuario'}
+   694→          </DialogTitle>
+   695→          <DialogDescription>
+   696→            {mode === 'create'
+   697→              ? 'Creá un nuevo usuario para la Cocina Móvil'
+   698→              : user
+   699→              ? `Editando a ${getFullName(user)}`
+   700→              : 'Editar usuario'}
+   701→          </DialogDescription>
+   702→        </DialogHeader>
+   703→
+   704→        <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-hidden">
+   705→          <div className="flex-1 overflow-y-auto px-6 space-y-5 pb-6">
+   706→          {error && (
+   707→            <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">
+   708→              {error}
+   709→            </div>
+   710→          )}
+   711→
+   712→          {/* ====== Sección 1: Datos Personales ====== */}
+   713→          <div className="space-y-3">
+   714→            <SectionHeader num={1} title="Datos Personales" />
+   715→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-8 sm:pl-0">
+   716→              <div className="space-y-1.5">
+   717→                <Label className="text-[#5C3A21]">Nombre *</Label>
+   718→                <Input
+   719→                  value={form.firstName}
+   720→                  onChange={(e) => setField('firstName', e.target.value)}
+   721→                  placeholder="Nombre"
+   722→                  className="border-[#5C3A21]/15"
+   723→                  autoFocus
+   724→                />
+   725→              </div>
+   726→              <div className="space-y-1.5">
+   727→                <Label className="text-[#5C3A21]">Apellido *</Label>
+   728→                <Input
+   729→                  value={form.lastName}
+   730→                  onChange={(e) => setField('lastName', e.target.value)}
+   731→                  placeholder="Apellido"
+   732→                  className="border-[#5C3A21]/15"
+   733→                />
+   734→              </div>
+   735→              <div className="space-y-1.5">
+   736→                <Label className="text-[#5C3A21]">DNI</Label>
+   737→                <Input
+   738→                  value={form.dni}
+   739→                  onChange={(e) => setField('dni', e.target.value)}
+   740→                  placeholder="12.345.678"
+   741→                  className="border-[#5C3A21]/15"
+   742→                />
+   743→              </div>
+   744→              <div className="space-y-1.5">
+   745→                <Label className="text-[#5C3A21]">Fecha de nacimiento</Label>
+   746→                <Input
+   747→                  type="date"
+   748→                  value={form.birthDate}
+   749→                  onChange={(e) => setField('birthDate', e.target.value)}
+   750→                  className="border-[#5C3A21]/15"
+   751→                />
+   752→              </div>
+   753→              <div className="space-y-1.5">
+   754→                <Label className="text-[#5C3A21]">Género</Label>
+   755→                <Select
+   756→                  value={form.gender ?? NONE}
+   757→                  onValueChange={(v) => setField('gender', v === NONE ? null : (v as CmGender))}
+   758→                >
+   759→                  <SelectTrigger className="border-[#5C3A21]/15">
+   760→                    <SelectValue placeholder="Seleccionar…" />
+   761→                  </SelectTrigger>
+   762→                  <SelectContent>
+   763→                    <SelectItem value={NONE}>—</SelectItem>
+   764→                    <SelectItem value="masculino">Masculino</SelectItem>
+   765→                    <SelectItem value="femenino">Femenino</SelectItem>
+   766→                    <SelectItem value="otro">Otro</SelectItem>
+   767→                  </SelectContent>
+   768→                </Select>
+   769→              </div>
+   770→              <div className="space-y-1.5">
+   771→                <Label className="text-[#5C3A21]">Estado civil</Label>
+   772→                <Select
+   773→                  value={form.maritalStatus ?? NONE}
+   774→                  onValueChange={(v) =>
+   775→                    setField('maritalStatus', v === NONE ? null : (v as CmMaritalStatus))
+   776→                  }
+   777→                >
+   778→                  <SelectTrigger className="border-[#5C3A21]/15">
+   779→                    <SelectValue placeholder="Seleccionar…" />
+   780→                  </SelectTrigger>
+   781→                  <SelectContent>
+   782→                    <SelectItem value={NONE}>—</SelectItem>
+   783→                    <SelectItem value="soltero">Soltero/a</SelectItem>
+   784→                    <SelectItem value="casado">Casado/a</SelectItem>
+   785→                    <SelectItem value="divorciado">Divorciado/a</SelectItem>
+   786→                    <SelectItem value="viudo">Viudo/a</SelectItem>
+   787→                  </SelectContent>
+   788→                </Select>
+   789→              </div>
+   790→              <div className="space-y-2 sm:col-span-2">
+   791→                <Label className="text-[#5C3A21]">Avatar</Label>
+   792→                <AvatarUploader
+   793→                  value={form.avatar || null}
+   794→                  onChange={(url) => setField('avatar', url || '')}
+   795→                  initials={getInitials(form)}
+   796→                  role={form.role}
+   797→                  size="lg"
+   798→                  disabled={saving}
+   799→                />
+   800→              </div>
+   801→            </div>
+   802→          </div>
+   803→
+   804→          <Separator className="bg-[#5C3A21]/15" />
+   805→
+   806→          {/* ====== Sección 2: Domicilio ====== */}
+   807→          <div className="space-y-3">
+   808→            <SectionHeader num={2} title="Domicilio" />
+   809→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-8 sm:pl-0">
+   810→              <div className="space-y-1.5 sm:col-span-2">
+   811→                <Label className="text-[#5C3A21]">Dirección</Label>
+   812→                <Input
+   813→                  value={form.address}
+   814→                  onChange={(e) => setField('address', e.target.value)}
+   815→                  placeholder="Calle, número, piso, depto…"
+   816→                  className="border-[#5C3A21]/15"
+   817→                />
+   818→              </div>
+   819→              <div className="space-y-1.5 sm:col-span-2">
+   820→                <Label className="text-[#5C3A21]">Ubicación geográfica</Label>
+   821→                <GeographySelect
+   822→                  country={form.country}
+   823→                  province={form.province}
+   824→                  department={form.department}
+   825→                  municipality={form.municipality}
+   826→                  onChange={(field, value) => setField(field, value)}
+   827→                />
+   828→              </div>
+   829→            </div>
+   830→
+   831→            <div className="space-y-1.5 pl-8 sm:pl-0">
+   832→              <Label className="text-[#5C3A21]">Ubicación (mapa)</Label>
+   833→              <LocationPicker
+   834→                location={form.location}
+   835→                onLocationChange={(loc) => setField('location', loc)}
+   836→              />
+   837→            </div>
+   838→          </div>
+   839→
+   840→          <Separator className="bg-[#5C3A21]/15" />
+   841→
+   842→          {/* ====== Sección 3: Acceso ====== */}
+   843→          <div className="space-y-3">
+   844→            <SectionHeader num={3} title="Acceso" />
+   845→            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-8 sm:pl-0">
+   846→              <div className="space-y-1.5 sm:col-span-2">
+   847→                <Label className="text-[#5C3A21]">Email *</Label>
+   848→                <Input
+   849→                  type="email"
+   850→                  value={form.email}
+   851→                  onChange={(e) => setField('email', e.target.value)}
+   852→                  placeholder="email@ejemplo.com"
+   853→                  className="border-[#5C3A21]/15"
+   854→                />
+   855→              </div>
+   856→              {mode === 'create' && (
+   857→                <div className="space-y-1.5 sm:col-span-2">
+   858→                  <Label className="text-[#5C3A21]">Contraseña *</Label>
+   859→                  <div className="relative">
+   860→                    <Input
+   861→                      type={showPassword ? 'text' : 'password'}
+   862→                      value={form.password}
+   863→                      onChange={(e) => setField('password', e.target.value)}
+   864→                      placeholder="Mínimo 6 caracteres"
+   865→                      className="border-[#5C3A21]/15 pr-9"
+   866→                    />
+   867→                    <button
+   868→                      type="button"
+   869→                      onClick={() => setShowPassword((s) => !s)}
+   870→                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A7E70] hover:text-[#5C3A21] transition-colors"
+   871→                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+   872→                    >
+   873→                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+   874→                    </button>
+   875→                  </div>
+   876→                </div>
+   877→              )}
+   878→              <div className="space-y-1.5">
+   879→                <Label className="text-[#5C3A21]">Rol</Label>
+   880→                <Select
+   881→                  value={form.role}
+   882→                  onValueChange={(v) => setField('role', v as CmRole)}
+   883→                >
+   884→                  <SelectTrigger className="border-[#5C3A21]/15">
+   885→                    <SelectValue />
+   886→                  </SelectTrigger>
+   887→                  <SelectContent>
+   888→                    {sessionRole === 'superadmin' && <SelectItem value="superadmin">SuperAdmin</SelectItem>}
+   889→                    {sessionRole === 'superadmin' && <SelectItem value="admin">Admin</SelectItem>}
+   890→                    <SelectItem value="supervisor">Supervisor</SelectItem>
+   891→                  </SelectContent>
+   892→                </Select>
+   893→              </div>
+   894→              {mode === 'edit' && (
+   895→                <div className="space-y-1.5">
+   896→                  <Label className="text-[#5C3A21]">Estado</Label>
+   897→                  <div className="flex items-center gap-2 h-9 px-3 border border-[#5C3A21]/15 rounded-md bg-[#FFF8E7]/30">
+   898→                    <Switch
+   899→                      checked={form.isActive}
+   900→                      onCheckedChange={(c) => setField('isActive', c)}
+   901→                    />
+   902→                    <span className="text-sm text-[#5C3A21]">
+   903→                      {form.isActive ? 'Activo' : 'Inactivo'}
+   904→                    </span>
+   905→                  </div>
+   906→                </div>
+   907→              )}
+   908→            </div>
+   909→
+   910→            {mode === 'edit' && user && (
+   911→              <div className="pl-8 sm:pl-0">
+   912→                <Button
+   913→                  type="button"
+   914→                  variant="outline"
+   915→                  onClick={() => onRequestPasswordChange(user)}
+   916→                  className="border-[#5C3A21]/20 text-[#5C3A21] hover:bg-[#FBF1DC]/50"
+   917→                >
+   918→                  <Key className="h-4 w-4" />
+   919→                  Modificar Contraseña
+   920→                </Button>
+   921→              </div>
+   922→            )}
+   923→          </div>
+   924→
+   925→          </div>
+   926→          <DialogFooter className="shrink-0 gap-2 bg-white border-t border-[#5C3A21]/8 px-6 py-3">
+   927→            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
+   928→              Cancelar
+   929→            </Button>
+   930→            <Button
+   931→              type="submit"
+   932→              disabled={saving}
+   933→              className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]"
+   934→            >
+   935→              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+   936→              {mode === 'create' ? 'Crear' : 'Guardar'}
+   937→            </Button>
+   938→          </DialogFooter>
+   939→        </form>
+   940→      </DialogContent>
+   941→    </Dialog>
+   942→  )
+   943→}
+   944→
+   945→// ============================================================
+   946→// Sub-componente: Cambiar Contraseña
+   947→// ============================================================
+   948→function PasswordChangeDialog({
+   949→  user,
+   950→  onClose,
+   951→  onSaved,
+   952→}: {
+   953→  user: CmUserRecord | null
+   954→  onClose: () => void
+   955→  onSaved: () => void
+   956→}) {
+   957→  const [newPassword, setNewPassword] = React.useState('')
+   958→  const [confirmPassword, setConfirmPassword] = React.useState('')
+   959→  const [saving, setSaving] = React.useState(false)
+   960→  const [error, setError] = React.useState<string | null>(null)
+   961→  const [showNewPassword, setShowNewPassword] = React.useState(false)
+   962→  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false)
+   963→
+   964→  React.useEffect(() => {
+   965→    if (user) {
+   966→      setNewPassword('')
+   967→      setConfirmPassword('')
+   968→      setError(null)
+   969→      setShowNewPassword(false)
+   970→      setShowConfirmPassword(false)
+   971→    }
+   972→  }, [user])
+   973→
+   974→  if (!user) return null
+   975→
+   976→  const handleSubmit = async (e: React.FormEvent) => {
+   977→    e.preventDefault()
+   978→    setError(null)
+   979→    if (newPassword.length < 6) return setError('Mínimo 6 caracteres')
+   980→    if (newPassword !== confirmPassword) return setError('Las contraseñas no coinciden')
+   981→
+   982→    setSaving(true)
+   983→    try {
+   984→      const res = await fetch(`/api/cocina-movil/users/${user.id}/password`, {
+   985→        method: 'PUT',
+   986→        headers: { 'Content-Type': 'application/json' },
+   987→        body: JSON.stringify({ newPassword }),
+   988→      })
+   989→      if (!res.ok) {
+   990→        const data = await res.json().catch(() => ({}))
+   991→        throw new Error(data.error || 'HTTP ' + res.status)
+   992→      }
+   993→      toast.success('Contraseña actualizada')
+   994→      onSaved()
+   995→    } catch (err) {
+   996→      setError(err instanceof Error ? err.message : 'Error')
+   997→    } finally {
+   998→      setSaving(false)
+   999→    }
+  1000→  }
+  1001→
+  1002→  return (
+  1003→    <Dialog open={!!user} onOpenChange={(o) => !o && onClose()}>
+  1004→      <DialogContent className="sm:max-w-md">
+  1005→        <DialogHeader>
+  1006→          <DialogTitle className="text-[#5C3A21]">Cambiar contraseña</DialogTitle>
+  1007→          <DialogDescription>
+  1008→            Cambiando la contraseña de <strong>{getFullName(user)}</strong> ({user.email})
+  1009→          </DialogDescription>
+  1010→        </DialogHeader>
+  1011→        <form onSubmit={handleSubmit} className="space-y-3">
+  1012→          {error && (
+  1013→            <div className="text-sm text-[#B91C1C] bg-[#B91C1C]/5 border border-[#B91C1C]/20 rounded-md px-3 py-2">
+  1014→              {error}
+  1015→            </div>
+  1016→          )}
+  1017→          <div className="space-y-1.5">
+  1018→            <Label className="text-[#5C3A21]">Nueva contraseña</Label>
+  1019→            <div className="relative">
+  1020→              <Input
+  1021→                type={showNewPassword ? 'text' : 'password'}
+  1022→                value={newPassword}
+  1023→                onChange={(e) => setNewPassword(e.target.value)}
+  1024→                placeholder="••••••••"
+  1025→                className="border-[#5C3A21]/15 pr-9"
+  1026→                autoFocus
+  1027→              />
+  1028→              <button
+  1029→                type="button"
+  1030→                onClick={() => setShowNewPassword((s) => !s)}
+  1031→                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A7E70] hover:text-[#5C3A21] transition-colors"
+  1032→                aria-label={showNewPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+  1033→              >
+  1034→                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+  1035→              </button>
+  1036→            </div>
+  1037→          </div>
+  1038→          <div className="space-y-1.5">
+  1039→            <Label className="text-[#5C3A21]">Confirmar contraseña</Label>
+  1040→            <div className="relative">
+  1041→              <Input
+  1042→                type={showConfirmPassword ? 'text' : 'password'}
+  1043→                value={confirmPassword}
+  1044→                onChange={(e) => setConfirmPassword(e.target.value)}
+  1045→                placeholder="••••••••"
+  1046→                className="border-[#5C3A21]/15 pr-9"
+  1047→              />
+  1048→              <button
+  1049→                type="button"
+  1050→                onClick={() => setShowConfirmPassword((s) => !s)}
+  1051→                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8A7E70] hover:text-[#5C3A21] transition-colors"
+  1052→                aria-label={showConfirmPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+  1053→              >
+  1054→                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+  1055→              </button>
+  1056→            </div>
+  1057→          </div>
+  1058→          <DialogFooter className="gap-2 pt-2">
+  1059→            <Button type="button" variant="outline" onClick={onClose}>
+  1060→              Cancelar
+  1061→            </Button>
+  1062→            <Button
+  1063→              type="submit"
+  1064→              disabled={saving}
+  1065→              className="bg-[#E1AD01] hover:bg-[#E1AD01]/90 text-[#1F1611]"
+  1066→            >
+  1067→              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+  1068→              Cambiar
+  1069→            </Button>
+  1070→          </DialogFooter>
+  1071→        </form>
+  1072→      </DialogContent>
+  1073→    </Dialog>
+  1074→  )
+  1075→}
+  1076→
+  1077→export default function CmUsersPage() {
+  1078→  return (
+  1079→    <React.Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-[#E1AD01]" /></div>}>
+  1080→      <CmUsersPageContent />
+  1081→    </React.Suspense>
+  1082→  )
+  1083→}
+  1084→
