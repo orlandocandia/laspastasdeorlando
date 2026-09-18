@@ -69,6 +69,10 @@ export async function GET(request: Request) {
   ])
 
   const users = usersData.users
+  // For admin users, the "Usuarios" KPI should reflect only themselves
+  // (they can only manage their own profile, not other users).
+  // SuperAdmin sees the global user count.
+  const scopedUsers = sessionUser.role === 'superadmin' ? users : users.filter((u) => u.id === sessionUser.id)
   const places = placesData.places
   const recipes = recipesData.recipes
   const productions = productionsData.productions
@@ -77,8 +81,8 @@ export async function GET(request: Request) {
   const purchases = purchasesData.purchases
 
   // Calculate KPIs
-  const activeUsers = users.filter((u) => u.isActive).length
-  const inactiveUsers = users.length - activeUsers
+  const activeUsers = scopedUsers.filter((u) => u.isActive).length
+  const inactiveUsers = scopedUsers.length - activeUsers
 
   const activePlaces = places.filter((p) => p.isActive).length
 
@@ -125,7 +129,7 @@ export async function GET(request: Request) {
     .slice(0, 3)
 
   // Usuarios recientes (últimos 5, sorted by createdAt desc)
-  const recentUsers = users
+  const recentUsers = scopedUsers
     .sort((a, b) => b.createdAt - a.createdAt)
     .slice(0, 5)
     .map((u) => ({
@@ -153,7 +157,7 @@ export async function GET(request: Request) {
 
   return NextResponse.json({
     kpis: {
-      totalUsers: users.length,
+      totalUsers: scopedUsers.length,
       activeUsers,
       inactiveUsers,
       totalPlaces: places.length,

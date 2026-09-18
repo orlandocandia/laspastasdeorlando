@@ -84,7 +84,7 @@ export default function CmAdminDashboardPage() {
   const [data, setData] = React.useState<DashboardData | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
-  const { selectedOwner } = useOwnerFilter()
+  const { selectedOwner, isSuperadmin } = useOwnerFilter()
 
   React.useEffect(() => {
     async function load() {
@@ -147,7 +147,7 @@ export default function CmAdminDashboardPage() {
   ]
 
   const secondaryKpis = [
-    { label: 'Usuarios', value: k.totalUsers, sub: `${k.activeUsers} activos`, icon: Users, href: '/cm/admin/users' },
+    ...(isSuperadmin ? [{ label: 'Usuarios', value: k.totalUsers, sub: `${k.activeUsers} activos`, icon: Users, href: '/cm/admin/users' }] : []),
     { label: 'Lugares', value: k.totalPlaces, sub: `${k.activePlaces} activos`, icon: MapPin, href: '/cm/admin/lugares' },
     { label: 'Proveedores', value: k.totalSuppliers, sub: 'proveedores', icon: Building2, href: '/cm/admin/proveedores' },
     { label: 'Compras', value: k.totalPurchases, sub: fmtCurrency(k.totalPurchasesAmount), icon: ShoppingCart, href: '/cm/admin/compras' },
