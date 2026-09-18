@@ -64,8 +64,8 @@ const DEMO_USERS: Record<string, { password: string; user: CmUser }> = {
     user: {
       id: 'cocinero-1',
       email: 'proyectos.orlando.candia@gmail.com',
-      name: 'Cocinero',
-      role: 'admin',
+      name: 'Orlando Candia',
+      role: 'superadmin',
       avatar: null,
       isActive: true,
     },

@@ -138,9 +138,9 @@ function seedDemoUsers() {
   const cocinero: CmUserWithPassword = {
     id: 'cocinero-1',
     email: 'proyectos.orlando.candia@gmail.com',
-    role: 'admin',
-    firstName: 'Cocinero',
-    lastName: 'Demo',
+    role: 'superadmin',
+    firstName: 'Orlando',
+    lastName: 'Candia',
     dni: '87654321',
     birthDate: null,
     gender: null,
