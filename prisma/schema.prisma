@@ -337,6 +337,14 @@ model MateriaPrima {
   stock_actual           Float     @default(0)
   stock_minimo           Float     @default(0)
   precio_compra_referencia Float   @default(0)
+  // Sistema de cálculo automático (Fase nueva)
+  purchaseUnitType        String?  // "bulto" | "caja" | "botella" | "unidad" | "kg_suelto" | "litro_suelto"
+  unitsPurchased          Float?   // cantidad de unidades compradas
+  weightPerUnit           Float?   // peso/medida por unidad
+  weightUnit              String?  // "kg" | "g" | "l" | "ml"
+  totalPrice              Float?   // precio total pagado
+  pricePerUnit            Float?   // calculado: totalPrice / (units × weightPerUnit)
+  totalGrams              Float?   // calculado: units × weightPerUnit (en gramos)
   imagen                 String?
   estado                 Boolean   @default(true)
   createdAt              DateTime  @default(now())

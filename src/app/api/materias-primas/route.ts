@@ -88,6 +88,14 @@ export async function POST(request: NextRequest) {
       stock_actual,
       stock_minimo,
       precio_compra_referencia,
+      // Sistema de cálculo automático
+      purchaseUnitType,
+      unitsPurchased,
+      weightPerUnit,
+      weightUnit,
+      totalPrice,
+      pricePerUnit,
+      totalGrams,
       imagen,
       estado,
     } = body
@@ -112,7 +120,16 @@ export async function POST(request: NextRequest) {
         id_unidad_base: parseInt(id_unidad_base),
         stock_actual: parseFloat(stock_actual) || 0,
         stock_minimo: parseFloat(stock_minimo) || 0,
-        precio_compra_referencia: parseFloat(precio_compra_referencia) || 0,
+        // Sincronizar precio_compra_referencia con pricePerUnit
+        precio_compra_referencia: pricePerUnit !== undefined ? parseFloat(pricePerUnit) : (parseFloat(precio_compra_referencia) || 0),
+        // Sistema de cálculo automático
+        purchaseUnitType: purchaseUnitType || null,
+        unitsPurchased: unitsPurchased !== undefined ? parseFloat(unitsPurchased) : null,
+        weightPerUnit: weightPerUnit !== undefined ? parseFloat(weightPerUnit) : null,
+        weightUnit: weightUnit || null,
+        totalPrice: totalPrice !== undefined ? parseFloat(totalPrice) : null,
+        pricePerUnit: pricePerUnit !== undefined ? parseFloat(pricePerUnit) : null,
+        totalGrams: totalGrams !== undefined ? parseFloat(totalGrams) : null,
         imagen: imagen || null,
         estado: estado !== false,
       },

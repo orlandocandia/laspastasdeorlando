@@ -44,6 +44,14 @@ export async function PUT(
       stock_actual,
       stock_minimo,
       precio_compra_referencia,
+      // Sistema de cálculo automático
+      purchaseUnitType,
+      unitsPurchased,
+      weightPerUnit,
+      weightUnit,
+      totalPrice,
+      pricePerUnit,
+      totalGrams,
       imagen,
       estado,
     } = body
@@ -74,7 +82,16 @@ export async function PUT(
         id_unidad_base: id_unidad_base ? parseInt(id_unidad_base) : undefined,
         stock_actual: stock_actual !== undefined ? parseFloat(stock_actual) : undefined,
         stock_minimo: stock_minimo !== undefined ? parseFloat(stock_minimo) : undefined,
-        precio_compra_referencia: precio_compra_referencia !== undefined ? parseFloat(precio_compra_referencia) : undefined,
+        // Sincronizar precio_compra_referencia con pricePerUnit
+        precio_compra_referencia: pricePerUnit !== undefined ? parseFloat(pricePerUnit) : (precio_compra_referencia !== undefined ? parseFloat(precio_compra_referencia) : undefined),
+        // Sistema de cálculo automático
+        purchaseUnitType: purchaseUnitType !== undefined ? purchaseUnitType || null : undefined,
+        unitsPurchased: unitsPurchased !== undefined ? (unitsPurchased !== null ? parseFloat(unitsPurchased) : null) : undefined,
+        weightPerUnit: weightPerUnit !== undefined ? (weightPerUnit !== null ? parseFloat(weightPerUnit) : null) : undefined,
+        weightUnit: weightUnit !== undefined ? weightUnit || null : undefined,
+        totalPrice: totalPrice !== undefined ? (totalPrice !== null ? parseFloat(totalPrice) : null) : undefined,
+        pricePerUnit: pricePerUnit !== undefined ? (pricePerUnit !== null ? parseFloat(pricePerUnit) : null) : undefined,
+        totalGrams: totalGrams !== undefined ? (totalGrams !== null ? parseFloat(totalGrams) : null) : undefined,
         imagen: imagen !== undefined ? imagen || null : undefined,
         estado: estado !== undefined ? estado : undefined,
       },

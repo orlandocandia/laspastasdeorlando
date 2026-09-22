@@ -87,6 +87,15 @@ async function autoMigrateTurso(client: Client) {
     { sql: 'ALTER TABLE "DetallePresupuesto" ADD COLUMN "descuento_unitario" REAL', desc: 'DetallePresupuesto.descuento_unitario' },
     { sql: 'ALTER TABLE "DetallePresupuesto" ADD COLUMN "descuento_nombre" TEXT', desc: 'DetallePresupuesto.descuento_nombre' },
 
+    // ── MateriaPrima: sistema de cálculo automático de precio ──
+    { sql: 'ALTER TABLE "MateriaPrima" ADD COLUMN "purchaseUnitType" TEXT', desc: 'MateriaPrima.purchaseUnitType' },
+    { sql: 'ALTER TABLE "MateriaPrima" ADD COLUMN "unitsPurchased" REAL', desc: 'MateriaPrima.unitsPurchased' },
+    { sql: 'ALTER TABLE "MateriaPrima" ADD COLUMN "weightPerUnit" REAL', desc: 'MateriaPrima.weightPerUnit' },
+    { sql: 'ALTER TABLE "MateriaPrima" ADD COLUMN "weightUnit" TEXT', desc: 'MateriaPrima.weightUnit' },
+    { sql: 'ALTER TABLE "MateriaPrima" ADD COLUMN "totalPrice" REAL', desc: 'MateriaPrima.totalPrice' },
+    { sql: 'ALTER TABLE "MateriaPrima" ADD COLUMN "pricePerUnit" REAL', desc: 'MateriaPrima.pricePerUnit' },
+    { sql: 'ALTER TABLE "MateriaPrima" ADD COLUMN "totalGrams" REAL', desc: 'MateriaPrima.totalGrams' },
+
     // ── CREATE TABLE Promocion (if not exists) ──────────────
     { sql: `CREATE TABLE IF NOT EXISTS "Promocion" (
       "id" INTEGER PRIMARY KEY AUTOINCREMENT,
