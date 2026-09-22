@@ -366,10 +366,11 @@ export default function MateriaPrimaForm({ materiaPrima, onSuccess }: MateriaPri
               name="stock_minimo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Stock Mínimo</FormLabel>
+                  <FormLabel>Stock Mínimo (g)</FormLabel>
                   <FormControl>
                     <Input type="number" step="0.01" min="0" placeholder="0" {...field} />
                   </FormControl>
+                  <p className="text-[10px] text-muted-foreground">En gramos. Ej: 5000 = 5 kg</p>
                   <FormMessage />
                 </FormItem>
               )}
@@ -385,10 +386,11 @@ export default function MateriaPrimaForm({ materiaPrima, onSuccess }: MateriaPri
               name="stock_minimo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Stock Mínimo</FormLabel>
+                  <FormLabel>Stock Mínimo (g)</FormLabel>
                   <FormControl>
                     <Input type="number" step="0.01" min="0" placeholder="0" {...field} />
                   </FormControl>
+                  <p className="text-[10px] text-muted-foreground">En gramos. Ej: 5000 = 5 kg</p>
                   <FormMessage />
                 </FormItem>
               )}
