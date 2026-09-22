@@ -57,7 +57,7 @@ const materiaPrimaSchema = z.object({
   nombre: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   descripcion: z.string().optional(),
   id_categoria: z.string().min(1, 'Seleccioná una categoría'),
-  id_unidad_base: z.string().min(1, 'Seleccioná una unidad de medida'),
+  // id_unidad_base: oculto del form, se usa gramos (id=2) por defecto
   stock_actual: z.coerce.number().min(0, 'El stock no puede ser negativo').default(0),
   stock_minimo: z.coerce.number().min(0, 'El stock mínimo no puede ser negativo').default(0),
   // Sistema simple de cálculo
@@ -104,7 +104,7 @@ export default function MateriaPrimaForm({ materiaPrima, onSuccess }: MateriaPri
       nombre: materiaPrima?.nombre || '',
       descripcion: materiaPrima?.descripcion || '',
       id_categoria: materiaPrima?.id_categoria?.toString() || '',
-      id_unidad_base: materiaPrima?.id_unidad_base?.toString() || '',
+      id_unidad_base: materiaPrima?.id_unidad_base?.toString() || '2', // Gramo por defecto
       stock_actual: materiaPrima?.stock_actual ?? 0,
       stock_minimo: materiaPrima?.stock_minimo ?? 0,
       purchaseUnitType: materiaPrima?.purchaseUnitType || '',
@@ -120,12 +120,12 @@ export default function MateriaPrimaForm({ materiaPrima, onSuccess }: MateriaPri
   const unitsPurchased = form.watch('unitsPurchased')
   const totalPrice = form.watch('totalPrice')
 
-  // Calculate precioReferencia and totalGrams
+  // Calculate precioReferencia (por gramo) and totalGrams
   const { precioReferencia, totalGrams } = useMemo(() => {
     const qty = Number(unitsPurchased) || 0
     const total = Number(totalPrice) || 0
-    const ppu = qty > 0 ? total / qty : 0
     const grams = convertToGrams(qty, purchaseUnitType || 'kg')
+    const ppu = grams > 0 ? total / grams : 0 // precio por gramo
     return { precioReferencia: ppu, totalGrams: grams }
   }, [unitsPurchased, totalPrice, purchaseUnitType])
 
@@ -317,7 +317,7 @@ export default function MateriaPrimaForm({ materiaPrima, onSuccess }: MateriaPri
           )}
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <FormField
             control={form.control}
             name="id_categoria"
@@ -334,31 +334,6 @@ export default function MateriaPrimaForm({ materiaPrima, onSuccess }: MateriaPri
                     {categorias.map((cat) => (
                       <SelectItem key={cat.id} value={cat.id.toString()}>
                         {cat.nombre}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="id_unidad_base"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Unidad Base *</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={loadingUnidades ? 'Cargando...' : 'Seleccionar...'} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {unidades.map((u) => (
-                      <SelectItem key={u.id} value={u.id.toString()}>
-                        {u.nombre} ({u.codigo})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -502,18 +477,20 @@ export default function MateriaPrimaForm({ materiaPrima, onSuccess }: MateriaPri
           {purchaseUnitType && Number(unitsPurchased) > 0 && Number(totalPrice) > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <div className="p-3 rounded-md bg-card border border-marron/10">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Precio de Referencia</p>
-                <p className="text-lg font-bold text-marron">
-                  {fmtCurrency(precioReferencia)} / {purchaseUnitType}
-                </p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Total en Gramos</p>
+                <p className="text-lg font-bold text-oliva">{fmtNumber(totalGrams)} g</p>
                 <p className="text-[10px] text-muted-foreground">
-                  = {fmtCurrency(Number(totalPrice) || 0)} ÷ {fmtNumber(Number(unitsPurchased) || 0)} {purchaseUnitType}
+                  {fmtNumber(Number(unitsPurchased) || 0)} {purchaseUnitType} → {fmtNumber(totalGrams)} g
                 </p>
               </div>
               <div className="p-3 rounded-md bg-card border border-marron/10">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Total en Gramos</p>
-                <p className="text-lg font-bold text-oliva">{fmtNumber(totalGrams)} g</p>
-                <p className="text-[10px] text-muted-foreground">Peso total equivalente</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Precio de Referencia</p>
+                <p className="text-lg font-bold text-marron">
+                  {fmtCurrency(precioReferencia)} / g
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  = {fmtCurrency(Number(totalPrice) || 0)} ÷ {fmtNumber(totalGrams)} g
+                </p>
               </div>
             </div>
           )}
