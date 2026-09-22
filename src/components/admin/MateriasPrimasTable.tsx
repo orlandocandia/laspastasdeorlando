@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Image from 'next/image'
 import { toast } from 'sonner'
-import { Pencil, Trash2, Plus, Search, Loader2, ChevronLeft, ChevronRight, PackagePlus } from 'lucide-react'
+import { Pencil, Trash2, Plus, Search, Loader2, ChevronLeft, ChevronRight, PackagePlus, Printer, FileText } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -41,7 +41,7 @@ import {
 } from '@/components/ui/select'
 import MateriaPrimaForm from './MateriaPrimaForm'
 import { StockAdjustDialog } from './StockAdjustDialog'
-import FichaPrintMenu from './FichaPrintMenu'
+import { pdf, type DocumentProps } from '@react-pdf/renderer'
 import FichaMateriaPrimaPDFDocument, { type FichaMateriaPrimaData } from '@/components/print/FichaMateriaPrimaPDFDocument'
 
 interface MateriaPrima {
@@ -81,6 +81,7 @@ export default function MateriasPrimasTable() {
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [stockAdjustItem, setStockAdjustItem] = useState<MateriaPrima | null>(null)
   const [stockAdjustOpen, setStockAdjustOpen] = useState(false)
+  const [generatingPdf, setGeneratingPdf] = useState<{ id: number; action: 'download' | 'print' } | null>(null)
 
   // Read stock query param from URL on mount (for dashboard alerts)
   useEffect(() => {
@@ -169,6 +170,79 @@ export default function MateriasPrimasTable() {
   const openEdit = (mp: MateriaPrima) => {
     setSelectedMateriaPrima(mp)
     setFormOpen(true)
+  }
+
+  // --- PDF generation (inline, replicating FichaPrintMenu logic) ---
+  const buildPdf = async (mp: MateriaPrima): Promise<Blob> => {
+    const data: FichaMateriaPrimaData = {
+      id: mp.id,
+      codigo: mp.codigo ?? null,
+      nombre: mp.nombre,
+      descripcion: mp.descripcion ?? null,
+      id_categoria: mp.id_categoria,
+      id_unidad_base: mp.id_unidad_base,
+      stock_actual: mp.stock_actual,
+      stock_minimo: mp.stock_minimo,
+      precio_compra_referencia: mp.precio_compra_referencia,
+      imagen: mp.imagen ?? null,
+      estado: mp.estado,
+      categoria: mp.categoria,
+      unidadBase: mp.unidadBase,
+    }
+    const element = <FichaMateriaPrimaPDFDocument data={data} />
+    return await pdf(element as React.ReactElement<DocumentProps>).toBlob()
+  }
+
+  const handleDownloadPdf = async (mp: MateriaPrima) => {
+    setGeneratingPdf({ id: mp.id, action: 'download' })
+    try {
+      const blob = await buildPdf(mp)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `ficha-materia-prima-${mp.codigo || mp.id}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('Ficha de Materia Prima descargada')
+    } catch (error) {
+      console.error('Error generating PDF:', error)
+      toast.error('Error al generar el documento')
+    } finally {
+      setGeneratingPdf(null)
+    }
+  }
+
+  const handlePrintPdf = async (mp: MateriaPrima) => {
+    setGeneratingPdf({ id: mp.id, action: 'print' })
+    try {
+      const blob = await buildPdf(mp)
+      const url = URL.createObjectURL(blob)
+      const iframe = document.createElement('iframe')
+      iframe.style.display = 'none'
+      iframe.src = url
+      document.body.appendChild(iframe)
+      iframe.onload = () => {
+        try {
+          iframe.contentWindow?.focus()
+          iframe.contentWindow?.print()
+        } catch (e) {
+          console.error('Print error:', e)
+          toast.error('Error al imprimir. Use el botón Descargar PDF.')
+        }
+        setTimeout(() => {
+          document.body.removeChild(iframe)
+          URL.revokeObjectURL(url)
+        }, 2000)
+      }
+      toast.success('Preparando Ficha de Materia Prima para imprimir')
+    } catch (error) {
+      console.error('Error printing PDF:', error)
+      toast.error('Error al preparar la impresión')
+    } finally {
+      setGeneratingPdf(null)
+    }
   }
 
   if (loading && materiasPrimas.length === 0) {
@@ -336,27 +410,34 @@ export default function MateriasPrimasTable() {
                           >
                             <PackagePlus className="h-4 w-4 text-oliva" />
                           </Button>
-                          <FichaPrintMenu<FichaMateriaPrimaData>
-                            data={{
-                              id: mp.id,
-                              codigo: mp.codigo ?? null,
-                              nombre: mp.nombre,
-                              descripcion: mp.descripcion ?? null,
-                              id_categoria: mp.id_categoria,
-                              id_unidad_base: mp.id_unidad_base,
-                              stock_actual: mp.stock_actual,
-                              stock_minimo: mp.stock_minimo,
-                              precio_compra_referencia: mp.precio_compra_referencia,
-                              imagen: mp.imagen ?? null,
-                              estado: mp.estado,
-                              categoria: mp.categoria,
-                              unidadBase: mp.unidadBase,
-                            }}
-                            DocumentComponent={FichaMateriaPrimaPDFDocument}
-                            filename={`ficha-materia-prima-${mp.codigo || mp.id}`}
-                            label="Ficha de Materia Prima"
-                            triggerTitle="Exportar Ficha de Materia Prima"
-                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 hover:bg-marron/10"
+                            title="Imprimir ficha"
+                            onClick={() => handlePrintPdf(mp)}
+                            disabled={generatingPdf?.id === mp.id}
+                          >
+                            {generatingPdf?.id === mp.id && generatingPdf.action === 'print' ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-marron" />
+                            ) : (
+                              <Printer className="h-4 w-4 text-marron" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-10 w-10 hover:bg-rojo/10"
+                            title="Descargar PDF"
+                            onClick={() => handleDownloadPdf(mp)}
+                            disabled={generatingPdf?.id === mp.id}
+                          >
+                            {generatingPdf?.id === mp.id && generatingPdf.action === 'download' ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-rojo" />
+                            ) : (
+                              <FileText className="h-4 w-4 text-rojo" />
+                            )}
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
