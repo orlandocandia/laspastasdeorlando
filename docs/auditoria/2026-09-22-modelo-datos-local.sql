@@ -1,0 +1,1100 @@
+-- ============================================
+-- MODELO DE DATOS COMPLETO — DDL (auditoría)
+-- Sistema: El Amigo de las Pastas (laspastasdeorlando.com.ar)
+-- Fecha de exportación: 2026-09-22T22:43:34.658Z
+-- Motor: SQLite (local sandbox)
+-- DB: prisma/dev.db
+-- Total de tablas: 71
+-- Contiene: DDL completo (CREATE TABLE + INDEX + TRIGGER)
+-- NO contiene: INSERTs, datos sensibles
+--
+-- TABLAS Y FILAS:
+--   AlertaConfiguracion: 0 fila(s)
+--   Auditoria: 0 fila(s)
+--   CategoriaMateriaPrima: 9 fila(s)
+--   CategoriaProductoTerminado: 13 fila(s)
+--   Compra: 0 fila(s)
+--   ConfigDocumento: 0 fila(s)
+--   Consulta: 4 fila(s)
+--   Contacto: 1 fila(s)
+--   Departamento: 79 fila(s)
+--   DescuentoVolumen: 1 fila(s)
+--   DescuentoVolumenRango: 2 fila(s)
+--   DetalleCompra: 0 fila(s)
+--   DetallePedidoCliente: 0 fila(s)
+--   DetallePedidoProveedor: 0 fila(s)
+--   DetallePresupuesto: 0 fila(s)
+--   DetalleProduccionConsumo: 0 fila(s)
+--   DetalleProduccionGenerado: 0 fila(s)
+--   DetalleReceta: 0 fila(s)
+--   DetalleVenta: 0 fila(s)
+--   Direccion: 0 fila(s)
+--   DocumentoGenerado: 0 fila(s)
+--   EmpresaTelefonica: 4 fila(s)
+--   Entrega: 0 fila(s)
+--   EstadoGeneral: 13 fila(s)
+--   EstadoSesion: 4 fila(s)
+--   FormaPago: 6 fila(s)
+--   Insumo: 12 fila(s)
+--   InteraccionWhatsApp: 0 fila(s)
+--   LogAcceso: 21 fila(s)
+--   Marca: 10 fila(s)
+--   MateriaPrima: 27 fila(s)
+--   MigrationLog: 27 fila(s)
+--   Municipio: 145 fila(s)
+--   Notificacion: 0 fila(s)
+--   NotificacionEntrega: 0 fila(s)
+--   Opinion: 0 fila(s)
+--   Pais: 1 fila(s)
+--   PasswordReset: 0 fila(s)
+--   PedidoCliente: 0 fila(s)
+--   PedidoProveedor: 0 fila(s)
+--   Permiso: 45 fila(s)
+--   Persona: 1 fila(s)
+--   PlantillaNotificacion: 0 fila(s)
+--   Presupuesto: 0 fila(s)
+--   Produccion: 0 fila(s)
+--   Producto: 10 fila(s)
+--   ProductoTerminado: 27 fila(s)
+--   Promocion: 2 fila(s)
+--   PromocionProducto: 3 fila(s)
+--   Provincia: 24 fila(s)
+--   PuntoEncuentro: 3 fila(s)
+--   Receta: 0 fila(s)
+--   RecetaCocina: 0 fila(s)
+--   ReservaCliente: 0 fila(s)
+--   Rol: 4 fila(s)
+--   RolPermiso: 55 fila(s)
+--   ServicioCorreoElectronico: 4 fila(s)
+--   Sesion: 0 fila(s)
+--   SesionActiva: 20 fila(s)
+--   StockMovement: 2 fila(s)
+--   TipoContacto: 3 fila(s)
+--   TipoDireccion: 3 fila(s)
+--   TipoEntidad: 2 fila(s)
+--   TipoInsumo: 6 fila(s)
+--   TipoPersona: 3 fila(s)
+--   TipoPlataforma: 4 fila(s)
+--   UnidadMedida: 15 fila(s)
+--   Usuario: 1 fila(s)
+--   Usuario2FA: 0 fila(s)
+--   UsuarioRol: 1 fila(s)
+--   Venta: 0 fila(s)
+-- ============================================
+
+-- ============================================
+-- SECCIÓN 1: DDL (CREATE TABLE)
+-- ============================================
+
+CREATE TABLE "AlertaConfiguracion" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "tipo" TEXT NOT NULL,
+    "activo" BOOLEAN NOT NULL DEFAULT true,
+    "umbral" INTEGER,
+    "destinatarios" TEXT,
+    "frecuencia" TEXT,
+    "ultimo_envio" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
+CREATE TABLE "Auditoria" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_usuario" INTEGER,
+    "accion" TEXT NOT NULL,
+    "modulo" TEXT NOT NULL,
+    "entidad_id" INTEGER,
+    "entidad_nombre" TEXT,
+    "detalles" TEXT,
+    "ip" TEXT,
+    "user_agent" TEXT,
+    "fecha" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Auditoria_id_usuario_fkey" FOREIGN KEY ("id_usuario") REFERENCES "Usuario" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE "CategoriaMateriaPrima" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME
+);
+
+CREATE TABLE "CategoriaProductoTerminado" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME
+, "imagen" TEXT, "imagen_integral" TEXT, "imagen_sin_gluten" TEXT, "seccion" TEXT);
+
+CREATE TABLE "Compra" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_proveedor" INTEGER NOT NULL,
+    "id_forma_pago" INTEGER NOT NULL,
+    "numero_factura" TEXT,
+    "fecha_compra" DATETIME NOT NULL,
+    "subtotal" REAL NOT NULL DEFAULT 0,
+    "iva" REAL NOT NULL DEFAULT 0,
+    "total" REAL NOT NULL DEFAULT 0,
+    "id_estado" INTEGER NOT NULL,
+    "observaciones" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME,
+    CONSTRAINT "Compra_id_proveedor_fkey" FOREIGN KEY ("id_proveedor") REFERENCES "Persona" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Compra_id_forma_pago_fkey" FOREIGN KEY ("id_forma_pago") REFERENCES "FormaPago" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Compra_id_estado_fkey" FOREIGN KEY ("id_estado") REFERENCES "EstadoGeneral" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "ConfigDocumento" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT DEFAULT 1,
+    "empresa_nombre" TEXT NOT NULL DEFAULT 'Pastas Orlando',
+    "empresa_direccion" TEXT NOT NULL DEFAULT 'Posadas, Misiones',
+    "empresa_telefono" TEXT NOT NULL DEFAULT '3754-419324',
+    "empresa_email" TEXT NOT NULL DEFAULT 'laspastasdeorlando@gmail.com',
+    "empresa_cuit" TEXT NOT NULL DEFAULT '20-12345678-9',
+    "empresa_condicion" TEXT NOT NULL DEFAULT 'Responsable Inscripto',
+    "empresa_inicio_act" TEXT NOT NULL DEFAULT '01/2018',
+    "logo_url" TEXT,
+    "footer_texto" TEXT NOT NULL DEFAULT 'Documento no fiscal — Para uso interno',
+    "mostrar_qr" BOOLEAN NOT NULL DEFAULT true,
+    "qr_url_base" TEXT NOT NULL DEFAULT '',
+    "texto_condiciones" TEXT NOT NULL DEFAULT 'La mercadería debe entregarse en condiciones óptimas. Cualquier diferencia debe notificarse dentro de las 48 hs.',
+    "color_acento" TEXT NOT NULL DEFAULT '#E1AD01',
+    "updatedAt" DATETIME
+);
+
+CREATE TABLE "Consulta" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "telefono" TEXT NOT NULL,
+    "mensaje" TEXT NOT NULL,
+    "leido" BOOLEAN NOT NULL DEFAULT false,
+    "respondido" BOOLEAN NOT NULL DEFAULT false,
+    "fecha" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE "Contacto" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_persona" INTEGER NOT NULL,
+    "id_tipo_contacto" INTEGER NOT NULL,
+    "valor" TEXT NOT NULL,
+    "es_principal" BOOLEAN NOT NULL DEFAULT false,
+    "verificado" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME,
+    CONSTRAINT "Contacto_id_persona_fkey" FOREIGN KEY ("id_persona") REFERENCES "Persona" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Contacto_id_tipo_contacto_fkey" FOREIGN KEY ("id_tipo_contacto") REFERENCES "TipoContacto" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "Departamento" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_provincia" INTEGER NOT NULL,
+    "nombre" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Departamento_id_provincia_fkey" FOREIGN KEY ("id_provincia") REFERENCES "Provincia" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "DescuentoVolumen" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "tipo_item" TEXT NOT NULL,
+    "item_id" INTEGER,
+    "unidad_medida" TEXT NOT NULL,
+    "activo" BOOLEAN NOT NULL DEFAULT true,
+    "fecha_inicio" DATETIME,
+    "fecha_fin" DATETIME,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
+CREATE TABLE "DescuentoVolumenRango" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_descuento" INTEGER NOT NULL,
+    "cantidad_desde" REAL NOT NULL,
+    "cantidad_hasta" REAL,
+    "tipo_descuento" TEXT NOT NULL,
+    "valor" REAL NOT NULL,
+    "descripcion" TEXT,
+    CONSTRAINT "DescuentoVolumenRango_id_descuento_fkey" FOREIGN KEY ("id_descuento") REFERENCES "DescuentoVolumen" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE "DetalleCompra" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_compra" INTEGER NOT NULL,
+    "id_materia_prima" INTEGER,
+    "id_insumo" INTEGER,
+    "id_marca" INTEGER,
+    "cantidad_comprada" REAL NOT NULL,
+    "id_unidad_compra" INTEGER NOT NULL,
+    "precio_unitario" REAL NOT NULL,
+    "precio_total" REAL NOT NULL,
+    "fecha_vencimiento" DATETIME,
+    "lote" TEXT,
+    "cantidad_base" REAL NOT NULL DEFAULT 0,
+    "precio_por_unidad_base" REAL NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "codigo_barras_escaner" TEXT,
+    CONSTRAINT "DetalleCompra_id_compra_fkey" FOREIGN KEY ("id_compra") REFERENCES "Compra" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "DetalleCompra_id_materia_prima_fkey" FOREIGN KEY ("id_materia_prima") REFERENCES "MateriaPrima" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "DetalleCompra_id_insumo_fkey" FOREIGN KEY ("id_insumo") REFERENCES "Insumo" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "DetalleCompra_id_marca_fkey" FOREIGN KEY ("id_marca") REFERENCES "Marca" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "DetalleCompra_id_unidad_compra_fkey" FOREIGN KEY ("id_unidad_compra") REFERENCES "UnidadMedida" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "DetallePedidoCliente" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_pedido" INTEGER NOT NULL,
+    "id_producto_terminado" INTEGER NOT NULL,
+    "cantidad" REAL NOT NULL,
+    "precio_unitario" REAL NOT NULL,
+    "subtotal" REAL NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "codigo_barras_escaner" TEXT,
+    CONSTRAINT "DetallePedidoCliente_id_pedido_fkey" FOREIGN KEY ("id_pedido") REFERENCES "PedidoCliente" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "DetallePedidoCliente_id_producto_terminado_fkey" FOREIGN KEY ("id_producto_terminado") REFERENCES "ProductoTerminado" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "DetallePedidoProveedor" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_pedido" INTEGER NOT NULL,
+    "id_materia_prima" INTEGER,
+    "id_insumo" INTEGER,
+    "cantidad_pedida" REAL NOT NULL,
+    "id_unidad" INTEGER NOT NULL,
+    "precio_estimado" REAL NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "DetallePedidoProveedor_id_pedido_fkey" FOREIGN KEY ("id_pedido") REFERENCES "PedidoProveedor" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "DetallePedidoProveedor_id_materia_prima_fkey" FOREIGN KEY ("id_materia_prima") REFERENCES "MateriaPrima" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "DetallePedidoProveedor_id_insumo_fkey" FOREIGN KEY ("id_insumo") REFERENCES "Insumo" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "DetallePedidoProveedor_id_unidad_fkey" FOREIGN KEY ("id_unidad") REFERENCES "UnidadMedida" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "DetallePresupuesto" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_presupuesto" INTEGER NOT NULL,
+    "id_producto_terminado" INTEGER NOT NULL,
+    "cantidad" REAL NOT NULL,
+    "precio_unitario" REAL NOT NULL,
+    "subtotal" REAL NOT NULL,
+    "observaciones" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "descuento_nombre" TEXT, "descuento_unitario" REAL, "descuento_volumen_id" INTEGER, "descuento_volumen_tipo" TEXT, "descuento_volumen_valor" REAL, "precio_unitario_original" REAL,
+    CONSTRAINT "DetallePresupuesto_id_presupuesto_fkey" FOREIGN KEY ("id_presupuesto") REFERENCES "Presupuesto" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "DetallePresupuesto_id_producto_terminado_fkey" FOREIGN KEY ("id_producto_terminado") REFERENCES "ProductoTerminado" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "DetalleProduccionConsumo" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_produccion" INTEGER NOT NULL,
+    "id_materia_prima" INTEGER,
+    "id_insumo" INTEGER,
+    "cantidad_consumida" REAL NOT NULL,
+    "id_unidad" INTEGER NOT NULL,
+    "costo_unitario" REAL NOT NULL,
+    "costo_total" REAL NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "DetalleProduccionConsumo_id_produccion_fkey" FOREIGN KEY ("id_produccion") REFERENCES "Produccion" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "DetalleProduccionConsumo_id_materia_prima_fkey" FOREIGN KEY ("id_materia_prima") REFERENCES "MateriaPrima" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "DetalleProduccionConsumo_id_insumo_fkey" FOREIGN KEY ("id_insumo") REFERENCES "Insumo" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "DetalleProduccionConsumo_id_unidad_fkey" FOREIGN KEY ("id_unidad") REFERENCES "UnidadMedida" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "DetalleProduccionGenerado" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_produccion" INTEGER NOT NULL,
+    "id_producto_terminado" INTEGER NOT NULL,
+    "cantidad_generada" REAL NOT NULL,
+    "costo_unitario" REAL NOT NULL,
+    "costo_total" REAL NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "DetalleProduccionGenerado_id_produccion_fkey" FOREIGN KEY ("id_produccion") REFERENCES "Produccion" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "DetalleProduccionGenerado_id_producto_terminado_fkey" FOREIGN KEY ("id_producto_terminado") REFERENCES "ProductoTerminado" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "DetalleReceta" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_receta" INTEGER NOT NULL,
+    "id_materia_prima" INTEGER,
+    "id_insumo" INTEGER,
+    "cantidad_necesaria" REAL NOT NULL,
+    "id_unidad" INTEGER NOT NULL,
+    "costo_estimado" REAL NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "DetalleReceta_id_receta_fkey" FOREIGN KEY ("id_receta") REFERENCES "Receta" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "DetalleReceta_id_materia_prima_fkey" FOREIGN KEY ("id_materia_prima") REFERENCES "MateriaPrima" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "DetalleReceta_id_insumo_fkey" FOREIGN KEY ("id_insumo") REFERENCES "Insumo" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "DetalleReceta_id_unidad_fkey" FOREIGN KEY ("id_unidad") REFERENCES "UnidadMedida" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "DetalleVenta" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_venta" INTEGER NOT NULL,
+    "id_producto_terminado" INTEGER NOT NULL,
+    "cantidad" REAL NOT NULL,
+    "precio_unitario" REAL NOT NULL,
+    "subtotal" REAL NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "codigo_barras_escaner" TEXT, "descuento_nombre" TEXT, "descuento_unitario" REAL, "descuento_volumen_id" INTEGER, "descuento_volumen_tipo" TEXT, "descuento_volumen_valor" REAL, "precio_unitario_original" REAL,
+    CONSTRAINT "DetalleVenta_id_venta_fkey" FOREIGN KEY ("id_venta") REFERENCES "Venta" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "DetalleVenta_id_producto_terminado_fkey" FOREIGN KEY ("id_producto_terminado") REFERENCES "ProductoTerminado" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "Direccion" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_persona" INTEGER NOT NULL,
+    "id_tipo_direccion" INTEGER NOT NULL,
+    "id_municipio" INTEGER,
+    "direccion" TEXT NOT NULL,
+    "referencia" TEXT,
+    "latitud" REAL,
+    "longitud" REAL,
+    "es_principal" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME,
+    CONSTRAINT "Direccion_id_persona_fkey" FOREIGN KEY ("id_persona") REFERENCES "Persona" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Direccion_id_tipo_direccion_fkey" FOREIGN KEY ("id_tipo_direccion") REFERENCES "TipoDireccion" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Direccion_id_municipio_fkey" FOREIGN KEY ("id_municipio") REFERENCES "Municipio" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE "DocumentoGenerado" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "tipo" TEXT NOT NULL,
+    "entidad_id" INTEGER NOT NULL,
+    "entidad_tipo" TEXT NOT NULL,
+    "formato" TEXT NOT NULL DEFAULT 'pdf',
+    "generado_por" INTEGER,
+    "email_enviado" BOOLEAN NOT NULL DEFAULT false,
+    "destinatario" TEXT,
+    "metadata" TEXT,
+    "fecha" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "DocumentoGenerado_generado_por_fkey" FOREIGN KEY ("generado_por") REFERENCES "Usuario" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE "EmpresaTelefonica" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "codigo" TEXT,
+    "activo" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME
+);
+
+CREATE TABLE "Entrega" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_pedido" INTEGER NOT NULL,
+    "id_punto_encuentro" INTEGER,
+    "direccion_alternativa" TEXT,
+    "fecha_programada" DATETIME NOT NULL,
+    "fecha_realizada" DATETIME,
+    "hora_desde" TEXT,
+    "hora_hasta" TEXT,
+    "nombre_recibe" TEXT,
+    "telefono_recibe" TEXT,
+    "estado" TEXT NOT NULL DEFAULT 'programado',
+    "observaciones" TEXT,
+    "latitud_entrega" REAL,
+    "longitud_entrega" REAL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "Entrega_id_pedido_fkey" FOREIGN KEY ("id_pedido") REFERENCES "PedidoCliente" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Entrega_id_punto_encuentro_fkey" FOREIGN KEY ("id_punto_encuentro") REFERENCES "PuntoEncuentro" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE "EstadoGeneral" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre_estado" TEXT NOT NULL,
+    "entidad_aplicable" TEXT,
+    "es_final" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME
+);
+
+CREATE TABLE "EstadoSesion" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME
+);
+
+CREATE TABLE "FormaPago" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre_forma" TEXT NOT NULL,
+    "requiere_identificacion" BOOLEAN NOT NULL DEFAULT false,
+    "requiere_cuenta" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME
+);
+
+CREATE TABLE "Insumo" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "codigo" TEXT,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "id_tipo_insumo" INTEGER NOT NULL,
+    "id_unidad_base" INTEGER NOT NULL,
+    "stock_actual" REAL NOT NULL DEFAULT 0,
+    "stock_minimo" REAL NOT NULL DEFAULT 0,
+    "precio_compra_referencia" REAL NOT NULL DEFAULT 0,
+    "imagen" TEXT,
+    "estado" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME,
+    CONSTRAINT "Insumo_id_tipo_insumo_fkey" FOREIGN KEY ("id_tipo_insumo") REFERENCES "TipoInsumo" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Insumo_id_unidad_base_fkey" FOREIGN KEY ("id_unidad_base") REFERENCES "UnidadMedida" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "InteraccionWhatsApp" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "tipo" TEXT NOT NULL,
+    "mensaje_enviado" TEXT NOT NULL,
+    "ip" TEXT,
+    "fecha" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE "LogAcceso" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_usuario" INTEGER,
+    "email_intento" TEXT,
+    "resultado" TEXT NOT NULL,
+    "ip" TEXT,
+    "user_agent" TEXT,
+    "navegador" TEXT,
+    "sistema_operativo" TEXT,
+    "dispositivo" TEXT,
+    "pais" TEXT,
+    "ciudad" TEXT,
+    "motivo" TEXT,
+    "fecha" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "LogAcceso_id_usuario_fkey" FOREIGN KEY ("id_usuario") REFERENCES "Usuario" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE "Marca" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME
+);
+
+CREATE TABLE "MateriaPrima" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "codigo" TEXT,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "id_categoria" INTEGER NOT NULL,
+    "id_unidad_base" INTEGER NOT NULL,
+    "stock_actual" REAL NOT NULL DEFAULT 0,
+    "stock_minimo" REAL NOT NULL DEFAULT 0,
+    "precio_compra_referencia" REAL NOT NULL DEFAULT 0,
+    "imagen" TEXT,
+    "estado" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME, "pricePerUnit" REAL, "purchaseUnitType" TEXT, "totalGrams" REAL, "totalPrice" REAL, "unitsPurchased" REAL, "weightPerUnit" REAL, "weightUnit" TEXT,
+    CONSTRAINT "MateriaPrima_id_categoria_fkey" FOREIGN KEY ("id_categoria") REFERENCES "CategoriaMateriaPrima" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "MateriaPrima_id_unidad_base_fkey" FOREIGN KEY ("id_unidad_base") REFERENCES "UnidadMedida" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "MigrationLog" (
+      "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+      "materia_prima_id" INTEGER NOT NULL,
+      "nombre_mp" TEXT,
+      "unidad_original" TEXT,
+      "codigo_unidad_original" TEXT,
+      "stock_actual_original" REAL,
+      "stock_minimo_original" REAL,
+      "fecha" TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+CREATE TABLE "Municipio" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_departamento" INTEGER NOT NULL,
+    "nombre" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Municipio_id_departamento_fkey" FOREIGN KEY ("id_departamento") REFERENCES "Departamento" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "Notificacion" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_plantilla" INTEGER,
+    "tipo" TEXT NOT NULL,
+    "destinatario" TEXT NOT NULL,
+    "asunto" TEXT,
+    "mensaje" TEXT NOT NULL,
+    "estado" TEXT NOT NULL DEFAULT 'pendiente',
+    "fecha_programada" DATETIME,
+    "fecha_envio" DATETIME,
+    "error" TEXT,
+    "metadata" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Notificacion_id_plantilla_fkey" FOREIGN KEY ("id_plantilla") REFERENCES "PlantillaNotificacion" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE "NotificacionEntrega" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_entrega" INTEGER NOT NULL,
+    "tipo" TEXT NOT NULL,
+    "canal" TEXT NOT NULL,
+    "destinatario" TEXT NOT NULL,
+    "mensaje" TEXT NOT NULL,
+    "estado" TEXT NOT NULL,
+    "fecha_envio" DATETIME,
+    "error" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "NotificacionEntrega_id_entrega_fkey" FOREIGN KEY ("id_entrega") REFERENCES "Entrega" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE "Opinion" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "calificacion" INTEGER NOT NULL,
+    "comentario" TEXT NOT NULL,
+    "estado" TEXT NOT NULL DEFAULT 'pending',
+    "ip" TEXT,
+    "fecha" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "fecha_aprobacion" DATETIME,
+    "id_aprobador" INTEGER,
+    "respuesta" TEXT,
+    "fecha_respuesta" DATETIME,
+    "destacado" BOOLEAN NOT NULL DEFAULT false,
+    "orden" INTEGER NOT NULL DEFAULT 0
+, "email" TEXT);
+
+CREATE TABLE "Pais" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE "PasswordReset" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "email" TEXT NOT NULL,
+    "token" TEXT NOT NULL,
+    "usado" BOOLEAN NOT NULL DEFAULT false,
+    "fecha_expiracion" DATETIME NOT NULL,
+    "ip" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE "PedidoCliente" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_cliente" INTEGER NOT NULL,
+    "fecha_pedido" DATETIME NOT NULL,
+    "fecha_entrega_solicitada" DATETIME NOT NULL,
+    "fecha_entrega_real" DATETIME,
+    "subtotal" REAL NOT NULL DEFAULT 0,
+    "total" REAL NOT NULL DEFAULT 0,
+    "senia" REAL NOT NULL DEFAULT 0,
+    "id_estado" INTEGER NOT NULL,
+    "observaciones" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME,
+    CONSTRAINT "PedidoCliente_id_cliente_fkey" FOREIGN KEY ("id_cliente") REFERENCES "Persona" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "PedidoCliente_id_estado_fkey" FOREIGN KEY ("id_estado") REFERENCES "EstadoGeneral" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "PedidoProveedor" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_proveedor" INTEGER NOT NULL,
+    "fecha_pedido" DATETIME NOT NULL,
+    "fecha_entrega_estimada" DATETIME,
+    "fecha_entrega_real" DATETIME,
+    "observaciones" TEXT,
+    "id_estado" INTEGER NOT NULL,
+    "total_estimado" REAL NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME,
+    CONSTRAINT "PedidoProveedor_id_proveedor_fkey" FOREIGN KEY ("id_proveedor") REFERENCES "Persona" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "PedidoProveedor_id_estado_fkey" FOREIGN KEY ("id_estado") REFERENCES "EstadoGeneral" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "Permiso" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "modulo" TEXT NOT NULL DEFAULT 'general',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE "Persona" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_municipio" INTEGER,
+    "nombre" TEXT NOT NULL,
+    "apellido" TEXT NOT NULL,
+    "numero_documento" TEXT NOT NULL,
+    "fecha_nacimiento" DATETIME,
+    "observaciones" TEXT,
+    "tipo_persona" TEXT NOT NULL,
+    "razon_social" TEXT,
+    "cuit" TEXT,
+    "condicion_iva" TEXT,
+    "imagen" TEXT,
+    "fecha_registro" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "fecha_actualizacion" DATETIME,
+    "latitud" REAL,
+    "longitud" REAL,
+    "direccion_mapa" TEXT,
+    "ubicacion_valida" BOOLEAN NOT NULL DEFAULT false,
+    CONSTRAINT "Persona_id_municipio_fkey" FOREIGN KEY ("id_municipio") REFERENCES "Municipio" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE "PlantillaNotificacion" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "canal" TEXT NOT NULL,
+    "asunto" TEXT,
+    "mensaje" TEXT NOT NULL,
+    "activo" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
+CREATE TABLE "Presupuesto" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_cliente" INTEGER NOT NULL,
+    "numero" TEXT NOT NULL,
+    "fecha_creacion" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "fecha_validez" DATETIME NOT NULL,
+    "subtotal" REAL NOT NULL DEFAULT 0,
+    "iva" REAL NOT NULL DEFAULT 0,
+    "total" REAL NOT NULL DEFAULT 0,
+    "observaciones" TEXT,
+    "estado" TEXT NOT NULL DEFAULT 'pendiente',
+    "id_pedido" INTEGER,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "Presupuesto_id_cliente_fkey" FOREIGN KEY ("id_cliente") REFERENCES "Persona" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Presupuesto_id_pedido_fkey" FOREIGN KEY ("id_pedido") REFERENCES "PedidoCliente" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE "Produccion" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_receta" INTEGER NOT NULL,
+    "id_supervisor" INTEGER,
+    "cantidad_producida" INTEGER NOT NULL,
+    "fecha_produccion" DATETIME NOT NULL,
+    "costo_total_materias_primas" REAL NOT NULL DEFAULT 0,
+    "costo_total_insumos" REAL NOT NULL DEFAULT 0,
+    "costo_total" REAL NOT NULL DEFAULT 0,
+    "id_estado" INTEGER NOT NULL,
+    "observaciones" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME,
+    CONSTRAINT "Produccion_id_receta_fkey" FOREIGN KEY ("id_receta") REFERENCES "Receta" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Produccion_id_supervisor_fkey" FOREIGN KEY ("id_supervisor") REFERENCES "Persona" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Produccion_id_estado_fkey" FOREIGN KEY ("id_estado") REFERENCES "EstadoGeneral" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "Producto" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "categoria" TEXT NOT NULL,
+    "precio" REAL NOT NULL,
+    "peso" TEXT NOT NULL DEFAULT '500g',
+    "imagen" TEXT,
+    "stock" BOOLEAN NOT NULL DEFAULT true,
+    "destacado" BOOLEAN NOT NULL DEFAULT false,
+    "orden" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
+CREATE TABLE "ProductoTerminado" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "codigo" TEXT,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "id_categoria" INTEGER NOT NULL,
+    "peso_unitario_aprox" REAL NOT NULL DEFAULT 0,
+    "precio_venta" REAL NOT NULL DEFAULT 0,
+    "stock_actual" REAL NOT NULL DEFAULT 0,
+    "stock_minimo" REAL NOT NULL DEFAULT 0,
+    "destacado" BOOLEAN NOT NULL DEFAULT false,
+    "orden" INTEGER NOT NULL DEFAULT 0,
+    "visible_en_landing" BOOLEAN NOT NULL DEFAULT true,
+    "imagen" TEXT,
+    "estado" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME, "codigo_barras" TEXT, "tipo_harina" TEXT, "unidades" INTEGER, "modo_coccion" TEXT, "texto_frente" TEXT, "texto_reverso" TEXT, "seccion" TEXT,
+    CONSTRAINT "ProductoTerminado_id_categoria_fkey" FOREIGN KEY ("id_categoria") REFERENCES "CategoriaProductoTerminado" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "Promocion" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "tipo" TEXT NOT NULL,
+    "valor_descuento" REAL NOT NULL DEFAULT 0,
+    "fecha_inicio" DATETIME NOT NULL,
+    "fecha_fin" DATETIME,
+    "activo" BOOLEAN NOT NULL DEFAULT true,
+    "aplicar_auto" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME
+);
+
+CREATE TABLE "PromocionProducto" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_promocion" INTEGER NOT NULL,
+    "id_producto_terminado" INTEGER NOT NULL,
+    "id_categoria" INTEGER,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "PromocionProducto_id_promocion_fkey" FOREIGN KEY ("id_promocion") REFERENCES "Promocion" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "PromocionProducto_id_producto_terminado_fkey" FOREIGN KEY ("id_producto_terminado") REFERENCES "ProductoTerminado" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "PromocionProducto_id_categoria_fkey" FOREIGN KEY ("id_categoria") REFERENCES "CategoriaProductoTerminado" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE "Provincia" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_pais" INTEGER NOT NULL,
+    "nombre" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Provincia_id_pais_fkey" FOREIGN KEY ("id_pais") REFERENCES "Pais" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "PuntoEncuentro" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "direccion" TEXT NOT NULL,
+    "latitud" REAL,
+    "longitud" REAL,
+    "horarios" TEXT,
+    "activo" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL
+);
+
+CREATE TABLE "Receta" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_producto_terminado" INTEGER NOT NULL,
+    "nombre_receta" TEXT NOT NULL,
+    "rendimiento_unidades" INTEGER NOT NULL DEFAULT 1,
+    "activo" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME,
+    CONSTRAINT "Receta_id_producto_terminado_fkey" FOREIGN KEY ("id_producto_terminado") REFERENCES "ProductoTerminado" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "RecetaCocina" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "titulo" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "ingredientes" TEXT NOT NULL,
+    "pasos" TEXT NOT NULL,
+    "tiempo_preparacion" TEXT,
+    "tiempo_coccion" TEXT,
+    "dificultad" TEXT NOT NULL DEFAULT 'facil',
+    "imagen" TEXT,
+    "categoria" TEXT DEFAULT 'otros',
+    "visible_en_landing" BOOLEAN NOT NULL DEFAULT false,
+    "destacado" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME
+);
+
+CREATE TABLE "ReservaCliente" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_cliente" INTEGER NOT NULL,
+    "id_pedido" INTEGER,
+    "fecha_reserva" DATETIME NOT NULL,
+    "fecha_validez_hasta" DATETIME NOT NULL,
+    "id_producto_terminado" INTEGER NOT NULL,
+    "cantidad_reservada" REAL NOT NULL,
+    "cantidad_confirmada" REAL NOT NULL DEFAULT 0,
+    "senia" REAL NOT NULL DEFAULT 0,
+    "id_estado" INTEGER NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME,
+    CONSTRAINT "ReservaCliente_id_cliente_fkey" FOREIGN KEY ("id_cliente") REFERENCES "Persona" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "ReservaCliente_id_pedido_fkey" FOREIGN KEY ("id_pedido") REFERENCES "PedidoCliente" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "ReservaCliente_id_producto_terminado_fkey" FOREIGN KEY ("id_producto_terminado") REFERENCES "ProductoTerminado" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "ReservaCliente_id_estado_fkey" FOREIGN KEY ("id_estado") REFERENCES "EstadoGeneral" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "Rol" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "es_default" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE "RolPermiso" (
+    "id_rol" INTEGER NOT NULL,
+    "id_permiso" INTEGER NOT NULL,
+
+    PRIMARY KEY ("id_rol", "id_permiso"),
+    CONSTRAINT "RolPermiso_id_rol_fkey" FOREIGN KEY ("id_rol") REFERENCES "Rol" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "RolPermiso_id_permiso_fkey" FOREIGN KEY ("id_permiso") REFERENCES "Permiso" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE "ServicioCorreoElectronico" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "dominio" TEXT,
+    "activo" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME
+);
+
+CREATE TABLE "Sesion" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_usuario" INTEGER NOT NULL,
+    "token" TEXT NOT NULL,
+    "ip" TEXT,
+    "dispositivo" TEXT,
+    "fecha_inicio" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "fecha_fin" DATETIME,
+    CONSTRAINT "Sesion_id_usuario_fkey" FOREIGN KEY ("id_usuario") REFERENCES "Usuario" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "SesionActiva" (
+    "id_sesion" TEXT NOT NULL PRIMARY KEY,
+    "id_usuario" INTEGER NOT NULL,
+    "ip" TEXT,
+    "user_agent" TEXT,
+    "fecha_inicio" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "fecha_expiracion" DATETIME NOT NULL,
+    "fecha_fin" DATETIME,
+    "estado" TEXT NOT NULL DEFAULT 'active',
+    CONSTRAINT "SesionActiva_id_usuario_fkey" FOREIGN KEY ("id_usuario") REFERENCES "Usuario" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE "StockMovement" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "tipo_movimiento" TEXT NOT NULL,
+    "id_materia_prima" INTEGER,
+    "id_insumo" INTEGER,
+    "id_producto_terminado" INTEGER,
+    "cantidad" REAL NOT NULL,
+    "id_unidad" INTEGER NOT NULL,
+    "stock_antes" REAL NOT NULL,
+    "stock_despues" REAL NOT NULL,
+    "referencia_id" INTEGER,
+    "referencia_tabla" TEXT,
+    "observacion" TEXT,
+    "id_usuario" INTEGER,
+    "fecha_movimiento" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "StockMovement_id_materia_prima_fkey" FOREIGN KEY ("id_materia_prima") REFERENCES "MateriaPrima" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "StockMovement_id_insumo_fkey" FOREIGN KEY ("id_insumo") REFERENCES "Insumo" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "StockMovement_id_producto_terminado_fkey" FOREIGN KEY ("id_producto_terminado") REFERENCES "ProductoTerminado" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "StockMovement_id_unidad_fkey" FOREIGN KEY ("id_unidad") REFERENCES "UnidadMedida" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "StockMovement_id_usuario_fkey" FOREIGN KEY ("id_usuario") REFERENCES "Usuario" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE "TipoContacto" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL
+);
+
+CREATE TABLE "TipoDireccion" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL
+);
+
+CREATE TABLE "TipoEntidad" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "activo" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME
+);
+
+CREATE TABLE "TipoInsumo" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME
+);
+
+CREATE TABLE "TipoPersona" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE "TipoPlataforma" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "nombre" TEXT NOT NULL,
+    "descripcion" TEXT,
+    "activo" BOOLEAN NOT NULL DEFAULT true,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME
+);
+
+CREATE TABLE "UnidadMedida" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "codigo" TEXT NOT NULL,
+    "nombre" TEXT NOT NULL,
+    "conversion_a_base" REAL NOT NULL DEFAULT 1.0,
+    "tipo_medida" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME
+);
+
+CREATE TABLE "Usuario" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_persona" INTEGER NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "estado" BOOLEAN NOT NULL DEFAULT true,
+    "imagen" TEXT,
+    "fecha_registro" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "fecha_actualizacion" DATETIME,
+    CONSTRAINT "Usuario_id_persona_fkey" FOREIGN KEY ("id_persona") REFERENCES "Persona" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "Usuario2FA" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_usuario" INTEGER NOT NULL,
+    "secret_2fa" TEXT,
+    "activado" BOOLEAN NOT NULL DEFAULT false,
+    "codigos_respaldo" TEXT,
+    "fecha_activacion" DATETIME,
+    "fecha_ultimo_uso" DATETIME,
+    CONSTRAINT "Usuario2FA_id_usuario_fkey" FOREIGN KEY ("id_usuario") REFERENCES "Usuario" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE "UsuarioRol" (
+    "id_usuario" INTEGER NOT NULL,
+    "id_rol" INTEGER NOT NULL,
+
+    PRIMARY KEY ("id_usuario", "id_rol"),
+    CONSTRAINT "UsuarioRol_id_usuario_fkey" FOREIGN KEY ("id_usuario") REFERENCES "Usuario" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "UsuarioRol_id_rol_fkey" FOREIGN KEY ("id_rol") REFERENCES "Rol" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+CREATE TABLE "Venta" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id_cliente" INTEGER NOT NULL,
+    "id_vendedor" INTEGER NOT NULL,
+    "id_forma_pago" INTEGER NOT NULL,
+    "id_pedido" INTEGER,
+    "numero_comprobante" TEXT,
+    "fecha_venta" DATETIME NOT NULL,
+    "subtotal" REAL NOT NULL DEFAULT 0,
+    "iva" REAL NOT NULL DEFAULT 0,
+    "total" REAL NOT NULL DEFAULT 0,
+    "id_estado" INTEGER NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME,
+    CONSTRAINT "Venta_id_cliente_fkey" FOREIGN KEY ("id_cliente") REFERENCES "Persona" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Venta_id_vendedor_fkey" FOREIGN KEY ("id_vendedor") REFERENCES "Usuario" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Venta_id_forma_pago_fkey" FOREIGN KEY ("id_forma_pago") REFERENCES "FormaPago" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Venta_id_pedido_fkey" FOREIGN KEY ("id_pedido") REFERENCES "PedidoCliente" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
+    CONSTRAINT "Venta_id_estado_fkey" FOREIGN KEY ("id_estado") REFERENCES "EstadoGeneral" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+
+-- ============================================
+-- SECCIÓN 2: ÍNDICES (CREATE INDEX)
+-- ============================================
+
+CREATE UNIQUE INDEX "AlertaConfiguracion_tipo_key" ON "AlertaConfiguracion"("tipo");
+CREATE INDEX "Auditoria_accion_idx" ON "Auditoria"("accion");
+CREATE INDEX "Auditoria_fecha_idx" ON "Auditoria"("fecha");
+CREATE INDEX "Auditoria_id_usuario_idx" ON "Auditoria"("id_usuario");
+CREATE INDEX "Auditoria_modulo_idx" ON "Auditoria"("modulo");
+CREATE UNIQUE INDEX "CategoriaMateriaPrima_nombre_key" ON "CategoriaMateriaPrima"("nombre");
+CREATE UNIQUE INDEX "CategoriaProductoTerminado_nombre_key" ON "CategoriaProductoTerminado"("nombre");
+CREATE INDEX "Compra_fecha_compra_idx" ON "Compra"("fecha_compra");
+CREATE INDEX "Compra_id_proveedor_idx" ON "Compra"("id_proveedor");
+CREATE INDEX "Consulta_fecha_idx" ON "Consulta"("fecha");
+CREATE INDEX "Consulta_leido_idx" ON "Consulta"("leido");
+CREATE UNIQUE INDEX "Departamento_id_provincia_nombre_key" ON "Departamento"("id_provincia", "nombre");
+CREATE INDEX "DescuentoVolumenRango_id_descuento_idx" ON "DescuentoVolumenRango"("id_descuento");
+CREATE INDEX "DescuentoVolumen_activo_idx" ON "DescuentoVolumen"("activo");
+CREATE INDEX "DescuentoVolumen_fecha_inicio_fecha_fin_idx" ON "DescuentoVolumen"("fecha_inicio", "fecha_fin");
+CREATE INDEX "DescuentoVolumen_tipo_item_idx" ON "DescuentoVolumen"("tipo_item");
+CREATE INDEX "DetalleCompra_id_compra_idx" ON "DetalleCompra"("id_compra");
+CREATE INDEX "DetallePedidoCliente_id_pedido_idx" ON "DetallePedidoCliente"("id_pedido");
+CREATE INDEX "DetallePresupuesto_id_presupuesto_idx" ON "DetallePresupuesto"("id_presupuesto");
+CREATE INDEX "DetalleProduccionConsumo_id_produccion_idx" ON "DetalleProduccionConsumo"("id_produccion");
+CREATE INDEX "DetalleProduccionGenerado_id_produccion_idx" ON "DetalleProduccionGenerado"("id_produccion");
+CREATE INDEX "DetalleVenta_id_venta_idx" ON "DetalleVenta"("id_venta");
+CREATE INDEX "DocumentoGenerado_entidad_tipo_entidad_id_idx" ON "DocumentoGenerado"("entidad_tipo", "entidad_id");
+CREATE INDEX "DocumentoGenerado_fecha_idx" ON "DocumentoGenerado"("fecha");
+CREATE INDEX "DocumentoGenerado_tipo_idx" ON "DocumentoGenerado"("tipo");
+CREATE UNIQUE INDEX "EmpresaTelefonica_codigo_key" ON "EmpresaTelefonica"("codigo");
+CREATE UNIQUE INDEX "EmpresaTelefonica_nombre_key" ON "EmpresaTelefonica"("nombre");
+CREATE INDEX "Entrega_estado_idx" ON "Entrega"("estado");
+CREATE INDEX "Entrega_fecha_programada_idx" ON "Entrega"("fecha_programada");
+CREATE UNIQUE INDEX "EstadoGeneral_nombre_estado_key" ON "EstadoGeneral"("nombre_estado");
+CREATE UNIQUE INDEX "EstadoSesion_nombre_key" ON "EstadoSesion"("nombre");
+CREATE UNIQUE INDEX "FormaPago_nombre_forma_key" ON "FormaPago"("nombre_forma");
+CREATE INDEX "Insumo_codigo_idx" ON "Insumo"("codigo");
+CREATE UNIQUE INDEX "Insumo_codigo_key" ON "Insumo"("codigo");
+CREATE INDEX "Insumo_nombre_idx" ON "Insumo"("nombre");
+CREATE INDEX "LogAcceso_email_intento_idx" ON "LogAcceso"("email_intento");
+CREATE INDEX "LogAcceso_fecha_idx" ON "LogAcceso"("fecha");
+CREATE INDEX "LogAcceso_resultado_idx" ON "LogAcceso"("resultado");
+CREATE UNIQUE INDEX "Marca_nombre_key" ON "Marca"("nombre");
+CREATE INDEX "MateriaPrima_codigo_idx" ON "MateriaPrima"("codigo");
+CREATE UNIQUE INDEX "MateriaPrima_codigo_key" ON "MateriaPrima"("codigo");
+CREATE INDEX "MateriaPrima_nombre_idx" ON "MateriaPrima"("nombre");
+CREATE UNIQUE INDEX "Municipio_id_departamento_nombre_key" ON "Municipio"("id_departamento", "nombre");
+CREATE INDEX "NotificacionEntrega_id_entrega_idx" ON "NotificacionEntrega"("id_entrega");
+CREATE INDEX "Notificacion_createdAt_idx" ON "Notificacion"("createdAt");
+CREATE INDEX "Notificacion_estado_idx" ON "Notificacion"("estado");
+CREATE INDEX "Notificacion_tipo_idx" ON "Notificacion"("tipo");
+CREATE UNIQUE INDEX "Pais_nombre_key" ON "Pais"("nombre");
+CREATE INDEX "PasswordReset_email_idx" ON "PasswordReset"("email");
+CREATE INDEX "PasswordReset_fecha_expiracion_idx" ON "PasswordReset"("fecha_expiracion");
+CREATE INDEX "PasswordReset_token_idx" ON "PasswordReset"("token");
+CREATE UNIQUE INDEX "PasswordReset_token_key" ON "PasswordReset"("token");
+CREATE INDEX "PedidoCliente_fecha_pedido_idx" ON "PedidoCliente"("fecha_pedido");
+CREATE INDEX "PedidoCliente_id_cliente_idx" ON "PedidoCliente"("id_cliente");
+CREATE INDEX "PedidoProveedor_fecha_pedido_idx" ON "PedidoProveedor"("fecha_pedido");
+CREATE INDEX "PedidoProveedor_id_proveedor_idx" ON "PedidoProveedor"("id_proveedor");
+CREATE INDEX "Permiso_modulo_idx" ON "Permiso"("modulo");
+CREATE UNIQUE INDEX "Permiso_nombre_key" ON "Permiso"("nombre");
+CREATE INDEX "Persona_numero_documento_idx" ON "Persona"("numero_documento");
+CREATE UNIQUE INDEX "Persona_numero_documento_key" ON "Persona"("numero_documento");
+CREATE INDEX "Persona_tipo_persona_idx" ON "Persona"("tipo_persona");
+CREATE UNIQUE INDEX "PlantillaNotificacion_nombre_key" ON "PlantillaNotificacion"("nombre");
+CREATE INDEX "Presupuesto_estado_idx" ON "Presupuesto"("estado");
+CREATE INDEX "Presupuesto_id_cliente_idx" ON "Presupuesto"("id_cliente");
+CREATE UNIQUE INDEX "Presupuesto_id_pedido_key" ON "Presupuesto"("id_pedido");
+CREATE INDEX "Presupuesto_numero_idx" ON "Presupuesto"("numero");
+CREATE UNIQUE INDEX "Presupuesto_numero_key" ON "Presupuesto"("numero");
+CREATE INDEX "Produccion_fecha_produccion_idx" ON "Produccion"("fecha_produccion");
+CREATE INDEX "Produccion_id_receta_idx" ON "Produccion"("id_receta");
+CREATE INDEX "ProductoTerminado_codigo_barras_idx" ON "ProductoTerminado"("codigo_barras");
+CREATE UNIQUE INDEX "ProductoTerminado_codigo_barras_key" ON "ProductoTerminado"("codigo_barras");
+CREATE INDEX "ProductoTerminado_codigo_idx" ON "ProductoTerminado"("codigo");
+CREATE UNIQUE INDEX "ProductoTerminado_codigo_key" ON "ProductoTerminado"("codigo");
+CREATE INDEX "ProductoTerminado_nombre_idx" ON "ProductoTerminado"("nombre");
+CREATE INDEX "PromocionProducto_id_producto_terminado_idx" ON "PromocionProducto"("id_producto_terminado");
+CREATE INDEX "PromocionProducto_id_promocion_idx" ON "PromocionProducto"("id_promocion");
+CREATE INDEX "Promocion_activo_idx" ON "Promocion"("activo");
+CREATE INDEX "Promocion_fecha_inicio_idx" ON "Promocion"("fecha_inicio");
+CREATE INDEX "Promocion_tipo_idx" ON "Promocion"("tipo");
+CREATE UNIQUE INDEX "Provincia_id_pais_nombre_key" ON "Provincia"("id_pais", "nombre");
+CREATE INDEX "RecetaCocina_categoria_idx" ON "RecetaCocina"("categoria");
+CREATE INDEX "RecetaCocina_destacado_idx" ON "RecetaCocina"("destacado");
+CREATE INDEX "RecetaCocina_visible_en_landing_idx" ON "RecetaCocina"("visible_en_landing");
+CREATE INDEX "ReservaCliente_fecha_reserva_idx" ON "ReservaCliente"("fecha_reserva");
+CREATE INDEX "ReservaCliente_id_cliente_idx" ON "ReservaCliente"("id_cliente");
+CREATE UNIQUE INDEX "Rol_nombre_key" ON "Rol"("nombre");
+CREATE UNIQUE INDEX "ServicioCorreoElectronico_dominio_key" ON "ServicioCorreoElectronico"("dominio");
+CREATE UNIQUE INDEX "ServicioCorreoElectronico_nombre_key" ON "ServicioCorreoElectronico"("nombre");
+CREATE INDEX "SesionActiva_estado_idx" ON "SesionActiva"("estado");
+CREATE INDEX "SesionActiva_id_usuario_idx" ON "SesionActiva"("id_usuario");
+CREATE UNIQUE INDEX "TipoContacto_nombre_key" ON "TipoContacto"("nombre");
+CREATE UNIQUE INDEX "TipoDireccion_nombre_key" ON "TipoDireccion"("nombre");
+CREATE UNIQUE INDEX "TipoEntidad_nombre_key" ON "TipoEntidad"("nombre");
+CREATE UNIQUE INDEX "TipoInsumo_nombre_key" ON "TipoInsumo"("nombre");
+CREATE UNIQUE INDEX "TipoPersona_nombre_key" ON "TipoPersona"("nombre");
+CREATE UNIQUE INDEX "TipoPlataforma_nombre_key" ON "TipoPlataforma"("nombre");
+CREATE UNIQUE INDEX "UnidadMedida_codigo_key" ON "UnidadMedida"("codigo");
+CREATE UNIQUE INDEX "Usuario2FA_id_usuario_key" ON "Usuario2FA"("id_usuario");
+CREATE INDEX "Usuario_email_idx" ON "Usuario"("email");
+CREATE UNIQUE INDEX "Usuario_email_key" ON "Usuario"("email");
+CREATE UNIQUE INDEX "Usuario_id_persona_key" ON "Usuario"("id_persona");
+CREATE INDEX "Venta_fecha_venta_idx" ON "Venta"("fecha_venta");
+CREATE INDEX "Venta_id_cliente_idx" ON "Venta"("id_cliente");
+CREATE UNIQUE INDEX "Venta_id_pedido_key" ON "Venta"("id_pedido");

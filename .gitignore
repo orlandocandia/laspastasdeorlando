@@ -119,6 +119,7 @@ public/images/uploads/personas/*
 *.sql
 !prisma/schema.sql
 !prisma/seeds/*.sql
+!docs/auditoria/*.sql
 backups/
 
 # =============================================================================
