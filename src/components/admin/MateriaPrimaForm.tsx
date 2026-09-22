@@ -30,28 +30,25 @@ import {
 import ImageUploaderProducto from './ImageUploaderProducto'
 
 // ============================================
-// TIPOS Y CONSTANTES
+// CONSTANTES
 // ============================================
 
-const PURCHASE_UNIT_TYPES = [
-  { value: 'bulto', label: 'Bulto', qtyLabel: 'Cantidad de Bultos', weightLabel: 'Peso por Bulto (kg)', weightUnit: 'kg' },
-  { value: 'caja', label: 'Caja', qtyLabel: 'Cantidad de Cajas', weightLabel: 'Peso por Caja (kg)', weightUnit: 'kg' },
-  { value: 'botella', label: 'Botella', qtyLabel: 'Cantidad de Botellas', weightLabel: 'Volumen por Botella (l)', weightUnit: 'l' },
-  { value: 'unidad', label: 'Unidad', qtyLabel: 'Cantidad de Unidades', weightLabel: 'Peso por Unidad (g)', weightUnit: 'g' },
-  { value: 'kg_suelto', label: 'Kg suelto', qtyLabel: 'Cantidad de Kg', weightLabel: '', weightUnit: '' },
-  { value: 'litro_suelto', label: 'Litro suelto', qtyLabel: 'Cantidad de Litros', weightLabel: '', weightUnit: '' },
+const PURCHASE_UNITS = [
+  { value: 'kg', label: 'Kilogramo (kg)', isWeight: true },
+  { value: 'g', label: 'Gramo (g)', isWeight: true },
+  { value: 'l', label: 'Litro (l)', isWeight: true },
+  { value: 'ml', label: 'Mililitro (ml)', isWeight: true },
+  { value: 'u', label: 'Unidad (u)', isWeight: false },
 ] as const
 
-const WEIGHT_UNITS = ['kg', 'g', 'l', 'ml'] as const
-
-// Conversión a gramos
-function convertToGrams(value: number, unit: string): number {
+function convertToGrams(quantity: number, unit: string): number {
   switch (unit) {
-    case 'kg': return value * 1000
-    case 'g': return value
-    case 'l': return value * 1000
-    case 'ml': return value
-    default: return value
+    case 'kg': return quantity * 1000
+    case 'g': return quantity
+    case 'l': return quantity * 1000
+    case 'ml': return quantity
+    case 'u': return quantity
+    default: return quantity
   }
 }
 
@@ -63,11 +60,9 @@ const materiaPrimaSchema = z.object({
   id_unidad_base: z.string().min(1, 'Seleccioná una unidad de medida'),
   stock_actual: z.coerce.number().min(0, 'El stock no puede ser negativo').default(0),
   stock_minimo: z.coerce.number().min(0, 'El stock mínimo no puede ser negativo').default(0),
-  // Sistema de cálculo automático
+  // Sistema simple de cálculo
   purchaseUnitType: z.string().optional(),
   unitsPurchased: z.coerce.number().optional(),
-  weightPerUnit: z.coerce.number().optional(),
-  weightUnit: z.string().optional(),
   totalPrice: z.coerce.number().optional(),
   imagen: z.string().optional(),
   estado: z.boolean().default(true),
@@ -113,8 +108,6 @@ export default function MateriaPrimaForm({ materiaPrima, onSuccess }: MateriaPri
       stock_minimo: materiaPrima?.stock_minimo ?? 0,
       purchaseUnitType: materiaPrima?.purchaseUnitType || '',
       unitsPurchased: materiaPrima?.unitsPurchased ?? undefined,
-      weightPerUnit: materiaPrima?.weightPerUnit ?? undefined,
-      weightUnit: materiaPrima?.weightUnit || '',
       totalPrice: materiaPrima?.totalPrice ?? undefined,
       imagen: materiaPrima?.imagen || '',
       estado: materiaPrima?.estado ?? true,
@@ -124,45 +117,16 @@ export default function MateriaPrimaForm({ materiaPrima, onSuccess }: MateriaPri
   // Watch values for auto-calculation
   const purchaseUnitType = form.watch('purchaseUnitType')
   const unitsPurchased = form.watch('unitsPurchased')
-  const weightPerUnit = form.watch('weightPerUnit')
-  const weightUnit = form.watch('weightUnit')
   const totalPrice = form.watch('totalPrice')
 
-  // Get current unit type config
-  const unitConfig = useMemo(() => {
-    return PURCHASE_UNIT_TYPES.find((t) => t.value === purchaseUnitType) || null
-  }, [purchaseUnitType])
-
-  // Determine weight unit based on purchase unit type (auto-set when type changes)
-  useEffect(() => {
-    if (unitConfig && unitConfig.weightUnit) {
-      // Set the weight unit from the unit type config (kg for bulto/caja, l for botella, g for unidad)
-      if (unitConfig.weightUnit !== weightUnit) {
-        form.setValue('weightUnit', unitConfig.weightUnit)
-      }
-    }
-  }, [unitConfig, form, weightUnit])
-
-  // Calculate pricePerUnit and totalGrams
-  const { pricePerUnit, totalGrams } = useMemo(() => {
-    const units = Number(unitsPurchased) || 0
-    const weight = Number(weightPerUnit) || 0
+  // Calculate precioReferencia and totalGrams
+  const { precioReferencia, totalGrams } = useMemo(() => {
+    const qty = Number(unitsPurchased) || 0
     const total = Number(totalPrice) || 0
-    const wUnit = weightUnit || unitConfig?.weightUnit || 'kg'
-
-    // For kg_suelto / litro_suelto, the "unit" IS the weight/volume
-    const isSuelto = purchaseUnitType === 'kg_suelto' || purchaseUnitType === 'litro_suelto'
-    const totalUnits = isSuelto ? units : units * weight
-    const ppu = totalUnits > 0 ? total / totalUnits : 0
-    const grams = isSuelto
-      ? convertToGrams(units, purchaseUnitType === 'kg_suelto' ? 'kg' : 'l')
-      : convertToGrams(units * weight, wUnit)
-
-    return { pricePerUnit: ppu, totalGrams: grams }
-  }, [unitsPurchased, weightPerUnit, weightUnit, totalPrice, purchaseUnitType, unitConfig])
-
-  // Show weight field? (hidden for kg_suelto / litro_suelto)
-  const showWeightField = unitConfig && unitConfig.weightLabel !== ''
+    const ppu = qty > 0 ? total / qty : 0
+    const grams = convertToGrams(qty, purchaseUnitType || 'kg')
+    return { precioReferencia: ppu, totalGrams: grams }
+  }, [unitsPurchased, totalPrice, purchaseUnitType])
 
   useEffect(() => {
     async function fetchCategorias() {
@@ -208,13 +172,13 @@ export default function MateriaPrimaForm({ materiaPrima, onSuccess }: MateriaPri
         // En creación, stock_actual siempre es 0
         stock_actual: isEditing ? data.stock_actual : 0,
         // Enviar campos calculados
-        pricePerUnit: pricePerUnit || null,
+        pricePerUnit: precioReferencia || null,
         totalGrams: totalGrams || null,
+        weightPerUnit: null,
+        weightUnit: null,
         // Limpiar campos si no hay tipo de compra
         purchaseUnitType: data.purchaseUnitType || null,
         unitsPurchased: data.unitsPurchased ?? null,
-        weightPerUnit: showWeightField ? (data.weightPerUnit ?? null) : null,
-        weightUnit: showWeightField ? (data.weightUnit || null) : null,
         totalPrice: data.totalPrice ?? null,
       }
 
@@ -410,113 +374,62 @@ export default function MateriaPrimaForm({ materiaPrima, onSuccess }: MateriaPri
           </div>
         )}
 
-        {/* ====== Sistema de cálculo automático de precio ====== */}
+        {/* ====== Sección Compra (simplificada) ====== */}
         <div className="space-y-3 p-4 rounded-lg border border-marron/15 bg-mostaza/5">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-marron">Cálculo de Precio</span>
+            <span className="text-sm font-semibold text-marron">Compra</span>
             <span className="text-[10px] text-muted-foreground">(opcional)</span>
           </div>
 
-          {/* Tipo de Unidad de Compra */}
-          <FormField
-            control={form.control}
-            name="purchaseUnitType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tipo de Unidad de Compra</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleccionar..." />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {PURCHASE_UNIT_TYPES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Campos de cálculo (solo si hay tipo seleccionado) */}
-          {purchaseUnitType && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Cantidad de Unidades */}
-              <FormField
-                control={form.control}
-                name="unitsPurchased"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{unitConfig?.qtyLabel || 'Cantidad'}</FormLabel>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {/* Unidad de Compra */}
+            <FormField
+              control={form.control}
+              name="purchaseUnitType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Unidad de Compra</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0"
-                        {...field}
-                      />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar..." />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Peso/Medida por Unidad (hidden for kg_suelto/litro_suelto) */}
-              {showWeightField && (
-                <div className="grid grid-cols-2 gap-2">
-                  <FormField
-                    control={form.control}
-                    name="weightPerUnit"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{unitConfig?.weightLabel || 'Peso/Medida'}</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="weightUnit"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Unidad</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value || unitConfig?.weightUnit}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="..." />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {WEIGHT_UNITS.map((u) => (
-                              <SelectItem key={u} value={u}>{u}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                    <SelectContent>
+                      {PURCHASE_UNITS.map((u) => (
+                        <SelectItem key={u.value} value={u.value}>
+                          {u.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-          )}
+            />
 
-          {/* Precio Total Pagado */}
-          {purchaseUnitType && (
+            {/* Cantidad Comprada */}
+            <FormField
+              control={form.control}
+              name="unitsPurchased"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cantidad Comprada</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Precio Total Pagado */}
             <FormField
               control={form.control}
               name="totalPrice"
@@ -536,20 +449,18 @@ export default function MateriaPrimaForm({ materiaPrima, onSuccess }: MateriaPri
                 </FormItem>
               )}
             />
-          )}
+          </div>
 
-          {/* Campos calculados (solo lectura) */}
+          {/* Panel de cálculo automático */}
           {purchaseUnitType && Number(unitsPurchased) > 0 && Number(totalPrice) > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <div className="p-3 rounded-md bg-card border border-marron/10">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Precio por Unidad</p>
-                <p className="text-lg font-bold text-marron">{fmtCurrency(pricePerUnit)}</p>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Precio de Referencia</p>
+                <p className="text-lg font-bold text-marron">
+                  {fmtCurrency(precioReferencia)} / {purchaseUnitType}
+                </p>
                 <p className="text-[10px] text-muted-foreground">
-                  = {fmtCurrency(Number(totalPrice) || 0)} ÷ {fmtNumber(
-                    (purchaseUnitType === 'kg_suelto' || purchaseUnitType === 'litro_suelto')
-                      ? (Number(unitsPurchased) || 0)
-                      : (Number(unitsPurchased) || 0) * (Number(weightPerUnit) || 0)
-                  )} {weightUnit || unitConfig?.weightUnit || ''}
+                  = {fmtCurrency(Number(totalPrice) || 0)} ÷ {fmtNumber(Number(unitsPurchased) || 0)} {purchaseUnitType}
                 </p>
               </div>
               <div className="p-3 rounded-md bg-card border border-marron/10">
