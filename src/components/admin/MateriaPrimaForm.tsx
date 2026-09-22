@@ -93,6 +93,7 @@ export default function MateriaPrimaForm({ materiaPrima, onSuccess }: MateriaPri
   const [unidades, setUnidades] = useState<UnidadMedida[]>([])
   const [loadingCategorias, setLoadingCategorias] = useState(true)
   const [loadingUnidades, setLoadingUnidades] = useState(true)
+  const [codigoError, setCodigoError] = useState<string | null>(null)
 
   const isEditing = !!materiaPrima
 
@@ -157,9 +158,49 @@ export default function MateriaPrimaForm({ materiaPrima, onSuccess }: MateriaPri
 
     fetchCategorias()
     fetchUnidades()
+
+    // Generar código automático solo en modo creación
+    if (!materiaPrima) {
+      fetch('/api/materias-primas/proximo-codigo')
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data?.codigo && !form.getValues('codigo')) {
+            form.setValue('codigo', data.codigo)
+          }
+        })
+        .catch(() => { /* silent fail — el campo queda vacío */ })
+    }
   }, [])
 
+  // Validar código duplicado en tiempo real (solo si el código cambió)
+  const codigoValue = form.watch('codigo')
+  useEffect(() => {
+    if (!codigoValue || isEditing) {
+      setCodigoError(null)
+      return
+    }
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/materias-primas?buscar=${encodeURIComponent(codigoValue)}&limite=1`)
+        if (!res.ok) return
+        const data = await res.json()
+        const existing = (data.data || []).find((mp: any) => mp.codigo?.toLowerCase() === codigoValue.toLowerCase())
+        if (!cancelled) {
+          setCodigoError(existing ? 'El código ya existe. Por favor, elegí otro.' : null)
+        }
+      } catch {
+        // silent fail
+      }
+    }, 500)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [codigoValue, isEditing])
+
   async function onSubmit(data: MateriaPrimaFormValues) {
+    if (codigoError) {
+      toast.error('El código ya existe. Por favor, elegí otro.')
+      return
+    }
     setSubmitting(true)
     try {
       const payload = {
@@ -244,8 +285,14 @@ export default function MateriaPrimaForm({ materiaPrima, onSuccess }: MateriaPri
             <FormItem>
               <FormLabel>Código</FormLabel>
               <FormControl>
-                <Input placeholder="MP-001 (opcional)" {...field} />
+                <Input placeholder="MP-001 (auto-generado)" {...field} />
               </FormControl>
+              {codigoError && (
+                <p className="text-sm font-medium text-destructive">{codigoError}</p>
+              )}
+              {!codigoError && !isEditing && (
+                <p className="text-[10px] text-muted-foreground">Auto-generado. Podés editarlo si querés.</p>
+              )}
               <FormMessage />
             </FormItem>
           )}
