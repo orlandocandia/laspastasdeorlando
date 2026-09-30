@@ -45,7 +45,6 @@ const productoTerminadoSchema = z.object({
   precio_venta: z.coerce.number().min(0, 'El precio no puede ser negativo').default(0),
   stock_minimo: z.coerce.number().min(0, 'El stock mínimo no puede ser negativo').default(0),
   destacado: z.boolean().default(false),
-  orden: z.coerce.number().min(0, 'El orden no puede ser negativo').default(0),
   visible_en_landing: z.boolean().default(true),
   imagen: z.string().optional(),
   modo_coccion: z.string().optional(),
@@ -95,7 +94,6 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
       precio_venta: productoTerminado?.precio_venta ?? 0,
       stock_minimo: productoTerminado?.stock_minimo ?? 0,
       destacado: productoTerminado?.destacado ?? false,
-      orden: productoTerminado?.orden ?? 0,
       visible_en_landing: productoTerminado?.visible_en_landing ?? true,
       imagen: productoTerminado?.imagen || '',
       modo_coccion: productoTerminado?.modo_coccion || '',
@@ -120,7 +118,6 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
       precio_venta: productoTerminado?.precio_venta ?? 0,
       stock_minimo: productoTerminado?.stock_minimo ?? 0,
       destacado: productoTerminado?.destacado ?? false,
-      orden: productoTerminado?.orden ?? 0,
       visible_en_landing: productoTerminado?.visible_en_landing ?? true,
       imagen: productoTerminado?.imagen || '',
       modo_coccion: productoTerminado?.modo_coccion || '',
@@ -758,20 +755,6 @@ export default function ProductoTerminadoForm({ productoTerminado, onSuccess }: 
               )}
             />
           </div>
-
-          <FormField
-            control={form.control}
-            name="orden"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Orden de aparición</FormLabel>
-                <FormControl>
-                  <Input type="number" step="1" min="0" placeholder="0" className="w-full sm:w-32" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
 
         <Separator />

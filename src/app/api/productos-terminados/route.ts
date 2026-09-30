@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
       const allItems = await db.productoTerminado.findMany({
         where,
         include: { categoria: true },
-        orderBy: { nombre: 'asc' },
+        orderBy: [{ destacado: 'desc' }, { nombre: 'asc' }],
       })
       const filtered = allItems.filter(pt => pt.stock_actual > 0 && pt.stock_actual <= pt.stock_minimo)
       const total = filtered.length
@@ -145,7 +145,7 @@ export async function GET(request: NextRequest) {
         include: {
           categoria: true,
         },
-        orderBy: { nombre: 'asc' },
+        orderBy: [{ destacado: 'desc' }, { nombre: 'asc' }],
         skip: (pagina - 1) * limite,
         take: limite,
       }),
@@ -187,7 +187,6 @@ export async function POST(request: NextRequest) {
       precio_venta,
       stock_minimo,
       destacado,
-      orden,
       visible_en_landing,
       imagen,
       modo_coccion,
@@ -248,7 +247,6 @@ export async function POST(request: NextRequest) {
         precio_venta: parseFloat(precio_venta) || 0,
         stock_minimo: parseFloat(stock_minimo) || 0,
         destacado: destacado === true,
-        orden: parseInt(orden) || 0,
         visible_en_landing: visible_en_landing !== false,
         imagen: imagen || null,
         modo_coccion: modo_coccion || null,

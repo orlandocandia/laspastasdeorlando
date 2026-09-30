@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     const productos = await db.producto.findMany({
       where,
-      orderBy: { orden: 'asc' },
+      orderBy: [{ destacado: 'desc' }, { nombre: 'asc' }],
     })
 
     return NextResponse.json(productos)
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { nombre, descripcion, categoria, precio, peso, imagen, stock, destacado, orden } = body
+    const { nombre, descripcion, categoria, precio, peso, imagen, stock, destacado } = body
 
     const producto = await db.producto.create({
       data: {
@@ -40,7 +40,6 @@ export async function POST(request: NextRequest) {
         imagen: imagen || null,
         stock: stock !== false,
         destacado: destacado || false,
-        orden: orden || 0,
       },
     })
 
@@ -55,11 +54,14 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, ...data } = body
+    const { id, orden, ...data } = body
 
     if (!id) {
       return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
     }
+
+    // `orden` se ignora: ya no se usa para ordenamiento (usar destacado + alfabético)
+    void orden
 
     const producto = await db.producto.update({
       where: { id: parseInt(id) },

@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
         where,
         orderBy: [
           { destacado: 'desc' },
-          { orden: 'asc' },
           { nombre: 'asc' },
         ],
         select: {

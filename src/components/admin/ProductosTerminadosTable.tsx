@@ -64,7 +64,6 @@ interface ProductoTerminado {
   stock_actual: number
   stock_minimo: number
   destacado: boolean
-  orden: number
   visible_en_landing: boolean
   imagen?: string | null
   modo_coccion?: string | null

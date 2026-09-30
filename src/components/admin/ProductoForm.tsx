@@ -54,7 +54,6 @@ interface Producto {
   imagen?: string | null
   stock: boolean
   destacado: boolean
-  orden: number
 }
 
 interface ProductoFormProps {
